@@ -22,9 +22,7 @@ export function SiteLayout({
   const location = useRouterState({ select: (state) => state.location })
   const siteThemes = getSiteThemes()
   const [theme, setTheme] = useState(() => normalizeSiteTheme(null))
-  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false)
   const [isLocaleMenuOpen, setIsLocaleMenuOpen] = useState(false)
-  const themeMenuRef = useRef<HTMLDetailsElement>(null)
   const localeMenuRef = useRef<HTMLDetailsElement>(null)
   const canSwitchTheme = siteThemes.length > 1
 
@@ -44,11 +42,7 @@ export function SiteLayout({
         return
       }
 
-      if (
-        !themeMenuRef.current?.contains(target) &&
-        !localeMenuRef.current?.contains(target)
-      ) {
-        setIsThemeMenuOpen(false)
+      if (!localeMenuRef.current?.contains(target)) {
         setIsLocaleMenuOpen(false)
       }
     }
@@ -62,7 +56,6 @@ export function SiteLayout({
 
   function handleThemeChange(nextTheme: string) {
     setTheme(nextTheme)
-    setIsThemeMenuOpen(false)
     document.documentElement.dataset.theme = nextTheme
     window.localStorage.setItem('retro-games-theme', nextTheme)
   }
@@ -140,41 +133,37 @@ export function SiteLayout({
             {headerActions}
 
             {canSwitchTheme ? (
-              <details
-                className="dropdown dropdown-end"
-                onToggle={(event) => setIsThemeMenuOpen(event.currentTarget.open)}
-                open={isThemeMenuOpen}
-                ref={themeMenuRef}
+              <div
+                aria-label={t.theme}
+                className="join shrink-0 rounded-lg border border-base-300 bg-base-200 p-0.5"
               >
-                <summary
-                  className="btn btn-sm btn-ghost border border-base-300"
-                  onClick={(event) => {
-                    event.preventDefault()
-                    setIsThemeMenuOpen((isOpen) => !isOpen)
-                    setIsLocaleMenuOpen(false)
-                  }}
+                <button
+                  aria-pressed={theme === 'light'}
+                  className={`btn join-item btn-xs border-0 sm:btn-sm ${
+                    theme === 'light'
+                      ? 'bg-base-100 shadow-sm'
+                      : 'bg-transparent opacity-60'
+                  }`}
+                  onClick={() => handleThemeChange('light')}
+                  type="button"
                 >
-                  <i className="ri-palette-line" />
-                  {t.theme}
-                </summary>
-                <ul className="menu dropdown-content z-50 mt-3 max-h-96 w-56 overflow-y-auto rounded-box border border-base-300 bg-base-100 p-2 shadow-xl">
-                  {siteThemes.map((nextTheme) => (
-                    <li key={nextTheme}>
-                      <button
-                        className={theme === nextTheme ? 'active' : ''}
-                        onClick={() => handleThemeChange(nextTheme)}
-                        type="button"
-                      >
-                        <span
-                          className="inline-block h-3 w-3 rounded-full bg-primary"
-                          data-theme={nextTheme}
-                        />
-                        <span className="capitalize">{nextTheme}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </details>
+                  <i className="ri-sun-line" />
+                  <span>亮色</span>
+                </button>
+                <button
+                  aria-pressed={theme === 'dark'}
+                  className={`btn join-item btn-xs border-0 sm:btn-sm ${
+                    theme === 'dark'
+                      ? 'bg-base-100 shadow-sm'
+                      : 'bg-transparent opacity-60'
+                  }`}
+                  onClick={() => handleThemeChange('dark')}
+                  type="button"
+                >
+                  <i className="ri-moon-line" />
+                  <span>暗色</span>
+                </button>
+              </div>
             ) : null}
 
             <details
@@ -188,7 +177,6 @@ export function SiteLayout({
                 onClick={(event) => {
                   event.preventDefault()
                   setIsLocaleMenuOpen((isOpen) => !isOpen)
-                  setIsThemeMenuOpen(false)
                 }}
               >
                 <i className="ri-global-line" />
@@ -217,6 +205,18 @@ export function SiteLayout({
       </header>
 
       {children}
+
+      {canSwitchTheme ? (
+        <button
+          aria-label={theme === 'dark' ? '切换到亮色主题' : '切换到暗色主题'}
+          className="btn btn-primary fixed bottom-5 right-5 z-[100] gap-2 rounded-full border border-white/20 px-4 shadow-2xl"
+          onClick={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')}
+          type="button"
+        >
+          <i className={theme === 'dark' ? 'ri-sun-line' : 'ri-moon-line'} />
+          <span>{theme === 'dark' ? '切换亮色' : '切换暗色'}</span>
+        </button>
+      ) : null}
 
       <SiteFooter locale={locale} />
     </main>

@@ -9,51 +9,31 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as XRouteImport } from './routes/x'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
-import { Route as RandomRouteImport } from './routes/random'
-import { Route as ManifestDotwebmanifestRouteImport } from './routes/manifest[.]webmanifest'
-import { Route as LocaleRouteImport } from './routes/$locale'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as GamesGameIdRouteImport } from './routes/games/$gameId'
-import { Route as ApiShareImageRouteImport } from './routes/api/share-image'
-import { Route as LocaleTermsOfServiceRouteImport } from './routes/$locale.terms-of-service'
-import { Route as LocaleRandomRouteImport } from './routes/$locale.random'
-import { Route as LocalePrivacyPolicyRouteImport } from './routes/$locale.privacy-policy'
-import { Route as LocalePlayMyRomRouteImport } from './routes/$locale.play-my-rom'
-import { Route as LocaleBlogRouteImport } from './routes/$locale.blog'
+import { Route as LocaleRouteImport } from './routes/$locale'
+import { Route as ManifestDotwebmanifestRouteImport } from './routes/manifest[.]webmanifest'
+import { Route as RandomRouteImport } from './routes/random'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as XRouteImport } from './routes/x'
 import { Route as LocaleAboutRouteImport } from './routes/$locale.about'
-import { Route as GamesGameIdPlayRouteImport } from './routes/games/$gameId/play'
-import { Route as UsernameStatusStatusidRouteImport } from './routes/$username/status/$statusid'
-import { Route as UsernameArticleStatusidRouteImport } from './routes/$username/article/$statusid'
-import { Route as LocaleGamesGameIdRouteImport } from './routes/$locale.games.$gameId'
+import { Route as LocaleBlogRouteImport } from './routes/$locale.blog'
+import { Route as LocalePlayMyRomRouteImport } from './routes/$locale.play-my-rom'
+import { Route as LocalePrivacyPolicyRouteImport } from './routes/$locale.privacy-policy'
+import { Route as LocaleRandomRouteImport } from './routes/$locale.random'
+import { Route as LocaleTermsOfServiceRouteImport } from './routes/$locale.terms-of-service'
+import { Route as ApiShareImageRouteImport } from './routes/api/share-image'
+import { Route as GamesGameIdRouteImport } from './routes/games/$gameId'
 import { Route as LocaleBlogBlogIdRouteImport } from './routes/$locale.blog.$blogId'
+import { Route as LocaleGamesGameIdRouteImport } from './routes/$locale.games.$gameId'
+import { Route as UsernameArticleStatusidRouteImport } from './routes/$username/article/$statusid'
+import { Route as UsernameStatusStatusidRouteImport } from './routes/$username/status/$statusid'
+import { Route as GamesGameIdPlayRouteImport } from './routes/games/$gameId/play'
 import { Route as LocaleGamesGameIdPlayRouteImport } from './routes/$locale.games.$gameId.play'
 
-const XRoute = XRouteImport.update({
-  id: '/x',
-  path: '/x',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
-  id: '/robots.txt',
-  path: '/robots.txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RandomRoute = RandomRouteImport.update({
-  id: '/random',
-  path: '/random',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ManifestDotwebmanifestRoute = ManifestDotwebmanifestRouteImport.update({
-  id: '/manifest.webmanifest',
-  path: '/manifest.webmanifest',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LocaleRoute = LocaleRouteImport.update({
@@ -61,39 +41,34 @@ const LocaleRoute = LocaleRouteImport.update({
   path: '/$locale',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const ManifestDotwebmanifestRoute = ManifestDotwebmanifestRouteImport.update({
+  id: '/manifest.webmanifest',
+  path: '/manifest.webmanifest',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GamesGameIdRoute = GamesGameIdRouteImport.update({
-  id: '/games/$gameId',
-  path: '/games/$gameId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiShareImageRoute = ApiShareImageRouteImport.update({
-  id: '/api/share-image',
-  path: '/api/share-image',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LocaleTermsOfServiceRoute = LocaleTermsOfServiceRouteImport.update({
-  id: '/terms-of-service',
-  path: '/terms-of-service',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocaleRandomRoute = LocaleRandomRouteImport.update({
+const RandomRoute = RandomRouteImport.update({
   id: '/random',
   path: '/random',
-  getParentRoute: () => LocaleRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-const LocalePrivacyPolicyRoute = LocalePrivacyPolicyRouteImport.update({
-  id: '/privacy-policy',
-  path: '/privacy-policy',
-  getParentRoute: () => LocaleRoute,
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const LocalePlayMyRomRoute = LocalePlayMyRomRouteImport.update({
-  id: '/play-my-rom',
-  path: '/play-my-rom',
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const XRoute = XRouteImport.update({
+  id: '/x',
+  path: '/x',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaleAboutRoute = LocaleAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => LocaleRoute,
 } as any)
 const LocaleBlogRoute = LocaleBlogRouteImport.update({
@@ -101,35 +76,60 @@ const LocaleBlogRoute = LocaleBlogRouteImport.update({
   path: '/blog',
   getParentRoute: () => LocaleRoute,
 } as any)
-const LocaleAboutRoute = LocaleAboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+const LocalePlayMyRomRoute = LocalePlayMyRomRouteImport.update({
+  id: '/play-my-rom',
+  path: '/play-my-rom',
   getParentRoute: () => LocaleRoute,
 } as any)
-const GamesGameIdPlayRoute = GamesGameIdPlayRouteImport.update({
-  id: '/play',
-  path: '/play',
-  getParentRoute: () => GamesGameIdRoute,
+const LocalePrivacyPolicyRoute = LocalePrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
+  getParentRoute: () => LocaleRoute,
 } as any)
-const UsernameStatusStatusidRoute = UsernameStatusStatusidRouteImport.update({
-  id: '/$username/status/$statusid',
-  path: '/$username/status/$statusid',
+const LocaleRandomRoute = LocaleRandomRouteImport.update({
+  id: '/random',
+  path: '/random',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleTermsOfServiceRoute = LocaleTermsOfServiceRouteImport.update({
+  id: '/terms-of-service',
+  path: '/terms-of-service',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const ApiShareImageRoute = ApiShareImageRouteImport.update({
+  id: '/api/share-image',
+  path: '/api/share-image',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UsernameArticleStatusidRoute = UsernameArticleStatusidRouteImport.update({
-  id: '/$username/article/$statusid',
-  path: '/$username/article/$statusid',
+const GamesGameIdRoute = GamesGameIdRouteImport.update({
+  id: '/games/$gameId',
+  path: '/games/$gameId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const LocaleBlogBlogIdRoute = LocaleBlogBlogIdRouteImport.update({
+  id: '/$blogId',
+  path: '/$blogId',
+  getParentRoute: () => LocaleBlogRoute,
 } as any)
 const LocaleGamesGameIdRoute = LocaleGamesGameIdRouteImport.update({
   id: '/games/$gameId',
   path: '/games/$gameId',
   getParentRoute: () => LocaleRoute,
 } as any)
-const LocaleBlogBlogIdRoute = LocaleBlogBlogIdRouteImport.update({
-  id: '/$blogId',
-  path: '/$blogId',
-  getParentRoute: () => LocaleBlogRoute,
+const UsernameArticleStatusidRoute = UsernameArticleStatusidRouteImport.update({
+  id: '/$username/article/$statusid',
+  path: '/$username/article/$statusid',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsernameStatusStatusidRoute = UsernameStatusStatusidRouteImport.update({
+  id: '/$username/status/$statusid',
+  path: '/$username/status/$statusid',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesGameIdPlayRoute = GamesGameIdPlayRouteImport.update({
+  id: '/play',
+  path: '/play',
+  getParentRoute: () => GamesGameIdRoute,
 } as any)
 const LocaleGamesGameIdPlayRoute = LocaleGamesGameIdPlayRouteImport.update({
   id: '/play',
@@ -295,39 +295,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/x': {
-      id: '/x'
-      path: '/x'
-      fullPath: '/x'
-      preLoaderRoute: typeof XRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/robots.txt': {
-      id: '/robots.txt'
-      path: '/robots.txt'
-      fullPath: '/robots.txt'
-      preLoaderRoute: typeof RobotsDottxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/random': {
-      id: '/random'
-      path: '/random'
-      fullPath: '/random'
-      preLoaderRoute: typeof RandomRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/manifest.webmanifest': {
-      id: '/manifest.webmanifest'
-      path: '/manifest.webmanifest'
-      fullPath: '/manifest.webmanifest'
-      preLoaderRoute: typeof ManifestDotwebmanifestRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$locale': {
@@ -337,53 +309,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/manifest.webmanifest': {
+      id: '/manifest.webmanifest'
+      path: '/manifest.webmanifest'
+      fullPath: '/manifest.webmanifest'
+      preLoaderRoute: typeof ManifestDotwebmanifestRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/games/$gameId': {
-      id: '/games/$gameId'
-      path: '/games/$gameId'
-      fullPath: '/games/$gameId'
-      preLoaderRoute: typeof GamesGameIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/share-image': {
-      id: '/api/share-image'
-      path: '/api/share-image'
-      fullPath: '/api/share-image'
-      preLoaderRoute: typeof ApiShareImageRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/$locale/terms-of-service': {
-      id: '/$locale/terms-of-service'
-      path: '/terms-of-service'
-      fullPath: '/$locale/terms-of-service'
-      preLoaderRoute: typeof LocaleTermsOfServiceRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/random': {
-      id: '/$locale/random'
+    '/random': {
+      id: '/random'
       path: '/random'
-      fullPath: '/$locale/random'
-      preLoaderRoute: typeof LocaleRandomRouteImport
-      parentRoute: typeof LocaleRoute
+      fullPath: '/random'
+      preLoaderRoute: typeof RandomRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/$locale/privacy-policy': {
-      id: '/$locale/privacy-policy'
-      path: '/privacy-policy'
-      fullPath: '/$locale/privacy-policy'
-      preLoaderRoute: typeof LocalePrivacyPolicyRouteImport
-      parentRoute: typeof LocaleRoute
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/$locale/play-my-rom': {
-      id: '/$locale/play-my-rom'
-      path: '/play-my-rom'
-      fullPath: '/$locale/play-my-rom'
-      preLoaderRoute: typeof LocalePlayMyRomRouteImport
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/x': {
+      id: '/x'
+      path: '/x'
+      fullPath: '/x'
+      preLoaderRoute: typeof XRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale/about': {
+      id: '/$locale/about'
+      path: '/about'
+      fullPath: '/$locale/about'
+      preLoaderRoute: typeof LocaleAboutRouteImport
       parentRoute: typeof LocaleRoute
     }
     '/$locale/blog': {
@@ -393,33 +358,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleBlogRouteImport
       parentRoute: typeof LocaleRoute
     }
-    '/$locale/about': {
-      id: '/$locale/about'
-      path: '/about'
-      fullPath: '/$locale/about'
-      preLoaderRoute: typeof LocaleAboutRouteImport
+    '/$locale/play-my-rom': {
+      id: '/$locale/play-my-rom'
+      path: '/play-my-rom'
+      fullPath: '/$locale/play-my-rom'
+      preLoaderRoute: typeof LocalePlayMyRomRouteImport
       parentRoute: typeof LocaleRoute
     }
-    '/games/$gameId/play': {
-      id: '/games/$gameId/play'
-      path: '/play'
-      fullPath: '/games/$gameId/play'
-      preLoaderRoute: typeof GamesGameIdPlayRouteImport
-      parentRoute: typeof GamesGameIdRoute
+    '/$locale/privacy-policy': {
+      id: '/$locale/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/$locale/privacy-policy'
+      preLoaderRoute: typeof LocalePrivacyPolicyRouteImport
+      parentRoute: typeof LocaleRoute
     }
-    '/$username/status/$statusid': {
-      id: '/$username/status/$statusid'
-      path: '/$username/status/$statusid'
-      fullPath: '/$username/status/$statusid'
-      preLoaderRoute: typeof UsernameStatusStatusidRouteImport
+    '/$locale/random': {
+      id: '/$locale/random'
+      path: '/random'
+      fullPath: '/$locale/random'
+      preLoaderRoute: typeof LocaleRandomRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/terms-of-service': {
+      id: '/$locale/terms-of-service'
+      path: '/terms-of-service'
+      fullPath: '/$locale/terms-of-service'
+      preLoaderRoute: typeof LocaleTermsOfServiceRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/api/share-image': {
+      id: '/api/share-image'
+      path: '/api/share-image'
+      fullPath: '/api/share-image'
+      preLoaderRoute: typeof ApiShareImageRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/$username/article/$statusid': {
-      id: '/$username/article/$statusid'
-      path: '/$username/article/$statusid'
-      fullPath: '/$username/article/$statusid'
-      preLoaderRoute: typeof UsernameArticleStatusidRouteImport
+    '/games/$gameId': {
+      id: '/games/$gameId'
+      path: '/games/$gameId'
+      fullPath: '/games/$gameId'
+      preLoaderRoute: typeof GamesGameIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/$locale/blog/$blogId': {
+      id: '/$locale/blog/$blogId'
+      path: '/$blogId'
+      fullPath: '/$locale/blog/$blogId'
+      preLoaderRoute: typeof LocaleBlogBlogIdRouteImport
+      parentRoute: typeof LocaleBlogRoute
     }
     '/$locale/games/$gameId': {
       id: '/$locale/games/$gameId'
@@ -428,12 +414,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleGamesGameIdRouteImport
       parentRoute: typeof LocaleRoute
     }
-    '/$locale/blog/$blogId': {
-      id: '/$locale/blog/$blogId'
-      path: '/$blogId'
-      fullPath: '/$locale/blog/$blogId'
-      preLoaderRoute: typeof LocaleBlogBlogIdRouteImport
-      parentRoute: typeof LocaleBlogRoute
+    '/$username/article/$statusid': {
+      id: '/$username/article/$statusid'
+      path: '/$username/article/$statusid'
+      fullPath: '/$username/article/$statusid'
+      preLoaderRoute: typeof UsernameArticleStatusidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$username/status/$statusid': {
+      id: '/$username/status/$statusid'
+      path: '/$username/status/$statusid'
+      fullPath: '/$username/status/$statusid'
+      preLoaderRoute: typeof UsernameStatusStatusidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/$gameId/play': {
+      id: '/games/$gameId/play'
+      path: '/play'
+      fullPath: '/games/$gameId/play'
+      preLoaderRoute: typeof GamesGameIdPlayRouteImport
+      parentRoute: typeof GamesGameIdRoute
     }
     '/$locale/games/$gameId/play': {
       id: '/$locale/games/$gameId/play'

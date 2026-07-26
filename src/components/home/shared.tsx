@@ -378,37 +378,46 @@ function GameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
 
   return (
     <Link
-      className="card card-compact group h-full overflow-hidden border border-base-300 bg-base-100 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg"
+      className="group relative isolate h-full overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_12px_30px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-1 hover:border-primary/70 hover:shadow-[0_18px_40px_rgba(0,0,0,0.55)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
       {...gameCardPreviewHandlers}
       params={{ gameId, locale: lang }}
       search={{}}
       to="/$locale/games/$gameId"
     >
-      <figure className="relative aspect-[4/3] bg-base-300">
+      <figure className="relative aspect-[4/3] overflow-hidden bg-neutral">
         {game.game_cover ? (
           <img
             alt={game.name ?? 'Game cover'}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
             loading="lazy"
             src={game.game_cover}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-base-content/40">
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-neutral via-black to-primary/30 text-sm font-bold uppercase tracking-[0.25em] text-white/45">
             Retro
           </div>
         )}
         <GameCardPreviewVideo src={game.game_video} />
+        <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/15 to-transparent" />
+        <span className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/5" />
+
         {platformBadge ? (
-          <span className="badge badge-primary badge-sm absolute left-2 top-2 max-w-[calc(100%-1rem)] truncate border-0 shadow">
+          <span className="absolute left-2 top-2 max-w-[calc(100%-3.5rem)] truncate rounded-full border border-white/15 bg-black/65 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg backdrop-blur-md sm:left-3 sm:top-3">
             {platformBadge}
           </span>
         ) : null}
+
+        <span className="absolute right-2 top-2 grid h-8 w-8 translate-y-1 place-items-center rounded-full border border-white/20 bg-primary text-xs text-primary-content opacity-0 shadow-lg transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 sm:right-3 sm:top-3">
+          ▶
+        </span>
+
+        <figcaption className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
+          <h3 className="line-clamp-2 min-h-10 text-sm font-bold leading-snug text-white drop-shadow-md sm:text-base">
+            {game.name}
+          </h3>
+          <span className="mt-2 block h-0.5 w-8 rounded-full bg-primary transition-all duration-300 group-hover:w-14" />
+        </figcaption>
       </figure>
-      <div className="card-body gap-2 p-3">
-        <h3 className="line-clamp-2 min-h-11 text-sm font-semibold leading-snug">
-          {game.name}
-        </h3>
-      </div>
     </Link>
   )
 }

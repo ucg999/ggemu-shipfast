@@ -55,7 +55,7 @@ function buildManifest(request: Request): WebAppManifest {
     scope: getScope(startUrl),
     display: 'standalone',
     theme_color: '#000000',
-    background_color: '#ffffff',
+    background_color: '#111111',
     prefer_related_applications: false,
   }
 }

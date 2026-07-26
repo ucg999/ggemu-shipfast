@@ -23,7 +23,7 @@ export const zhCnMessages = {
       '直接在浏览器里游玩经典复古游戏，无需下载。覆盖掌机、主机、街机与更多平台。',
   },
   home: {
-    title: '在线游玩经典复古游戏',
+    title: '回到小时候的感觉，乐趣无穷',
     subtitle:
       '在浏览器里直接游玩 GBA、NES、SNES、PS1、N64、Sega Genesis、街机等经典游戏，无需下载。',
     searchPlaceholder: '搜索游戏名、平台或系列...',
@@ -51,7 +51,7 @@ export const zhCnMessages = {
     blogPostFallback: '博客文章',
   },
   homeSeo: {
-    title: '在线玩经典复古游戏 | GBA、NES、SNES、PS1、N64 免下载',
+    title: '回到小时候的感觉，乐趣无穷',
     description:
       '在浏览器里直接游玩 GBA、NES、SNES、PS1、N64、Sega Genesis、街机等经典复古游戏，无需下载。',
     keywords:

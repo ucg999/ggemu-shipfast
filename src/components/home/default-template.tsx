@@ -31,7 +31,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
 
       <GamesSection
         {...props}
-        gridClassName="grid gap-4 sm:grid-cols-3 lg:grid-cols-5"
+        gridClassName="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5"
         sectionClassName="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8"
         showHeader={false}
       />
