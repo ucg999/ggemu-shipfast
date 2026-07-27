@@ -211,26 +211,30 @@ export function SiteLayout({
         {hideHeaderNav ? null : (
           <aside className="sticky top-[65px] hidden h-[calc(100vh-65px)] border-r border-base-300 bg-base-100 px-3 py-5 lg:block">
             <nav aria-label="主导航">
-              <ul className="menu gap-1 p-0">
+              <ul className="menu gap-1 p-0 text-sm">
                 <li>
                   <Link
-                    className={
+                    className={`group flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition hover:bg-base-200 ${
                       location.pathname === `/${locale}`
                         ? 'bg-base-200 font-semibold text-primary'
                         : ''
-                    }
+                    }`}
                     params={{ locale }}
                     to="/$locale"
                   >
-                    <i className="ri-home-5-fill" />
-                    {t.games}
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
+                      <i className="ri-home-5-fill text-base" />
+                    </span>
+                    <span className="min-w-0 flex-1">{t.games}</span>
                   </Link>
                 </li>
                 <li>
                   <details open={isGameLibrarySelected}>
-                    <summary>
-                      <i className="ri-gamepad-line" />
-                      {t.gameLibrary}
+                    <summary className="group min-h-12 gap-3 rounded-xl px-3 py-2.5 font-medium">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
+                        <i className="ri-gamepad-line text-base" />
+                      </span>
+                      <span className="min-w-0 flex-1">{t.gameLibrary}</span>
                     </summary>
                     <ul>
                       <li>
@@ -291,14 +295,29 @@ export function SiteLayout({
                   </details>
                 </li>
                 <li>
-                  <Link params={{ locale }} to="/$locale/blog">
-                    {t.blog}
+                  <Link
+                    className="group flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition hover:bg-base-200"
+                    params={{ locale }}
+                    to="/$locale/blog"
+                  >
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
+                      <i className="ri-newspaper-line text-base" />
+                    </span>
+                    <span className="min-w-0 flex-1">{t.blog}</span>
                   </Link>
                 </li>
                 <li>
-                  <Link params={{ locale }} to="/$locale/about">
-                    {t.about}
-                  </Link>
+                  <a
+                    className="group flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition hover:bg-base-200"
+                    href="https://link3.cc/UCG9999"
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
+                      <i className="ri-gift-line text-base" />
+                    </span>
+                    <span className="min-w-0 flex-1">拿点有用的</span>
+                  </a>
                 </li>
               </ul>
             </nav>
