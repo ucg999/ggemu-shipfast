@@ -5,7 +5,7 @@ import type { Locale, PublicGame } from '#/lib/ggemu'
 import { getI18n } from '#/lib/i18n'
 
 const RECENT_PLAYED_GAMES_KEY = 'ggemu-recent-played-games'
-const RECENT_PLAYED_GAMES_LIMIT = 4
+const RECENT_PLAYED_GAMES_LIMIT = 7
 
 export type RecentPlayedGame = {
   cover?: string

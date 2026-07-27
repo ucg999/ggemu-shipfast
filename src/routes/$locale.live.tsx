@@ -365,7 +365,6 @@ function LiveRoomPlayerModal({
 
             <button
               aria-label={t.closePlayer}
-              autoFocus
               className="btn btn-circle btn-ghost btn-sm shrink-0"
               onClick={onClose}
               title={t.closePlayer}
