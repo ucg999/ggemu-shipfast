@@ -130,6 +130,19 @@ export function SiteLayout({
           )}
 
           <div className="navbar-end gap-2">
+            <Link
+              aria-label="看别人玩"
+              className="btn btn-error btn-xs shrink-0 gap-1.5 rounded-full px-3 shadow-sm sm:btn-sm sm:px-4"
+              params={{ locale }}
+              to="/$locale/live"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-error-content opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-error-content" />
+              </span>
+              <span>看别人玩</span>
+            </Link>
+
             {headerActions}
 
             {canSwitchTheme ? (
@@ -205,19 +218,6 @@ export function SiteLayout({
       </header>
 
       {children}
-
-      <Link
-        aria-label="看别人玩"
-        className="btn btn-error fixed bottom-5 right-5 z-[100] gap-2 rounded-full border border-white/20 px-5 shadow-2xl"
-        params={{ locale }}
-        to="/$locale/live"
-      >
-        <span className="relative flex h-2.5 w-2.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-error-content opacity-60" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-error-content" />
-        </span>
-        <span>看别人玩</span>
-      </Link>
 
       <SiteFooter locale={locale} />
     </main>
