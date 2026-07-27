@@ -42,11 +42,11 @@ export function RecentPlayedGamesSection({
 
   return (
     <section className="bg-base-100">
-      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 py-4 sm:px-6 lg:px-8">
         <h2 className="text-xl font-semibold text-base-content">
           {getI18n(lang).home.recentlyPlayed}
         </h2>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-3 grid auto-cols-[calc((100%-1rem)/3)] grid-flow-col gap-2 overflow-x-auto pb-1 sm:auto-cols-[calc((100%-2rem)/3)] sm:gap-4 lg:auto-cols-[calc((100%-6rem)/7)]">
           {games.map((game) => (
             <RecentPlayedGameCard game={game} key={game.id} lang={lang} />
           ))}
@@ -75,28 +75,39 @@ function RecentPlayedGameCard({
 }) {
   return (
     <Link
-      className="group flex items-center gap-3 overflow-hidden rounded-lg border border-base-300 bg-base-100 p-2 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+      className="group relative isolate h-full overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_12px_30px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-1 hover:border-primary/70 hover:shadow-[0_18px_40px_rgba(0,0,0,0.55)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
       params={{ gameId: game.id, locale: lang }}
       search={{}}
       to="/$locale/games/$gameId"
     >
-      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md bg-base-300">
+      <figure className="relative aspect-[4/3] overflow-hidden bg-neutral">
         {game.cover ? (
           <img
             alt={game.name}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
             loading="lazy"
             src={game.cover}
           />
         ) : (
-          <div className="grid h-full w-full place-items-center text-[11px] font-semibold text-base-content/40">
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-neutral via-black to-primary/30 text-sm font-bold uppercase tracking-[0.25em] text-white/45">
             Retro
           </div>
         )}
-      </div>
-      <span className="line-clamp-2 min-w-0 text-sm font-semibold leading-snug text-base-content">
-        {game.name}
-      </span>
+
+        <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/15 to-transparent" />
+        <span className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/5" />
+
+        <span className="absolute right-2 top-2 grid h-8 w-8 translate-y-1 place-items-center rounded-full border border-white/20 bg-primary text-xs text-primary-content opacity-0 shadow-lg transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 sm:right-3 sm:top-3">
+          ▶
+        </span>
+
+        <figcaption className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
+          <h3 className="line-clamp-2 min-h-10 text-sm font-bold leading-snug text-white drop-shadow-md sm:text-base">
+            {game.name}
+          </h3>
+          <span className="mt-2 block h-0.5 w-8 rounded-full bg-primary transition-all duration-300 group-hover:w-14" />
+        </figcaption>
+      </figure>
     </Link>
   )
 }

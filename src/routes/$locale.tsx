@@ -44,7 +44,7 @@ import {
 } from '#/lib/site-config'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 
-const DEFAULT_HOME_REQUEST_SIZE = 20
+const DEFAULT_HOME_REQUEST_SIZE = 70
 
 type HomeSearch = {
   template?: SiteTemplate

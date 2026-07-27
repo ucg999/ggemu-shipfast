@@ -55,7 +55,7 @@ export function HomeLatestBlogPostsSection({
 
   return (
     <section className="bg-base-100">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-3xl">
             <h2 className="text-2xl font-semibold text-base-content">
@@ -93,7 +93,7 @@ export function HomeFaqSection({ lang }: { lang: Locale }) {
 
   return (
     <section className="bg-base-100">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <h2 className="text-2xl font-semibold text-base-content">{faq.title}</h2>
           <p className="mt-2 text-sm leading-6 text-base-content/65">
@@ -162,30 +162,80 @@ export function SearchForm({
   }
 
   return (
-    <form className="flex max-w-5xl flex-col gap-3" onSubmit={onSearch}>
-      <div className="join w-full">
-        <input
-          className="input input-bordered join-item min-w-0 flex-1"
-          onChange={(event) => onQueryChange(event.currentTarget.value)}
-          placeholder={searchPlaceholder}
-          type="search"
-          value={filters.query}
-        />
-        <button className="btn btn-primary join-item" disabled={isLoading} type="submit">
-          <i className="ri-search-line" />
-          {t.search}
-        </button>
-      </div>
+    <form className="flex w-full flex-col gap-3" onSubmit={onSearch}>
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex w-full min-w-0 items-center gap-3 rounded-full border border-base-300 bg-base-200/70 px-5 shadow-sm transition focus-within:border-primary/50 focus-within:bg-base-100 focus-within:shadow-md sm:w-96">
+          <i className="ri-search-line text-lg text-base-content/45" />
+          <input
+            className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-base-content/40"
+            onChange={(event) => onQueryChange(event.currentTarget.value)}
+            placeholder={searchPlaceholder}
+            type="search"
+            value={filters.query}
+          />
+          <button
+            aria-label={t.search}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-base-content text-base-100 transition hover:scale-105"
+            disabled={isLoading}
+            type="submit"
+          >
+            <i className="ri-arrow-right-line" />
+          </button>
+        </label>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto]">
-        <FilterSelects
-          filterOptions={filterOptions}
-          filters={filters}
-          isLoading={isLoading}
-          onFilterChange={onFilterChange}
-          onReset={onReset}
-          t={t}
-        />
+        <select
+          aria-label={t.allPlatforms}
+          className="select h-10 w-auto rounded-full border-base-300 bg-base-100 px-3"
+          onChange={(event) =>
+            onFilterChange('platform', event.currentTarget.value)
+          }
+          value={filters.platform}
+        >
+          <option value="">{t.allPlatforms}</option>
+          {filterOptions.platforms.map((platform) => (
+            <option key={platform.name} value={platform.name}>
+              {platform.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="select h-10 w-auto rounded-full border-base-300 bg-base-100 px-3"
+          onChange={(event) =>
+            onFilterChange('category', event.currentTarget.value)
+          }
+          value={filters.category}
+        >
+          <option value="">{t.allCategories}</option>
+          {filterOptions.categories.map((category) => (
+            <option key={category.name} value={category.name}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="select h-10 w-auto rounded-full border-base-300 bg-base-100 px-3"
+          onChange={(event) =>
+            onFilterChange('sort', event.currentTarget.value as GameSearchSort)
+          }
+          value={filters.sort}
+        >
+          <option value="newest">{t.newest}</option>
+          <option value="popular">{t.popular}</option>
+          <option value="oldest">{t.oldest}</option>
+          <option value="name_asc">{t.nameAsc}</option>
+        </select>
+
+        <button
+          className="btn btn-ghost h-10 min-h-10 w-auto rounded-full px-3"
+          disabled={isLoading}
+          onClick={onReset}
+          type="button"
+        >
+          <i className="ri-refresh-line" />
+          {t.reset}
+        </button>
       </div>
     </form>
   )

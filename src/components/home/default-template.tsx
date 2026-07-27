@@ -12,27 +12,26 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
 
   return (
     <>
-      <RecentPlayedGamesSection lang={lang} />
-
       <section className="bg-base-100">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="flex w-full flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8">
+          <div className="w-full max-w-4xl">
+            <SearchForm {...props} mode="default" />
+          </div>
+
           <div className="max-w-3xl">
             <h1 className="text-4xl font-semibold leading-tight text-base-content sm:text-5xl">
               {t.title}
             </h1>
-            <p className="mt-3 text-base leading-7 text-base-content/70 sm:text-lg">
-              {t.subtitle}
-            </p>
           </div>
-
-          <SearchForm {...props} mode="default" />
         </div>
       </section>
 
+      <RecentPlayedGamesSection lang={lang} />
+
       <GamesSection
         {...props}
-        gridClassName="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5"
-        sectionClassName="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8"
+        gridClassName="grid grid-cols-3 gap-2 sm:gap-4 lg:grid-cols-7"
+        sectionClassName="flex w-full flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8"
         showHeader={false}
       />
 

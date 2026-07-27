@@ -73,7 +73,7 @@ export function SiteLayout({
   return (
     <main className="min-h-screen bg-base-100 text-base-content">
       <header className="sticky top-0 z-40 border-b border-base-300/70 bg-base-100/90 backdrop-blur">
-        <div className="navbar mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="navbar w-full px-4 sm:px-6 lg:px-8">
           <div className="navbar-start">
             <Link
               className="flex min-w-0 items-center gap-3"
@@ -98,47 +98,16 @@ export function SiteLayout({
             </Link>
           </div>
 
-          {hideHeaderNav ? null : (
-            <nav className="navbar-center hidden lg:flex">
-              <ul className="menu menu-horizontal gap-1 px-1">
-                <li>
-                  <Link params={{ locale }} to="/$locale">
-                    <i className="ri-home-5-line" />
-                    {t.games}
-                  </Link>
-                </li>
-                <li>
-                  <Link params={{ locale }} to="/$locale/play-my-rom">
-                    <i className="ri-gamepad-line" />
-                    {t.playMyRom}
-                  </Link>
-                </li>
-                <li>
-                  <Link params={{ locale }} to="/$locale/blog">
-                    <i className="ri-article-line" />
-                    {t.blog}
-                  </Link>
-                </li>
-                <li>
-                  <Link params={{ locale }} to="/$locale/about">
-                    <i className="ri-information-line" />
-                    {t.about}
-                  </Link>
-                </li>
-              </ul>
-            </nav>
-          )}
-
           <div className="navbar-end gap-2">
             <Link
               aria-label="看别人玩"
-              className="btn btn-error btn-xs shrink-0 gap-1.5 rounded-full px-3 shadow-sm sm:btn-sm sm:px-4"
+              className="btn btn-xs shrink-0 gap-1.5 rounded-lg border border-base-300 bg-white px-3 text-black shadow-sm hover:border-base-300 hover:bg-gray-100 sm:btn-sm sm:px-4"
               params={{ locale }}
               to="/$locale/live"
             >
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-error-content opacity-60" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-error-content" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-black opacity-35" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-black" />
               </span>
               <span>看别人玩</span>
             </Link>
@@ -217,9 +186,56 @@ export function SiteLayout({
         </div>
       </header>
 
-      {children}
+      <div
+        className={
+          hideHeaderNav
+            ? 'min-w-0'
+            : 'min-w-0 lg:grid lg:grid-cols-[220px_minmax(0,1fr)]'
+        }
+      >
+        {hideHeaderNav ? null : (
+          <aside className="sticky top-[65px] hidden h-[calc(100vh-65px)] border-r border-base-300 bg-base-100 px-3 py-5 lg:block">
+            <nav aria-label="主导航">
+              <ul className="menu gap-1 p-0">
+                <li>
+                  <Link
+                    className={
+                      location.pathname === `/${locale}`
+                        ? 'bg-base-200 font-semibold text-primary'
+                        : ''
+                    }
+                    params={{ locale }}
+                    to="/$locale"
+                  >
+                    <i className="ri-home-5-fill" />
+                    {t.games}
+                  </Link>
+                </li>
+                <li>
+                  <Link params={{ locale }} to="/$locale/play-my-rom">
+                    {t.playMyRom}
+                  </Link>
+                </li>
+                <li>
+                  <Link params={{ locale }} to="/$locale/blog">
+                    {t.blog}
+                  </Link>
+                </li>
+                <li>
+                  <Link params={{ locale }} to="/$locale/about">
+                    {t.about}
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+          </aside>
+        )}
 
-      <SiteFooter locale={locale} />
+        <div className="min-w-0">
+          {children}
+          <SiteFooter locale={locale} />
+        </div>
+      </div>
     </main>
   )
 }
@@ -229,7 +245,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
 
   return (
     <footer className="border-t border-base-300 bg-base-100">
-      <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-base-content/70 sm:px-6 lg:px-8">
+      <div className="w-full px-4 py-8 text-sm text-base-content/70 sm:px-6 lg:px-8">
         <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-start">
           <section className="max-w-md">
             <div className="flex items-center gap-3">

@@ -1,6 +1,6 @@
 const siteConfig = {
-  SITE_NAME: 'Retro Games',
-  SITE_SLOGAN: 'Play Retro Games Online',
+  SITE_NAME: '游戏历险记',
+  SITE_SLOGAN: '在线游戏--即点即玩',
   SITE_THEMES: 'light,dark',// DaisyUI themes separated by commas. https://daisyui.com/docs/themes/
   SITE_TEMPLATE: 'default',// default, two-column, poki-like, features, sidenav
   SITE_EMAIL: 'your-email@example.com',
