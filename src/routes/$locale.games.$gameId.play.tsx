@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { getGameDetail } from '#/lib/ggemu'
 import { normalizeLocale } from '#/lib/i18n'
 import { siteConfig } from '#/lib/site-config'
+import { useCurrentSiteTheme } from '#/lib/use-site-theme'
 
 const pspCrossOriginIsolationHeaders = {
   'Cross-Origin-Opener-Policy': 'same-origin',
@@ -42,7 +43,8 @@ function LocalizedPlayGamePage() {
   const embedId = encodeURIComponent(game._id || game.url_slug || gameId)
   const refcode = encodeURIComponent(siteConfig.GGEMU_REFCODE)
   const isPsp = isPspGame(game)
-  const embedSrc = `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp)}`
+  const theme = useCurrentSiteTheme()
+  const embedSrc = `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp, theme)}`
 
   useEffect(() => {
     return () => {
@@ -76,10 +78,11 @@ function LocalizedPlayGamePage() {
   )
 }
 
-function buildEmbedSearch(refcode: string, isPsp: boolean) {
+function buildEmbedSearch(refcode: string, isPsp: boolean, theme: string) {
   const params = new URLSearchParams({
     r: refcode,
     embed: '1',
+    theme,
   })
 
   if (isPsp) {

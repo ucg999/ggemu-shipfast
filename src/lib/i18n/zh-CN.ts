@@ -4,6 +4,7 @@ import type { HomeFaqs, I18nMessages } from './types'
 export const zhCnMessages = {
   layout: {
     games: '首页',
+    live: '游戏直播',
     explore: '探索',
     playMyRom: '玩本地游戏',
     blog: '博客',
@@ -107,6 +108,21 @@ export const zhCnMessages = {
     eyebrow: 'Blog',
     empty: '暂无文章',
     total: '共 {total} 篇文章',
+  },
+  live: {
+    title: '游戏直播',
+    description: '发现正在直播的经典复古游戏和活跃直播间。',
+    subtitle: '看看大家此刻正在直播哪些经典游戏，找到下一款想玩的作品。',
+    eyebrow: '正在直播',
+    empty: '目前没有正在直播的游戏',
+    total: '当前共有 {total} 个直播间',
+    watchLive: '进入直播',
+    closePlayer: '关闭直播',
+    previous: '上一页',
+    next: '下一页',
+    page: '第 {page} / {pages} 页',
+    error: '直播间列表暂时无法加载，请稍后重试。',
+    retry: '重新加载',
   },
 } satisfies I18nMessages
 

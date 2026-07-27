@@ -268,6 +268,14 @@ export function SiteFooter({ locale }: { locale: Locale }) {
               <Link
                 className="link-hover link"
                 params={{ locale }}
+                to="/$locale/live"
+              >
+                <i className="ri-live-line mr-1" />
+                {t.live}
+              </Link>
+              <Link
+                className="link-hover link"
+                params={{ locale }}
                 to="/$locale/play-my-rom"
               >
                 <i className="ri-gamepad-line mr-1" />

@@ -264,7 +264,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
             __html: `window.__SITE_CONFIG__=${serializeSiteConfig()}`,
           }}
         />
-        <ThirdPartyScripts />
+        <ThirdPartyScripts pathname={pathname} />
       </head>
       <body>
         {children}

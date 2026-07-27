@@ -4,6 +4,7 @@ import type { HomeFaqs, I18nMessages } from './types'
 export const enMessages = {
   layout: {
     games: 'Home',
+    live: 'Live',
     explore: 'Explore',
     playMyRom: 'Play My ROM',
     blog: 'Blog',
@@ -119,6 +120,21 @@ export const enMessages = {
     eyebrow: 'Blog',
     empty: 'No posts yet',
     total: '{total} posts',
+  },
+  live: {
+    title: 'Game Live',
+    description: 'Discover classic games and rooms that are live right now.',
+    subtitle: 'See which classic games people are streaming and find your next game.',
+    eyebrow: 'Live Now',
+    empty: 'No games are live right now',
+    total: '{total} live rooms',
+    watchLive: 'Watch live',
+    closePlayer: 'Close live stream',
+    previous: 'Previous',
+    next: 'Next',
+    page: 'Page {page} / {pages}',
+    error: 'Live rooms could not be loaded. Please try again later.',
+    retry: 'Try again',
   },
 } satisfies I18nMessages
 

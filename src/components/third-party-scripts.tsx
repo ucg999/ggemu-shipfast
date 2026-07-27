@@ -1,12 +1,16 @@
 import { siteConfig } from '#/lib/site-config'
 
-export function ThirdPartyScripts() {
+export function ThirdPartyScripts({ pathname }: Readonly<{ pathname: string }>) {
   return (
     <>
       <GoogleAnalytics />
-      <GoogleAdsense />
+      <GoogleAdsense disabled={isGamePlayPath(pathname)} />
     </>
   )
+}
+
+export function isGamePlayPath(pathname: string) {
+  return /^\/(?:[^/]+\/)?games\/[^/]+\/play\/?$/.test(pathname)
 }
 
 function GoogleAnalytics() {
@@ -36,10 +40,10 @@ function GoogleAnalytics() {
   )
 }
 
-function GoogleAdsense() {
+function GoogleAdsense({ disabled }: Readonly<{ disabled: boolean }>) {
   const client = siteConfig.GOOGLE_ADSENSE_CLIENT.trim()
 
-  if (!client) {
+  if (disabled || !client) {
     return null
   }
 

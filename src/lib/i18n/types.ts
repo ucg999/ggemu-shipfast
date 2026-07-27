@@ -1,6 +1,7 @@
 export type I18nMessages = {
   layout: {
     games: string
+    live: string
     explore: string
     playMyRom: string
     blog: string
@@ -94,6 +95,21 @@ export type I18nMessages = {
     eyebrow: string
     empty: string
     total: string
+  }
+  live: {
+    title: string
+    description: string
+    subtitle: string
+    eyebrow: string
+    empty: string
+    total: string
+    watchLive: string
+    closePlayer: string
+    previous: string
+    next: string
+    page: string
+    error: string
+    retry: string
   }
 }
 

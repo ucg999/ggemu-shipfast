@@ -57,6 +57,23 @@ export type GameSearchResult = {
   pagination: Pagination
 }
 
+export type PublicLiveRoom = {
+  roomId: string
+  game: {
+    _id: string
+    slug: string
+    url_slug: string
+    name: string
+    game_cover: string
+    platform: string
+  }
+}
+
+export type LiveRoomSearchResult = {
+  rooms: Array<PublicLiveRoom>
+  pagination: Pagination
+}
+
 export type FilterOption = {
   name: string
   slug?: string
@@ -117,6 +134,11 @@ type GameDetailPayload = {
   locale?: Locale
 }
 
+type LiveRoomSearchPayload = {
+  page?: number
+  limit?: number
+}
+
 type RandomGamePayload = {
   platform?: string
 }
@@ -153,6 +175,13 @@ type GameSearchResponse = {
 type GameDetailResponse = {
   success: true
   data: PublicGame
+}
+
+type LiveRoomSearchResponse = {
+  success: true
+  count: number
+  items: Array<PublicLiveRoom>
+  pagination: Pagination
 }
 
 type RandomGame = Pick<PublicGame, '_id' | 'url_slug'>
@@ -471,6 +500,26 @@ export const searchGames = createServerFn({ method: 'GET' })
     addOptionalParam(params, 'sort', data.sort)
 
     return fetchGames(params)
+  })
+
+export const searchLiveRooms = createServerFn({ method: 'GET' })
+  .validator((payload: LiveRoomSearchPayload) => ({
+    page: normalizePage(payload.page),
+    limit: normalizeLimit(payload.limit),
+  }))
+  .handler(async ({ data }) => {
+    const result = await fetchJson<LiveRoomSearchResponse>(
+      '/api/live/rooms',
+      new URLSearchParams({
+        page: String(data.page),
+        limit: String(data.limit),
+      }),
+    )
+
+    return {
+      rooms: result.items,
+      pagination: result.pagination,
+    } satisfies LiveRoomSearchResult
   })
 
 export const getGameFilterOptions = createServerFn({ method: 'GET' })

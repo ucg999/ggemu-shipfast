@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { SiteLayout } from '#/components/site-layout'
 import { normalizeLocale } from '#/lib/i18n'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
+import { useCurrentSiteTheme } from '#/lib/use-site-theme'
 
 const GGEMU_ORIGIN = 'https://ggemu.com'
 
@@ -59,7 +60,8 @@ function PlayMyRomPage() {
   const { locale } = Route.useParams()
   const { isolated } = Route.useSearch()
   const lang = normalizeLocale(locale)
-  const iframeSrc = `${GGEMU_ORIGIN}/${lang}/play-my-rom?${buildIframeSearch(isolated === 1)}`
+  const theme = useCurrentSiteTheme()
+  const iframeSrc = `${GGEMU_ORIGIN}/${lang}/play-my-rom?${buildIframeSearch(isolated === 1, theme)}`
 
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
@@ -120,9 +122,10 @@ function PlayMyRomPage() {
   )
 }
 
-function buildIframeSearch(isIsolated: boolean) {
+function buildIframeSearch(isIsolated: boolean, theme: string) {
   const params = new URLSearchParams({
     embed: '1',
+    theme,
   })
 
   if (isIsolated) {

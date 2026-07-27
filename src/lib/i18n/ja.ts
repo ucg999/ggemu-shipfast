@@ -4,6 +4,7 @@ import type { HomeFaqs, I18nMessages } from './types'
 export const jaMessages = {
   layout: {
     games: 'ホーム',
+    live: 'ゲーム配信',
     explore: '探す',
     playMyRom: '自分の ROM をプレイ',
     blog: 'ブログ',
@@ -115,6 +116,21 @@ export const jaMessages = {
     eyebrow: 'ブログ',
     empty: '記事はまだありません',
     total: '全 {total} 件の記事',
+  },
+  live: {
+    title: 'ゲーム配信',
+    description: '現在配信中のクラシックゲームとライブ配信ルームを探せます。',
+    subtitle: '今みんなが配信しているクラシックゲームをチェックして、次に遊ぶ作品を見つけましょう。',
+    eyebrow: '配信中',
+    empty: '現在配信中のゲームはありません',
+    total: '全 {total} 件のライブ配信',
+    watchLive: '配信を見る',
+    closePlayer: '配信を閉じる',
+    previous: '前へ',
+    next: '次へ',
+    page: '{page} / {pages} ページ',
+    error: 'ライブ配信を読み込めませんでした。しばらくしてからもう一度お試しください。',
+    retry: '再読み込み',
   },
 } satisfies I18nMessages
 
