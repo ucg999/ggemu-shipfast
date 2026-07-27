@@ -87,7 +87,7 @@ export function SiteLayout({
                   src="/logo.png"
                 />
               </span>
-              <span className="min-w-0 leading-tight">
+              <span className="hidden min-w-0 leading-tight sm:block">
                 <span className="block text-lg font-semibold tracking-wide">
                   {siteConfig.SITE_NAME}
                 </span>
@@ -135,7 +135,7 @@ export function SiteLayout({
             {canSwitchTheme ? (
               <div
                 aria-label={t.theme}
-                className="join shrink-0 rounded-lg border border-base-300 bg-base-200 p-0.5"
+                className="join flex shrink-0 rounded-lg border border-base-300 bg-base-200 p-0.5"
               >
                 <button
                   aria-pressed={theme === 'light'}
@@ -206,17 +206,18 @@ export function SiteLayout({
 
       {children}
 
-      {canSwitchTheme ? (
-        <button
-          aria-label={theme === 'dark' ? '切换到亮色主题' : '切换到暗色主题'}
-          className="btn btn-primary fixed bottom-5 right-5 z-[100] gap-2 rounded-full border border-white/20 px-4 shadow-2xl"
-          onClick={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')}
-          type="button"
-        >
-          <i className={theme === 'dark' ? 'ri-sun-line' : 'ri-moon-line'} />
-          <span>{theme === 'dark' ? '切换亮色' : '切换暗色'}</span>
-        </button>
-      ) : null}
+      <Link
+        aria-label="看别人玩"
+        className="btn btn-error fixed bottom-5 right-5 z-[100] gap-2 rounded-full border border-white/20 px-5 shadow-2xl"
+        params={{ locale }}
+        to="/$locale/live"
+      >
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-error-content opacity-60" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-error-content" />
+        </span>
+        <span>看别人玩</span>
+      </Link>
 
       <SiteFooter locale={locale} />
     </main>
@@ -264,14 +265,6 @@ export function SiteFooter({ locale }: { locale: Locale }) {
               <Link className="link-hover link" params={{ locale }} to="/$locale">
                 <i className="ri-home-5-line mr-1" />
                 {t.games}
-              </Link>
-              <Link
-                className="link-hover link"
-                params={{ locale }}
-                to="/$locale/live"
-              >
-                <i className="ri-live-line mr-1" />
-                {t.live}
               </Link>
               <Link
                 className="link-hover link"
