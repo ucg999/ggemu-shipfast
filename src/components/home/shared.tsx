@@ -8,6 +8,7 @@ import type { BlogPost, GameSearchSort, Locale, PublicGame } from '#/lib/ggemu'
 import { formatCopy, getHomeFaqs, getI18n } from '#/lib/i18n'
 
 import type { GamesSectionProps, HomeCopy, SearchFormProps } from './types'
+import { getPlatformLabel } from '#/lib/platform-label'
 
 export const HOME_BLOG_POST_LIMIT = 4
 
@@ -125,6 +126,7 @@ export function SearchForm({
   filterOptions,
   filters,
   isLoading,
+  lang,
   mode,
   onFilterChange,
   onQueryChange,
@@ -153,6 +155,7 @@ export function SearchForm({
           filterOptions={filterOptions}
           filters={filters}
           isLoading={isLoading}
+          lang={lang}
           onFilterChange={onFilterChange}
           onReset={onReset}
           t={t}
@@ -186,6 +189,7 @@ export function SearchForm({
         <select
           aria-label={t.allPlatforms}
           className="select h-10 w-auto rounded-full border-base-300 bg-base-100 px-3"
+          id="game-platforms"
           onChange={(event) =>
             onFilterChange('platform', event.currentTarget.value)
           }
@@ -194,13 +198,14 @@ export function SearchForm({
           <option value="">{t.allPlatforms}</option>
           {filterOptions.platforms.map((platform) => (
             <option key={platform.name} value={platform.name}>
-              {platform.name}
+              {getPlatformLabel(platform.name, lang)}
             </option>
           ))}
         </select>
 
         <select
           className="select h-10 w-auto rounded-full border-base-300 bg-base-100 px-3"
+          id="game-types"
           onChange={(event) =>
             onFilterChange('category', event.currentTarget.value)
           }
@@ -216,6 +221,7 @@ export function SearchForm({
 
         <select
           className="select h-10 w-auto rounded-full border-base-300 bg-base-100 px-3"
+          id="latest-games-filter"
           onChange={(event) =>
             onFilterChange('sort', event.currentTarget.value as GameSearchSort)
           }
@@ -245,6 +251,7 @@ export function FilterSelects({
   filterOptions,
   filters,
   isLoading,
+  lang,
   onFilterChange,
   onReset,
   t,
@@ -259,7 +266,7 @@ export function FilterSelects({
         <option value="">{t.allPlatforms}</option>
         {filterOptions.platforms.map((platform) => (
           <option key={platform.name} value={platform.name}>
-            {platform.name}
+            {getPlatformLabel(platform.name, lang)}
           </option>
         ))}
       </select>
@@ -312,6 +319,7 @@ export function GamesSection({
   gridClassName,
   isLoading,
   lang,
+  mobileItemLimit,
   onLoadPage,
   page,
   pages,
@@ -321,7 +329,7 @@ export function GamesSection({
   t,
 }: GamesSectionProps) {
   return (
-    <section className={sectionClassName}>
+    <section className={sectionClassName} id="all-games">
       {showHeader ? (
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
           <div>
@@ -338,9 +346,18 @@ export function GamesSection({
 
       {games.length > 0 ? (
         <div className={`${gridClassName} ${isLoading ? 'opacity-60' : ''}`}>
-          {games.map((game) => (
-            <GameCard game={game} key={game._id ?? game.url_slug} lang={lang} />
-          ))}
+          {games.map((game, index) => {
+            const key = game._id ?? game.url_slug
+            const card = <GameCard game={game} lang={lang} />
+
+            return mobileItemLimit && index >= mobileItemLimit ? (
+              <div className="hidden lg:block" key={key}>
+                {card}
+              </div>
+            ) : (
+              <GameCard game={game} key={key} lang={lang} />
+            )
+          })}
         </div>
       ) : (
         <div className="rounded-box border border-base-300 bg-base-100 p-12 text-center text-base-content/60">
@@ -425,16 +442,17 @@ function HomeBlogPostCard({
 function GameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
   const gameId = game.url_slug || game._id || ''
   const platformBadge = getPlatformBadge(game)
+  const playCount = game.plays_count ?? 0
 
   return (
     <Link
-      className="group relative isolate h-full overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_12px_30px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-1 hover:border-primary/70 hover:shadow-[0_18px_40px_rgba(0,0,0,0.55)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+      className="group block h-full rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
       {...gameCardPreviewHandlers}
       params={{ gameId, locale: lang }}
       search={{}}
       to="/$locale/games/$gameId"
     >
-      <figure className="relative aspect-[4/3] overflow-hidden bg-neutral">
+      <figure className="relative isolate aspect-[4/3] overflow-hidden rounded-xl bg-base-200">
         {game.game_cover ? (
           <img
             alt={game.name ?? 'Game cover'}
@@ -448,28 +466,41 @@ function GameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
           </div>
         )}
         <GameCardPreviewVideo src={game.game_video} />
-        <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/15 to-transparent" />
-        <span className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/5" />
-
         {platformBadge ? (
-          <span className="absolute left-2 top-2 max-w-[calc(100%-3.5rem)] truncate rounded-full border border-white/15 bg-black/65 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg backdrop-blur-md sm:left-3 sm:top-3">
+          <span className="absolute left-2 top-2 max-w-[calc(100%-3.5rem)] truncate rounded-full border border-base-300 bg-base-100/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-base-content backdrop-blur-md sm:left-3 sm:top-3">
             {platformBadge}
           </span>
         ) : null}
 
-        <span className="absolute right-2 top-2 grid h-8 w-8 translate-y-1 place-items-center rounded-full border border-white/20 bg-primary text-xs text-primary-content opacity-0 shadow-lg transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 sm:right-3 sm:top-3">
+        <span className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full border border-base-300 bg-base-100/90 text-xs text-base-content opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 sm:right-3 sm:top-3">
           ▶
         </span>
 
-        <figcaption className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
-          <h3 className="line-clamp-2 min-h-10 text-sm font-bold leading-snug text-white drop-shadow-md sm:text-base">
+      </figure>
+      <div className="mt-1 px-1 py-0.5">
+        <div className="flex min-h-8 items-end gap-2">
+          <h3 className="line-clamp-2 min-w-0 flex-1 text-xs font-semibold leading-4 text-base-content">
             {game.name}
           </h3>
-          <span className="mt-2 block h-0.5 w-8 rounded-full bg-primary transition-all duration-300 group-hover:w-14" />
-        </figcaption>
-      </figure>
+          <span
+            className="mb-0.5 flex shrink-0 items-center gap-1 text-[10px] font-medium text-base-content/55"
+            title={`${playCount} ${getI18n(lang).home.plays}`}
+          >
+            <i className="ri-play-circle-line" />
+            {formatGameCount(playCount, lang)}
+          </span>
+        </div>
+      </div>
     </Link>
   )
+}
+
+function formatGameCount(value: number, locale: Locale) {
+  return new Intl.NumberFormat(locale, {
+    compactDisplay: 'short',
+    maximumFractionDigits: 1,
+    notation: 'compact',
+  }).format(value)
 }
 
 function getBlogPostRouteId(blogPost: BlogPost) {

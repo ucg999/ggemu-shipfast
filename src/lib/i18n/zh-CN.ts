@@ -4,9 +4,14 @@ import type { HomeFaqs, I18nMessages } from './types'
 export const zhCnMessages = {
   layout: {
     games: '首页',
+    gameLibrary: '游戏库',
+    allGames: '全部游戏',
+    gamePlatforms: '游戏平台',
+    gameTypes: '游戏类型',
+    latestGames: '最新游戏',
+    mostPopularGames: '最火游戏',
     live: '游戏直播',
     explore: '探索',
-    playMyRom: '玩本地游戏',
     blog: '博客',
     about: '关于我们',
     legal: '法律',
@@ -24,7 +29,7 @@ export const zhCnMessages = {
       '直接在浏览器里游玩经典复古游戏，无需下载。覆盖掌机、主机、街机与更多平台。',
   },
   home: {
-    title: '回到小时候的感觉，乐趣无穷',
+    title: '回到小时候的快乐，即点即玩，乐趣无穷！',
     subtitle:
       '在浏览器里直接游玩 GBA、NES、SNES、PS1、N64、Sega Genesis、街机等经典游戏，无需下载。',
     searchPlaceholder: '搜索游戏名、平台或系列...',
@@ -52,7 +57,7 @@ export const zhCnMessages = {
     blogPostFallback: '博客文章',
   },
   homeSeo: {
-    title: '回到小时候的感觉，乐趣无穷',
+    title: '回到小时候的快乐，即点即玩，乐趣无穷！',
     description:
       '在浏览器里直接游玩 GBA、NES、SNES、PS1、N64、Sega Genesis、街机等经典复古游戏，无需下载。',
     keywords:

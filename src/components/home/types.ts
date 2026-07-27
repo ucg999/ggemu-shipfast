@@ -43,6 +43,7 @@ export type SearchFormProps = {
   filterOptions: GameFilterOptions
   filters: Filters
   isLoading: boolean
+  lang: Locale
   mode: 'default' | 'sidebar'
   onFilterChange: <Key extends keyof Filters>(
     key: Key,
@@ -60,6 +61,7 @@ export type GamesSectionProps = {
   gridClassName: string
   isLoading: boolean
   lang: Locale
+  mobileItemLimit?: number
   onLoadPage: (page: number) => void
   page: number
   pages: number

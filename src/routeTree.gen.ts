@@ -19,7 +19,6 @@ import { Route as XRouteImport } from './routes/x'
 import { Route as LocaleAboutRouteImport } from './routes/$locale.about'
 import { Route as LocaleBlogRouteImport } from './routes/$locale.blog'
 import { Route as LocaleLiveRouteImport } from './routes/$locale.live'
-import { Route as LocalePlayMyRomRouteImport } from './routes/$locale.play-my-rom'
 import { Route as LocalePrivacyPolicyRouteImport } from './routes/$locale.privacy-policy'
 import { Route as LocaleRandomRouteImport } from './routes/$locale.random'
 import { Route as LocaleTermsOfServiceRouteImport } from './routes/$locale.terms-of-service'
@@ -80,11 +79,6 @@ const LocaleBlogRoute = LocaleBlogRouteImport.update({
 const LocaleLiveRoute = LocaleLiveRouteImport.update({
   id: '/live',
   path: '/live',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocalePlayMyRomRoute = LocalePlayMyRomRouteImport.update({
-  id: '/play-my-rom',
-  path: '/play-my-rom',
   getParentRoute: () => LocaleRoute,
 } as any)
 const LocalePrivacyPolicyRoute = LocalePrivacyPolicyRouteImport.update({
@@ -154,7 +148,6 @@ export interface FileRoutesByFullPath {
   '/$locale/about': typeof LocaleAboutRoute
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
   '/$locale/live': typeof LocaleLiveRoute
-  '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
   '/$locale/random': typeof LocaleRandomRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
@@ -178,7 +171,6 @@ export interface FileRoutesByTo {
   '/$locale/about': typeof LocaleAboutRoute
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
   '/$locale/live': typeof LocaleLiveRoute
-  '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
   '/$locale/random': typeof LocaleRandomRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
@@ -203,7 +195,6 @@ export interface FileRoutesById {
   '/$locale/about': typeof LocaleAboutRoute
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
   '/$locale/live': typeof LocaleLiveRoute
-  '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
   '/$locale/random': typeof LocaleRandomRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
@@ -229,7 +220,6 @@ export interface FileRouteTypes {
     | '/$locale/about'
     | '/$locale/blog'
     | '/$locale/live'
-    | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
     | '/$locale/random'
     | '/$locale/terms-of-service'
@@ -253,7 +243,6 @@ export interface FileRouteTypes {
     | '/$locale/about'
     | '/$locale/blog'
     | '/$locale/live'
-    | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
     | '/$locale/random'
     | '/$locale/terms-of-service'
@@ -277,7 +266,6 @@ export interface FileRouteTypes {
     | '/$locale/about'
     | '/$locale/blog'
     | '/$locale/live'
-    | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
     | '/$locale/random'
     | '/$locale/terms-of-service'
@@ -375,13 +363,6 @@ declare module '@tanstack/react-router' {
       path: '/live'
       fullPath: '/$locale/live'
       preLoaderRoute: typeof LocaleLiveRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/play-my-rom': {
-      id: '/$locale/play-my-rom'
-      path: '/play-my-rom'
-      fullPath: '/$locale/play-my-rom'
-      preLoaderRoute: typeof LocalePlayMyRomRouteImport
       parentRoute: typeof LocaleRoute
     }
     '/$locale/privacy-policy': {
@@ -491,7 +472,6 @@ interface LocaleRouteChildren {
   LocaleAboutRoute: typeof LocaleAboutRoute
   LocaleBlogRoute: typeof LocaleBlogRouteWithChildren
   LocaleLiveRoute: typeof LocaleLiveRoute
-  LocalePlayMyRomRoute: typeof LocalePlayMyRomRoute
   LocalePrivacyPolicyRoute: typeof LocalePrivacyPolicyRoute
   LocaleRandomRoute: typeof LocaleRandomRoute
   LocaleTermsOfServiceRoute: typeof LocaleTermsOfServiceRoute
@@ -502,7 +482,6 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleAboutRoute: LocaleAboutRoute,
   LocaleBlogRoute: LocaleBlogRouteWithChildren,
   LocaleLiveRoute: LocaleLiveRoute,
-  LocalePlayMyRomRoute: LocalePlayMyRomRoute,
   LocalePrivacyPolicyRoute: LocalePrivacyPolicyRoute,
   LocaleRandomRoute: LocaleRandomRoute,
   LocaleTermsOfServiceRoute: LocaleTermsOfServiceRoute,

@@ -4,9 +4,14 @@ import type { HomeFaqs, I18nMessages } from './types'
 export const enMessages = {
   layout: {
     games: 'Home',
+    gameLibrary: 'Game Library',
+    allGames: 'All Games',
+    gamePlatforms: 'Platforms',
+    gameTypes: 'Genres',
+    latestGames: 'Latest Games',
+    mostPopularGames: 'Popular Games',
     live: 'Live',
     explore: 'Explore',
-    playMyRom: 'Play My ROM',
     blog: 'Blog',
     about: 'About Us',
     legal: 'Legal',

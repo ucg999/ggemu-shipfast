@@ -171,12 +171,6 @@ function HomeSidenav({
             to="/$locale"
           />
           <SidenavLink
-            icon="ri-gamepad-line"
-            label={layoutCopy.playMyRom}
-            locale={locale}
-            to="/$locale/play-my-rom"
-          />
-          <SidenavLink
             icon="ri-article-line"
             label={layoutCopy.blog}
             locale={locale}
@@ -281,7 +275,7 @@ function SidenavLink({
   icon: string
   label: string
   locale: Locale
-  to: '/$locale' | '/$locale/about' | '/$locale/blog' | '/$locale/play-my-rom'
+  to: '/$locale' | '/$locale/about' | '/$locale/blog'
 }) {
   return (
     <Link

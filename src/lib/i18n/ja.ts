@@ -4,9 +4,14 @@ import type { HomeFaqs, I18nMessages } from './types'
 export const jaMessages = {
   layout: {
     games: 'ホーム',
+    gameLibrary: 'ゲームライブラリ',
+    allGames: 'すべてのゲーム',
+    gamePlatforms: 'プラットフォーム',
+    gameTypes: 'ゲームジャンル',
+    latestGames: '最新ゲーム',
+    mostPopularGames: '人気ゲーム',
     live: 'ゲーム配信',
     explore: '探す',
-    playMyRom: '自分の ROM をプレイ',
     blog: 'ブログ',
     about: '私たちについて',
     legal: '法的情報',

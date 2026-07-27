@@ -1,9 +1,14 @@
 export type I18nMessages = {
   layout: {
     games: string
+    gameLibrary: string
+    allGames: string
+    gamePlatforms: string
+    gameTypes: string
+    latestGames: string
+    mostPopularGames: string
     live: string
     explore: string
-    playMyRom: string
     blog: string
     about: string
     legal: string

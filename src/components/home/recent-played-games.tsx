@@ -75,12 +75,12 @@ function RecentPlayedGameCard({
 }) {
   return (
     <Link
-      className="group relative isolate h-full overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_12px_30px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-1 hover:border-primary/70 hover:shadow-[0_18px_40px_rgba(0,0,0,0.55)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+      className="group block h-full rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
       params={{ gameId: game.id, locale: lang }}
       search={{}}
       to="/$locale/games/$gameId"
     >
-      <figure className="relative aspect-[4/3] overflow-hidden bg-neutral">
+      <figure className="relative isolate aspect-[4/3] overflow-hidden rounded-xl bg-base-200">
         {game.cover ? (
           <img
             alt={game.name}
@@ -94,20 +94,16 @@ function RecentPlayedGameCard({
           </div>
         )}
 
-        <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/15 to-transparent" />
-        <span className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/5" />
-
-        <span className="absolute right-2 top-2 grid h-8 w-8 translate-y-1 place-items-center rounded-full border border-white/20 bg-primary text-xs text-primary-content opacity-0 shadow-lg transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 sm:right-3 sm:top-3">
+        <span className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full border border-base-300 bg-base-100/90 text-xs text-base-content opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 sm:right-3 sm:top-3">
           ▶
         </span>
 
-        <figcaption className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
-          <h3 className="line-clamp-2 min-h-10 text-sm font-bold leading-snug text-white drop-shadow-md sm:text-base">
-            {game.name}
-          </h3>
-          <span className="mt-2 block h-0.5 w-8 rounded-full bg-primary transition-all duration-300 group-hover:w-14" />
-        </figcaption>
       </figure>
+      <div className="mt-1 px-1 py-0.5">
+        <h3 className="line-clamp-2 min-h-8 text-xs font-semibold leading-4 text-base-content">
+          {game.name}
+        </h3>
+      </div>
     </Link>
   )
 }

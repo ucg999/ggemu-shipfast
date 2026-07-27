@@ -2,8 +2,9 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
-import type { Locale } from '#/lib/ggemu'
+import type { GameFilterOptions, Locale } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
+import { getPlatformLabel } from '#/lib/platform-label'
 import { siteConfig } from '#/lib/site-config'
 import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
 
@@ -11,12 +12,16 @@ export function SiteLayout({
   children,
   headerActions,
   hideHeaderNav = false,
+  gameFilterOptions,
   locale,
+  topContent,
 }: {
   children: ReactNode
+  gameFilterOptions?: GameFilterOptions
   headerActions?: ReactNode
   hideHeaderNav?: boolean
   locale: Locale
+  topContent?: ReactNode
 }) {
   const t = getI18n(locale).layout
   const location = useRouterState({ select: (state) => state.location })
@@ -25,6 +30,10 @@ export function SiteLayout({
   const [isLocaleMenuOpen, setIsLocaleMenuOpen] = useState(false)
   const localeMenuRef = useRef<HTMLDetailsElement>(null)
   const canSwitchTheme = siteThemes.length > 1
+  const sidebarSearchParams = new URLSearchParams(location.searchStr)
+  const isGameLibrarySelected = ['category', 'platform', 'sort', 'view'].some(
+    (key) => sidebarSearchParams.has(key),
+  )
 
   useEffect(() => {
     const storedTheme = normalizeSiteTheme(
@@ -73,8 +82,8 @@ export function SiteLayout({
   return (
     <main className="min-h-screen bg-base-100 text-base-content">
       <header className="sticky top-0 z-40 border-b border-base-300/70 bg-base-100/90 backdrop-blur">
-        <div className="navbar w-full px-4 sm:px-6 lg:px-8">
-          <div className="navbar-start">
+        <div className="navbar flex-wrap gap-3 px-4 sm:px-6 lg:grid lg:grid-cols-[220px_minmax(0,1fr)_auto] lg:gap-0 lg:px-8">
+          <div className="navbar-start w-auto flex-none">
             <Link
               className="flex min-w-0 items-center gap-3"
               params={{ locale }}
@@ -98,7 +107,13 @@ export function SiteLayout({
             </Link>
           </div>
 
-          <div className="navbar-end gap-2">
+          {topContent ? (
+            <div className="order-3 w-full border-t border-base-300/60 pt-3 lg:order-none lg:min-w-0 lg:border-t-0 lg:pt-0">
+              {topContent}
+            </div>
+          ) : null}
+
+          <div className="navbar-end ml-auto w-auto flex-none gap-2">
             <Link
               aria-label="看别人玩"
               className="btn btn-xs shrink-0 gap-1.5 rounded-lg border border-base-300 bg-white px-3 text-black shadow-sm hover:border-base-300 hover:bg-gray-100 sm:btn-sm sm:px-4"
@@ -212,9 +227,68 @@ export function SiteLayout({
                   </Link>
                 </li>
                 <li>
-                  <Link params={{ locale }} to="/$locale/play-my-rom">
-                    {t.playMyRom}
-                  </Link>
+                  <details open={isGameLibrarySelected}>
+                    <summary>
+                      <i className="ri-gamepad-line" />
+                      {t.gameLibrary}
+                    </summary>
+                    <ul>
+                      <li>
+                        <a href={`/${locale}?view=all`}>
+                          {t.allGames}
+                        </a>
+                      </li>
+                      <li>
+                        <details open={sidebarSearchParams.has('platform')}>
+                          <summary>{t.gamePlatforms}</summary>
+                          <ul className="max-h-64 overflow-y-auto">
+                            {gameFilterOptions?.platforms.map((platform) => (
+                              <li key={platform.name}>
+                                <a
+                                  href={getHomeFilterHref(locale, {
+                                    platform: platform.name,
+                                  })}
+                                >
+                                  {getPlatformLabel(platform.name, locale)}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      </li>
+                      <li>
+                        <details open={sidebarSearchParams.has('category')}>
+                          <summary>{t.gameTypes}</summary>
+                          <ul className="max-h-64 overflow-y-auto">
+                            {gameFilterOptions?.categories.map((category) => (
+                              <li key={category.name}>
+                                <a
+                                  href={getHomeFilterHref(locale, {
+                                    category: category.name,
+                                  })}
+                                >
+                                  {category.name}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      </li>
+                      <li>
+                        <a href={`/${locale}?sort=newest&view=latest`}>
+                          {t.latestGames}
+                        </a>
+                      </li>
+                      <li>
+                        <a href={`/${locale}?sort=popular`}>
+                          {t.mostPopularGames}
+                          <span className="badge badge-xs border-0 bg-red-500 font-bold text-white">
+                            HOT
+                          </span>
+                        </a>
+                      </li>
+                    </ul>
+                  </details>
                 </li>
                 <li>
                   <Link params={{ locale }} to="/$locale/blog">
@@ -282,14 +356,6 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                 <i className="ri-home-5-line mr-1" />
                 {t.games}
               </Link>
-              <Link
-                className="link-hover link"
-                params={{ locale }}
-                to="/$locale/play-my-rom"
-              >
-                <i className="ri-gamepad-line mr-1" />
-                {t.playMyRom}
-              </Link>
               <Link className="link-hover link" params={{ locale }} to="/$locale/blog">
                 <i className="ri-article-line mr-1" />
                 {t.blog}
@@ -337,4 +403,16 @@ export function SiteFooter({ locale }: { locale: Locale }) {
       </div>
     </footer>
   )
+}
+
+function getHomeFilterHref(
+  locale: Locale,
+  filters: { category?: string; platform?: string },
+) {
+  const searchParams = new URLSearchParams({
+    sort: 'newest',
+    ...filters,
+  })
+
+  return `/${locale}?${searchParams.toString()}`
 }

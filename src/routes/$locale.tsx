@@ -23,7 +23,7 @@ import {
   getPokiDailyLayoutSeed,
 } from '#/components/home/poki-like-template'
 import { SidenavHomeTemplate } from '#/components/home/sidenav-template'
-import { HOME_BLOG_POST_LIMIT } from '#/components/home/shared'
+import { HOME_BLOG_POST_LIMIT, SearchForm } from '#/components/home/shared'
 import type { Filters, HomeLoaderData } from '#/components/home/types'
 import { TwoColumnHomeTemplate } from '#/components/home/two-column-template'
 import { SiteLayout } from '#/components/site-layout'
@@ -45,15 +45,41 @@ import {
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 
 const DEFAULT_HOME_REQUEST_SIZE = 70
+const POPULAR_HOME_REQUEST_SIZE = 14
 
 type HomeSearch = {
+  category?: string
+  platform?: string
+  sort?: GameSearchSort
   template?: SiteTemplate
+  view?: 'all' | 'latest'
 }
 
 function validateHomeSearch(search: Record<string, unknown>): HomeSearch {
   return {
+    category: normalizeFilterValue(search.category),
+    platform: normalizeFilterValue(search.platform),
+    sort: normalizeHomeSort(search.sort),
     template: normalizeSiteTemplate(search.template),
+    view: normalizeHomeView(search.view),
   }
+}
+
+function normalizeHomeView(value: unknown) {
+  return value === 'all' || value === 'latest' ? value : undefined
+}
+
+function normalizeFilterValue(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined
+}
+
+function normalizeHomeSort(value: unknown): GameSearchSort | undefined {
+  return value === 'newest' ||
+    value === 'popular' ||
+    value === 'oldest' ||
+    value === 'name_asc'
+    ? value
+    : undefined
 }
 
 function getSearchTemplate(search: unknown) {
@@ -66,11 +92,33 @@ function getSearchTemplate(search: unknown) {
 
 function parseHomeSearchStr(searchStr: string) {
   const searchParams = new URLSearchParams(searchStr)
+  const category = normalizeFilterValue(searchParams.get('category'))
+  const platform = normalizeFilterValue(searchParams.get('platform'))
   const template = normalizeSiteTemplate(searchParams.get('template'))
+  const sort = normalizeHomeSort(searchParams.get('sort'))
+  const view = normalizeHomeView(searchParams.get('view'))
+  const supportedKeys = new Set([
+    'category',
+    'platform',
+    'sort',
+    'template',
+    'view',
+  ])
+  const hasSupportedParamsOnly = Array.from(searchParams.keys()).every((key) =>
+    supportedKeys.has(key),
+  )
+  const hasInvalidValue =
+    (searchParams.has('template') && !template) ||
+    (searchParams.has('sort') && !sort) ||
+    (searchParams.has('view') && !view)
 
   return {
-    hasTemplateOnly: Boolean(template) && Array.from(searchParams.keys()).length === 1,
+    category,
+    hasSupportedParamsOnly: hasSupportedParamsOnly && !hasInvalidValue,
+    platform,
+    sort,
     template,
+    view,
   }
 }
 
@@ -87,13 +135,26 @@ export const Route = createFileRoute('/$locale')({
       return undefined as never
     }
 
-    const { hasTemplateOnly, template } = parseHomeSearchStr(location.searchStr)
+    const {
+      category,
+      hasSupportedParamsOnly,
+      platform,
+      sort,
+      template,
+      view,
+    } = parseHomeSearchStr(location.searchStr)
 
-    if (!hasTemplateOnly) {
+    if (!hasSupportedParamsOnly) {
       throw redirect({
         params: { locale: params.locale },
         replace: true,
-        search: template ? { template } : {},
+        search: {
+          ...(category ? { category } : {}),
+          ...(platform ? { platform } : {}),
+          ...(sort ? { sort } : {}),
+          ...(template ? { template } : {}),
+          ...(view ? { view } : {}),
+        },
         to: '/$locale',
       })
     }
@@ -101,7 +162,11 @@ export const Route = createFileRoute('/$locale')({
     return undefined as never
   },
   loaderDeps: ({ search }): HomeSearch => ({
+    category: normalizeFilterValue(search.category),
+    platform: normalizeFilterValue(search.platform),
+    sort: normalizeHomeSort(search.sort),
     template: getSearchTemplate(search),
+    view: normalizeHomeView(search.view),
   }),
   loader: async ({ deps, params }): Promise<HomeLoaderData> => {
     const locale = normalizeLocale(params.locale)
@@ -140,10 +205,12 @@ export const Route = createFileRoute('/$locale')({
       searchGames({
         data: {
           query: '',
-          limit: getHomeRequestLimit(template),
+          limit: getHomeRequestLimit(template, deps.sort, deps.view),
           locale,
           page: 1,
-          sort: getHomeSort(template),
+          platform: deps.platform,
+          category: deps.category,
+          sort: deps.sort ?? getHomeSort(template),
         },
       }),
       loadGameFilterOptions(),
@@ -193,7 +260,8 @@ export const Route = createFileRoute('/$locale')({
 
 function LocalizedHomePage() {
   const { locale } = Route.useParams()
-  const template = getSearchTemplate(Route.useSearch())
+  const homeSearch = Route.useSearch()
+  const template = getSearchTemplate(homeSearch)
   const initialResult = Route.useLoaderData() as HomeLoaderData
   const runSearch = useServerFn(searchGames)
   const pathname = useRouterState({ select: (state) => state.location.pathname })
@@ -203,9 +271,9 @@ function LocalizedHomePage() {
   const [result, setResult] = useState<GameSearchResult>(initialResult)
   const [filters, setFilters] = useState<Filters>({
     query: '',
-    platform: '',
-    category: '',
-    sort: 'newest',
+    platform: normalizeFilterValue(homeSearch.platform) ?? '',
+    category: normalizeFilterValue(homeSearch.category) ?? '',
+    sort: normalizeHomeSort(homeSearch.sort) ?? 'newest',
   })
   const [isLoading, setIsLoading] = useState(false)
 
@@ -254,7 +322,7 @@ function LocalizedHomePage() {
       const nextResult = await runSearch({
         data: {
           query: nextFilters.query,
-          limit: getHomeRequestLimit(),
+          limit: getHomeRequestLimit(siteConfig.SITE_TEMPLATE, nextFilters.sort),
           locale: lang,
           page: nextPage,
           platform: nextFilters.platform,
@@ -313,7 +381,15 @@ function LocalizedHomePage() {
   }
 
   return (
-    <SiteLayout locale={lang}>
+    <SiteLayout
+      gameFilterOptions={initialResult.filterOptions}
+      locale={lang}
+      topContent={
+        <div className="w-full max-w-4xl">
+          <SearchForm {...templateProps} mode="default" />
+        </div>
+      }
+    >
       <DefaultHomeTemplate {...templateProps} />
     </SiteLayout>
   )
@@ -336,7 +412,15 @@ async function loadGameFilterOptions() {
   return result ?? { platforms: [], categories: [] }
 }
 
-function getHomeRequestLimit(template = siteConfig.SITE_TEMPLATE) {
+function getHomeRequestLimit(
+  template = siteConfig.SITE_TEMPLATE,
+  sort?: GameSearchSort,
+  view?: HomeSearch['view'],
+) {
+  if (sort === 'popular' || view === 'latest') {
+    return POPULAR_HOME_REQUEST_SIZE
+  }
+
   if (template === 'poki-like') {
     return POKI_REQUEST_SIZE
   }
