@@ -46,7 +46,7 @@ export const Route = createFileRoute('/$locale/play-my-rom')({
         })
       : undefined,
     meta: [
-      { title: '万能模拟器' },
+      { title: '超级模拟器' },
       {
         name: 'description',
         content: '选择本地 ROM 文件，通过浏览器中的模拟器直接游玩。',
@@ -113,7 +113,7 @@ function PlayMyRomPage() {
           allowFullScreen
           className="min-h-[720px] flex-1 rounded-lg border border-base-300 bg-base-100"
           src={iframeSrc}
-          title="万能模拟器"
+          title="超级模拟器"
         />
       </section>
     </SiteLayout>

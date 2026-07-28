@@ -303,7 +303,7 @@ export function SiteLayout({
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
                       <i className="ri-cpu-line text-base" />
                     </span>
-                    <span className="min-w-0 flex-1">万能模拟器</span>
+                    <span className="min-w-0 flex-1">超级模拟器</span>
                   </Link>
                 </li>
                 <li>
