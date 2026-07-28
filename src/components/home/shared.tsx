@@ -12,34 +12,6 @@ import { getPlatformLabel } from '#/lib/platform-label'
 
 export const HOME_BLOG_POST_LIMIT = 4
 
-const platformBadges: Record<string, string> = {
-  'ARCADE': 'ARCADE',
-  'Atari': 'ATARI',
-  'Famicom': 'NES',
-  'FLASH': 'FLASH',
-  'HTML5': 'HTML5',
-  'DOS': 'DOS',
-  'Genesis': 'GENESIS',
-  'Java': 'JAVA',
-  'Game Boy': 'GB',
-  'Game Boy Advance': 'GBA',
-  'Game Boy Color': 'GBC',
-  'Master System': 'SMS',
-  'MS-DOS': 'DOS',
-  'N64': 'N64',
-  'Neo Geo': 'NEO',
-  'NES': 'NES',
-  'Nintendo 64': 'N64',
-  'Nintendo DS': 'NDS',
-  'PlayStation 1': 'PS1',
-  'PlayStation Portable': 'PSP',
-  'PS1': 'PS1',
-  'PSP': 'PSP',
-  'Sega CD': 'SCD',
-  'Sega Genesis': 'GEN',
-  'Super Famicom': 'SNES',
-}
-
 export function HomeLatestBlogPostsSection({
   blogPosts,
   lang,
@@ -378,7 +350,6 @@ function HomeBlogPostCard({
 
 function GameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
   const gameId = game.url_slug || game._id || ''
-  const platformBadge = getPlatformBadge(game)
   const playCount = game.plays_count ?? 0
 
   return (
@@ -403,31 +374,18 @@ function GameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
           </div>
         )}
         <GameCardPreviewVideo src={game.game_video} />
-        {platformBadge ? (
-          <span className="absolute left-2 top-2 max-w-[calc(100%-3.5rem)] truncate rounded-full border border-base-300 bg-base-100/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-base-content backdrop-blur-md sm:left-3 sm:top-3">
-            {platformBadge}
-          </span>
-        ) : null}
-
         <span className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full border border-base-300 bg-base-100/90 text-xs text-base-content opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 sm:right-3 sm:top-3">
           ▶
         </span>
 
+        <span
+          className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm"
+          title={`${playCount} ${getI18n(lang).home.plays}`}
+        >
+          <i className="ri-play-circle-line" />
+          {formatGameCount(playCount, lang)}
+        </span>
       </figure>
-      <div className="mt-1 px-1 py-0.5">
-        <div className="flex min-h-4 items-center gap-2">
-          <h3 className="line-clamp-1 min-w-0 flex-1 text-xs font-semibold leading-4 text-base-content">
-            {game.name}
-          </h3>
-          <span
-            className="flex shrink-0 items-center gap-1 text-[10px] font-medium text-base-content/55"
-            title={`${playCount} ${getI18n(lang).home.plays}`}
-          >
-            <i className="ri-play-circle-line" />
-            {formatGameCount(playCount, lang)}
-          </span>
-        </div>
-      </div>
     </Link>
   )
 }
@@ -454,24 +412,4 @@ function formatBlogDate(value: string | undefined, locale: Locale) {
     month: 'short',
     year: 'numeric',
   }).format(new Date(value))
-}
-
-function getPlatformBadge(game: PublicGame) {
-  const slug = game.platform_slug ?? game.platformSlug
-
-  if (slug?.trim()) {
-    return slug.trim().toUpperCase()
-  }
-
-  const platform = game.platform?.trim()
-
-  if (!platform) {
-    return ''
-  }
-
-  return platformBadges[platform] ?? platformBadges[platform.toUpperCase()] ?? platform
-    .split(/[\s-]+/)
-    .map((part) => part.charAt(0))
-    .join('')
-    .toUpperCase()
 }
