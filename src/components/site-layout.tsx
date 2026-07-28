@@ -28,6 +28,8 @@ export function SiteLayout({
   const siteThemes = getSiteThemes()
   const [theme, setTheme] = useState(() => normalizeSiteTheme(null))
   const [isLocaleMenuOpen, setIsLocaleMenuOpen] = useState(false)
+  const [isUsefulMenuOpen, setIsUsefulMenuOpen] = useState(false)
+  const [isFriendsMenuOpen, setIsFriendsMenuOpen] = useState(false)
   const localeMenuRef = useRef<HTMLDetailsElement>(null)
   const canSwitchTheme = siteThemes.length > 1
   const sidebarSearchParams = new URLSearchParams(location.searchStr)
@@ -304,7 +306,12 @@ export function SiteLayout({
                   </Link>
                 </li>
                 <li>
-                  <details>
+                  <details
+                    onToggle={(event) =>
+                      setIsUsefulMenuOpen(event.currentTarget.open)
+                    }
+                    open={isUsefulMenuOpen}
+                  >
                     <summary className="group min-h-12 gap-3 rounded-xl px-3 py-2.5 font-medium">
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
                         <i className="ri-gift-line text-base" />
@@ -338,6 +345,53 @@ export function SiteLayout({
                         >
                           Switch游戏库
                         </a>
+                      </li>
+                    </ul>
+                  </details>
+                </li>
+                <li>
+                  <details
+                    onToggle={(event) =>
+                      setIsFriendsMenuOpen(event.currentTarget.open)
+                    }
+                    open={isFriendsMenuOpen}
+                  >
+                    <summary className="group min-h-12 gap-3 rounded-xl px-3 py-2.5 font-medium">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
+                        <i className="ri-user-add-line text-base" />
+                      </span>
+                      <span className="min-w-0 flex-1">找点新朋友</span>
+                    </summary>
+                    <ul>
+                      <li>
+                        <details>
+                          <summary>
+                            <i className="ri-wechat-fill text-[#07c160]" />
+                            微信
+                          </summary>
+                          <div className="px-2 pb-2 pt-1">
+                            <img
+                              alt="游戏历险记微信二维码"
+                              className="w-full rounded-lg bg-white object-contain"
+                              src="/wechat-qr.png"
+                            />
+                          </div>
+                        </details>
+                      </li>
+                      <li>
+                        <details>
+                          <summary>
+                            <i className="ri-qq-fill" />
+                            QQ
+                          </summary>
+                          <div className="px-2 pb-2 pt-1">
+                            <img
+                              alt="游戏历险记QQ二维码"
+                              className="w-full rounded-lg object-contain"
+                              src="/qq-qr.jpg"
+                            />
+                          </div>
+                        </details>
                       </li>
                     </ul>
                   </details>
@@ -408,29 +462,11 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           </nav>
         </div>
 
-        <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 border-t border-base-300 pt-4 md:grid-cols-[minmax(0,1fr)_10rem] md:gap-10">
-          <div className="min-w-0">
-            <p className="font-medium text-base-content">{t.copyright}</p>
-            <p className="mt-2 max-w-5xl text-xs leading-5 text-base-content/50">
-              {t.disclaimer}
-            </p>
-          </div>
-          <details className="dropdown dropdown-top dropdown-end shrink-0 justify-self-end md:justify-self-start">
-            <summary
-              aria-label="查看微信二维码"
-              className="grid h-7 w-7 cursor-pointer list-none place-items-center text-xl text-base-content/65 transition hover:text-[#07c160]"
-              title="微信联系"
-            >
-              <i className="ri-wechat-fill" />
-            </summary>
-            <div className="dropdown-content z-20 mb-2 rounded-xl border border-base-300 bg-white p-2 shadow-lg">
-              <img
-                alt="游戏历险记微信二维码"
-                className="h-52 w-52 max-w-none rounded-lg object-contain"
-                src="/wechat-qr.png"
-              />
-            </div>
-          </details>
+        <div className="mt-6 border-t border-base-300 pt-4">
+          <p className="font-medium text-base-content">{t.copyright}</p>
+          <p className="mt-2 max-w-5xl text-xs leading-5 text-base-content/50">
+            {t.disclaimer}
+          </p>
         </div>
       </div>
     </footer>
