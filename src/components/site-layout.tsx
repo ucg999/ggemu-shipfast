@@ -304,17 +304,43 @@ export function SiteLayout({
                   </Link>
                 </li>
                 <li>
-                  <a
-                    className="group flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition hover:bg-base-200"
-                    href="https://link3.cc/UCG9999"
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
-                      <i className="ri-gift-line text-base" />
-                    </span>
-                    <span className="min-w-0 flex-1">拿点有用的</span>
-                  </a>
+                  <details>
+                    <summary className="group min-h-12 gap-3 rounded-xl px-3 py-2.5 font-medium">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
+                        <i className="ri-gift-line text-base" />
+                      </span>
+                      <span className="min-w-0 flex-1">拿点有用的</span>
+                    </summary>
+                    <ul>
+                      <li>
+                        <a
+                          href="https://www.kdocs.cn/etapps/query/q/TUxF4AQG"
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          PSP游戏库
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href="https://www.kdocs.cn/etapps/query/q/RclPTyXd"
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          PSV游戏库
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href="https://www.kdocs.cn/etapps/query/q/detUdefK"
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Switch游戏库
+                        </a>
+                      </li>
+                    </ul>
+                  </details>
                 </li>
               </ul>
             </nav>
