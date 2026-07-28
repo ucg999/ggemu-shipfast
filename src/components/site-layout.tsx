@@ -297,6 +297,19 @@ export function SiteLayout({
                   <Link
                     className="group flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition hover:bg-base-200"
                     params={{ locale }}
+                    search={{}}
+                    to="/$locale/play-my-rom"
+                  >
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
+                      <i className="ri-cpu-line text-base" />
+                    </span>
+                    <span className="min-w-0 flex-1">万能模拟器</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    className="group flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition hover:bg-base-200"
+                    params={{ locale }}
                     to="/$locale/blog"
                   >
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
