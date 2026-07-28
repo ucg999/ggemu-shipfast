@@ -15,13 +15,34 @@ body {
     #ffcc00,
     #34c759,
     #00c7be,
+    rgb(255 255 255 / 95%),
     #007aff,
     #5856d6,
-    #af52de
+    #af52de,
+    #ff3b30
   );
+  background-size: 250% 100%;
   background-clip: text;
   color: transparent;
   -webkit-background-clip: text;
+  animation: rainbow-flow 4.5s linear infinite;
+  will-change: background-position;
+}
+
+@keyframes rainbow-flow {
+  from {
+    background-position: 100% 50%;
+  }
+
+  to {
+    background-position: 0% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rainbow-title {
+    animation: none;
+  }
 }
 
 .line-clamp-3 {

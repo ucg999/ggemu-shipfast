@@ -31,9 +31,6 @@ export function SiteLayout({
   const localeMenuRef = useRef<HTMLDetailsElement>(null)
   const canSwitchTheme = siteThemes.length > 1
   const sidebarSearchParams = new URLSearchParams(location.searchStr)
-  const isGameLibrarySelected = ['category', 'platform', 'sort', 'view'].some(
-    (key) => sidebarSearchParams.has(key),
-  )
 
   useEffect(() => {
     const storedTheme = normalizeSiteTheme(
@@ -229,7 +226,7 @@ export function SiteLayout({
                   </Link>
                 </li>
                 <li>
-                  <details open={isGameLibrarySelected}>
+                  <details open>
                     <summary className="group min-h-12 gap-3 rounded-xl px-3 py-2.5 font-medium">
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
                         <i className="ri-gamepad-line text-base" />
