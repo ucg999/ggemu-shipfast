@@ -119,15 +119,15 @@ function BlogPostCard({
 
   return (
     <Link
-      className="group overflow-hidden rounded-box border border-base-300 bg-base-100 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg"
+      className="group flex aspect-square flex-col overflow-hidden rounded-xl bg-base-200"
       params={{ blogId: id, locale: lang }}
       to="/$locale/blog/$blogId"
     >
-      <div className="aspect-[16/9] bg-base-300">
+      <div className="h-1/2 shrink-0 bg-base-300">
         {blogPost.cover_image_url ? (
           <img
             alt={blogPost.title ?? 'Blog cover'}
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
             loading="lazy"
             src={blogPost.cover_image_url}
           />
@@ -137,15 +137,15 @@ function BlogPostCard({
           </div>
         )}
       </div>
-      <div className="p-5">
+      <div className="flex h-1/2 flex-col px-5 py-4">
         <p className="text-xs text-base-content/50">
           {formatDate(blogPost.created_at, lang)}
         </p>
-        <h2 className="mt-2 line-clamp-2 min-h-14 text-xl font-semibold leading-tight">
+        <h2 className="mt-2 line-clamp-2 text-lg font-semibold leading-tight text-base-content">
           {blogPost.title}
         </h2>
         {blogPost.excerpt ? (
-          <p className="mt-3 line-clamp-3 leading-6 text-base-content/65">
+          <p className="mt-3 line-clamp-3 text-sm leading-5 text-base-content/60">
             {blogPost.excerpt}
           </p>
         ) : null}

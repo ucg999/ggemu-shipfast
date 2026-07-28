@@ -94,27 +94,20 @@ export function HomeFaqSection({ lang }: { lang: Locale }) {
 
   return (
     <section className="bg-base-100">
-      <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
-        <div className="max-w-3xl">
-          <h2 className="text-2xl font-semibold text-base-content">{faq.title}</h2>
-          <p className="mt-2 text-sm leading-6 text-base-content/65">
-            {faq.subtitle}
-          </p>
-        </div>
+      <div className="w-full px-4 py-5 sm:px-6 lg:px-8">
+        <h2 className="text-xl font-semibold text-base-content">{faq.title}</h2>
 
-        <div className="mt-4 grid gap-3">
+        <div className="mt-3 grid max-w-6xl border-t border-base-300 sm:grid-cols-2 sm:gap-x-8 lg:grid-cols-3">
           {faq.items.map((item) => (
-            <article
-              className="rounded-lg border border-base-300 bg-base-100 p-4"
-              key={item.question}
-            >
-              <h3 className="text-sm font-semibold text-base-content">
-                {item.question}
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-base-content/65">
+            <details className="group border-b border-base-300" key={item.question}>
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-3 text-sm font-medium text-base-content">
+                <span>{item.question}</span>
+                <i className="ri-add-line shrink-0 text-lg text-base-content/45 transition-transform group-open:rotate-45" />
+              </summary>
+              <p className="pb-3 pr-8 text-sm leading-6 text-base-content/60">
                 {item.answer}
               </p>
-            </article>
+            </details>
           ))}
         </div>
       </div>
@@ -186,62 +179,6 @@ export function SearchForm({
           </button>
         </label>
 
-        <select
-          aria-label={t.allPlatforms}
-          className="select h-10 w-auto rounded-full border-base-300 bg-base-100 px-3"
-          id="game-platforms"
-          onChange={(event) =>
-            onFilterChange('platform', event.currentTarget.value)
-          }
-          value={filters.platform}
-        >
-          <option value="">{t.allPlatforms}</option>
-          {filterOptions.platforms.map((platform) => (
-            <option key={platform.name} value={platform.name}>
-              {getPlatformLabel(platform.name, lang)}
-            </option>
-          ))}
-        </select>
-
-        <select
-          className="select h-10 w-auto rounded-full border-base-300 bg-base-100 px-3"
-          id="game-types"
-          onChange={(event) =>
-            onFilterChange('category', event.currentTarget.value)
-          }
-          value={filters.category}
-        >
-          <option value="">{t.allCategories}</option>
-          {filterOptions.categories.map((category) => (
-            <option key={category.name} value={category.name}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-
-        <select
-          className="select h-10 w-auto rounded-full border-base-300 bg-base-100 px-3"
-          id="latest-games-filter"
-          onChange={(event) =>
-            onFilterChange('sort', event.currentTarget.value as GameSearchSort)
-          }
-          value={filters.sort}
-        >
-          <option value="newest">{t.newest}</option>
-          <option value="popular">{t.popular}</option>
-          <option value="oldest">{t.oldest}</option>
-          <option value="name_asc">{t.nameAsc}</option>
-        </select>
-
-        <button
-          className="btn btn-ghost h-10 min-h-10 w-auto rounded-full px-3"
-          disabled={isLoading}
-          onClick={onReset}
-          type="button"
-        >
-          <i className="ri-refresh-line" />
-          {t.reset}
-        </button>
       </div>
     </form>
   )
@@ -404,15 +341,15 @@ function HomeBlogPostCard({
 
   return (
     <Link
-      className="group overflow-hidden rounded-lg border border-base-300 bg-base-100 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg"
+      className="group flex aspect-square flex-col overflow-hidden rounded-xl bg-base-200"
       params={{ blogId: id, locale: lang }}
       to="/$locale/blog/$blogId"
     >
-      <div className="aspect-[16/9] bg-base-300">
+      <div className="h-1/2 shrink-0 bg-base-300">
         {blogPost.cover_image_url ? (
           <img
             alt={title}
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
             loading="lazy"
             src={blogPost.cover_image_url}
           />
@@ -422,15 +359,15 @@ function HomeBlogPostCard({
           </div>
         )}
       </div>
-      <div className="p-4">
-        <p className="text-xs text-base-content/50">
+      <div className="flex h-1/2 flex-col px-4 py-3">
+        <p className="text-[11px] text-base-content/50">
           {formatBlogDate(blogPost.created_at, lang)}
         </p>
-        <h3 className="mt-2 line-clamp-2 min-h-10 text-base font-semibold leading-snug text-base-content">
+        <h3 className="mt-1.5 line-clamp-2 text-sm font-semibold leading-snug text-base-content sm:text-base">
           {title}
         </h3>
         {blogPost.excerpt ? (
-          <p className="mt-3 line-clamp-2 text-sm leading-6 text-base-content/65">
+          <p className="mt-2 line-clamp-2 text-xs leading-5 text-base-content/60">
             {blogPost.excerpt}
           </p>
         ) : null}
@@ -478,12 +415,12 @@ function GameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
 
       </figure>
       <div className="mt-1 px-1 py-0.5">
-        <div className="flex min-h-8 items-end gap-2">
-          <h3 className="line-clamp-2 min-w-0 flex-1 text-xs font-semibold leading-4 text-base-content">
+        <div className="flex min-h-4 items-center gap-2">
+          <h3 className="line-clamp-1 min-w-0 flex-1 text-xs font-semibold leading-4 text-base-content">
             {game.name}
           </h3>
           <span
-            className="mb-0.5 flex shrink-0 items-center gap-1 text-[10px] font-medium text-base-content/55"
+            className="flex shrink-0 items-center gap-1 text-[10px] font-medium text-base-content/55"
             title={`${playCount} ${getI18n(lang).home.plays}`}
           >
             <i className="ri-play-circle-line" />

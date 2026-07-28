@@ -338,9 +338,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
 
   return (
     <footer className="border-t border-base-300 bg-base-100">
-      <div className="w-full px-4 py-8 text-sm text-base-content/70 sm:px-6 lg:px-8">
-        <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-start">
-          <section className="max-w-md">
+      <div className="w-full px-4 py-6 text-sm text-base-content/70 sm:px-6 lg:px-8">
+        <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:gap-10">
+          <section className="min-w-0">
             <div className="flex items-center gap-3">
               <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-lg bg-base-100">
                 <img
@@ -355,69 +355,59 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                 </p>
               </div>
             </div>
-            <p className="mt-4 leading-6">{t.footer}</p>
-            <a
-              className="mt-4 badge badge-sm badge-outline gap-2 p-3"
-              href="https://ggemu.com"
-              target="_blank"
-            >
-              <i className="ri-flashlight-line" />
-              Built with GGEMU
-            </a>
-          </section>
-
-          <nav className="md:min-w-32">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-base-content/45">
-              {t.explore}
+            <p className="mt-3 overflow-x-auto whitespace-nowrap text-[clamp(11px,1vw,14px)] leading-6">
+              {t.footer}
             </p>
-            <div className="flex flex-col items-start gap-2">
-              <Link className="link-hover link" params={{ locale }} to="/$locale">
-                <i className="ri-home-5-line mr-1" />
-                {t.games}
-              </Link>
-              <Link className="link-hover link" params={{ locale }} to="/$locale/blog">
-                <i className="ri-article-line mr-1" />
-                {t.blog}
-              </Link>
-              <Link
-                className="link-hover link"
-                params={{ locale }}
-                to="/$locale/about"
-              >
-                <i className="ri-information-line mr-1" />
-                {t.about}
-              </Link>
-            </div>
-          </nav>
+          </section>
 
           <nav className="md:min-w-40">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-base-content/45">
               {t.legal}
             </p>
-            <div className="flex flex-col items-start gap-2">
+            <div className="flex flex-col items-start gap-2.5">
               <Link
-                className="link-hover link"
+                className="link-hover link flex items-center"
                 params={{ locale }}
                 to="/$locale/privacy-policy"
               >
+                <i className="ri-shield-check-line mr-1" />
                 {t.privacyPolicy}
               </Link>
               <Link
-                className="link-hover link"
+                className="link-hover link flex items-center"
                 params={{ locale }}
                 to="/$locale/terms-of-service"
               >
+                <i className="ri-file-list-3-line mr-1" />
                 {t.termsOfService}
               </Link>
             </div>
           </nav>
         </div>
 
-        <div className="mt-8 border-t border-base-300 pt-5">
-          <p className="font-medium text-base-content">{t.copyright}</p>
-          <p className="mt-2 max-w-5xl leading-6 text-base-content/55">
-            {t.disclaimer}
-          </p>
+        <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 border-t border-base-300 pt-4 md:grid-cols-[minmax(0,1fr)_10rem] md:gap-10">
+          <div className="min-w-0">
+            <p className="font-medium text-base-content">{t.copyright}</p>
+            <p className="mt-2 max-w-5xl text-xs leading-5 text-base-content/50">
+              {t.disclaimer}
+            </p>
+          </div>
+          <details className="dropdown dropdown-top dropdown-end shrink-0 justify-self-end md:justify-self-start">
+            <summary
+              aria-label="查看微信二维码"
+              className="grid h-7 w-7 cursor-pointer list-none place-items-center text-xl text-base-content/65 transition hover:text-[#07c160]"
+              title="微信联系"
+            >
+              <i className="ri-wechat-fill" />
+            </summary>
+            <div className="dropdown-content z-20 mb-2 rounded-xl border border-base-300 bg-white p-2 shadow-lg">
+              <img
+                alt="游戏历险记微信二维码"
+                className="h-52 w-52 max-w-none rounded-lg object-contain"
+                src="/wechat-qr.png"
+              />
+            </div>
+          </details>
         </div>
       </div>
     </footer>

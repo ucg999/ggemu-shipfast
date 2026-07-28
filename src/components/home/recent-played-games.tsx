@@ -46,7 +46,7 @@ export function RecentPlayedGamesSection({
         <h2 className="text-xl font-semibold text-base-content">
           {getI18n(lang).home.recentlyPlayed}
         </h2>
-        <div className="mt-3 grid auto-cols-[calc((100%-1rem)/3)] grid-flow-col gap-2 overflow-x-auto pb-1 sm:auto-cols-[calc((100%-2rem)/3)] sm:gap-4 lg:auto-cols-[calc((100%-6rem)/7)]">
+        <div className="mt-3 grid auto-cols-[calc((100%-2.5rem)/6)] grid-flow-col grid-rows-1 gap-2 overflow-x-auto pb-1 sm:auto-cols-[calc((100%-5rem)/6)] sm:gap-4 lg:auto-cols-[calc((100%-13rem)/14)]">
           {games.map((game) => (
             <RecentPlayedGameCard game={game} key={game.id} lang={lang} />
           ))}
@@ -75,12 +75,13 @@ function RecentPlayedGameCard({
 }) {
   return (
     <Link
+      aria-label={game.name}
       className="group block h-full rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
       params={{ gameId: game.id, locale: lang }}
       search={{}}
       to="/$locale/games/$gameId"
     >
-      <figure className="relative isolate aspect-[4/3] overflow-hidden rounded-xl bg-base-200">
+      <figure className="relative isolate aspect-square overflow-hidden rounded-xl bg-base-200">
         {game.cover ? (
           <img
             alt={game.name}
@@ -99,11 +100,6 @@ function RecentPlayedGameCard({
         </span>
 
       </figure>
-      <div className="mt-1 px-1 py-0.5">
-        <h3 className="line-clamp-2 min-h-8 text-xs font-semibold leading-4 text-base-content">
-          {game.name}
-        </h3>
-      </div>
     </Link>
   )
 }

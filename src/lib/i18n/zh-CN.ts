@@ -20,13 +20,13 @@ export const zhCnMessages = {
     theme: '主题',
     language: '语言',
     get copyright() {
-      return `版权所有 © 2025 ${siteConfig.SITE_NAME}`
+      return `版权所有 © 2026 ${siteConfig.SITE_NAME}`
     },
     get disclaimer() {
       return `所有游戏 ROM / 程序均由用户提交或收集自互联网，版权归其各自所有者所有。如有任何问题，请发送邮件至 ${siteConfig.SITE_EMAIL}，我们会移除对应内容。`
     },
     footer:
-      '直接在浏览器里游玩经典复古游戏，无需下载。覆盖掌机、主机、街机与更多平台。',
+      '你们可以在【小红书】【抖音】【视频号】等各大平台找到我们的推荐视频。',
   },
   home: {
     title: '回到小时候的快乐，即点即玩，乐趣无穷！',
