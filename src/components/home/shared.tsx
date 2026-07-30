@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { useRef } from 'react'
 
 import {
   GameCardPreviewVideo,
@@ -237,13 +238,63 @@ export function GamesSection({
   showHeader = true,
   t,
 }: GamesSectionProps) {
-  async function loadPageWithoutScrolling(nextPage: number) {
-    const left = window.scrollX
-    const top = window.scrollY
+  const paginationRef = useRef<HTMLDivElement>(null)
 
+  async function loadPageAndKeepControlsVisible(nextPage: number) {
     await onLoadPage(nextPage)
-    window.requestAnimationFrame(() => window.scrollTo({ left, top }))
+    window.requestAnimationFrame(() =>
+      paginationRef.current?.scrollIntoView({
+        behavior: 'auto',
+        block: 'center',
+      }),
+    )
   }
+
+  const paginationControls = (
+    <div className="join mx-auto pt-1" ref={paginationRef}>
+      <button
+        className={`btn btn-sm join-item ${page <= 1 ? 'btn-disabled' : ''}`}
+        disabled={isLoading || page <= 1}
+        onClick={() => loadPageAndKeepControlsVisible(1)}
+        type="button"
+      >
+        <i className="ri-skip-left-line" />
+        {t.latestPage}
+      </button>
+      <button
+        className={`btn btn-sm join-item ${page <= 1 ? 'btn-disabled' : ''}`}
+        disabled={isLoading || page <= 1}
+        onClick={() => loadPageAndKeepControlsVisible(Math.max(1, page - 1))}
+        type="button"
+      >
+        <i className="ri-arrow-left-s-line" />
+        {t.previous}
+      </button>
+      <button className="btn btn-sm join-item btn-disabled">
+        {formatCopy(t.page, { page, pages })}
+      </button>
+      <button
+        className={`btn btn-sm join-item ${page >= pages ? 'btn-disabled' : ''}`}
+        disabled={isLoading || page >= pages}
+        onClick={() =>
+          loadPageAndKeepControlsVisible(Math.min(pages, page + 1))
+        }
+        type="button"
+      >
+        {t.next}
+        <i className="ri-arrow-right-s-line" />
+      </button>
+      <button
+        className={`btn btn-sm join-item ${page >= pages ? 'btn-disabled' : ''}`}
+        disabled={isLoading || page >= pages}
+        onClick={() => loadPageAndKeepControlsVisible(pages)}
+        type="button"
+      >
+        {t.lastPage}
+        <i className="ri-skip-right-line" />
+      </button>
+    </div>
+  )
 
   return (
     <section className={sectionClassName} id="all-games">
@@ -281,48 +332,7 @@ export function GamesSection({
           {t.empty}
         </div>
       )}
-
-      <div className="join mx-auto pt-1">
-        <button
-          className={`btn btn-sm join-item ${page <= 1 ? 'btn-disabled' : ''}`}
-          disabled={isLoading || page <= 1}
-          onClick={() => loadPageWithoutScrolling(1)}
-          type="button"
-        >
-          <i className="ri-skip-left-line" />
-          {t.latestPage}
-        </button>
-        <button
-          className={`btn btn-sm join-item ${page <= 1 ? 'btn-disabled' : ''}`}
-          disabled={isLoading || page <= 1}
-          onClick={() => onLoadPage(Math.max(1, page - 1))}
-          type="button"
-        >
-          <i className="ri-arrow-left-s-line" />
-          {t.previous}
-        </button>
-        <button className="btn btn-sm join-item btn-disabled">
-          {formatCopy(t.page, { page, pages })}
-        </button>
-        <button
-          className={`btn btn-sm join-item ${page >= pages ? 'btn-disabled' : ''}`}
-          disabled={isLoading || page >= pages}
-          onClick={() => onLoadPage(Math.min(pages, page + 1))}
-          type="button"
-        >
-          {t.next}
-          <i className="ri-arrow-right-s-line" />
-        </button>
-        <button
-          className={`btn btn-sm join-item ${page >= pages ? 'btn-disabled' : ''}`}
-          disabled={isLoading || page >= pages}
-          onClick={() => loadPageWithoutScrolling(pages)}
-          type="button"
-        >
-          {t.lastPage}
-          <i className="ri-skip-right-line" />
-        </button>
-      </div>
+      {paginationControls}
     </section>
   )
 }

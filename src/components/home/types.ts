@@ -62,7 +62,7 @@ export type GamesSectionProps = {
   isLoading: boolean
   lang: Locale
   mobileItemLimit?: number
-  onLoadPage: (page: number) => void
+  onLoadPage: (page: number) => Promise<void>
   page: number
   pages: number
   pagination: GameSearchResult['pagination']
