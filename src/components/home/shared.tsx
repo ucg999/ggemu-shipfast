@@ -237,6 +237,14 @@ export function GamesSection({
   showHeader = true,
   t,
 }: GamesSectionProps) {
+  async function loadPageWithoutScrolling(nextPage: number) {
+    const left = window.scrollX
+    const top = window.scrollY
+
+    await onLoadPage(nextPage)
+    window.requestAnimationFrame(() => window.scrollTo({ left, top }))
+  }
+
   return (
     <section className={sectionClassName} id="all-games">
       {showHeader ? (
@@ -278,7 +286,7 @@ export function GamesSection({
         <button
           className={`btn btn-sm join-item ${page <= 1 ? 'btn-disabled' : ''}`}
           disabled={isLoading || page <= 1}
-          onClick={() => onLoadPage(1)}
+          onClick={() => loadPageWithoutScrolling(1)}
           type="button"
         >
           <i className="ri-skip-left-line" />
@@ -308,7 +316,7 @@ export function GamesSection({
         <button
           className={`btn btn-sm join-item ${page >= pages ? 'btn-disabled' : ''}`}
           disabled={isLoading || page >= pages}
-          onClick={() => onLoadPage(pages)}
+          onClick={() => loadPageWithoutScrolling(pages)}
           type="button"
         >
           {t.lastPage}
