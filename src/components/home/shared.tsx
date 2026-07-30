@@ -276,7 +276,16 @@ export function GamesSection({
 
       <div className="join mx-auto pt-1">
         <button
-          className={`btn join-item ${page <= 1 ? 'btn-disabled' : ''}`}
+          className={`btn btn-sm join-item ${page <= 1 ? 'btn-disabled' : ''}`}
+          disabled={isLoading || page <= 1}
+          onClick={() => onLoadPage(1)}
+          type="button"
+        >
+          <i className="ri-skip-left-line" />
+          {t.latestPage}
+        </button>
+        <button
+          className={`btn btn-sm join-item ${page <= 1 ? 'btn-disabled' : ''}`}
           disabled={isLoading || page <= 1}
           onClick={() => onLoadPage(Math.max(1, page - 1))}
           type="button"
@@ -284,17 +293,26 @@ export function GamesSection({
           <i className="ri-arrow-left-s-line" />
           {t.previous}
         </button>
-        <button className="btn join-item btn-disabled">
+        <button className="btn btn-sm join-item btn-disabled">
           {formatCopy(t.page, { page, pages })}
         </button>
         <button
-          className={`btn join-item ${page >= pages ? 'btn-disabled' : ''}`}
+          className={`btn btn-sm join-item ${page >= pages ? 'btn-disabled' : ''}`}
           disabled={isLoading || page >= pages}
           onClick={() => onLoadPage(Math.min(pages, page + 1))}
           type="button"
         >
           {t.next}
           <i className="ri-arrow-right-s-line" />
+        </button>
+        <button
+          className={`btn btn-sm join-item ${page >= pages ? 'btn-disabled' : ''}`}
+          disabled={isLoading || page >= pages}
+          onClick={() => onLoadPage(pages)}
+          type="button"
+        >
+          {t.lastPage}
+          <i className="ri-skip-right-line" />
         </button>
       </div>
     </section>

@@ -33,8 +33,10 @@ export type I18nMessages = {
     oldest: string
     nameAsc: string
     empty: string
+    latestPage: string
     previous: string
     next: string
+    lastPage: string
     page: string
     totalGames: string
     views: string

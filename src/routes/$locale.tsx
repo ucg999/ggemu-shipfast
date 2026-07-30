@@ -36,6 +36,7 @@ import {
   searchGames,
 } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
+import { getLocalBlogPosts } from '#/lib/local-blog-posts'
 import {
   type SiteTemplate,
   getSiteTemplate,
@@ -184,7 +185,7 @@ export const Route = createFileRoute('/$locale')({
         loadFeatureGames(locale, 'newest', FEATURE_NEW_ARRIVAL_LIMIT),
         loadFeaturePlatformGames(locale),
         loadGameFilterOptions(),
-        loadLatestBlogPosts(),
+        loadLatestBlogPosts(locale),
       ])
 
       return {
@@ -214,7 +215,7 @@ export const Route = createFileRoute('/$locale')({
         },
       }),
       loadGameFilterOptions(),
-      loadLatestBlogPosts(),
+      loadLatestBlogPosts(locale),
     ])
 
     return {
@@ -395,7 +396,7 @@ function LocalizedHomePage() {
   )
 }
 
-async function loadLatestBlogPosts() {
+async function loadLatestBlogPosts(locale: Locale) {
   const result = await searchBlogPosts({
     data: {
       limit: HOME_BLOG_POST_LIMIT,
@@ -403,7 +404,16 @@ async function loadLatestBlogPosts() {
     },
   }).catch(() => null)
 
-  return result?.blogPosts ?? []
+  const localPosts = getLocalBlogPosts(locale)
+  const remotePosts = (result?.blogPosts ?? []).filter(
+    (post) =>
+      !localPosts.some(
+        (localPost) =>
+          localPost.slug === post.slug || localPost._id === post._id,
+      ),
+  )
+
+  return [...localPosts, ...remotePosts].slice(0, HOME_BLOG_POST_LIMIT)
 }
 
 async function loadGameFilterOptions() {

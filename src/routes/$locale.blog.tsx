@@ -12,12 +12,14 @@ import {
   type Locale,
 } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
+import { getLocalBlogPosts } from '#/lib/local-blog-posts'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 
 const BLOG_PAGE_SIZE = 12
 
 export const Route = createFileRoute('/$locale/blog')({
-  loader: async () => {
+  loader: async ({ params }) => {
+    const locale = normalizeLocale(params.locale)
     const [seoOrigin, result] = await Promise.all([
       getSeoOrigin(),
       searchBlogPosts({
@@ -27,9 +29,22 @@ export const Route = createFileRoute('/$locale/blog')({
         },
       }),
     ])
+    const localPosts = getLocalBlogPosts(locale)
+    const remotePosts = result.blogPosts.filter(
+      (post) =>
+        !localPosts.some(
+          (localPost) =>
+            localPost.slug === post.slug || localPost._id === post._id,
+        ),
+    )
 
     return {
       ...result,
+      blogPosts: [...localPosts, ...remotePosts].slice(0, BLOG_PAGE_SIZE),
+      pagination: {
+        ...result.pagination,
+        total: result.pagination.total + localPosts.length,
+      },
       seoOrigin,
     }
   },

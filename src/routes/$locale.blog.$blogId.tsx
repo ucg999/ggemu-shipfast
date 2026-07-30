@@ -14,16 +14,24 @@ import {
   type PublicGame,
 } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
-import { getAlternateLinksFromCanonical } from '#/lib/seo'
+import { getLocalBlogPost } from '#/lib/local-blog-posts'
+import { getAlternateLinksFromCanonical, getSeoOrigin } from '#/lib/seo'
 
 export const Route = createFileRoute('/$locale/blog/$blogId')({
   loader: async ({ params }) => {
-    const detail = await getBlogPostDetailPageData({
-      data: {
-        id: params.blogId,
-        locale: normalizeLocale(params.locale),
-      },
-    })
+    const locale = normalizeLocale(params.locale)
+    const localPost = getLocalBlogPost(params.blogId, locale)
+    const detail = localPost
+      ? {
+          blogPost: localPost,
+          canonicalUrl: `${(await getSeoOrigin()).replace(/\/$/, '')}/${locale}/blog/${encodeURIComponent(localPost.slug)}`,
+        }
+      : await getBlogPostDetailPageData({
+          data: {
+            id: params.blogId,
+            locale,
+          },
+        })
 
     return {
       ...detail,
@@ -41,7 +49,9 @@ export const Route = createFileRoute('/$locale/blog/$blogId')({
     const { blogPost, canonicalUrl } = loaderData
     const title = blogPost.title || getI18n(locale).blog.title
     const description = blogPost.excerpt || getI18n(locale).blog.description
-    const image = blogPost.cover_image_url
+    const image = blogPost.cover_image_url?.startsWith('/')
+      ? new URL(blogPost.cover_image_url, canonicalUrl).toString()
+      : blogPost.cover_image_url
 
     return {
       links: [
@@ -176,7 +186,9 @@ function renderBlock(
   locale: Locale,
   linkedGames: Record<string, PublicGame | null>,
 ) {
-  const image = block.match(/^!\[(?<alt>.*)]\((?<src>https?:\/\/[^)]+)\)$/)
+  const image = block.match(
+    /^!\[(?<alt>.*)]\((?<src>(?:https?:\/\/|\/)[^)]+)\)$/,
+  )
 
   if (image?.groups) {
     return (

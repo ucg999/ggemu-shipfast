@@ -359,6 +359,24 @@ export function SiteLayout({
                           Switch游戏库
                         </a>
                       </li>
+                      <li>
+                        <a
+                          href="https://www.kdocs.cn/etapps/query/q/zPCu5XAr?share_origin=re_share_conditionshome"
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          街机库
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href="https://kdocs.cn/l/cqE4v1WZxdnc"
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          热门游戏合集
+                        </a>
+                      </li>
                     </ul>
                   </details>
                 </li>
