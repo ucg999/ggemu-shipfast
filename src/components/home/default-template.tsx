@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router'
+
 import {
   GamesSection,
   HomeFaqSection,
@@ -77,8 +79,104 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
         showHeader={false}
       />
 
+      <MobileQuickLinks lang={lang} />
       <HomeLatestBlogPostsSection blogPosts={latestBlogPosts} lang={lang} />
       <HomeFaqSection lang={lang} />
     </>
+  )
+}
+
+function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
+  return (
+    <section className="px-4 pb-4 sm:px-6 lg:hidden">
+      <div className="rounded-2xl bg-base-100 p-3">
+        <Link
+          className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 font-medium hover:bg-base-200"
+          params={{ locale: lang }}
+          search={{}}
+          to="/$locale/play-my-rom"
+        >
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-base-200">
+            <i className="ri-cpu-line" />
+          </span>
+          超级模拟器
+        </Link>
+
+        <details>
+          <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 rounded-xl px-3 py-2.5 font-medium hover:bg-base-200">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-base-200">
+              <i className="ri-gift-line" />
+            </span>
+            <span className="flex-1">拿点有用的</span>
+            <i className="ri-arrow-down-s-line" />
+          </summary>
+          <ul className="menu menu-sm ml-11">
+            <li>
+              <a href="https://www.kdocs.cn/etapps/query/q/TUxF4AQG" rel="noreferrer" target="_blank">
+                PSP游戏库
+              </a>
+            </li>
+            <li>
+              <a href="https://www.kdocs.cn/etapps/query/q/RclPTyXd" rel="noreferrer" target="_blank">
+                PSV游戏库
+              </a>
+            </li>
+            <li>
+              <a href="https://www.kdocs.cn/etapps/query/q/detUdefK" rel="noreferrer" target="_blank">
+                Switch游戏库
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.kdocs.cn/etapps/query/q/zPCu5XAr?share_origin=re_share_conditionshome"
+                rel="noreferrer"
+                target="_blank"
+              >
+                街机库
+              </a>
+            </li>
+            <li>
+              <a href="https://kdocs.cn/l/cqE4v1WZxdnc" rel="noreferrer" target="_blank">
+                热门游戏合集
+              </a>
+            </li>
+          </ul>
+        </details>
+
+        <details>
+          <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 rounded-xl px-3 py-2.5 font-medium hover:bg-base-200">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-base-200">
+              <i className="ri-user-add-line" />
+            </span>
+            <span className="flex-1">找点新朋友</span>
+            <i className="ri-arrow-down-s-line" />
+          </summary>
+          <div className="ml-11 grid grid-cols-2 gap-3 p-2">
+            <details className="rounded-xl bg-base-200 p-2">
+              <summary className="cursor-pointer list-none text-center text-sm font-medium">
+                <i className="ri-wechat-fill mr-1 text-[#07c160]" />
+                微信
+              </summary>
+              <img
+                alt="游戏历险记微信二维码"
+                className="mt-2 w-full rounded-lg bg-white object-contain"
+                src="/wechat-qr.png"
+              />
+            </details>
+            <details className="rounded-xl bg-base-200 p-2">
+              <summary className="cursor-pointer list-none text-center text-sm font-medium">
+                <i className="ri-qq-fill mr-1" />
+                QQ
+              </summary>
+              <img
+                alt="游戏历险记QQ二维码"
+                className="mt-2 w-full rounded-lg object-contain"
+                src="/qq-qr.jpg"
+              />
+            </details>
+          </div>
+        </details>
+      </div>
+    </section>
   )
 }
