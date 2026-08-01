@@ -45,8 +45,8 @@ import {
 } from '#/lib/site-config'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 
-const DEFAULT_HOME_REQUEST_SIZE = 70
-const POPULAR_HOME_REQUEST_SIZE = 14
+const DEFAULT_HOME_REQUEST_SIZE = 42
+const POPULAR_HOME_REQUEST_SIZE = 42
 
 type HomeSearch = {
   category?: string

@@ -238,24 +238,24 @@ export function GamesSection({
   showHeader = true,
   t,
 }: GamesSectionProps) {
-  const paginationRef = useRef<HTMLDivElement>(null)
+  const gamesGridRef = useRef<HTMLDivElement>(null)
 
-  async function loadPageAndKeepControlsVisible(nextPage: number) {
+  async function loadPageAndShowFirstRow(nextPage: number) {
     await onLoadPage(nextPage)
     window.requestAnimationFrame(() =>
-      paginationRef.current?.scrollIntoView({
+      gamesGridRef.current?.scrollIntoView({
         behavior: 'auto',
-        block: 'center',
+        block: 'start',
       }),
     )
   }
 
   const paginationControls = (
-    <div className="join mx-auto pt-1" ref={paginationRef}>
+    <div className="join mx-auto pt-1">
       <button
         className={`btn btn-sm join-item ${page <= 1 ? 'btn-disabled' : ''}`}
         disabled={isLoading || page <= 1}
-        onClick={() => loadPageAndKeepControlsVisible(1)}
+        onClick={() => loadPageAndShowFirstRow(1)}
         type="button"
       >
         <i className="ri-skip-left-line" />
@@ -264,7 +264,7 @@ export function GamesSection({
       <button
         className={`btn btn-sm join-item ${page <= 1 ? 'btn-disabled' : ''}`}
         disabled={isLoading || page <= 1}
-        onClick={() => loadPageAndKeepControlsVisible(Math.max(1, page - 1))}
+        onClick={() => loadPageAndShowFirstRow(Math.max(1, page - 1))}
         type="button"
       >
         <i className="ri-arrow-left-s-line" />
@@ -277,7 +277,7 @@ export function GamesSection({
         className={`btn btn-sm join-item ${page >= pages ? 'btn-disabled' : ''}`}
         disabled={isLoading || page >= pages}
         onClick={() =>
-          loadPageAndKeepControlsVisible(Math.min(pages, page + 1))
+          loadPageAndShowFirstRow(Math.min(pages, page + 1))
         }
         type="button"
       >
@@ -287,7 +287,7 @@ export function GamesSection({
       <button
         className={`btn btn-sm join-item ${page >= pages ? 'btn-disabled' : ''}`}
         disabled={isLoading || page >= pages}
-        onClick={() => loadPageAndKeepControlsVisible(pages)}
+        onClick={() => loadPageAndShowFirstRow(pages)}
         type="button"
       >
         {t.lastPage}
@@ -313,7 +313,10 @@ export function GamesSection({
       ) : null}
 
       {games.length > 0 ? (
-        <div className={`${gridClassName} ${isLoading ? 'opacity-60' : ''}`}>
+        <div
+          className={`${gridClassName} scroll-mt-20 ${isLoading ? 'opacity-60' : ''}`}
+          ref={gamesGridRef}
+        >
           {games.map((game, index) => {
             const key = game._id ?? game.url_slug
             const card = <GameCard game={game} lang={lang} />

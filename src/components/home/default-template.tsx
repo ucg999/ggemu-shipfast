@@ -74,7 +74,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
       <GamesSection
         {...props}
         gridClassName="grid grid-cols-3 gap-2 sm:gap-4 lg:grid-cols-7"
-        mobileItemLimit={30}
+        mobileItemLimit={18}
         sectionClassName="flex w-full flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8"
         showHeader={false}
       />
