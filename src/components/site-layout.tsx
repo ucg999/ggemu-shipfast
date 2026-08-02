@@ -80,7 +80,7 @@ export function SiteLayout({
 
   return (
     <main className="min-h-screen bg-base-100 text-base-content">
-      <header className="sticky top-0 z-40 border-b border-base-300/70 bg-base-100/90 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-red-700 bg-red-600 text-white shadow-sm">
         <div className="navbar flex-wrap gap-3 px-4 sm:px-6 lg:grid lg:grid-cols-[220px_minmax(0,1fr)_auto] lg:gap-0 lg:px-8">
           <div className="navbar-start w-auto flex-none">
             <Link
@@ -99,7 +99,7 @@ export function SiteLayout({
                 <span className="block text-lg font-semibold tracking-wide">
                   {siteConfig.SITE_NAME}
                 </span>
-                <span className="block truncate text-xs text-base-content/55">
+                <span className="block truncate text-xs text-white/75">
                   {siteConfig.SITE_SLOGAN}
                 </span>
               </span>
@@ -107,7 +107,7 @@ export function SiteLayout({
           </div>
 
           {topContent ? (
-            <div className="order-3 w-full border-t border-base-300/60 pt-3 lg:order-none lg:min-w-0 lg:border-t-0 lg:pt-0">
+            <div className="order-3 w-full border-t border-white/20 pt-3 lg:order-none lg:min-w-0 lg:border-t-0 lg:pt-0">
               {topContent}
             </div>
           ) : null}
@@ -115,7 +115,7 @@ export function SiteLayout({
           <div className="navbar-end ml-auto w-auto flex-none gap-2">
             <Link
               aria-label="看别人玩"
-              className="btn btn-xs shrink-0 gap-1.5 rounded-lg border border-base-300 bg-white px-3 text-black shadow-sm hover:border-base-300 hover:bg-gray-100 sm:btn-sm sm:px-4"
+              className="btn btn-xs shrink-0 gap-1.5 rounded-full border border-white/70 bg-white px-3 text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm sm:px-4"
               params={{ locale }}
               to="/$locale/live"
             >
@@ -131,11 +131,11 @@ export function SiteLayout({
             {canSwitchTheme ? (
               <div
                 aria-label={t.theme}
-                className="join flex shrink-0 rounded-lg border border-base-300 bg-base-200 p-0.5"
+                className="join flex shrink-0 rounded-full border border-white/70 bg-white p-0.5 text-black shadow-sm"
               >
                 <button
                   aria-pressed={theme === 'light'}
-                  className={`btn join-item btn-xs border-0 sm:btn-sm ${
+                  className={`btn join-item btn-xs rounded-l-full border-0 sm:btn-sm ${
                     theme === 'light'
                       ? 'bg-base-100 shadow-sm'
                       : 'bg-transparent opacity-60'
@@ -148,7 +148,7 @@ export function SiteLayout({
                 </button>
                 <button
                   aria-pressed={theme === 'dark'}
-                  className={`btn join-item btn-xs border-0 sm:btn-sm ${
+                  className={`btn join-item btn-xs rounded-r-full border-0 sm:btn-sm ${
                     theme === 'dark'
                       ? 'bg-base-100 shadow-sm'
                       : 'bg-transparent opacity-60'
@@ -169,7 +169,7 @@ export function SiteLayout({
               ref={localeMenuRef}
             >
               <summary
-                className="btn btn-sm btn-ghost border border-base-300"
+                className="btn btn-xs rounded-full border border-white/70 bg-white px-3 text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm"
                 onClick={(event) => {
                   event.preventDefault()
                   setIsLocaleMenuOpen((isOpen) => !isOpen)

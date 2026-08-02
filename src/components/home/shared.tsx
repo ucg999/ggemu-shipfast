@@ -393,13 +393,13 @@ function GameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
 
   return (
     <Link
-      className="group block h-full rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+      className="group block h-full rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
       {...gameCardPreviewHandlers}
       params={{ gameId, locale: lang }}
       search={{}}
       to="/$locale/games/$gameId"
     >
-      <figure className="relative isolate aspect-[4/3] overflow-hidden rounded-xl bg-base-200">
+      <figure className="relative isolate aspect-[4/3] overflow-hidden rounded-md bg-base-200">
         {game.game_cover ? (
           <img
             alt={game.name ?? 'Game cover'}
