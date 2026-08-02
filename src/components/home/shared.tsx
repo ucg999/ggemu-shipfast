@@ -133,10 +133,10 @@ export function SearchForm({
   return (
     <form className="flex w-full flex-col gap-3" onSubmit={onSearch}>
       <div className="flex flex-wrap items-center gap-2">
-        <label className="flex w-full min-w-0 items-center gap-3 rounded-full border border-base-300 bg-base-200/70 px-5 shadow-sm transition focus-within:border-primary/50 focus-within:bg-base-100 focus-within:shadow-md sm:w-96">
-          <i className="ri-search-line text-lg text-base-content/45" />
+        <label className="flex w-full min-w-0 items-center gap-3 rounded-full border border-white/70 bg-white px-5 shadow-sm transition focus-within:border-gray-300 focus-within:bg-white focus-within:shadow-md sm:w-96">
+          <i className="ri-search-line text-lg text-gray-500" />
           <input
-            className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-base-content/40"
+            className="h-12 min-w-0 flex-1 bg-transparent text-sm text-black caret-black outline-none placeholder:text-gray-500"
             onChange={(event) => onQueryChange(event.currentTarget.value)}
             placeholder={searchPlaceholder}
             type="search"
