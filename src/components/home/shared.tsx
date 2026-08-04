@@ -319,14 +319,27 @@ export function GamesSection({
         >
           {games.map((game, index) => {
             const key = game._id ?? game.url_slug
-            const card = <GameCard game={game} lang={lang} />
+            const card = (
+              <GameCard
+                game={game}
+                isCompactTail={index >= games.length - 3}
+                lang={lang}
+                layoutIndex={index}
+              />
+            )
 
             return mobileItemLimit && index >= mobileItemLimit ? (
-              <div className="hidden lg:block" key={key}>
+              <div className="hidden lg:contents" key={key}>
                 {card}
               </div>
             ) : (
-              <GameCard game={game} key={key} lang={lang} />
+              <GameCard
+                game={game}
+                isCompactTail={index >= games.length - 3}
+                key={key}
+                lang={lang}
+                layoutIndex={index}
+              />
             )
           })}
         </div>
@@ -387,19 +400,33 @@ function HomeBlogPostCard({
   )
 }
 
-function GameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
+function GameCard({
+  game,
+  isCompactTail = false,
+  lang,
+  layoutIndex = 1,
+}: {
+  game: PublicGame
+  isCompactTail?: boolean
+  lang: Locale
+  layoutIndex?: number
+}) {
   const gameId = game.url_slug || game._id || ''
   const playCount = game.plays_count ?? 0
+  const isFeaturedTile =
+    !isCompactTail && (layoutIndex % 11 === 0 || layoutIndex % 11 === 5)
 
   return (
     <Link
-      className="group block h-full rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+      className={`game-mosaic-card group block h-full rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary lg:rounded-sm ${
+        isFeaturedTile ? 'is-featured' : ''
+      }`}
       {...gameCardPreviewHandlers}
       params={{ gameId, locale: lang }}
       search={{}}
       to="/$locale/games/$gameId"
     >
-      <figure className="relative isolate aspect-[4/3] overflow-hidden rounded-md bg-base-200">
+      <figure className="relative isolate aspect-square w-full overflow-hidden rounded-md bg-base-200 lg:aspect-[4/3] lg:rounded-sm">
         {game.game_cover ? (
           <img
             alt={game.name ?? 'Game cover'}

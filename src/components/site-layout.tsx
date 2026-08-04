@@ -12,15 +12,19 @@ export function SiteLayout({
   children,
   headerActions,
   hideHeaderNav = false,
+  hideFooterOnMobile = false,
   gameFilterOptions,
   locale,
+  onOpenSearch,
   topContent,
 }: {
   children: ReactNode
   gameFilterOptions?: GameFilterOptions
   headerActions?: ReactNode
   hideHeaderNav?: boolean
+  hideFooterOnMobile?: boolean
   locale: Locale
+  onOpenSearch?: () => void
   topContent?: ReactNode
 }) {
   const t = getI18n(locale).layout
@@ -30,6 +34,7 @@ export function SiteLayout({
   const [isLocaleMenuOpen, setIsLocaleMenuOpen] = useState(false)
   const [isUsefulMenuOpen, setIsUsefulMenuOpen] = useState(false)
   const [isFriendsMenuOpen, setIsFriendsMenuOpen] = useState(false)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const localeMenuRef = useRef<HTMLDetailsElement>(null)
   const canSwitchTheme = siteThemes.length > 1
   const sidebarSearchParams = new URLSearchParams(location.searchStr)
@@ -68,6 +73,10 @@ export function SiteLayout({
     window.localStorage.setItem('retro-games-theme', nextTheme)
   }
 
+  function toggleTheme() {
+    handleThemeChange(theme === 'dark' ? 'light' : 'dark')
+  }
+
   function handleLocaleChange(nextValue: string) {
     const nextLocale = normalizeLocale(nextValue)
     const nextPath = location.pathname.replace(
@@ -83,6 +92,22 @@ export function SiteLayout({
       <header className="sticky top-0 z-40 border-b border-red-700 bg-red-600 text-white shadow-sm">
         <div className="navbar flex-wrap gap-3 px-4 sm:px-6 lg:grid lg:grid-cols-[220px_minmax(0,1fr)_auto] lg:gap-0 lg:px-8">
           <div className="navbar-start w-auto flex-none">
+            {hideHeaderNav ? null : (
+              <button
+                aria-label={isMobileSidebarOpen ? '收起左侧导航' : '展开左侧导航'}
+                className="btn btn-circle btn-xs mr-1 border border-white/40 bg-white/10 text-white hover:bg-white/20 sm:btn-sm lg:hidden"
+                onClick={() => setIsMobileSidebarOpen((isOpen) => !isOpen)}
+                type="button"
+              >
+                <i
+                  className={
+                    isMobileSidebarOpen
+                      ? 'ri-menu-fold-line text-lg'
+                      : 'ri-menu-unfold-line text-lg'
+                  }
+                />
+              </button>
+            )}
             <Link
               className="flex min-w-0 items-center gap-3"
               params={{ locale }}
@@ -113,6 +138,17 @@ export function SiteLayout({
           ) : null}
 
           <div className="navbar-end ml-auto w-auto flex-none gap-2">
+            {onOpenSearch ? (
+              <button
+                aria-label="搜索游戏"
+                className="btn btn-circle btn-xs shrink-0 border border-white/70 bg-white text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm lg:hidden"
+                onClick={onOpenSearch}
+                title="搜索游戏"
+                type="button"
+              >
+                <i className="ri-search-line text-base" />
+              </button>
+            ) : null}
             <Link
               aria-label="看别人玩"
               className="btn btn-xs shrink-0 gap-1.5 rounded-full border border-white/70 bg-white px-3 text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm sm:px-4"
@@ -129,37 +165,49 @@ export function SiteLayout({
             {headerActions}
 
             {canSwitchTheme ? (
-              <div
-                aria-label={t.theme}
-                className="join flex shrink-0 rounded-full border border-white/70 bg-white p-0.5 text-black shadow-sm"
-              >
+              <>
                 <button
-                  aria-pressed={theme === 'light'}
-                  className={`btn join-item btn-xs rounded-l-full border-0 sm:btn-sm ${
-                    theme === 'light'
-                      ? 'bg-base-100 shadow-sm'
-                      : 'bg-transparent opacity-60'
-                  }`}
-                  onClick={() => handleThemeChange('light')}
-                  type="button"
-                >
-                  <i className="ri-sun-line" />
-                  <span>亮色</span>
-                </button>
-                <button
+                  aria-label={t.theme}
                   aria-pressed={theme === 'dark'}
-                  className={`btn join-item btn-xs rounded-r-full border-0 sm:btn-sm ${
-                    theme === 'dark'
-                      ? 'bg-base-100 shadow-sm'
-                      : 'bg-transparent opacity-60'
-                  }`}
-                  onClick={() => handleThemeChange('dark')}
+                  className="btn btn-circle btn-xs shrink-0 border border-white/70 bg-white text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm lg:hidden"
+                  onClick={toggleTheme}
+                  title={theme === 'dark' ? '切换到亮色' : '切换到暗色'}
                   type="button"
                 >
-                  <i className="ri-moon-line" />
-                  <span>暗色</span>
+                  <i className={theme === 'dark' ? 'ri-sun-line' : 'ri-moon-line'} />
                 </button>
-              </div>
+                <div
+                  aria-label={t.theme}
+                  className="join hidden shrink-0 rounded-full border border-white/70 bg-white p-0.5 text-black shadow-sm lg:flex"
+                >
+                  <button
+                    aria-pressed={theme === 'light'}
+                    className={`btn join-item btn-sm rounded-l-full border-0 ${
+                      theme === 'light'
+                        ? 'bg-base-100 shadow-sm'
+                        : 'bg-transparent opacity-60'
+                    }`}
+                    onClick={() => handleThemeChange('light')}
+                    type="button"
+                  >
+                    <i className="ri-sun-line" />
+                    <span>亮色</span>
+                  </button>
+                  <button
+                    aria-pressed={theme === 'dark'}
+                    className={`btn join-item btn-sm rounded-r-full border-0 ${
+                      theme === 'dark'
+                        ? 'bg-base-100 shadow-sm'
+                        : 'bg-transparent opacity-60'
+                    }`}
+                    onClick={() => handleThemeChange('dark')}
+                    type="button"
+                  >
+                    <i className="ri-moon-line" />
+                    <span>暗色</span>
+                  </button>
+                </div>
+              </>
             ) : null}
 
             <details
@@ -200,6 +248,15 @@ export function SiteLayout({
         </div>
       </header>
 
+      {isMobileSidebarOpen && !hideHeaderNav ? (
+        <button
+          aria-label="关闭左侧导航"
+          className="fixed inset-0 top-[61px] z-30 bg-black/35 lg:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+          type="button"
+        />
+      ) : null}
+
       <div
         className={
           hideHeaderNav
@@ -208,7 +265,11 @@ export function SiteLayout({
         }
       >
         {hideHeaderNav ? null : (
-          <aside className="sticky top-[65px] hidden h-[calc(100vh-65px)] border-r border-base-300 bg-base-100 px-3 py-5 lg:block">
+          <aside
+            className={`fixed bottom-0 left-0 top-[61px] z-40 w-[min(82vw,280px)] overflow-y-auto border-r border-base-300 bg-base-100 px-3 py-5 shadow-2xl transition-transform duration-200 lg:sticky lg:top-[65px] lg:block lg:h-[calc(100vh-65px)] lg:w-auto lg:translate-x-0 lg:shadow-none ${
+              isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}
+          >
             <nav aria-label="主导航">
               <ul className="menu gap-1 p-0 text-sm">
                 <li>
@@ -224,7 +285,7 @@ export function SiteLayout({
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
                       <i className="ri-home-5-fill text-base" />
                     </span>
-                    <span className="min-w-0 flex-1">{t.games}</span>
+                    <span className="sidebar-label min-w-0 flex-1">{t.games}</span>
                   </Link>
                 </li>
                 <li>
@@ -233,9 +294,9 @@ export function SiteLayout({
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
                         <i className="ri-gamepad-line text-base" />
                       </span>
-                      <span className="min-w-0 flex-1">{t.gameLibrary}</span>
+                      <span className="sidebar-label min-w-0 flex-1">{t.gameLibrary}</span>
                     </summary>
-                    <ul>
+                    <ul className="sidebar-submenu">
                       <li>
                         <a href={`/${locale}?view=all`}>
                           {t.allGames}
@@ -303,7 +364,7 @@ export function SiteLayout({
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
                       <i className="ri-cpu-line text-base" />
                     </span>
-                    <span className="min-w-0 flex-1">超级模拟器</span>
+                    <span className="sidebar-label min-w-0 flex-1">超级模拟器</span>
                   </Link>
                 </li>
                 <li>
@@ -315,7 +376,7 @@ export function SiteLayout({
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
                       <i className="ri-newspaper-line text-base" />
                     </span>
-                    <span className="min-w-0 flex-1">{t.blog}</span>
+                    <span className="sidebar-label min-w-0 flex-1">{t.blog}</span>
                   </Link>
                 </li>
                 <li>
@@ -329,9 +390,9 @@ export function SiteLayout({
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
                         <i className="ri-gift-line text-base" />
                       </span>
-                      <span className="min-w-0 flex-1">拿点有用的</span>
+                      <span className="sidebar-label min-w-0 flex-1">拿点有用的</span>
                     </summary>
-                    <ul>
+                    <ul className="sidebar-submenu">
                       <li>
                         <a
                           href="https://www.kdocs.cn/etapps/query/q/TUxF4AQG"
@@ -391,9 +452,9 @@ export function SiteLayout({
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
                         <i className="ri-user-add-line text-base" />
                       </span>
-                      <span className="min-w-0 flex-1">找点新朋友</span>
+                      <span className="sidebar-label min-w-0 flex-1">找点新朋友</span>
                     </summary>
-                    <ul>
+                    <ul className="sidebar-submenu">
                       <li>
                         <details>
                           <summary>
@@ -434,7 +495,13 @@ export function SiteLayout({
 
         <div className="min-w-0">
           {children}
-          <SiteFooter locale={locale} />
+          {hideFooterOnMobile ? (
+            <div className="hidden lg:block">
+              <SiteFooter locale={locale} />
+            </div>
+          ) : (
+            <SiteFooter locale={locale} />
+          )}
         </div>
       </div>
     </main>

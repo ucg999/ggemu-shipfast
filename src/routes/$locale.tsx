@@ -23,6 +23,7 @@ import {
   getPokiDailyLayoutSeed,
 } from '#/components/home/poki-like-template'
 import { SidenavHomeTemplate } from '#/components/home/sidenav-template'
+import { HomeSearchOverlay } from '#/components/home/search-overlay'
 import { HOME_BLOG_POST_LIMIT, SearchForm } from '#/components/home/shared'
 import type { Filters, HomeLoaderData } from '#/components/home/types'
 import { TwoColumnHomeTemplate } from '#/components/home/two-column-template'
@@ -31,6 +32,7 @@ import {
   type GameSearchSort,
   type GameSearchResult,
   type Locale,
+  type PublicGame,
   getGameFilterOptions,
   searchBlogPosts,
   searchGames,
@@ -46,6 +48,8 @@ import {
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 
 const DEFAULT_HOME_REQUEST_SIZE = 42
+const MOBILE_API_PAGE_SIZE = 51
+const MOBILE_HOME_REQUEST_SIZE = 102
 const POPULAR_HOME_REQUEST_SIZE = 42
 
 type HomeSearch = {
@@ -277,10 +281,46 @@ function LocalizedHomePage() {
     sort: normalizeHomeSort(homeSearch.sort) ?? 'newest',
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
 
   useEffect(() => {
     setResult(initialResult)
   }, [initialResult])
+
+  useEffect(() => {
+    if (
+      currentTemplate !== 'default' ||
+      !window.matchMedia('(max-width: 1023px)').matches
+    ) {
+      return
+    }
+
+    let isCancelled = false
+
+    Promise.all(
+      [1, 2].map((apiPage) =>
+        runSearch({
+          data: {
+            query: filters.query,
+            limit: MOBILE_API_PAGE_SIZE,
+            locale: lang,
+            page: apiPage,
+            platform: filters.platform,
+            category: filters.category,
+            sort: filters.sort,
+          },
+        }),
+      ),
+    ).then((mobileResults) => {
+      if (!isCancelled) {
+        setResult(mergeMobileResults(mobileResults, 1))
+      }
+    })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [currentTemplate, initialResult, lang, runSearch])
 
   const { games, pagination } = result
   const page = pagination.page
@@ -320,10 +360,39 @@ function LocalizedHomePage() {
     setIsLoading(true)
 
     try {
+      const isMobileHome =
+        currentTemplate === 'default' &&
+        window.matchMedia('(max-width: 1023px)').matches
+      if (isMobileHome) {
+        const firstApiPage = (nextPage - 1) * 2 + 1
+        const mobileResults = await Promise.all(
+          [firstApiPage, firstApiPage + 1].map((apiPage) =>
+            runSearch({
+              data: {
+                query: nextFilters.query,
+                limit: MOBILE_API_PAGE_SIZE,
+                locale: lang,
+                page: apiPage,
+                platform: nextFilters.platform,
+                category: nextFilters.category,
+                sort: nextFilters.sort,
+              },
+            }),
+          ),
+        )
+
+        setResult(mergeMobileResults(mobileResults, nextPage))
+        return
+      }
+
+      const requestLimit = getHomeRequestLimit(
+        siteConfig.SITE_TEMPLATE,
+        nextFilters.sort,
+      )
       const nextResult = await runSearch({
         data: {
           query: nextFilters.query,
-          limit: getHomeRequestLimit(siteConfig.SITE_TEMPLATE, nextFilters.sort),
+          limit: requestLimit,
           locale: lang,
           page: nextPage,
           platform: nextFilters.platform,
@@ -382,17 +451,29 @@ function LocalizedHomePage() {
   }
 
   return (
-    <SiteLayout
-      gameFilterOptions={initialResult.filterOptions}
-      locale={lang}
-      topContent={
-        <div className="w-full max-w-4xl">
-          <SearchForm {...templateProps} mode="default" />
-        </div>
-      }
-    >
-      <DefaultHomeTemplate {...templateProps} />
-    </SiteLayout>
+    <>
+      <SiteLayout
+        gameFilterOptions={initialResult.filterOptions}
+        hideFooterOnMobile
+        locale={lang}
+        onOpenSearch={() => setIsSearchOpen(true)}
+        topContent={
+          <div className="hidden w-full max-w-4xl lg:block">
+            <SearchForm {...templateProps} mode="default" />
+          </div>
+        }
+      >
+        <DefaultHomeTemplate {...templateProps} />
+      </SiteLayout>
+      <HomeSearchOverlay
+        filterOptions={initialResult.filterOptions}
+        gameTotal={pagination.total}
+        isOpen={isSearchOpen}
+        lang={lang}
+        onClose={() => setIsSearchOpen(false)}
+        t={t}
+      />
+    </>
   )
 }
 
@@ -479,4 +560,52 @@ async function loadFeaturePlatformGames(locale: Locale) {
       }
     }),
   )
+}
+
+function shuffleGames(games: Array<PublicGame>) {
+  const shuffledGames = [...games]
+
+  for (let index = shuffledGames.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    const currentGame = shuffledGames[index]
+    shuffledGames[index] = shuffledGames[swapIndex]
+    shuffledGames[swapIndex] = currentGame
+  }
+
+  return shuffledGames
+}
+
+function mergeMobileResults(
+  results: Array<GameSearchResult>,
+  page: number,
+): GameSearchResult {
+  const firstResult = results[0]
+
+  if (!firstResult) {
+    return {
+      games: [],
+      pagination: {
+        limit: MOBILE_HOME_REQUEST_SIZE,
+        page,
+        pages: 1,
+        total: 0,
+      },
+    }
+  }
+
+  return {
+    ...firstResult,
+    games: shuffleGames(
+      results.flatMap((result) => result.games).slice(0, MOBILE_HOME_REQUEST_SIZE),
+    ),
+    pagination: {
+      ...firstResult.pagination,
+      limit: MOBILE_HOME_REQUEST_SIZE,
+      page,
+      pages: Math.max(
+        1,
+        Math.ceil(firstResult.pagination.total / MOBILE_HOME_REQUEST_SIZE),
+      ),
+    },
+  }
 }

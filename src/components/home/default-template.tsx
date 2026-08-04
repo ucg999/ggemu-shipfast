@@ -21,7 +21,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
 
   return (
     <>
-      <section className="bg-base-100">
+      <section className="hidden bg-base-100 lg:block">
         <div className="flex w-full flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8">
           <div className="w-full">
             <h1 className="rainbow-title hidden whitespace-nowrap text-[clamp(2rem,3.7vw,4rem)] font-bold leading-tight sm:block">
@@ -31,11 +31,13 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
         </div>
       </section>
 
-      <RecentPlayedGamesSection lang={lang} />
+      <div className="hidden lg:block">
+        <RecentPlayedGamesSection lang={lang} />
+      </div>
 
       <nav
         aria-label="游戏平台导航"
-        className="border-y border-base-300 bg-base-100 px-4 sm:px-6 lg:px-8"
+        className="hidden border-y border-base-300 bg-base-100 px-4 sm:px-6 lg:block lg:px-8"
       >
         <div className="flex items-center gap-1 overflow-x-auto py-2">
           <button
@@ -73,15 +75,16 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
 
       <GamesSection
         {...props}
-        gridClassName="grid grid-cols-3 gap-1 sm:gap-2 lg:grid-cols-7"
-        mobileItemLimit={18}
-        sectionClassName="flex w-full flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8"
+        gridClassName="game-mosaic-grid grid grid-flow-dense grid-cols-12 gap-1 sm:grid-cols-12 lg:grid-cols-7 lg:gap-2"
+        mobileItemLimit={102}
+        sectionClassName="flex w-full flex-col gap-3 p-1 lg:px-3 lg:py-3"
         showHeader={false}
       />
 
-      <MobileQuickLinks lang={lang} />
-      <HomeLatestBlogPostsSection blogPosts={latestBlogPosts} lang={lang} />
-      <HomeFaqSection lang={lang} />
+      <div className="hidden lg:block">
+        <HomeLatestBlogPostsSection blogPosts={latestBlogPosts} lang={lang} />
+        <HomeFaqSection lang={lang} />
+      </div>
     </>
   )
 }
