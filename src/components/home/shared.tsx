@@ -412,7 +412,7 @@ function GameCard({
   layoutIndex?: number
 }) {
   const gameId = game.url_slug || game._id || ''
-  const playCount = game.plays_count ?? 0
+  const viewCount = game.views_count ?? 0
   const isFeaturedTile =
     !isCompactTail && (layoutIndex % 11 === 0 || layoutIndex % 11 === 5)
 
@@ -446,10 +446,10 @@ function GameCard({
 
         <span
           className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm"
-          title={`${playCount} ${getI18n(lang).home.plays}`}
+          title={`${viewCount} ${getI18n(lang).home.views}`}
         >
-          <i className="ri-play-circle-line" />
-          {formatGameCount(playCount, lang)}
+          <i className="ri-eye-line" />
+          {formatGameCount(viewCount, lang)}
         </span>
       </figure>
     </Link>
