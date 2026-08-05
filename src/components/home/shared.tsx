@@ -444,8 +444,16 @@ function GameCard({
           ▶
         </span>
 
+        {isFeaturedTile ? (
+          <span className="absolute bottom-2 left-2 rounded-full bg-yellow-400 px-2 py-0.5 text-[9px] font-semibold text-black lg:hidden">
+            立即游玩
+          </span>
+        ) : null}
+
         <span
-          className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm"
+          className={`game-card-view-count absolute bottom-2 right-2 items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm ${
+            isFeaturedTile ? 'flex' : 'hidden lg:flex'
+          }`}
           title={`${viewCount} ${getI18n(lang).home.views}`}
         >
           <i className="ri-eye-line" />

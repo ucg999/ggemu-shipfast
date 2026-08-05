@@ -16,6 +16,14 @@ body {
   grid-row: span 2 / span 2;
 }
 
+@media (max-width: 1023px) {
+  .game-mosaic-grid
+    > .game-mosaic-card:not(.is-featured)
+    .game-card-view-count {
+    display: none !important;
+  }
+}
+
 @media (min-width: 1024px) {
   .game-mosaic-grid > .game-mosaic-card {
     grid-column: span 1 / span 1;
