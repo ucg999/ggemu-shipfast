@@ -222,8 +222,18 @@ export const Route = createFileRoute('/$locale')({
       loadLatestBlogPosts(locale),
     ])
 
+    const shouldShuffleHomeRecommendations =
+      template === 'default' &&
+      !deps.platform &&
+      !deps.category &&
+      !deps.sort &&
+      !deps.view
+
     return {
       ...result,
+      games: shouldShuffleHomeRecommendations
+        ? shuffleGames(result.games)
+        : result.games,
       filterOptions,
       layoutSeed: getPokiDailyLayoutSeed(),
       latestBlogPosts,
@@ -401,7 +411,12 @@ function LocalizedHomePage() {
         },
       })
 
-      setResult(nextResult)
+      setResult(
+        currentTemplate === 'default' &&
+          isHomeRecommendationFilters(nextFilters)
+          ? { ...nextResult, games: shuffleGames(nextResult.games) }
+          : nextResult,
+      )
     } finally {
       setIsLoading(false)
     }
@@ -573,6 +588,15 @@ function shuffleGames(games: Array<PublicGame>) {
   }
 
   return shuffledGames
+}
+
+function isHomeRecommendationFilters(filters: Filters) {
+  return (
+    !filters.query &&
+    !filters.platform &&
+    !filters.category &&
+    filters.sort === 'newest'
+  )
 }
 
 function mergeMobileResults(
