@@ -26,6 +26,7 @@ import { Route as LocaleTermsOfServiceRouteImport } from './routes/$locale.terms
 import { Route as ApiShareImageRouteImport } from './routes/api/share-image'
 import { Route as GamesGameIdRouteImport } from './routes/games/$gameId'
 import { Route as LocaleBlogBlogIdRouteImport } from './routes/$locale.blog.$blogId'
+import { Route as LocaleCollectionsCollectionIdRouteImport } from './routes/$locale.collections.$collectionId'
 import { Route as LocaleGamesGameIdRouteImport } from './routes/$locale.games.$gameId'
 import { Route as UsernameArticleStatusidRouteImport } from './routes/$username/article/$statusid'
 import { Route as UsernameStatusStatusidRouteImport } from './routes/$username/status/$statusid'
@@ -117,6 +118,12 @@ const LocaleBlogBlogIdRoute = LocaleBlogBlogIdRouteImport.update({
   path: '/$blogId',
   getParentRoute: () => LocaleBlogRoute,
 } as any)
+const LocaleCollectionsCollectionIdRoute =
+  LocaleCollectionsCollectionIdRouteImport.update({
+    id: '/collections/$collectionId',
+    path: '/collections/$collectionId',
+    getParentRoute: () => LocaleRoute,
+  } as any)
 const LocaleGamesGameIdRoute = LocaleGamesGameIdRouteImport.update({
   id: '/games/$gameId',
   path: '/games/$gameId',
@@ -161,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale/blog/$blogId': typeof LocaleBlogBlogIdRoute
+  '/$locale/collections/$collectionId': typeof LocaleCollectionsCollectionIdRoute
   '/$locale/games/$gameId': typeof LocaleGamesGameIdRouteWithChildren
   '/$username/article/$statusid': typeof UsernameArticleStatusidRoute
   '/$username/status/$statusid': typeof UsernameStatusStatusidRoute
@@ -185,6 +193,7 @@ export interface FileRoutesByTo {
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale/blog/$blogId': typeof LocaleBlogBlogIdRoute
+  '/$locale/collections/$collectionId': typeof LocaleCollectionsCollectionIdRoute
   '/$locale/games/$gameId': typeof LocaleGamesGameIdRouteWithChildren
   '/$username/article/$statusid': typeof UsernameArticleStatusidRoute
   '/$username/status/$statusid': typeof UsernameStatusStatusidRoute
@@ -210,6 +219,7 @@ export interface FileRoutesById {
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale/blog/$blogId': typeof LocaleBlogBlogIdRoute
+  '/$locale/collections/$collectionId': typeof LocaleCollectionsCollectionIdRoute
   '/$locale/games/$gameId': typeof LocaleGamesGameIdRouteWithChildren
   '/$username/article/$statusid': typeof UsernameArticleStatusidRoute
   '/$username/status/$statusid': typeof UsernameStatusStatusidRoute
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/api/share-image'
     | '/games/$gameId'
     | '/$locale/blog/$blogId'
+    | '/$locale/collections/$collectionId'
     | '/$locale/games/$gameId'
     | '/$username/article/$statusid'
     | '/$username/status/$statusid'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/api/share-image'
     | '/games/$gameId'
     | '/$locale/blog/$blogId'
+    | '/$locale/collections/$collectionId'
     | '/$locale/games/$gameId'
     | '/$username/article/$statusid'
     | '/$username/status/$statusid'
@@ -284,6 +296,7 @@ export interface FileRouteTypes {
     | '/api/share-image'
     | '/games/$gameId'
     | '/$locale/blog/$blogId'
+    | '/$locale/collections/$collectionId'
     | '/$locale/games/$gameId'
     | '/$username/article/$statusid'
     | '/$username/status/$statusid'
@@ -426,6 +439,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleBlogBlogIdRouteImport
       parentRoute: typeof LocaleBlogRoute
     }
+    '/$locale/collections/$collectionId': {
+      id: '/$locale/collections/$collectionId'
+      path: '/collections/$collectionId'
+      fullPath: '/$locale/collections/$collectionId'
+      preLoaderRoute: typeof LocaleCollectionsCollectionIdRouteImport
+      parentRoute: typeof LocaleRoute
+    }
     '/$locale/games/$gameId': {
       id: '/$locale/games/$gameId'
       path: '/games/$gameId'
@@ -495,6 +515,7 @@ interface LocaleRouteChildren {
   LocalePrivacyPolicyRoute: typeof LocalePrivacyPolicyRoute
   LocaleRandomRoute: typeof LocaleRandomRoute
   LocaleTermsOfServiceRoute: typeof LocaleTermsOfServiceRoute
+  LocaleCollectionsCollectionIdRoute: typeof LocaleCollectionsCollectionIdRoute
   LocaleGamesGameIdRoute: typeof LocaleGamesGameIdRouteWithChildren
 }
 
@@ -506,6 +527,7 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocalePrivacyPolicyRoute: LocalePrivacyPolicyRoute,
   LocaleRandomRoute: LocaleRandomRoute,
   LocaleTermsOfServiceRoute: LocaleTermsOfServiceRoute,
+  LocaleCollectionsCollectionIdRoute: LocaleCollectionsCollectionIdRoute,
   LocaleGamesGameIdRoute: LocaleGamesGameIdRouteWithChildren,
 }
 

@@ -178,6 +178,10 @@ function toOpenGraphLocale(locale: Locale) {
     return 'zh_CN'
   }
 
+  if (locale === 'zh-TW') {
+    return 'zh_TW'
+  }
+
   return locale
 }
 

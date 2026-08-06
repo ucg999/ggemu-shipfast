@@ -1,7 +1,7 @@
 import type { Locale } from './ggemu'
 
 export function getPlatformLabel(name: string, locale: Locale) {
-  if (locale === 'zh-CN') {
+  if (locale === 'zh-CN' || locale === 'zh-TW') {
     const labels: Record<string, string> = {
       arcade: '街机',
       'atari jaguar': '雅达利',

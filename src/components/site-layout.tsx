@@ -80,7 +80,7 @@ export function SiteLayout({
   function handleLocaleChange(nextValue: string) {
     const nextLocale = normalizeLocale(nextValue)
     const nextPath = location.pathname.replace(
-      /^\/(zh-CN|en|ja)(?=\/|$)/,
+      /^\/(zh-CN|zh-TW|en|ja)(?=\/|$)/,
       `/${nextLocale}`,
     )
 
@@ -224,22 +224,33 @@ export function SiteLayout({
                 }}
               >
                 <i className="ri-global-line" />
-                {locale === 'zh-CN' ? '中文' : locale === 'en' ? 'EN' : '日本語'}
+                {locale === 'zh-CN'
+                  ? '简'
+                  : locale === 'zh-TW'
+                    ? '繁'
+                    : locale === 'en'
+                      ? '英'
+                      : '日'}
               </summary>
-              <ul className="menu dropdown-content z-50 mt-3 w-36 rounded-box border border-base-300 bg-base-100 p-2 shadow-xl">
+              <ul className="menu dropdown-content z-50 mt-3 w-36 rounded-box border border-base-300 bg-base-100 p-2 text-black shadow-xl">
                 <li>
                   <button onClick={() => handleLocaleChange('zh-CN')} type="button">
-                    中文
+                    简
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => handleLocaleChange('zh-TW')} type="button">
+                    繁
                   </button>
                 </li>
                 <li>
                   <button onClick={() => handleLocaleChange('en')} type="button">
-                    English
+                    英
                   </button>
                 </li>
                 <li>
                   <button onClick={() => handleLocaleChange('ja')} type="button">
-                    日本語
+                    日
                   </button>
                 </li>
               </ul>

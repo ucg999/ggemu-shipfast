@@ -2,9 +2,12 @@ import type { Locale, PublicGame } from '#/lib/ggemu'
 import { enHomeFaqs, enMessages } from '#/lib/i18n/en'
 import { jaHomeFaqs, jaMessages } from '#/lib/i18n/ja'
 import { zhCnHomeFaqs, zhCnMessages } from '#/lib/i18n/zh-CN'
+import { zhTwHomeFaqs, zhTwMessages } from '#/lib/i18n/zh-TW'
 
 export function normalizeLocale(value: unknown): Locale {
-  return value === 'en' || value === 'ja' ? value : 'zh-CN'
+  return value === 'zh-TW' || value === 'en' || value === 'ja'
+    ? value
+    : 'zh-CN'
 }
 
 export function formatCopy(
@@ -18,6 +21,7 @@ export function formatCopy(
 
 export const i18n = {
   'zh-CN': zhCnMessages,
+  'zh-TW': zhTwMessages,
   en: enMessages,
   ja: jaMessages,
 } satisfies Record<Locale, typeof zhCnMessages>
@@ -28,6 +32,7 @@ export function getI18n(locale: Locale) {
 
 const homeFaqs = {
   'zh-CN': zhCnHomeFaqs,
+  'zh-TW': zhTwHomeFaqs,
   en: enHomeFaqs,
   ja: jaHomeFaqs,
 } satisfies Record<Locale, typeof zhCnHomeFaqs>
@@ -42,7 +47,7 @@ export function getGameDetailFaqs(game: PublicGame, locale: Locale) {
   const developer = game.developer?.trim()
   const category = game.categories?.find((item) => item.trim())?.trim()
 
-  if (locale === 'zh-CN') {
+  if (locale === 'zh-CN' || locale === 'zh-TW') {
     return [
       {
         question: `${name} 可以在线玩吗？`,
@@ -147,7 +152,7 @@ export function buildGameDetailSeo(game: PublicGame, locale: Locale) {
   const categoryText = (game.categories ?? []).slice(0, 3).join(', ')
   const baseDescription = game.description ? compactText(game.description) : ''
 
-  if (locale === 'zh-CN') {
+  if (locale === 'zh-CN' || locale === 'zh-TW') {
     return {
       title: [`${name} 在线玩`, platform, year, '浏览器免下载']
         .filter(Boolean)

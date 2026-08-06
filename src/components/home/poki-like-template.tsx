@@ -29,9 +29,10 @@ const POKI_TILE_GAP = 16
 const POKI_LAYOUT_SEED_DAY_MS = 24 * 60 * 60 * 1000
 
 const localeOptions: Array<{ label: string; value: Locale }> = [
-  { label: '中文', value: 'zh-CN' },
-  { label: 'English', value: 'en' },
-  { label: '日本語', value: 'ja' },
+  { label: '简', value: 'zh-CN' },
+  { label: '繁', value: 'zh-TW' },
+  { label: '英', value: 'en' },
+  { label: '日', value: 'ja' },
 ]
 
 type PokiTileSize = 1 | 2 | 3
@@ -275,7 +276,7 @@ function PokiControlTiles({
     setIsLocaleMenuOpen(false)
 
     const nextPath = location.pathname.replace(
-      /^\/(zh-CN|en|ja)(?=\/|$)/,
+      /^\/(zh-CN|zh-TW|en|ja)(?=\/|$)/,
       `/${nextLocale}`,
     )
 
@@ -326,7 +327,7 @@ function PokiControlTiles({
           >
             <i className="ri-global-line" />
           </summary>
-          <ul className="menu dropdown-content z-50 mt-2 w-40 rounded-box bg-base-100 p-2 shadow-xl">
+          <ul className="menu dropdown-content z-50 mt-2 w-40 rounded-box bg-base-100 p-2 text-black shadow-xl">
             {localeOptions.map((option) => (
               <li key={option.value}>
                 <button

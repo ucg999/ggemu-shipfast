@@ -222,18 +222,8 @@ export const Route = createFileRoute('/$locale')({
       loadLatestBlogPosts(locale),
     ])
 
-    const shouldShuffleHomeRecommendations =
-      template === 'default' &&
-      !deps.platform &&
-      !deps.category &&
-      !deps.sort &&
-      !deps.view
-
     return {
       ...result,
-      games: shouldShuffleHomeRecommendations
-        ? shuffleGames(result.games)
-        : result.games,
       filterOptions,
       layoutSeed: getPokiDailyLayoutSeed(),
       latestBlogPosts,
@@ -288,7 +278,7 @@ function LocalizedHomePage() {
     query: '',
     platform: normalizeFilterValue(homeSearch.platform) ?? '',
     category: normalizeFilterValue(homeSearch.category) ?? '',
-    sort: normalizeHomeSort(homeSearch.sort) ?? 'newest',
+    sort: normalizeHomeSort(homeSearch.sort) ?? 'popular',
   })
   const [isLoading, setIsLoading] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -347,6 +337,7 @@ function LocalizedHomePage() {
     layoutSeed: initialResult.layoutSeed,
     latestBlogPosts: initialResult.latestBlogPosts,
     onFilterChange: updateFilter,
+    onHomeRecommendations: showHomeRecommendations,
     onLoadPage: (nextPage: number) => loadGames(filters, nextPage),
     onQueryChange: (query: string) => {
       setFilters((current) => ({
@@ -411,12 +402,7 @@ function LocalizedHomePage() {
         },
       })
 
-      setResult(
-        currentTemplate === 'default' &&
-          isHomeRecommendationFilters(nextFilters)
-          ? { ...nextResult, games: shuffleGames(nextResult.games) }
-          : nextResult,
-      )
+      setResult(nextResult)
     } finally {
       setIsLoading(false)
     }
@@ -438,7 +424,19 @@ function LocalizedHomePage() {
       query: '',
       platform: '',
       category: '',
-      sort: 'newest',
+      sort: 'popular',
+    }
+
+    setFilters(nextFilters)
+    loadGames(nextFilters, 1)
+  }
+
+  function showHomeRecommendations() {
+    const nextFilters: Filters = {
+      query: '',
+      platform: '',
+      category: '',
+      sort: 'popular',
     }
 
     setFilters(nextFilters)
@@ -538,8 +536,8 @@ function getHomeRequestLimit(
   return DEFAULT_HOME_REQUEST_SIZE
 }
 
-function getHomeSort(template: SiteTemplate): GameSearchSort {
-  return template === 'poki-like' ? 'popular' : 'newest'
+function getHomeSort(_template: SiteTemplate): GameSearchSort {
+  return 'popular'
 }
 
 async function loadFeatureGames(
@@ -588,15 +586,6 @@ function shuffleGames(games: Array<PublicGame>) {
   }
 
   return shuffledGames
-}
-
-function isHomeRecommendationFilters(filters: Filters) {
-  return (
-    !filters.query &&
-    !filters.platform &&
-    !filters.category &&
-    filters.sort === 'newest'
-  )
 }
 
 function mergeMobileResults(

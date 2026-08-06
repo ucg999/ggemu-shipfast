@@ -2,10 +2,12 @@ import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
 import type { Locale, PublicGame } from '#/lib/ggemu'
+import { GAME_COLLECTIONS } from '#/lib/game-collections'
 import { getI18n } from '#/lib/i18n'
 
 const RECENT_PLAYED_GAMES_KEY = 'ggemu-recent-played-games'
-const RECENT_PLAYED_GAMES_LIMIT = 7
+const RECENT_PLAYED_GAMES_LIMIT = 102
+const RECENT_PLAYED_STRIP_LIMIT = 4
 
 export type RecentPlayedGame = {
   cover?: string
@@ -36,21 +38,24 @@ export function RecentPlayedGamesSection({
 }) {
   const games = useRecentPlayedGames()
 
-  if (games.length === 0) {
-    return null
-  }
-
   return (
     <section className="bg-base-100">
-      <div className="w-full px-4 py-4 sm:px-6 lg:px-8">
-        <h2 className="text-xl font-semibold text-base-content">
-          {getI18n(lang).home.recentlyPlayed}
-        </h2>
-        <div className="mt-3 grid auto-cols-[calc((100%-2.5rem)/6)] grid-flow-col grid-rows-1 gap-1 overflow-x-auto pb-1 sm:auto-cols-[calc((100%-5rem)/6)] sm:gap-2 lg:auto-cols-[calc((100%-13rem)/14)]">
-          {games.map((game) => (
-            <RecentPlayedGameCard game={game} key={game.id} lang={lang} />
-          ))}
+      <div className="grid w-full gap-5 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.65fr)] lg:px-8">
+        <div>
+          <h2 className="text-xl font-semibold text-base-content">
+            {getI18n(lang).home.recentlyPlayed}
+          </h2>
+          {games.length > 0 ? (
+            <div className="mt-3 grid max-w-[50%] grid-cols-4 gap-2">
+              {games.slice(0, RECENT_PLAYED_STRIP_LIMIT).map((game) => (
+                <RecentPlayedGameCard game={game} key={game.id} lang={lang} />
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-base-content/55">开始游玩后会显示在这里</p>
+          )}
         </div>
+        <PopularGameCollections lang={lang} />
       </div>
     </section>
   )
@@ -64,6 +69,33 @@ export function useRecentPlayedGames() {
   }, [])
 
   return games
+}
+
+export function PopularGameCollections({ lang }: { lang: Locale }) {
+  return (
+    <div>
+      <h2 className="text-xl font-semibold text-base-content">热门游戏合集</h2>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {GAME_COLLECTIONS.map((collection) => (
+          <Link
+            className="group relative aspect-[16/9] overflow-hidden rounded-lg bg-base-200"
+            key={collection.id}
+            params={{ collectionId: collection.id, locale: lang }}
+            to="/$locale/collections/$collectionId"
+          >
+              <img
+                alt={collection.title}
+                className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                src={collection.cover}
+              />
+              <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-3 pb-2 pt-8 text-sm font-bold text-white">
+                {collection.title}
+              </span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 function RecentPlayedGameCard({

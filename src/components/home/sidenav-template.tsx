@@ -17,9 +17,10 @@ import { HomeSearchOverlay } from './search-overlay'
 import type { HomeTemplateProps } from './types'
 
 const localeOptions: Array<{ label: string; value: Locale }> = [
-  { label: '中文', value: 'zh-CN' },
-  { label: 'English', value: 'en' },
-  { label: '日本語', value: 'ja' },
+  { label: '简', value: 'zh-CN' },
+  { label: '繁', value: 'zh-TW' },
+  { label: '英', value: 'en' },
+  { label: '日', value: 'ja' },
 ]
 
 export function SidenavHomeTemplate(props: HomeTemplateProps) {
@@ -117,7 +118,7 @@ function HomeSidenav({
     setIsLocaleMenuOpen(false)
 
     const nextPath = location.pathname.replace(
-      /^\/(zh-CN|en|ja)(?=\/|$)/,
+      /^\/(zh-CN|zh-TW|en|ja)(?=\/|$)/,
       `/${nextLocale}`,
     )
 
@@ -232,7 +233,7 @@ function HomeSidenav({
             ref={localeMenuRef}
           >
             <summary
-              className="btn btn-ghost btn-sm w-full list-none justify-center border border-base-300 bg-base-100 px-2"
+              className="btn btn-ghost btn-sm w-full list-none justify-center border border-base-300 bg-base-100 px-2 text-black"
               onClick={(event) => {
                 event.preventDefault()
                 setIsLocaleMenuOpen((isOpen) => !isOpen)
@@ -241,11 +242,17 @@ function HomeSidenav({
             >
               <i className="ri-global-line" />
               <span className="truncate">
-                {locale === 'zh-CN' ? '中文' : locale === 'en' ? 'EN' : '日本語'}
+                {locale === 'zh-CN'
+                  ? '简'
+                  : locale === 'zh-TW'
+                    ? '繁'
+                    : locale === 'en'
+                      ? '英'
+                      : '日'}
               </span>
             </summary>
             <ul
-              className={`menu absolute bottom-full right-0 z-[80] mb-2 ${controlsMenuWidthClassName} rounded-box border border-base-300 bg-base-100 p-2 shadow-xl`}
+              className={`menu absolute bottom-full right-0 z-[80] mb-2 ${controlsMenuWidthClassName} rounded-box border border-base-300 bg-base-100 p-2 text-black shadow-xl`}
             >
               {localeOptions.map((option) => (
                 <li key={option.value}>

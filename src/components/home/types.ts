@@ -77,4 +77,5 @@ export type HomeTemplateProps =
       featureSections?: Array<FeatureSection>
       layoutSeed: number
       latestBlogPosts: Array<BlogPost>
+      onHomeRecommendations: () => void
     }

@@ -1,11 +1,16 @@
 import { Link } from '@tanstack/react-router'
+import { useState } from 'react'
 
 import {
   GamesSection,
   HomeFaqSection,
   HomeLatestBlogPostsSection,
 } from './shared'
-import { RecentPlayedGamesSection } from './recent-played-games'
+import {
+  PopularGameCollections,
+  RecentPlayedGamesSection,
+  useRecentPlayedGames,
+} from './recent-played-games'
 import type { HomeTemplateProps } from './types'
 import { getPlatformLabel } from '#/lib/platform-label'
 
@@ -16,9 +21,24 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
     lang,
     latestBlogPosts,
     onFilterChange,
+    onHomeRecommendations,
     t,
   } = props
-
+  const [showMobileRecent, setShowMobileRecent] = useState(false)
+  const recentPlayedGames = useRecentPlayedGames()
+  const mobileRecentGames = recentPlayedGames.map((game) => ({
+    _id: game.id,
+    game_cover: game.cover,
+    name: game.name,
+    url_slug: game.id,
+  }))
+  const mobileRecentPagination = {
+    limit: Math.max(mobileRecentGames.length, 1),
+    page: 1,
+    pages: 1,
+    total: mobileRecentGames.length,
+  }
+  const orderedPlatforms = orderHomePlatforms(filterOptions.platforms)
   return (
     <>
       <section className="hidden bg-base-100 lg:block">
@@ -42,17 +62,20 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
         <div className="flex items-center gap-1 overflow-x-auto py-2">
           <button
             className={`btn btn-sm shrink-0 rounded-full border-0 px-4 ${
-              filters.platform
+              filters.platform ||
+              filters.category ||
+              filters.query ||
+              filters.sort !== 'popular'
                 ? 'btn-ghost text-base-content/65'
                 : 'bg-base-content text-base-100'
             }`}
-            onClick={() => onFilterChange('platform', '')}
+            onClick={onHomeRecommendations}
             type="button"
           >
             首页推荐
           </button>
 
-          {filterOptions.platforms.map((platform) => {
+          {orderedPlatforms.map((platform) => {
             const isActive = filters.platform === platform.name
 
             return (
@@ -73,13 +96,96 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
         </div>
       </nav>
 
-      <GamesSection
-        {...props}
-        gridClassName="game-mosaic-grid grid grid-flow-dense grid-cols-12 gap-1 sm:grid-cols-12 lg:grid-cols-7 lg:gap-2"
-        mobileItemLimit={102}
-        sectionClassName="flex w-full flex-col gap-3 p-1 lg:px-3 lg:py-3"
-        showHeader={false}
-      />
+      <nav
+        aria-label="手机端游戏平台导航"
+        className="border-y border-base-300 bg-base-100 px-1 lg:hidden"
+      >
+        <div className="flex items-center gap-1 overflow-x-auto py-1.5">
+          <button
+            className={`btn btn-xs shrink-0 rounded-full border-0 px-3 ${
+              showMobileRecent
+                ? 'bg-base-content text-base-100'
+                : 'btn-ghost text-base-content/65'
+            }`}
+            onClick={() => setShowMobileRecent(true)}
+            type="button"
+          >
+            最近玩过
+          </button>
+          <button
+            className={`btn btn-xs shrink-0 rounded-full border-0 px-3 ${
+              showMobileRecent ||
+              filters.platform ||
+              filters.category ||
+              filters.query ||
+              filters.sort !== 'popular'
+                ? 'btn-ghost text-base-content/65'
+                : 'bg-base-content text-base-100'
+            }`}
+            onClick={() => {
+              setShowMobileRecent(false)
+              onHomeRecommendations()
+            }}
+            type="button"
+          >
+            首页推荐
+          </button>
+          {orderedPlatforms.map((platform) => {
+            const isActive = filters.platform === platform.name
+
+            return (
+              <button
+                className={`btn btn-xs shrink-0 rounded-full border-0 px-3 ${
+                  isActive
+                    ? 'bg-base-content text-base-100'
+                    : 'btn-ghost text-base-content/65'
+                }`}
+                key={platform.name}
+                onClick={() => {
+                  setShowMobileRecent(false)
+                  onFilterChange('platform', platform.name)
+                }}
+                type="button"
+              >
+                {getPlatformLabel(platform.name, lang)}
+              </button>
+            )
+          })}
+        </div>
+      </nav>
+
+      <div className="lg:hidden">
+        <GamesSection
+          {...props}
+          games={showMobileRecent ? mobileRecentGames : props.games}
+          gridClassName="game-mosaic-grid grid grid-flow-dense grid-cols-12 gap-1 sm:grid-cols-12"
+          mobileItemLimit={102}
+          page={showMobileRecent ? 1 : props.page}
+          pages={showMobileRecent ? 1 : props.pages}
+          pagination={
+            showMobileRecent ? mobileRecentPagination : props.pagination
+          }
+          sectionClassName="flex w-full flex-col gap-3 p-1"
+          showHeader={false}
+        />
+      </div>
+
+      <div className="hidden lg:block">
+        <GamesSection
+          {...props}
+          games={props.games}
+          gridClassName="game-mosaic-grid grid grid-flow-dense grid-cols-7 gap-2"
+          page={props.page}
+          pages={props.pages}
+          pagination={props.pagination}
+          sectionClassName="flex w-full flex-col gap-3 px-3 py-3"
+          showHeader={false}
+        />
+      </div>
+
+      <section className="px-3 pb-5 pt-4 lg:hidden">
+        <PopularGameCollections lang={lang} />
+      </section>
 
       <div className="hidden lg:block">
         <HomeLatestBlogPostsSection blogPosts={latestBlogPosts} lang={lang} />
@@ -87,6 +193,46 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
       </div>
     </>
   )
+}
+
+function orderHomePlatforms<T extends { name: string }>(platforms: Array<T>) {
+  const normalizedName = (platform: T) => platform.name.trim().toLowerCase()
+  const byName = new Map(platforms.map((platform) => [normalizedName(platform), platform]))
+  const arcade = byName.get('arcade')
+  const famicom = byName.get('famicom')
+  const gba = byName.get('game boy advance')
+  const atari = byName.get('atari jaguar')
+  const movedNames = new Set(
+    [arcade, famicom, gba, atari]
+      .filter((platform): platform is T => Boolean(platform))
+      .map(normalizedName),
+  )
+  const remaining = platforms.filter(
+    (platform) => !movedNames.has(normalizedName(platform)),
+  )
+  const arcadeIndex = arcade
+    ? platforms.findIndex((platform) => normalizedName(platform) === 'arcade')
+    : -1
+  const insertionIndex =
+    arcadeIndex >= 0
+      ? platforms
+          .slice(0, arcadeIndex)
+          .filter((platform) => !movedNames.has(normalizedName(platform))).length
+      : 0
+
+  remaining.splice(
+    insertionIndex,
+    0,
+    ...[arcade, famicom, gba].filter(
+      (platform): platform is T => Boolean(platform),
+    ),
+  )
+
+  if (atari) {
+    remaining.push(atari)
+  }
+
+  return remaining
 }
 
 function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {

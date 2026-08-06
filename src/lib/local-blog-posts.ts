@@ -186,7 +186,7 @@ const KARATE_BLAZERS_POST = {
 } satisfies BlogPost
 
 export function getLocalBlogPosts(locale: Locale) {
-  return locale === 'zh-CN'
+  return locale === 'zh-CN' || locale === 'zh-TW'
     ? [MONSTER_HUNTER_RECOMMENDATION_POST, GAME_4399_POST, KARATE_BLAZERS_POST]
     : []
 }

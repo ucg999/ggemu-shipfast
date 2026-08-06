@@ -6,7 +6,7 @@ const PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
 const NON_GCOIN_GAME = '0'
 
-export type Locale = 'zh-CN' | 'en' | 'ja'
+export type Locale = 'zh-CN' | 'zh-TW' | 'en' | 'ja'
 export type GameSearchSort =
   | 'newest'
   | 'popular'
@@ -213,7 +213,9 @@ function normalizeLimit(limit: unknown) {
 }
 
 function normalizeLocale(locale: unknown): Locale {
-  return locale === 'en' || locale === 'ja' ? locale : 'zh-CN'
+  return locale === 'zh-TW' || locale === 'en' || locale === 'ja'
+    ? locale
+    : 'zh-CN'
 }
 
 function normalizeSort(sort: unknown): GameSearchSort {
