@@ -28,6 +28,7 @@ import {
   normalizeLocale,
 } from '#/lib/i18n'
 import { getAlternateLinksFromCanonical } from '#/lib/seo'
+import { getPlatformLabel } from '#/lib/platform-label'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -341,7 +342,9 @@ function LocalizedGameDetailPage() {
                   {game.platform ? (
                     <span className="badge badge-sm badge-primary max-w-full gap-1 sm:badge-md">
                       <i className="ri-gamepad-line" />
-                      <span className="truncate">{game.platform}</span>
+                      <span className="truncate">
+                        {getPlatformLabel(game.platform, lang)}
+                      </span>
                     </span>
                   ) : null}
                 </div>
@@ -385,7 +388,7 @@ function LocalizedGameDetailPage() {
 
           <section className="grid gap-6 lg:grid-cols-[1fr_340px]">
             <div className="flex flex-col gap-6">
-              <KeywordPanel title={t.keywords} value={game.keywords} />
+              <PreGameTips />
               <ContentPanel title={t.howToPlay} value={game.how_to_play} />
               <FaqSection items={faqItems} title={t.faq} />
               <Await promise={relatedGamesPromise} fallback={<RelatedGamesFallback title={t.relatedGames} />}>
@@ -406,7 +409,15 @@ function LocalizedGameDetailPage() {
               <section className="rounded-box border border-base-300 bg-base-100 p-5 shadow-sm">
                 <h2 className="text-lg font-semibold">{t.details}</h2>
                 <dl className="mt-4 grid gap-3 text-sm">
-                  <Fact icon="ri-gamepad-line" label={t.platform} value={game.platform} />
+                  <Fact
+                    icon="ri-gamepad-line"
+                    label={t.platform}
+                    value={
+                      game.platform
+                        ? getPlatformLabel(game.platform, lang)
+                        : undefined
+                    }
+                  />
                   <Fact icon="ri-building-2-line" label={t.developer} value={game.developer} />
                   <Fact icon="ri-calendar-line" label={t.released} value={game.released_year} />
                   <Fact icon="ri-user-line" label={t.players} value={String(game.players ?? 1)} />
@@ -1117,26 +1128,39 @@ function ContentPanel({ title, value }: { title: string; value?: string }) {
   )
 }
 
-function KeywordPanel({ title, value }: { title: string; value?: string }) {
-  const keywords = getKeywordItems(value)
-
-  if (keywords.length === 0) {
-    return null
-  }
-
+function PreGameTips() {
   return (
-    <section className="rounded-box border border-base-300 bg-base-100 p-6 shadow-sm">
+    <section className="rounded-box border border-base-300 bg-base-100 p-5 shadow-sm sm:p-6">
       <h2 className="flex items-center gap-2 text-xl font-semibold">
-        <i className="ri-price-tag-3-line text-primary" />
-        {title}
+        <i className="ri-lightbulb-line text-warning" />
+        游戏前的小提示
       </h2>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {keywords.map((keyword) => (
-          <span className="badge badge-outline" key={keyword}>
-            {keyword}
-          </span>
-        ))}
-      </div>
+      <ol className="mt-3 space-y-2 text-sm leading-6 text-base-content/65">
+        <li>
+          <strong className="mr-1 text-base-content">1.</strong>
+          游戏建议（电脑&gt;安卓&gt;苹果）尽量使用以下浏览器
+        </li>
+        <li>
+          <strong className="mr-1 text-base-content">2.</strong>
+          浏览器建议（建议使用最新版 Chrome、Edge 或 Safari）
+        </li>
+        <li>
+          <strong className="mr-1 text-base-content">3.</strong>
+          点击“开始游戏”后，首次启动需要加载游戏资源，速度取决于游戏大小和当前网络，请稍等片刻，不需要另外安装模拟器。
+        </li>
+        <li>
+          <strong className="mr-1 text-base-content">4.</strong>
+          黑屏或加载失败时，先在游戏页面内点击或轻触一次，再尝试刷新。如果仍然无法启动，可以暂时关闭内容拦截扩展，或换一个网络后重试。
+        </li>
+        <li>
+          <strong className="mr-1 text-base-content">5.</strong>
+          想增加游戏体验，可以连接手柄或摇杆来游玩，特别是手机，体验会更好！
+        </li>
+        <li>
+          <strong className="mr-1 text-base-content">6.</strong>
+          游戏内的功能，设置（重点是滤镜，个人建议打开，怀旧感拉满），可自由设置按键位，可聊天，可存档，还可录像发朋友圏。
+        </li>
+      </ol>
     </section>
   )
 }
@@ -1254,7 +1278,9 @@ function RelatedGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
           {game.name}
         </h3>
         {game.platform ? (
-          <p className="mt-2 truncate text-xs text-base-content/60">{game.platform}</p>
+          <p className="mt-2 truncate text-xs text-base-content/60">
+            {getPlatformLabel(game.platform, lang)}
+          </p>
         ) : null}
       </div>
     </Link>
