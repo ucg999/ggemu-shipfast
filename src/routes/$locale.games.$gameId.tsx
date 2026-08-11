@@ -278,6 +278,7 @@ function LocalizedGameDetailPage() {
   const t = getI18n(lang).detail
   const categories = game.categories ?? []
   const languages = game.languages ?? []
+  const keywords = getKeywordItems(game.keywords)
   const faqItems = getGameDetailFaqs(game, lang)
   const playPath = buildGamePlayPath(lang, gameId)
   const manifestHref = buildGameManifestHref({
@@ -426,6 +427,7 @@ function LocalizedGameDetailPage() {
 
               <TagSection emptyText={t.noData} items={categories} title={t.categories} />
               <TagSection emptyText={t.noData} items={languages} title={t.languages} />
+              <TagSection emptyText={t.noData} items={keywords} title={t.keywords} />
             </aside>
           </section>
         </div>

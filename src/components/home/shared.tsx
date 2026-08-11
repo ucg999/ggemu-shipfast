@@ -32,7 +32,7 @@ export function HomeMostPlayedGamesSection({
     <section className="bg-base-100">
       <div className={mobile ? 'w-full px-1 py-3' : 'w-full px-4 pt-6 sm:px-6 lg:px-8'}>
         <h2 className={mobile ? 'px-1 text-lg font-semibold text-base-content' : 'text-2xl font-semibold text-base-content'}>
-          最多人玩的游戏
+          随机玩一玩
         </h2>
         <div className={mobile ? 'mt-2 grid grid-cols-2 gap-1.5' : 'mt-4 grid grid-cols-6 gap-2'}>
           {items.map((game) => {

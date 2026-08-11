@@ -54,7 +54,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
       </section>
 
       <div className="hidden lg:block">
-        <RecentPlayedGamesSection lang={lang} />
+        <HomeMostPlayedGamesSection games={mostPlayedGames} lang={lang} />
       </div>
 
       <nav
@@ -194,7 +194,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
       </section>
 
       <div className="hidden lg:block">
-        <HomeMostPlayedGamesSection games={mostPlayedGames} lang={lang} />
+        <RecentPlayedGamesSection lang={lang} />
         <HomeLatestBlogPostsSection blogPosts={latestBlogPosts} lang={lang} />
         <HomeFaqSection lang={lang} />
       </div>
