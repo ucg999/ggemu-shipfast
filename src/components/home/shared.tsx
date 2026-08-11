@@ -13,6 +13,65 @@ import { getPlatformLabel } from '#/lib/platform-label'
 
 export const HOME_BLOG_POST_LIMIT = 4
 
+export function HomeMostPlayedGamesSection({
+  games,
+  lang,
+  mobile = false,
+}: {
+  games: Array<PublicGame>
+  lang: Locale
+  mobile?: boolean
+}) {
+  const items = games.slice(0, mobile ? 4 : 6)
+
+  if (items.length === 0) {
+    return null
+  }
+
+  return (
+    <section className="bg-base-100">
+      <div className={mobile ? 'w-full px-1 py-3' : 'w-full px-4 pt-6 sm:px-6 lg:px-8'}>
+        <h2 className={mobile ? 'px-1 text-lg font-semibold text-base-content' : 'text-2xl font-semibold text-base-content'}>
+          最多人玩的游戏
+        </h2>
+        <div className={mobile ? 'mt-2 grid grid-cols-2 gap-1.5' : 'mt-4 grid grid-cols-6 gap-2'}>
+          {items.map((game) => {
+            const gameId = game.url_slug || game._id || ''
+
+            return (
+              <Link
+                className="group min-w-0"
+                key={gameId}
+                params={{ gameId, locale: lang }}
+                search={{}}
+                to="/$locale/games/$gameId"
+              >
+                <figure className="relative aspect-[4/3] overflow-hidden rounded-md bg-base-200">
+                  <video
+                    autoPlay
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loop
+                    muted
+                    playsInline
+                    poster={game.game_cover}
+                    preload="metadata"
+                    src={game.game_video}
+                  />
+                  {game.platform ? (
+                    <span className="absolute bottom-2 right-2 rounded bg-black/70 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+                      {getPlatformLabel(game.platform, lang)}
+                    </span>
+                  ) : null}
+                </figure>
+              </Link>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export function HomeLatestBlogPostsSection({
   blogPosts,
   lang,

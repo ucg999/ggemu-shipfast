@@ -5,6 +5,7 @@ import {
   GamesSection,
   HomeFaqSection,
   HomeLatestBlogPostsSection,
+  HomeMostPlayedGamesSection,
 } from './shared'
 import {
   PopularGameCollections,
@@ -20,6 +21,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
     filters,
     lang,
     latestBlogPosts,
+    mostPlayedGames,
     onFilterChange,
     onHomeRecommendations,
     t,
@@ -155,6 +157,10 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
       </nav>
 
       <div className="lg:hidden">
+        <HomeMostPlayedGamesSection games={mostPlayedGames} lang={lang} mobile />
+      </div>
+
+      <div className="lg:hidden">
         <GamesSection
           {...props}
           games={showMobileRecent ? mobileRecentGames : props.games}
@@ -188,6 +194,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
       </section>
 
       <div className="hidden lg:block">
+        <HomeMostPlayedGamesSection games={mostPlayedGames} lang={lang} />
         <HomeLatestBlogPostsSection blogPosts={latestBlogPosts} lang={lang} />
         <HomeFaqSection lang={lang} />
       </div>

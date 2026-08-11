@@ -184,12 +184,14 @@ export const Route = createFileRoute('/$locale')({
         platformResults,
         filterOptions,
         latestBlogPosts,
+        mostPlayedGames,
       ] = await Promise.all([
         getSeoOrigin(),
         loadFeatureGames(locale, 'newest', FEATURE_NEW_ARRIVAL_LIMIT),
         loadFeaturePlatformGames(locale),
         loadGameFilterOptions(),
         loadLatestBlogPosts(locale),
+        loadMostPlayedVideoGames(locale),
       ])
 
       return {
@@ -201,11 +203,12 @@ export const Route = createFileRoute('/$locale')({
         filterOptions,
         layoutSeed: getPokiDailyLayoutSeed(),
         latestBlogPosts,
+        mostPlayedGames,
         seoOrigin,
       }
     }
 
-    const [seoOrigin, result, filterOptions, latestBlogPosts] = await Promise.all([
+    const [seoOrigin, result, filterOptions, latestBlogPosts, mostPlayedGames] = await Promise.all([
       getSeoOrigin(),
       searchGames({
         data: {
@@ -220,6 +223,7 @@ export const Route = createFileRoute('/$locale')({
       }),
       loadGameFilterOptions(),
       loadLatestBlogPosts(locale),
+      loadMostPlayedVideoGames(locale),
     ])
 
     return {
@@ -227,6 +231,7 @@ export const Route = createFileRoute('/$locale')({
       filterOptions,
       layoutSeed: getPokiDailyLayoutSeed(),
       latestBlogPosts,
+      mostPlayedGames,
       seoOrigin,
     }
   },
@@ -336,6 +341,7 @@ function LocalizedHomePage() {
     lang,
     layoutSeed: initialResult.layoutSeed,
     latestBlogPosts: initialResult.latestBlogPosts,
+    mostPlayedGames: initialResult.mostPlayedGames,
     onFilterChange: updateFilter,
     onHomeRecommendations: showHomeRecommendations,
     onLoadPage: (nextPage: number) => loadGames(filters, nextPage),
@@ -573,6 +579,28 @@ async function loadFeaturePlatformGames(locale: Locale) {
       }
     }),
   )
+}
+
+async function loadMostPlayedVideoGames(locale: Locale) {
+  const results = await Promise.all(
+    [1, 2, 3].map((page) =>
+      searchGames({
+        data: {
+          query: '',
+          limit: 100,
+          locale,
+          page,
+          sort: 'plays_count',
+        },
+      }),
+    ),
+  )
+
+  return shuffleGames(
+    results
+      .flatMap((result) => result.games)
+      .filter((game) => Boolean(game.game_video?.trim())),
+  ).slice(0, 6)
 }
 
 function shuffleGames(games: Array<PublicGame>) {
