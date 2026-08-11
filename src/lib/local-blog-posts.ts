@@ -1,5 +1,6 @@
 import type { BlogPost, Locale } from './ggemu'
 import { MONSTER_HUNTER_RECOMMENDATION_POST } from './monster-hunter-post.ts'
+import { SONIC_CLASSICS_POST } from './sonic-classics-post.ts'
 
 const MONSTER_HUNTER_SERIES_POST = {
   _id: 'local-monster-hunter-series',
@@ -187,7 +188,12 @@ const KARATE_BLAZERS_POST = {
 
 export function getLocalBlogPosts(locale: Locale) {
   return locale === 'zh-CN' || locale === 'zh-TW'
-    ? [MONSTER_HUNTER_RECOMMENDATION_POST, GAME_4399_POST, KARATE_BLAZERS_POST]
+    ? [
+        SONIC_CLASSICS_POST,
+        MONSTER_HUNTER_RECOMMENDATION_POST,
+        GAME_4399_POST,
+        KARATE_BLAZERS_POST,
+      ]
     : []
 }
 
