@@ -583,24 +583,35 @@ async function loadFeaturePlatformGames(locale: Locale) {
 
 async function loadMostPlayedVideoGames(locale: Locale) {
   const results = await Promise.all(
-    [1, 2, 3].map((page) =>
-      searchGames({
-        data: {
-          query: '',
-          limit: 100,
-          locale,
-          page,
-          sort: 'plays_count',
-        },
-      }),
+    (['plays_count', 'newest', 'popular'] as const).flatMap((sort) =>
+      [1, 2, 3].map((page) =>
+        searchGames({
+          data: {
+            query: '',
+            limit: 100,
+            locale,
+            page,
+            sort,
+          },
+        }),
+      ),
     ),
   )
 
-  return shuffleGames(
-    results
-      .flatMap((result) => result.games)
-      .filter((game) => Boolean(game.game_video?.trim())),
-  ).slice(0, 6)
+  const uniqueGames = new Map<string, PublicGame>()
+
+  results
+    .flatMap((result) => result.games)
+    .filter((game) => Boolean(game.game_video?.trim()))
+    .forEach((game) => {
+      const id = game.url_slug?.trim() || game._id?.trim()
+
+      if (id && !uniqueGames.has(id)) {
+        uniqueGames.set(id, game)
+      }
+    })
+
+  return [...uniqueGames.values()]
 }
 
 function shuffleGames(games: Array<PublicGame>) {

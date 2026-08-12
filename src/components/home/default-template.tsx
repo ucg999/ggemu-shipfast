@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import {
   GamesSection,
@@ -13,7 +13,13 @@ import {
   useRecentPlayedGames,
 } from './recent-played-games'
 import type { HomeTemplateProps } from './types'
+import type { PublicGame } from '#/lib/ggemu'
+import { getGameDetail, getRandomPlayableGame } from '#/lib/ggemu'
 import { getPlatformLabel } from '#/lib/platform-label'
+import { useServerFn } from '@tanstack/react-start'
+
+const RANDOM_VIDEO_HISTORY_KEY = 'ggemu-random-video-history'
+const RANDOM_VIDEO_HISTORY_LIMIT = 10
 
 export function DefaultHomeTemplate(props: HomeTemplateProps) {
   const {
@@ -27,7 +33,36 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
     t,
   } = props
   const [showMobileRecent, setShowMobileRecent] = useState(false)
+  const [randomVideoGames, setRandomVideoGames] = useState(() =>
+    mostPlayedGames.slice(0, 6),
+  )
+  const [randomPopupGame, setRandomPopupGame] = useState<PublicGame | null>(null)
+  const [isRandomGameLoading, setIsRandomGameLoading] = useState(false)
+  const loadRandomGame = useServerFn(getRandomPlayableGame)
+  const loadGameDetail = useServerFn(getGameDetail)
   const recentPlayedGames = useRecentPlayedGames()
+
+  useEffect(() => {
+    setRandomVideoGames(selectRefreshVideoGames(mostPlayedGames, 6))
+  }, [mostPlayedGames])
+
+  async function showOneRandomGame() {
+    if (isRandomGameLoading) return
+
+    setIsRandomGameLoading(true)
+
+    try {
+      const randomGame = await loadRandomGame({ data: {} })
+      const gameId = randomGame?.url_slug?.trim() || randomGame?._id?.trim()
+
+      if (gameId) {
+        const game = await loadGameDetail({ data: { id: gameId } })
+        setRandomPopupGame(game)
+      }
+    } finally {
+      setIsRandomGameLoading(false)
+    }
+  }
   const mobileRecentGames = recentPlayedGames.map((game) => ({
     _id: game.id,
     game_cover: game.cover,
@@ -54,7 +89,12 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
       </section>
 
       <div className="hidden lg:block">
-        <HomeMostPlayedGamesSection games={mostPlayedGames} lang={lang} />
+        <HomeMostPlayedGamesSection
+          games={randomVideoGames}
+          isRandomGameLoading={isRandomGameLoading}
+          lang={lang}
+          onRandomGame={showOneRandomGame}
+        />
       </div>
 
       <nav
@@ -157,7 +197,13 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
       </nav>
 
       <div className="lg:hidden">
-        <HomeMostPlayedGamesSection games={mostPlayedGames} lang={lang} mobile />
+        <HomeMostPlayedGamesSection
+          games={randomVideoGames}
+          isRandomGameLoading={isRandomGameLoading}
+          lang={lang}
+          mobile
+          onRandomGame={showOneRandomGame}
+        />
       </div>
 
       <div className="lg:hidden">
@@ -198,8 +244,125 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
         <HomeLatestBlogPostsSection blogPosts={latestBlogPosts} lang={lang} />
         <HomeFaqSection lang={lang} />
       </div>
+
+      {randomPopupGame ? (
+        <RandomGameModal
+          game={randomPopupGame}
+          lang={lang}
+          onClose={() => setRandomPopupGame(null)}
+          onRandomAgain={showOneRandomGame}
+        />
+      ) : null}
     </>
   )
+}
+
+function RandomGameModal({
+  game,
+  lang,
+  onClose,
+  onRandomAgain,
+}: {
+  game: PublicGame
+  lang: HomeTemplateProps['lang']
+  onClose: () => void
+  onRandomAgain: () => void | Promise<void>
+}) {
+  const gameId = getGameId(game)
+
+  return (
+    <div className="fixed inset-0 z-[100] grid place-items-center bg-black/65 p-4" role="presentation" onClick={onClose}>
+      <section
+        aria-label="随机游戏"
+        aria-modal="true"
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-base-100 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+      >
+        <figure className="relative aspect-[4/3] bg-base-200">
+          {game.game_cover ? (
+            <img alt={game.name ?? '随机游戏'} className="h-full w-full object-cover" src={game.game_cover} />
+          ) : null}
+          {game.platform ? (
+            <span className="absolute bottom-3 right-3 rounded bg-black/70 px-2 py-1 text-xs text-white">
+              {getPlatformLabel(game.platform, lang)}
+            </span>
+          ) : null}
+          <button aria-label="关闭" className="btn btn-circle btn-sm absolute right-3 top-3" onClick={onClose} type="button">✕</button>
+        </figure>
+        <div className="p-4">
+          <h3 className="truncate text-xl font-semibold">{game.name}</h3>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button className="btn btn-warning" onClick={onRandomAgain} type="button">再摇一次</button>
+            <Link className="btn btn-primary" params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">立即游玩</Link>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function selectRefreshVideoGames(games: Array<PublicGame>, limit: number) {
+  if (typeof window === 'undefined' || games.length === 0) {
+    return games.slice(0, limit)
+  }
+
+  const history = readRandomVideoHistory()
+  let retainedHistory = history.slice(-RANDOM_VIDEO_HISTORY_LIMIT)
+  let excludedIds = new Set(retainedHistory.flat())
+  let candidates = games.filter((game) => !excludedIds.has(getGameId(game)))
+
+  while (candidates.length < limit && retainedHistory.length > 0) {
+    retainedHistory = retainedHistory.slice(1)
+    excludedIds = new Set(retainedHistory.flat())
+    candidates = games.filter((game) => !excludedIds.has(getGameId(game)))
+  }
+
+  const selected = shuffleVideoGames(candidates).slice(0, limit)
+  const nextHistory = [...retainedHistory, selected.map(getGameId)].slice(
+    -RANDOM_VIDEO_HISTORY_LIMIT,
+  )
+
+  window.localStorage.setItem(
+    RANDOM_VIDEO_HISTORY_KEY,
+    JSON.stringify(nextHistory),
+  )
+
+  return selected
+}
+
+function readRandomVideoHistory(): Array<Array<string>> {
+  try {
+    const value = window.localStorage.getItem(RANDOM_VIDEO_HISTORY_KEY)
+    const parsed: unknown = value ? JSON.parse(value) : []
+
+    return Array.isArray(parsed)
+      ? parsed.filter(
+          (entry): entry is Array<string> =>
+            Array.isArray(entry) && entry.every((id) => typeof id === 'string'),
+        )
+      : []
+  } catch {
+    return []
+  }
+}
+
+function shuffleVideoGames(games: Array<PublicGame>) {
+  const shuffled = [...games]
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    ;[shuffled[index], shuffled[swapIndex]] = [
+      shuffled[swapIndex],
+      shuffled[index],
+    ]
+  }
+
+  return shuffled
+}
+
+function getGameId(game: PublicGame) {
+  return game.url_slug?.trim() || game._id?.trim() || ''
 }
 
 function orderHomePlatforms<T extends { name: string }>(platforms: Array<T>) {

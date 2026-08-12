@@ -17,10 +17,14 @@ export function HomeMostPlayedGamesSection({
   games,
   lang,
   mobile = false,
+  isRandomGameLoading = false,
+  onRandomGame,
 }: {
   games: Array<PublicGame>
   lang: Locale
   mobile?: boolean
+  isRandomGameLoading?: boolean
+  onRandomGame: () => void | Promise<void>
 }) {
   const items = games.slice(0, mobile ? 4 : 6)
 
@@ -31,9 +35,21 @@ export function HomeMostPlayedGamesSection({
   return (
     <section className="bg-base-100">
       <div className={mobile ? 'w-full px-1 py-3' : 'w-full px-4 pt-6 sm:px-6 lg:px-8'}>
-        <h2 className={mobile ? 'px-1 text-lg font-semibold text-base-content' : 'text-2xl font-semibold text-base-content'}>
-          随机玩一玩
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className={mobile ? 'px-1 text-lg font-semibold text-base-content' : 'text-2xl font-semibold text-base-content'}>
+            随机玩一玩
+          </h2>
+          <button
+            aria-label="随机游戏"
+            className={mobile ? 'grid h-8 w-12 place-items-center bg-transparent p-0 text-black hover:opacity-65 disabled:opacity-40' : 'grid h-10 w-16 place-items-center bg-transparent p-0 text-black hover:opacity-65 disabled:opacity-40'}
+            disabled={isRandomGameLoading}
+            onClick={onRandomGame}
+            title="随机游戏"
+            type="button"
+          >
+            <SlotMachineIcon className={mobile ? 'h-5 w-10' : 'h-7 w-14'} />
+          </button>
+        </div>
         <div className={mobile ? 'mt-2 grid grid-cols-2 gap-1.5' : 'mt-4 grid grid-cols-6 gap-2'}>
           {items.map((game) => {
             const gameId = game.url_slug || game._id || ''
@@ -69,6 +85,30 @@ export function HomeMostPlayedGamesSection({
         </div>
       </div>
     </section>
+  )
+}
+
+function SlotMachineIcon({ className }: { className: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 72 36"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M3 14V24M8 10V28" stroke="currentColor" strokeLinecap="round" strokeWidth="3" />
+      <rect fill="white" height="28" rx="6" stroke="currentColor" strokeWidth="3" width="44" x="12" y="4" />
+      <rect fill="white" height="15" rx="3" stroke="currentColor" strokeWidth="2" width="12" x="16" y="10.5" />
+      <rect fill="white" height="15" rx="3" stroke="currentColor" strokeWidth="2" width="12" x="28" y="10.5" />
+      <rect fill="white" height="15" rx="3" stroke="currentColor" strokeWidth="2" width="12" x="40" y="10.5" />
+      <text fill="currentColor" fontFamily="Arial Black, Arial, sans-serif" fontSize="12" fontWeight="900" textAnchor="middle" x="22" y="22">7</text>
+      <text fill="currentColor" fontFamily="Arial Black, Arial, sans-serif" fontSize="12" fontWeight="900" textAnchor="middle" x="34" y="22">7</text>
+      <text fill="currentColor" fontFamily="Arial Black, Arial, sans-serif" fontSize="12" fontWeight="900" textAnchor="middle" x="46" y="22">7</text>
+      <path d="M59 12V26M63 9V29" stroke="currentColor" strokeLinecap="round" strokeWidth="3" />
+      <path d="M64 27L68 8" stroke="currentColor" strokeLinecap="round" strokeWidth="4" />
+      <circle cx="68.5" cy="5" fill="white" r="4" stroke="currentColor" strokeWidth="3" />
+    </svg>
   )
 }
 
