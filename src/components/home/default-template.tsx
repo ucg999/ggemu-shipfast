@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import {
   GamesSection,
   HomeFaqSection,
+  HomeLatestGamesRow,
   HomeLatestBlogPostsSection,
   HomeMostPlayedGamesSection,
 } from './shared'
@@ -27,6 +28,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
     filters,
     lang,
     latestBlogPosts,
+    latestGames,
     mostPlayedGames,
     onFilterChange,
     onHomeRecommendations,
@@ -80,10 +82,13 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
     <>
       <section className="hidden bg-base-100 lg:block">
         <div className="flex w-full flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8">
-          <div className="w-full">
+          <div className="w-fit">
             <h1 className="rainbow-title hidden whitespace-nowrap text-[clamp(2rem,3.7vw,4rem)] font-bold leading-tight sm:block">
               {t.title}
             </h1>
+            <p className="mt-3 hidden text-center text-lg font-medium text-base-content/65 sm:block lg:text-xl">
+              {t.nostalgiaSubtitle}
+            </p>
           </div>
         </div>
       </section>
@@ -233,6 +238,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
           sectionClassName="flex w-full flex-col gap-3 px-3 py-3"
           showHeader={false}
         />
+        <HomeLatestGamesRow games={latestGames} lang={lang} />
       </div>
 
       <section className="px-3 pb-5 pt-4 lg:hidden">

@@ -36,6 +36,7 @@ export type HomeLoaderData = GameSearchResult & {
   filterOptions: GameFilterOptions
   layoutSeed: number
   latestBlogPosts: Array<BlogPost>
+  latestGames: Array<PublicGame>
   mostPlayedGames: Array<PublicGame>
   seoOrigin: string
 }
@@ -78,6 +79,7 @@ export type HomeTemplateProps =
       featureSections?: Array<FeatureSection>
       layoutSeed: number
       latestBlogPosts: Array<BlogPost>
+      latestGames: Array<PublicGame>
       mostPlayedGames: Array<PublicGame>
       onHomeRecommendations: () => void
     }

@@ -22,6 +22,7 @@ export type I18nMessages = {
   }
   home: {
     title: string
+    nostalgiaSubtitle: string
     subtitle: string
     searchPlaceholder: string
     search: string

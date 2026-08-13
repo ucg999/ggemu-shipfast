@@ -13,6 +13,34 @@ import { getPlatformLabel } from '#/lib/platform-label'
 
 export const HOME_BLOG_POST_LIMIT = 4
 
+export function HomeLatestGamesRow({
+  games,
+  lang,
+}: {
+  games: Array<PublicGame>
+  lang: Locale
+}) {
+  const items = games.slice(0, 7)
+
+  if (items.length === 0) return null
+
+  return (
+    <section className="bg-base-100 px-3 pb-4 pt-2">
+      <h2 className="mb-3 text-2xl font-semibold text-base-content">最新游戏</h2>
+      <div className="grid grid-cols-7 gap-2">
+        {items.map((game, index) => (
+          <GameCard
+            game={game}
+            key={game.url_slug || game._id}
+            lang={lang}
+            layoutIndex={index}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export function HomeMostPlayedGamesSection({
   games,
   lang,

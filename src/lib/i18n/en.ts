@@ -32,6 +32,7 @@ export const enMessages = {
     get title() {
       return siteConfig.SITE_SLOGAN
     },
+    nostalgiaSubtitle: 'Subor, endless fun. Enjoy arcade, Subor, GBA, PSP, and Switch games online.',
     subtitle:
       'Play classic retro games from GBA, NES, SNES, PS1, N64, Sega Genesis, Arcade and more directly in your browser. No downloads required.',
     searchPlaceholder: 'Search by game title, platform, or series...',

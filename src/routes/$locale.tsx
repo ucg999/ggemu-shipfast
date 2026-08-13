@@ -47,10 +47,10 @@ import {
 } from '#/lib/site-config'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 
-const DEFAULT_HOME_REQUEST_SIZE = 42
+const DEFAULT_HOME_REQUEST_SIZE = 28
 const MOBILE_API_PAGE_SIZE = 51
 const MOBILE_HOME_REQUEST_SIZE = 102
-const POPULAR_HOME_REQUEST_SIZE = 42
+const POPULAR_HOME_REQUEST_SIZE = 28
 
 type HomeSearch = {
   category?: string
@@ -184,6 +184,7 @@ export const Route = createFileRoute('/$locale')({
         platformResults,
         filterOptions,
         latestBlogPosts,
+        latestGamesResult,
         mostPlayedGames,
       ] = await Promise.all([
         getSeoOrigin(),
@@ -191,6 +192,7 @@ export const Route = createFileRoute('/$locale')({
         loadFeaturePlatformGames(locale),
         loadGameFilterOptions(),
         loadLatestBlogPosts(locale),
+        searchGames({ data: { query: '', limit: 7, locale, page: 1, sort: 'newest' } }),
         loadMostPlayedVideoGames(locale),
       ])
 
@@ -203,12 +205,13 @@ export const Route = createFileRoute('/$locale')({
         filterOptions,
         layoutSeed: getPokiDailyLayoutSeed(),
         latestBlogPosts,
+        latestGames: latestGamesResult.games.slice(0, 7),
         mostPlayedGames,
         seoOrigin,
       }
     }
 
-    const [seoOrigin, result, filterOptions, latestBlogPosts, mostPlayedGames] = await Promise.all([
+    const [seoOrigin, result, filterOptions, latestBlogPosts, latestGamesResult, mostPlayedGames] = await Promise.all([
       getSeoOrigin(),
       searchGames({
         data: {
@@ -223,6 +226,7 @@ export const Route = createFileRoute('/$locale')({
       }),
       loadGameFilterOptions(),
       loadLatestBlogPosts(locale),
+      searchGames({ data: { query: '', limit: 7, locale, page: 1, sort: 'newest' } }),
       loadMostPlayedVideoGames(locale),
     ])
 
@@ -231,6 +235,7 @@ export const Route = createFileRoute('/$locale')({
       filterOptions,
       layoutSeed: getPokiDailyLayoutSeed(),
       latestBlogPosts,
+      latestGames: latestGamesResult.games.slice(0, 7),
       mostPlayedGames,
       seoOrigin,
     }
@@ -341,6 +346,7 @@ function LocalizedHomePage() {
     lang,
     layoutSeed: initialResult.layoutSeed,
     latestBlogPosts: initialResult.latestBlogPosts,
+    latestGames: initialResult.latestGames,
     mostPlayedGames: initialResult.mostPlayedGames,
     onFilterChange: updateFilter,
     onHomeRecommendations: showHomeRecommendations,

@@ -30,6 +30,7 @@ export const zhCnMessages = {
   },
   home: {
     title: '回到小时候的快乐，即点即玩，乐趣无穷！',
+    nostalgiaSubtitle: '小霸王，其乐无穷。开心游玩各种街机游戏，小霸王游戏，GBA游戏，PSP游戏，Switch游戏。',
     subtitle:
       '在浏览器里直接游玩 GBA、NES、SNES、PS1、N64、Sega Genesis、街机等经典游戏，无需下载。',
     searchPlaceholder: '搜索游戏名、平台或系列...',
@@ -59,11 +60,11 @@ export const zhCnMessages = {
     blogPostFallback: '博客文章',
   },
   homeSeo: {
-    title: '回到小时候的快乐，即点即玩，乐趣无穷！',
+    title: '街机游戏、小霸王游戏、GBA、PSP、Switch在线玩｜游戏历险记',
     description:
-      '在浏览器里直接游玩 GBA、NES、SNES、PS1、N64、Sega Genesis、街机等经典复古游戏，无需下载。',
+      '小霸王，其乐无穷。开心游玩各种街机游戏、小霸王游戏、GBA游戏、PSP游戏和Switch游戏，在线即点即玩，无需下载。',
     keywords:
-      '在线复古游戏, GBA 在线游戏, NES 在线游戏, SNES 在线游戏, PS1 在线游戏, N64 在线游戏, 街机游戏, 浏览器游戏, 免下载游戏',
+      '小霸王其乐无穷, 街机游戏, 小霸王游戏, GBA游戏, PSP游戏, Switch游戏, 在线街机游戏, 小霸王在线游戏, GBA在线游戏, PSP在线游戏, Switch在线游戏, 在线复古游戏, NES在线游戏, SNES在线游戏, PS1在线游戏, N64在线游戏, 浏览器游戏, 即点即玩, 免下载游戏, 游戏历险记',
   },
   detail: {
     home: '游戏库',

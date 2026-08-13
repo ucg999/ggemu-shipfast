@@ -390,6 +390,16 @@ function LocalizedGameDetailPage() {
           <section className="grid gap-6 lg:grid-cols-[1fr_340px]">
             <div className="flex flex-col gap-6">
               <PreGameTips />
+              <div className="flex flex-col gap-4 lg:hidden">
+                <GameInformationSections
+                  categories={categories}
+                  game={game}
+                  keywords={keywords}
+                  lang={lang}
+                  languages={languages}
+                  labels={t}
+                />
+              </div>
               <ContentPanel title={t.howToPlay} value={game.how_to_play} />
               <FaqSection items={faqItems} title={t.faq} />
               <Await promise={relatedGamesPromise} fallback={<RelatedGamesFallback title={t.relatedGames} />}>
@@ -406,33 +416,57 @@ function LocalizedGameDetailPage() {
               </Await>
             </div>
 
-            <aside className="flex flex-col gap-4">
-              <section className="rounded-box border border-base-300 bg-base-100 p-5 shadow-sm">
-                <h2 className="text-lg font-semibold">{t.details}</h2>
-                <dl className="mt-4 grid gap-3 text-sm">
-                  <Fact
-                    icon="ri-gamepad-line"
-                    label={t.platform}
-                    value={
-                      game.platform
-                        ? getPlatformLabel(game.platform, lang)
-                        : undefined
-                    }
-                  />
-                  <Fact icon="ri-building-2-line" label={t.developer} value={game.developer} />
-                  <Fact icon="ri-calendar-line" label={t.released} value={game.released_year} />
-                  <Fact icon="ri-user-line" label={t.players} value={String(game.players ?? 1)} />
-                </dl>
-              </section>
-
-              <TagSection emptyText={t.noData} items={categories} title={t.categories} />
-              <TagSection emptyText={t.noData} items={languages} title={t.languages} />
-              <TagSection emptyText={t.noData} items={keywords} title={t.keywords} />
+            <aside className="hidden flex-col gap-4 lg:flex">
+              <GameInformationSections
+                categories={categories}
+                game={game}
+                keywords={keywords}
+                lang={lang}
+                languages={languages}
+                labels={t}
+              />
             </aside>
           </section>
         </div>
       </div>
     </SiteLayout>
+  )
+}
+
+function GameInformationSections({
+  categories,
+  game,
+  keywords,
+  lang,
+  languages,
+  labels,
+}: {
+  categories: Array<string>
+  game: PublicGame
+  keywords: Array<string>
+  lang: Locale
+  languages: Array<string>
+  labels: ReturnType<typeof getI18n>['detail']
+}) {
+  return (
+    <>
+      <section className="rounded-box border border-base-300 bg-base-100 p-5 shadow-sm">
+        <h2 className="text-lg font-semibold">{labels.details}</h2>
+        <dl className="mt-4 grid gap-3 text-sm">
+          <Fact
+            icon="ri-gamepad-line"
+            label={labels.platform}
+            value={game.platform ? getPlatformLabel(game.platform, lang) : undefined}
+          />
+          <Fact icon="ri-building-2-line" label={labels.developer} value={game.developer} />
+          <Fact icon="ri-calendar-line" label={labels.released} value={game.released_year} />
+          <Fact icon="ri-user-line" label={labels.players} value={String(game.players ?? 1)} />
+        </dl>
+      </section>
+      <TagSection emptyText={labels.noData} items={categories} title={labels.categories} />
+      <TagSection emptyText={labels.noData} items={languages} title={labels.languages} />
+      <TagSection emptyText={labels.noData} items={keywords} title={labels.keywords} />
+    </>
   )
 }
 
