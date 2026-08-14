@@ -67,8 +67,37 @@ body {
   }
 }
 
+.live-watch-eye {
+  position: relative;
+  display: inline-flex;
+  width: 28px;
+  height: 19px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2.5px solid currentColor;
+  border-radius: 50% / 60%;
+  background: white;
+}
+
+.live-watch-pupil {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: live-eye-look 2.4s ease-in-out infinite;
+}
+
+@keyframes live-eye-look {
+  0%, 18%, 100% { transform: translateX(0); }
+  32%, 48% { transform: translateX(-6px); }
+  64%, 80% { transform: translateX(6px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .rainbow-title {
+  .rainbow-title,
+  .live-watch-pupil {
     animation: none;
   }
 }

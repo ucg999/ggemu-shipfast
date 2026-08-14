@@ -19,9 +19,6 @@ import { getGameDetail, getRandomPlayableGame } from '#/lib/ggemu'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { useServerFn } from '@tanstack/react-start'
 
-const RANDOM_VIDEO_HISTORY_KEY = 'ggemu-random-video-history'
-const RANDOM_VIDEO_HISTORY_LIMIT = 10
-
 export function DefaultHomeTemplate(props: HomeTemplateProps) {
   const {
     filterOptions,
@@ -45,7 +42,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
   const recentPlayedGames = useRecentPlayedGames()
 
   useEffect(() => {
-    setRandomVideoGames(selectRefreshVideoGames(mostPlayedGames, 6))
+    setRandomVideoGames(selectDailyVideoGames(mostPlayedGames, 6))
   }, [mostPlayedGames])
 
   async function showOneRandomGame() {
@@ -216,7 +213,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
           {...props}
           games={showMobileRecent ? mobileRecentGames : props.games}
           gridClassName="game-mosaic-grid grid grid-flow-dense grid-cols-12 gap-1 sm:grid-cols-12"
-          mobileItemLimit={102}
+          mobileItemLimit={36}
           page={showMobileRecent ? 1 : props.page}
           pages={showMobileRecent ? 1 : props.pages}
           pagination={
@@ -308,63 +305,28 @@ function RandomGameModal({
   )
 }
 
-function selectRefreshVideoGames(games: Array<PublicGame>, limit: number) {
-  if (typeof window === 'undefined' || games.length === 0) {
-    return games.slice(0, limit)
-  }
+function selectDailyVideoGames(games: Array<PublicGame>, limit: number) {
+  const today = new Date()
+  const dailyKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`
 
-  const history = readRandomVideoHistory()
-  let retainedHistory = history.slice(-RANDOM_VIDEO_HISTORY_LIMIT)
-  let excludedIds = new Set(retainedHistory.flat())
-  let candidates = games.filter((game) => !excludedIds.has(getGameId(game)))
-
-  while (candidates.length < limit && retainedHistory.length > 0) {
-    retainedHistory = retainedHistory.slice(1)
-    excludedIds = new Set(retainedHistory.flat())
-    candidates = games.filter((game) => !excludedIds.has(getGameId(game)))
-  }
-
-  const selected = shuffleVideoGames(candidates).slice(0, limit)
-  const nextHistory = [...retainedHistory, selected.map(getGameId)].slice(
-    -RANDOM_VIDEO_HISTORY_LIMIT,
-  )
-
-  window.localStorage.setItem(
-    RANDOM_VIDEO_HISTORY_KEY,
-    JSON.stringify(nextHistory),
-  )
-
-  return selected
+  return [...games]
+    .sort(
+      (left, right) =>
+        dailyGameScore(`${dailyKey}:${getGameId(left)}`) -
+        dailyGameScore(`${dailyKey}:${getGameId(right)}`),
+    )
+    .slice(0, limit)
 }
 
-function readRandomVideoHistory(): Array<Array<string>> {
-  try {
-    const value = window.localStorage.getItem(RANDOM_VIDEO_HISTORY_KEY)
-    const parsed: unknown = value ? JSON.parse(value) : []
+function dailyGameScore(value: string) {
+  let hash = 2166136261
 
-    return Array.isArray(parsed)
-      ? parsed.filter(
-          (entry): entry is Array<string> =>
-            Array.isArray(entry) && entry.every((id) => typeof id === 'string'),
-        )
-      : []
-  } catch {
-    return []
-  }
-}
-
-function shuffleVideoGames(games: Array<PublicGame>) {
-  const shuffled = [...games]
-
-  for (let index = shuffled.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1))
-    ;[shuffled[index], shuffled[swapIndex]] = [
-      shuffled[swapIndex],
-      shuffled[index],
-    ]
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
   }
 
-  return shuffled
+  return hash >>> 0
 }
 
 function getGameId(game: PublicGame) {

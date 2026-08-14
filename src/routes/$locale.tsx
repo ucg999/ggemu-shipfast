@@ -47,10 +47,10 @@ import {
 } from '#/lib/site-config'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 
-const DEFAULT_HOME_REQUEST_SIZE = 28
-const MOBILE_API_PAGE_SIZE = 51
-const MOBILE_HOME_REQUEST_SIZE = 102
-const POPULAR_HOME_REQUEST_SIZE = 28
+const DEFAULT_HOME_REQUEST_SIZE = 21
+const MOBILE_API_PAGE_SIZE = 36
+const MOBILE_HOME_REQUEST_SIZE = 36
+const POPULAR_HOME_REQUEST_SIZE = 21
 
 type HomeSearch = {
   category?: string
@@ -308,7 +308,7 @@ function LocalizedHomePage() {
     let isCancelled = false
 
     Promise.all(
-      [1, 2].map((apiPage) =>
+      [1].map((apiPage) =>
         runSearch({
           data: {
             query: filters.query,
@@ -377,9 +377,9 @@ function LocalizedHomePage() {
         currentTemplate === 'default' &&
         window.matchMedia('(max-width: 1023px)').matches
       if (isMobileHome) {
-        const firstApiPage = (nextPage - 1) * 2 + 1
+        const firstApiPage = nextPage
         const mobileResults = await Promise.all(
-          [firstApiPage, firstApiPage + 1].map((apiPage) =>
+          [firstApiPage].map((apiPage) =>
             runSearch({
               data: {
                 query: nextFilters.query,

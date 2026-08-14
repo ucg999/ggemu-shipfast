@@ -65,7 +65,7 @@ export function HomeMostPlayedGamesSection({
       <div className={mobile ? 'w-full px-1 py-3' : 'w-full px-4 pt-6 sm:px-6 lg:px-8'}>
         <div className="flex items-center gap-2">
           <h2 className={mobile ? 'px-1 text-lg font-semibold text-base-content' : 'text-2xl font-semibold text-base-content'}>
-            随机玩一玩
+            每日随机玩一玩
           </h2>
           <button
             aria-label="随机游戏"

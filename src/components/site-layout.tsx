@@ -151,13 +151,12 @@ export function SiteLayout({
             ) : null}
             <Link
               aria-label="看别人玩"
-              className="btn btn-xs shrink-0 gap-1.5 rounded-full border border-white/70 bg-white px-3 text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm sm:px-4"
+              className="btn btn-sm h-10 shrink-0 gap-2 rounded-full border border-white/70 bg-white px-4 text-sm font-semibold text-black shadow-sm hover:border-white hover:bg-gray-100 sm:h-11 sm:px-5 sm:text-base"
               params={{ locale }}
               to="/$locale/live"
             >
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-black opacity-35" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-black" />
+              <span aria-hidden="true" className="live-watch-eye">
+                <span className="live-watch-pupil" />
               </span>
               <span>看别人玩</span>
             </Link>
