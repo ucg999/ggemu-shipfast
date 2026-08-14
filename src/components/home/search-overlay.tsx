@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import type { FormEvent } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import {
   GameCardPreviewVideo,
@@ -17,6 +17,7 @@ export function HomeSearchOverlay({
   filterOptions,
   gameTotal,
   isOpen,
+  initialQuery = '',
   lang,
   onClose,
   t,
@@ -24,6 +25,7 @@ export function HomeSearchOverlay({
   filterOptions: GameFilterOptions
   gameTotal: number
   isOpen: boolean
+  initialQuery?: string
   lang: Locale
   onClose: () => void
   t: HomeCopy
@@ -39,6 +41,20 @@ export function HomeSearchOverlay({
   const [isSearching, setIsSearching] = useState(false)
   const searchGamesList = result?.games ?? []
   const searchPlaceholder = getSearchPlaceholder(t, gameTotal)
+
+  useEffect(() => {
+    if (!isOpen || !initialQuery.trim()) return
+
+    const nextFilters: Filters = {
+      category: '',
+      platform: '',
+      query: initialQuery,
+      sort: 'newest',
+    }
+
+    setFilters(nextFilters)
+    searchOverlayGames(nextFilters)
+  }, [initialQuery, isOpen])
 
   async function searchOverlayGames(nextFilters: Filters) {
     setIsSearching(true)
@@ -91,7 +107,9 @@ export function HomeSearchOverlay({
         onClick={onClose}
       />
       <aside
-        className={`fixed bottom-0 left-0 top-0 z-[120] flex w-[min(28rem,calc(100vw-1.5rem))] flex-col bg-base-100 shadow-2xl transition-transform duration-200 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        aria-modal="true"
+        className={`fixed inset-x-3 bottom-3 top-3 z-[120] mx-auto flex w-auto max-w-6xl flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-2xl transition duration-200 sm:inset-x-6 sm:bottom-8 sm:top-8 ${isOpen ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0'}`}
+        role="dialog"
       >
         <header className="flex items-center justify-between border-b border-base-300 px-4 py-3">
           <h2 className="text-base font-semibold">{t.search}</h2>
@@ -128,7 +146,7 @@ export function HomeSearchOverlay({
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {result ? (
             searchGamesList.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                 {searchGamesList.map((game) => (
                   <SearchResultCard
                     game={game}

@@ -55,6 +55,29 @@ export type I18nMessages = {
     description: string
     keywords: string
   }
+  arcade: {
+    mode: string
+    tooltip: string
+    title: string
+    subtitle: string
+    famicomMode: string
+    famicomTooltip: string
+    famicomTitle: string
+    famicomSubtitle: string
+    gbaMode: string
+    gbaTooltip: string
+    gbaTitle: string
+    gbaSubtitle: string
+    flashMode: string
+    flashTooltip: string
+    flashTitle: string
+    flashSubtitle: string
+    allGames: string
+    mostPopular: string
+    gameInfo: string
+    startGame: string
+    empty: string
+  }
   detail: {
     home: string
     play: string

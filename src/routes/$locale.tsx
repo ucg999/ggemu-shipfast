@@ -422,7 +422,7 @@ function LocalizedHomePage() {
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    loadGames(filters, 1)
+    setIsSearchOpen(true)
   }
 
   function updateFilter<Key extends keyof Filters>(key: Key, value: Filters[Key]) {
@@ -483,7 +483,7 @@ function LocalizedHomePage() {
         locale={lang}
         onOpenSearch={() => setIsSearchOpen(true)}
         topContent={
-          <div className="hidden w-full max-w-4xl lg:block">
+          <div className="hidden w-full lg:block">
             <SearchForm {...templateProps} mode="default" />
           </div>
         }
@@ -493,6 +493,7 @@ function LocalizedHomePage() {
       <HomeSearchOverlay
         filterOptions={initialResult.filterOptions}
         gameTotal={pagination.total}
+        initialQuery={filters.query}
         isOpen={isSearchOpen}
         lang={lang}
         onClose={() => setIsSearchOpen(false)}

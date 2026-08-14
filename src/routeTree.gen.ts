@@ -17,6 +17,7 @@ import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as XRouteImport } from './routes/x'
 import { Route as LocaleAboutRouteImport } from './routes/$locale.about'
+import { Route as LocaleArcadeRouteImport } from './routes/$locale.arcade'
 import { Route as LocaleBlogRouteImport } from './routes/$locale.blog'
 import { Route as LocaleLiveRouteImport } from './routes/$locale.live'
 import { Route as LocalePlayMyRomRouteImport } from './routes/$locale.play-my-rom'
@@ -28,6 +29,7 @@ import { Route as GamesGameIdRouteImport } from './routes/games/$gameId'
 import { Route as LocaleBlogBlogIdRouteImport } from './routes/$locale.blog.$blogId'
 import { Route as LocaleCollectionsCollectionIdRouteImport } from './routes/$locale.collections.$collectionId'
 import { Route as LocaleGamesGameIdRouteImport } from './routes/$locale.games.$gameId'
+import { Route as LocalePlatformPlatformIdRouteImport } from './routes/$locale.platform.$platformId'
 import { Route as UsernameArticleStatusidRouteImport } from './routes/$username/article/$statusid'
 import { Route as UsernameStatusStatusidRouteImport } from './routes/$username/status/$statusid'
 import { Route as GamesGameIdPlayRouteImport } from './routes/games/$gameId/play'
@@ -71,6 +73,11 @@ const XRoute = XRouteImport.update({
 const LocaleAboutRoute = LocaleAboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleArcadeRoute = LocaleArcadeRouteImport.update({
+  id: '/arcade',
+  path: '/arcade',
   getParentRoute: () => LocaleRoute,
 } as any)
 const LocaleBlogRoute = LocaleBlogRouteImport.update({
@@ -129,6 +136,12 @@ const LocaleGamesGameIdRoute = LocaleGamesGameIdRouteImport.update({
   path: '/games/$gameId',
   getParentRoute: () => LocaleRoute,
 } as any)
+const LocalePlatformPlatformIdRoute =
+  LocalePlatformPlatformIdRouteImport.update({
+    id: '/platform/$platformId',
+    path: '/platform/$platformId',
+    getParentRoute: () => LocaleRoute,
+  } as any)
 const UsernameArticleStatusidRoute = UsernameArticleStatusidRouteImport.update({
   id: '/$username/article/$statusid',
   path: '/$username/article/$statusid',
@@ -159,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/x': typeof XRoute
   '/$locale/about': typeof LocaleAboutRoute
+  '/$locale/arcade': typeof LocaleArcadeRoute
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
   '/$locale/live': typeof LocaleLiveRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
@@ -170,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/$locale/blog/$blogId': typeof LocaleBlogBlogIdRoute
   '/$locale/collections/$collectionId': typeof LocaleCollectionsCollectionIdRoute
   '/$locale/games/$gameId': typeof LocaleGamesGameIdRouteWithChildren
+  '/$locale/platform/$platformId': typeof LocalePlatformPlatformIdRoute
   '/$username/article/$statusid': typeof UsernameArticleStatusidRoute
   '/$username/status/$statusid': typeof UsernameStatusStatusidRoute
   '/games/$gameId/play': typeof GamesGameIdPlayRoute
@@ -184,6 +199,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/x': typeof XRoute
   '/$locale/about': typeof LocaleAboutRoute
+  '/$locale/arcade': typeof LocaleArcadeRoute
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
   '/$locale/live': typeof LocaleLiveRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
@@ -195,6 +211,7 @@ export interface FileRoutesByTo {
   '/$locale/blog/$blogId': typeof LocaleBlogBlogIdRoute
   '/$locale/collections/$collectionId': typeof LocaleCollectionsCollectionIdRoute
   '/$locale/games/$gameId': typeof LocaleGamesGameIdRouteWithChildren
+  '/$locale/platform/$platformId': typeof LocalePlatformPlatformIdRoute
   '/$username/article/$statusid': typeof UsernameArticleStatusidRoute
   '/$username/status/$statusid': typeof UsernameStatusStatusidRoute
   '/games/$gameId/play': typeof GamesGameIdPlayRoute
@@ -210,6 +227,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/x': typeof XRoute
   '/$locale/about': typeof LocaleAboutRoute
+  '/$locale/arcade': typeof LocaleArcadeRoute
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
   '/$locale/live': typeof LocaleLiveRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
@@ -221,6 +239,7 @@ export interface FileRoutesById {
   '/$locale/blog/$blogId': typeof LocaleBlogBlogIdRoute
   '/$locale/collections/$collectionId': typeof LocaleCollectionsCollectionIdRoute
   '/$locale/games/$gameId': typeof LocaleGamesGameIdRouteWithChildren
+  '/$locale/platform/$platformId': typeof LocalePlatformPlatformIdRoute
   '/$username/article/$statusid': typeof UsernameArticleStatusidRoute
   '/$username/status/$statusid': typeof UsernameStatusStatusidRoute
   '/games/$gameId/play': typeof GamesGameIdPlayRoute
@@ -237,6 +256,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/x'
     | '/$locale/about'
+    | '/$locale/arcade'
     | '/$locale/blog'
     | '/$locale/live'
     | '/$locale/play-my-rom'
@@ -248,6 +268,7 @@ export interface FileRouteTypes {
     | '/$locale/blog/$blogId'
     | '/$locale/collections/$collectionId'
     | '/$locale/games/$gameId'
+    | '/$locale/platform/$platformId'
     | '/$username/article/$statusid'
     | '/$username/status/$statusid'
     | '/games/$gameId/play'
@@ -262,6 +283,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/x'
     | '/$locale/about'
+    | '/$locale/arcade'
     | '/$locale/blog'
     | '/$locale/live'
     | '/$locale/play-my-rom'
@@ -273,6 +295,7 @@ export interface FileRouteTypes {
     | '/$locale/blog/$blogId'
     | '/$locale/collections/$collectionId'
     | '/$locale/games/$gameId'
+    | '/$locale/platform/$platformId'
     | '/$username/article/$statusid'
     | '/$username/status/$statusid'
     | '/games/$gameId/play'
@@ -287,6 +310,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/x'
     | '/$locale/about'
+    | '/$locale/arcade'
     | '/$locale/blog'
     | '/$locale/live'
     | '/$locale/play-my-rom'
@@ -298,6 +322,7 @@ export interface FileRouteTypes {
     | '/$locale/blog/$blogId'
     | '/$locale/collections/$collectionId'
     | '/$locale/games/$gameId'
+    | '/$locale/platform/$platformId'
     | '/$username/article/$statusid'
     | '/$username/status/$statusid'
     | '/games/$gameId/play'
@@ -374,6 +399,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/$locale/about'
       preLoaderRoute: typeof LocaleAboutRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/arcade': {
+      id: '/$locale/arcade'
+      path: '/arcade'
+      fullPath: '/$locale/arcade'
+      preLoaderRoute: typeof LocaleArcadeRouteImport
       parentRoute: typeof LocaleRoute
     }
     '/$locale/blog': {
@@ -453,6 +485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleGamesGameIdRouteImport
       parentRoute: typeof LocaleRoute
     }
+    '/$locale/platform/$platformId': {
+      id: '/$locale/platform/$platformId'
+      path: '/platform/$platformId'
+      fullPath: '/$locale/platform/$platformId'
+      preLoaderRoute: typeof LocalePlatformPlatformIdRouteImport
+      parentRoute: typeof LocaleRoute
+    }
     '/$username/article/$statusid': {
       id: '/$username/article/$statusid'
       path: '/$username/article/$statusid'
@@ -509,6 +548,7 @@ const LocaleGamesGameIdRouteWithChildren =
 
 interface LocaleRouteChildren {
   LocaleAboutRoute: typeof LocaleAboutRoute
+  LocaleArcadeRoute: typeof LocaleArcadeRoute
   LocaleBlogRoute: typeof LocaleBlogRouteWithChildren
   LocaleLiveRoute: typeof LocaleLiveRoute
   LocalePlayMyRomRoute: typeof LocalePlayMyRomRoute
@@ -517,10 +557,12 @@ interface LocaleRouteChildren {
   LocaleTermsOfServiceRoute: typeof LocaleTermsOfServiceRoute
   LocaleCollectionsCollectionIdRoute: typeof LocaleCollectionsCollectionIdRoute
   LocaleGamesGameIdRoute: typeof LocaleGamesGameIdRouteWithChildren
+  LocalePlatformPlatformIdRoute: typeof LocalePlatformPlatformIdRoute
 }
 
 const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleAboutRoute: LocaleAboutRoute,
+  LocaleArcadeRoute: LocaleArcadeRoute,
   LocaleBlogRoute: LocaleBlogRouteWithChildren,
   LocaleLiveRoute: LocaleLiveRoute,
   LocalePlayMyRomRoute: LocalePlayMyRomRoute,
@@ -529,6 +571,7 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleTermsOfServiceRoute: LocaleTermsOfServiceRoute,
   LocaleCollectionsCollectionIdRoute: LocaleCollectionsCollectionIdRoute,
   LocaleGamesGameIdRoute: LocaleGamesGameIdRouteWithChildren,
+  LocalePlatformPlatformIdRoute: LocalePlatformPlatformIdRoute,
 }
 
 const LocaleRouteWithChildren =

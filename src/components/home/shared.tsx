@@ -279,8 +279,97 @@ export function SearchForm({
           </button>
         </label>
 
+        <div className="tooltip tooltip-bottom" data-tip={getI18n(lang).arcade.tooltip}>
+          <Link
+            className="flex h-12 items-center gap-2.5 px-2 text-lg font-medium text-white/95 transition hover:text-white"
+            params={{ locale: lang }}
+            to="/$locale/arcade"
+          >
+            <ArcadeCabinetIcon className="h-8 w-8" />
+            {getI18n(lang).arcade.mode}
+          </Link>
+        </div>
+        <div className="tooltip tooltip-bottom" data-tip={getI18n(lang).arcade.famicomTooltip}>
+          <Link
+            className="flex h-12 items-center gap-2.5 px-2 text-lg font-medium text-white/95 transition hover:text-white"
+            params={{ locale: lang, platformId: 'famicom' }}
+            to="/$locale/platform/$platformId"
+          >
+            <FamicomConsoleIcon className="h-8 w-8" />
+            {getI18n(lang).arcade.famicomMode}
+          </Link>
+        </div>
+        <div className="tooltip tooltip-bottom" data-tip={getI18n(lang).arcade.gbaTooltip}>
+          <Link
+            className="flex h-12 items-center gap-2.5 px-2 text-lg font-medium text-white/95 transition hover:text-white"
+            params={{ locale: lang, platformId: 'gba' }}
+            to="/$locale/platform/$platformId"
+          >
+            <GbaHandheldIcon className="h-8 w-8" />
+            {getI18n(lang).arcade.gbaMode}
+          </Link>
+        </div>
+        <div className="tooltip tooltip-bottom" data-tip={getI18n(lang).arcade.flashTooltip}>
+          <Link
+            className="flex h-12 items-center gap-2.5 px-2 text-lg font-medium text-white/95 transition hover:text-white"
+            params={{ locale: lang, platformId: 'flash' }}
+            to="/$locale/platform/$platformId"
+          >
+            <ComputerGameIcon className="h-8 w-8" />
+            {getI18n(lang).arcade.flashMode}
+          </Link>
+        </div>
+
       </div>
     </form>
+  )
+}
+
+function ArcadeCabinetIcon({ className }: { className: string }) {
+  return (
+    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 32 32">
+      <path d="M9 3H23L25 10L23 29H9L7 10L9 3Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.6" />
+      <rect height="8" rx="1.5" stroke="currentColor" strokeWidth="1.6" width="12" x="10" y="7" />
+      <path d="M10 19H22M13 23H19M16 19V16" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
+      <circle cx="20.5" cy="19.5" fill="currentColor" r="1.2" />
+      <path d="M11 29V31M21 29V31" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+function FamicomConsoleIcon({ className }: { className: string }) {
+  return (
+    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 32 32">
+      <rect height="12" rx="2.5" stroke="currentColor" strokeWidth="1.6" width="22" x="5" y="4" />
+      <path d="M9 8H23M11 12H16" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
+      <rect height="10" rx="3" stroke="currentColor" strokeWidth="1.6" width="26" x="3" y="19" />
+      <path d="M9 22V27M6.5 24.5H11.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
+      <circle cx="22" cy="24" fill="currentColor" r="1.3" />
+      <circle cx="25.5" cy="24" fill="currentColor" r="1.3" />
+      <path d="M16 16V19" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+function GbaHandheldIcon({ className }: { className: string }) {
+  return (
+    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 32 32">
+      <rect height="18" rx="7" stroke="currentColor" strokeWidth="1.6" width="28" x="2" y="7" />
+      <rect height="12" rx="2" stroke="currentColor" strokeWidth="1.6" width="14" x="9" y="10" />
+      <path d="M6 14V20M3 17H9" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
+      <circle cx="26" cy="15" fill="currentColor" r="1.3" />
+      <circle cx="27" cy="19" fill="currentColor" r="1.3" />
+    </svg>
+  )
+}
+
+function ComputerGameIcon({ className }: { className: string }) {
+  return (
+    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 32 32">
+      <rect height="18" rx="2.5" stroke="currentColor" strokeWidth="1.6" width="26" x="3" y="3" />
+      <path d="M7 17H25M16 21V26M10 29H22" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
+      <path d="M12 9L18 12L12 15V9Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.6" />
+    </svg>
   )
 }
 
