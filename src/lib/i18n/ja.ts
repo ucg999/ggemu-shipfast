@@ -65,6 +65,7 @@ export const jaMessages = {
     details: '詳細',
     featured: 'オンライン対応レトロゲーム',
     recentlyPlayed: '最近プレイしたゲーム',
+    continueGame: 'ゲームを続ける',
     latestBlogPosts: '最新ブログ記事',
     latestBlogSubtitle:
       '最新のゲームガイド、ブラウザーでの遊び方、レトロゲーム記事を読めます。',

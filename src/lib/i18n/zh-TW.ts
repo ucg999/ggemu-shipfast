@@ -62,6 +62,7 @@ export const zhTwMessages = {
     plays: '遊玩',
     details: '查看詳情',
     recentlyPlayed: '最近玩過',
+    continueGame: '繼續遊戲',
     latestBlogPosts: '最新部落格文章',
     latestBlogSubtitle: '閱讀最新遊戲指南、瀏覽器遊玩技巧與復古遊戲文章。',
     viewAllBlog: '查看全部文章',

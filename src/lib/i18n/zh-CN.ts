@@ -67,6 +67,7 @@ export const zhCnMessages = {
     details: '查看详情',
     featured: '可在线游玩的复古游戏',
     recentlyPlayed: '最近玩过',
+    continueGame: '继续游戏',
     latestBlogPosts: '最新博客文章',
     latestBlogSubtitle: '阅读最新游戏指南、浏览器游玩技巧和复古游戏相关文章。',
     viewAllBlog: '查看全部文章',

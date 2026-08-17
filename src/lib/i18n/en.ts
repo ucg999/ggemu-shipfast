@@ -65,6 +65,7 @@ export const enMessages = {
     details: 'Details',
     featured: 'Playable retro games',
     recentlyPlayed: 'Recently played',
+    continueGame: 'Continue playing',
     latestBlogPosts: 'Latest Blog Posts',
     latestBlogSubtitle:
       'Read the latest game guides, browser play tips, and retro gaming articles.',

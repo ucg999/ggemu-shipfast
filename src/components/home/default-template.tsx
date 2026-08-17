@@ -10,7 +10,7 @@ import {
 } from './shared'
 import {
   PopularGameCollections,
-  RecentPlayedGamesSection,
+  RecentPlayedHeaderPanel,
   useRecentPlayedGames,
 } from './recent-played-games'
 import type { HomeTemplateProps } from './types'
@@ -90,7 +90,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
   return (
     <>
       <section className="hidden bg-base-100 lg:block">
-        <div className="flex w-full flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="flex w-full flex-wrap items-start gap-8 px-4 py-6 sm:px-6 lg:px-8 xl:flex-nowrap">
           <div className="w-fit">
             <h1 className="rainbow-title hidden whitespace-nowrap text-[clamp(2rem,3.7vw,4rem)] font-bold leading-tight sm:block">
               {t.title}
@@ -99,6 +99,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
               {t.nostalgiaSubtitle}
             </p>
           </div>
+          <RecentPlayedHeaderPanel games={recentPlayedGames} lang={lang} />
         </div>
       </section>
 
@@ -287,7 +288,9 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
       </section>
 
       <div className="hidden lg:block">
-        <RecentPlayedGamesSection lang={lang} />
+        <section className="bg-base-100 px-4 py-5 sm:px-6 lg:px-8">
+          <PopularGameCollections lang={lang} />
+        </section>
         <HomeLatestBlogPostsSection blogPosts={latestBlogPosts} lang={lang} />
         <HomeFaqSection lang={lang} />
       </div>

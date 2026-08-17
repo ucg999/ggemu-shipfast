@@ -1,4 +1,4 @@
-import { Link, createFileRoute, redirect } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 
 import { getGameDetail, searchGames, type Locale, type PublicGame } from '#/lib/ggemu'
@@ -18,17 +18,9 @@ const noindexHeaders = {
 } as const
 
 export const Route = createFileRoute('/$locale/games/$gameId/play')({
-  beforeLoad: ({ location, params }) => {
-    if (!location.searchStr) {
-      return
-    }
-
-    throw redirect({
-      params,
-      replace: true,
-      to: '/$locale/games/$gameId/play',
-    })
-  },
+  validateSearch: (search: Record<string, unknown>) => ({
+    autoplay: search.autoplay === '1' ? ('1' as const) : undefined,
+  }),
   loader: async ({ params }) => {
     const locale = normalizeLocale(params.locale)
     const game = await getGameDetail({ data: { id: params.gameId } })
@@ -56,12 +48,13 @@ export const Route = createFileRoute('/$locale/games/$gameId/play')({
 function LocalizedPlayGamePage() {
   const { game, seriesGames } = Route.useLoaderData()
   const { gameId, locale } = Route.useParams()
+  const { autoplay } = Route.useSearch()
   const lang = normalizeLocale(locale)
   const embedId = encodeURIComponent(game._id || game.url_slug || gameId)
   const refcode = encodeURIComponent(siteConfig.GGEMU_REFCODE)
   const isPsp = isPspGame(game)
   const theme = useCurrentSiteTheme()
-  const embedSrc = `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp, theme)}`
+  const embedSrc = `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp, theme, autoplay === '1')}`
   const [showRecommendations, setShowRecommendations] = useState(false)
   const labels = useMemo(() => getRecommendationLabels(lang), [lang])
 
@@ -371,7 +364,7 @@ function getRecommendationLabels(locale: Locale) {
   }
 }
 
-function buildEmbedSearch(refcode: string, isPsp: boolean, theme: string) {
+function buildEmbedSearch(refcode: string, isPsp: boolean, theme: string, autoplay: boolean) {
   const params = new URLSearchParams({
     r: refcode,
     embed: '1',
@@ -380,6 +373,9 @@ function buildEmbedSearch(refcode: string, isPsp: boolean, theme: string) {
 
   if (isPsp) {
     params.set('isolated', '1')
+  }
+
+  if (isPsp || autoplay) {
     params.set('autoplay', '1')
   }
 

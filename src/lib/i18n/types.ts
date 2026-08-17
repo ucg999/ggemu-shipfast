@@ -58,6 +58,7 @@ export type I18nMessages = {
     details: string
     featured: string
     recentlyPlayed: string
+    continueGame: string
     latestBlogPosts: string
     latestBlogSubtitle: string
     viewAllBlog: string

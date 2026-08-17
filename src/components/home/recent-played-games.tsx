@@ -62,6 +62,52 @@ export function RecentPlayedGamesSection({
   )
 }
 
+export function RecentPlayedHeaderPanel({
+  games,
+  lang,
+}: {
+  games: Array<RecentPlayedGame>
+  lang: Locale
+}) {
+  const t = getI18n(lang).home
+  const latestGame = games[0]
+  const previousGames = games.slice(1, 5)
+
+  if (!latestGame) {
+    return (
+      <div className="ml-auto hidden min-w-64 lg:block">
+        <h2 className="text-sm font-semibold text-base-content">{t.continueGame}</h2>
+        <p className="mt-2 text-sm text-base-content/50">{t.recentEmpty}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="ml-auto hidden shrink-0 items-start gap-5 lg:flex">
+      <div>
+        <h2 className="mb-2 text-sm font-semibold text-base-content">{t.continueGame}</h2>
+        <div className="h-24 w-24">
+          <RecentPlayedGameCard directPlay game={latestGame} lang={lang} />
+        </div>
+      </div>
+      <div className="min-w-0">
+        <h2 className="mb-2 text-sm font-semibold text-base-content">{t.recentlyPlayed}</h2>
+        {previousGames.length > 0 ? (
+          <div className="grid h-24 w-24 grid-cols-2 gap-2">
+            {previousGames.map((game) => (
+              <div className="h-11 w-11" key={game.id}>
+                <RecentPlayedGameCard compact game={game} lang={lang} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="w-48 text-sm text-base-content/50">{t.recentEmpty}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function useRecentPlayedGames() {
   const [games, setGames] = useState<Array<RecentPlayedGame>>([])
 
@@ -76,7 +122,7 @@ export function PopularGameCollections({ lang }: { lang: Locale }) {
   const t = getI18n(lang).home
 
   return (
-    <div>
+    <div className="w-full max-w-3xl">
       <h2 className="text-xl font-semibold text-base-content">{t.popularCollections}</h2>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {GAME_COLLECTIONS.map((collection) => (
@@ -101,10 +147,14 @@ export function PopularGameCollections({ lang }: { lang: Locale }) {
   )
 }
 
-function RecentPlayedGameCard({
+export function RecentPlayedGameCard({
+  compact = false,
+  directPlay = false,
   game,
   lang,
 }: {
+  compact?: boolean
+  directPlay?: boolean
   game: RecentPlayedGame
   lang: Locale
 }) {
@@ -113,8 +163,8 @@ function RecentPlayedGameCard({
       aria-label={game.name}
       className="group block h-full rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
       params={{ gameId: game.id, locale: lang }}
-      search={{}}
-      to="/$locale/games/$gameId"
+      search={directPlay ? { autoplay: '1' as const } : {}}
+      to={directPlay ? '/$locale/games/$gameId/play' : '/$locale/games/$gameId'}
     >
       <figure className="relative isolate aspect-square overflow-hidden rounded-md bg-base-200">
         {game.cover ? (
@@ -130,9 +180,11 @@ function RecentPlayedGameCard({
           </div>
         )}
 
-        <span className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full border border-base-300 bg-base-100/90 text-xs text-base-content opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 sm:right-3 sm:top-3">
-          ▶
-        </span>
+        {!compact ? (
+          <span className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full border border-base-300 bg-base-100/90 text-xs text-base-content opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 sm:right-3 sm:top-3">
+            ▶
+          </span>
+        ) : null}
 
       </figure>
     </Link>
