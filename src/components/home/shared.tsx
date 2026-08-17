@@ -21,12 +21,13 @@ export function HomeLatestGamesRow({
   lang: Locale
 }) {
   const items = games.slice(0, 7)
+  const t = getI18n(lang).home
 
   if (items.length === 0) return null
 
   return (
     <section className="bg-base-100 px-3 pb-4 pt-2">
-      <h2 className="mb-3 text-2xl font-semibold text-base-content">最新游戏</h2>
+      <h2 className="mb-3 text-2xl font-semibold text-base-content">{t.latestGamesSection}</h2>
       <div className="grid grid-cols-7 gap-2">
         {items.map((game, index) => (
           <GameCard
@@ -42,19 +43,24 @@ export function HomeLatestGamesRow({
 }
 
 export function HomeMostPlayedGamesSection({
+  challengeCompleted = false,
   games,
   lang,
   mobile = false,
   isRandomGameLoading = false,
   onRandomGame,
+  streakDays = 0,
 }: {
+  challengeCompleted?: boolean
   games: Array<PublicGame>
   lang: Locale
   mobile?: boolean
   isRandomGameLoading?: boolean
   onRandomGame: () => void | Promise<void>
+  streakDays?: number
 }) {
   const items = games.slice(0, mobile ? 4 : 6)
+  const t = getI18n(lang).home
 
   if (items.length === 0) {
     return null
@@ -65,18 +71,34 @@ export function HomeMostPlayedGamesSection({
       <div className={mobile ? 'w-full px-1 py-3' : 'w-full px-4 pt-6 sm:px-6 lg:px-8'}>
         <div className="flex items-center gap-2">
           <h2 className={mobile ? 'px-1 text-lg font-semibold text-base-content' : 'text-2xl font-semibold text-base-content'}>
-            每日随机玩一玩
+            {t.dailyRandom}
           </h2>
           <button
-            aria-label="随机游戏"
+            aria-label={t.randomGame}
             className={mobile ? 'grid h-8 w-12 place-items-center bg-transparent p-0 text-black hover:opacity-65 disabled:opacity-40' : 'grid h-10 w-16 place-items-center bg-transparent p-0 text-black hover:opacity-65 disabled:opacity-40'}
             disabled={isRandomGameLoading}
             onClick={onRandomGame}
-            title="随机游戏"
+            title={t.randomGame}
             type="button"
           >
             <SlotMachineIcon className={mobile ? 'h-5 w-10' : 'h-7 w-14'} />
           </button>
+          <button
+            className={`btn shrink-0 rounded-full border-0 ${mobile ? 'btn-xs' : 'btn-sm'} ${
+              challengeCompleted ? 'bg-success/15 text-success' : 'bg-warning text-warning-content'
+            }`}
+            disabled={isRandomGameLoading || challengeCompleted}
+            onClick={onRandomGame}
+            type="button"
+          >
+            <i className={challengeCompleted ? 'ri-checkbox-circle-fill' : 'ri-fire-fill'} />
+            {challengeCompleted ? t.challengeCompleted : t.dailyChallenge}
+          </button>
+          {streakDays > 0 ? (
+            <span className="shrink-0 text-xs font-semibold text-base-content/60">
+              {formatCopy(t.streakDays, { days: streakDays })}
+            </span>
+          ) : null}
         </div>
         <div className={mobile ? 'mt-2 grid grid-cols-2 gap-1.5' : 'mt-4 grid grid-cols-6 gap-2'}>
           {items.map((game) => {
@@ -662,7 +684,7 @@ function GameCard({
 
         {isFeaturedTile ? (
           <span className="absolute bottom-2 left-2 rounded-full bg-yellow-400 px-2 py-0.5 text-[9px] font-semibold text-black lg:hidden">
-            立即游玩
+            {getI18n(lang).home.playNow}
           </span>
         ) : null}
 

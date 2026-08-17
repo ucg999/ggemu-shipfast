@@ -28,6 +28,7 @@ export function SiteLayout({
   topContent?: ReactNode
 }) {
   const t = getI18n(locale).layout
+  const homeT = getI18n(locale).home
   const location = useRouterState({ select: (state) => state.location })
   const siteThemes = getSiteThemes()
   const [theme, setTheme] = useState(() => normalizeSiteTheme(null))
@@ -94,7 +95,7 @@ export function SiteLayout({
           <div className="navbar-start w-auto flex-none">
             {hideHeaderNav ? null : (
               <button
-                aria-label={isMobileSidebarOpen ? '收起左侧导航' : '展开左侧导航'}
+                aria-label={isMobileSidebarOpen ? t.closeSidebar : t.openSidebar}
                 className="btn btn-circle btn-xs mr-1 border border-white/40 bg-white/10 text-white hover:bg-white/20 sm:btn-sm lg:hidden"
                 onClick={() => setIsMobileSidebarOpen((isOpen) => !isOpen)}
                 type="button"
@@ -115,17 +116,17 @@ export function SiteLayout({
             >
               <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-base-100">
                 <img
-                  alt={siteConfig.SITE_NAME}
+                  alt={t.siteName}
                   className="h-full w-full object-contain"
                   src="/logo.png"
                 />
               </span>
               <span className="hidden min-w-0 leading-tight sm:block">
                 <span className="block text-lg font-semibold tracking-wide">
-                  {siteConfig.SITE_NAME}
+                  {t.siteName}
                 </span>
                 <span className="block truncate text-xs text-white/75">
-                  {siteConfig.SITE_SLOGAN}
+                  {t.siteSlogan}
                 </span>
               </span>
             </Link>
@@ -140,17 +141,17 @@ export function SiteLayout({
           <div className="navbar-end ml-auto w-auto flex-none gap-2">
             {onOpenSearch ? (
               <button
-                aria-label="搜索游戏"
+                aria-label={t.searchGames}
                 className="btn btn-circle btn-xs shrink-0 border border-white/70 bg-white text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm lg:hidden"
                 onClick={onOpenSearch}
-                title="搜索游戏"
+                title={t.searchGames}
                 type="button"
               >
                 <i className="ri-search-line text-base" />
               </button>
             ) : null}
             <Link
-              aria-label="看别人玩"
+              aria-label={t.watchOthers}
               className="btn btn-sm h-10 shrink-0 gap-2 rounded-full border border-white/70 bg-white px-4 text-sm font-semibold text-black shadow-sm hover:border-white hover:bg-gray-100 sm:h-11 sm:px-5 sm:text-base"
               params={{ locale }}
               to="/$locale/live"
@@ -158,7 +159,7 @@ export function SiteLayout({
               <span aria-hidden="true" className="live-watch-eye">
                 <span className="live-watch-pupil" />
               </span>
-              <span>看别人玩</span>
+              <span>{t.watchOthers}</span>
             </Link>
 
             {headerActions}
@@ -170,7 +171,7 @@ export function SiteLayout({
                   aria-pressed={theme === 'dark'}
                   className="btn btn-circle btn-xs shrink-0 border border-white/70 bg-white text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm lg:hidden"
                   onClick={toggleTheme}
-                  title={theme === 'dark' ? '切换到亮色' : '切换到暗色'}
+                  title={theme === 'dark' ? t.switchToLight : t.switchToDark}
                   type="button"
                 >
                   <i className={theme === 'dark' ? 'ri-sun-line' : 'ri-moon-line'} />
@@ -190,7 +191,7 @@ export function SiteLayout({
                     type="button"
                   >
                     <i className="ri-sun-line" />
-                    <span>亮色</span>
+                    <span>{t.lightTheme}</span>
                   </button>
                   <button
                     aria-pressed={theme === 'dark'}
@@ -203,7 +204,7 @@ export function SiteLayout({
                     type="button"
                   >
                     <i className="ri-moon-line" />
-                    <span>暗色</span>
+                    <span>{t.darkTheme}</span>
                   </button>
                 </div>
               </>
@@ -260,7 +261,7 @@ export function SiteLayout({
 
       {isMobileSidebarOpen && !hideHeaderNav ? (
         <button
-          aria-label="关闭左侧导航"
+          aria-label={t.closeSidebar}
           className="fixed inset-0 top-[61px] z-30 bg-black/35 lg:hidden"
           onClick={() => setIsMobileSidebarOpen(false)}
           type="button"
@@ -280,7 +281,7 @@ export function SiteLayout({
               isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
           >
-            <nav aria-label="主导航">
+            <nav aria-label={t.mainNavigation}>
               <ul className="menu gap-1 p-0 text-sm">
                 <li>
                   <Link
@@ -349,16 +350,26 @@ export function SiteLayout({
                         </details>
                       </li>
                       <li>
-                        <a href={`/${locale}?sort=newest&view=latest`}>
+                        <a href={`/${locale}/rankings/latest`}>
                           {t.latestGames}
                         </a>
                       </li>
                       <li>
-                        <a href={`/${locale}?sort=popular`}>
+                        <a href={`/${locale}/rankings/popular`}>
                           {t.mostPopularGames}
                           <span className="badge badge-xs border-0 bg-red-500 font-bold text-white">
                             HOT
                           </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href={`/${locale}/rankings/weekly`}>
+                          {t.weeklyPopularGames}
+                        </a>
+                      </li>
+                      <li>
+                        <a href={`/${locale}/rankings/rising`}>
+                          {t.fastestGrowingGames}
                         </a>
                       </li>
                     </ul>
@@ -374,7 +385,7 @@ export function SiteLayout({
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
                       <i className="ri-cpu-line text-base" />
                     </span>
-                    <span className="sidebar-label min-w-0 flex-1">超级模拟器</span>
+                    <span className="sidebar-label min-w-0 flex-1">{homeT.superEmulator}</span>
                   </Link>
                 </li>
                 <li>
@@ -400,7 +411,7 @@ export function SiteLayout({
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
                         <i className="ri-gift-line text-base" />
                       </span>
-                      <span className="sidebar-label min-w-0 flex-1">拿点有用的</span>
+                      <span className="sidebar-label min-w-0 flex-1">{homeT.usefulResources}</span>
                     </summary>
                     <ul className="sidebar-submenu">
                       <li>
@@ -409,7 +420,7 @@ export function SiteLayout({
                           rel="noreferrer"
                           target="_blank"
                         >
-                          PSP游戏库
+                          {homeT.pspLibrary}
                         </a>
                       </li>
                       <li>
@@ -418,7 +429,7 @@ export function SiteLayout({
                           rel="noreferrer"
                           target="_blank"
                         >
-                          PSV游戏库
+                          {homeT.psvLibrary}
                         </a>
                       </li>
                       <li>
@@ -427,7 +438,7 @@ export function SiteLayout({
                           rel="noreferrer"
                           target="_blank"
                         >
-                          Switch游戏库
+                          {homeT.switchLibrary}
                         </a>
                       </li>
                       <li>
@@ -436,7 +447,7 @@ export function SiteLayout({
                           rel="noreferrer"
                           target="_blank"
                         >
-                          街机库
+                          {homeT.arcadeLibrary}
                         </a>
                       </li>
                       <li>
@@ -445,7 +456,7 @@ export function SiteLayout({
                           rel="noreferrer"
                           target="_blank"
                         >
-                          热门游戏合集
+                          {homeT.popularGameLibrary}
                         </a>
                       </li>
                     </ul>
@@ -462,18 +473,18 @@ export function SiteLayout({
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
                         <i className="ri-user-add-line text-base" />
                       </span>
-                      <span className="sidebar-label min-w-0 flex-1">找点新朋友</span>
+                      <span className="sidebar-label min-w-0 flex-1">{homeT.findFriends}</span>
                     </summary>
                     <ul className="sidebar-submenu">
                       <li>
                         <details>
                           <summary>
                             <i className="ri-wechat-fill text-[#07c160]" />
-                            微信
+                            {homeT.wechat}
                           </summary>
                           <div className="px-2 pb-2 pt-1">
                             <img
-                              alt="游戏历险记微信二维码"
+                              alt={homeT.wechatQrAlt}
                               className="w-full rounded-lg bg-white object-contain"
                               src="/wechat-qr.png"
                             />
@@ -488,7 +499,7 @@ export function SiteLayout({
                           </summary>
                           <div className="px-2 pb-2 pt-1">
                             <img
-                              alt="游戏历险记QQ二维码"
+                              alt={homeT.qqQrAlt}
                               className="w-full rounded-lg object-contain"
                               src="/qq-qr.jpg"
                             />
@@ -529,14 +540,14 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             <div className="flex items-center gap-3">
               <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-lg bg-base-100">
                 <img
-                  alt={siteConfig.SITE_NAME}
+                  alt={t.siteName}
                   className="h-full w-full object-contain"
                   src="/logo.png"
                 />
               </span>
               <div>
                 <p className="text-base font-semibold text-base-content">
-                  {siteConfig.SITE_NAME}
+                  {t.siteName}
                 </p>
               </div>
             </div>

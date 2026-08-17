@@ -10,6 +10,8 @@ export const enMessages = {
     gameTypes: 'Genres',
     latestGames: 'Latest Games',
     mostPopularGames: 'Popular Games',
+    weeklyPopularGames: 'Popular This Week',
+    fastestGrowingGames: 'Fastest Rising',
     live: 'Live',
     explore: 'Explore',
     blog: 'Blog',
@@ -19,19 +21,26 @@ export const enMessages = {
     termsOfService: 'Terms of Service',
     theme: 'Theme',
     language: 'Language',
-    get copyright() {
-      return `Copyright © 2026 ${siteConfig.SITE_NAME}`
-    },
+    copyright: 'Copyright © 2026 Game Adventure',
     get disclaimer() {
       return `All the games ROM / programs are submitted by users or collected from the internet, and the copyrights belong to their respective owners. If you have any issues, please email ${siteConfig.SITE_EMAIL}, and we will remove the corresponding content.`
     },
     footer:
       'Play classic retro games directly in your browser. No downloads required.',
+    openSidebar: 'Open side navigation',
+    closeSidebar: 'Close side navigation',
+    searchGames: 'Search games',
+    watchOthers: 'Watch Others Play',
+    switchToLight: 'Switch to light theme',
+    switchToDark: 'Switch to dark theme',
+    lightTheme: 'Light',
+    darkTheme: 'Dark',
+    mainNavigation: 'Main navigation',
+    siteName: 'Game Adventure',
+    siteSlogan: 'Online Games — Click and Play',
   },
   home: {
-    get title() {
-      return siteConfig.SITE_SLOGAN
-    },
+    title: 'Childhood Fun, One Click Away!',
     nostalgiaSubtitle: 'Subor, endless fun. Enjoy arcade, Subor, GBA, PSP, and Switch games online.',
     subtitle:
       'Play classic retro games from GBA, NES, SNES, PS1, N64, Sega Genesis, Arcade and more directly in your browser. No downloads required.',
@@ -61,11 +70,38 @@ export const enMessages = {
       'Read the latest game guides, browser play tips, and retro gaming articles.',
     viewAllBlog: 'View all posts',
     blogPostFallback: 'Blog post',
+    latestGamesSection: 'Latest Games',
+    dailyRandom: 'Daily Random Picks',
+    dailyChallenge: 'Daily Challenge',
+    challengeCompleted: 'Completed Today',
+    streakDays: '{days}-day streak',
+    randomGame: 'Random game',
+    playNow: 'Play Now',
+    homeRecommendations: 'Home Picks',
+    weeklyPopularGames: 'Popular This Week',
+    fastestGrowingGames: 'Fastest Rising',
+    platformNavigation: 'Game platform navigation',
+    mobilePlatformNavigation: 'Mobile game platform navigation',
+    recentEmpty: 'Games will appear here after you start playing.',
+    popularCollections: 'Popular Game Collections',
+    close: 'Close',
+    randomAgain: 'Try Again',
+    superEmulator: 'Super Emulator',
+    usefulResources: 'Useful Resources',
+    pspLibrary: 'PSP Game Library',
+    psvLibrary: 'PSV Game Library',
+    switchLibrary: 'Switch Game Library',
+    arcadeLibrary: 'Arcade Library',
+    popularGameLibrary: 'Popular Game Collection',
+    findFriends: 'Find New Friends',
+    wechat: 'WeChat',
+    wechatQrAlt: 'Game Adventure WeChat QR code',
+    qqQrAlt: 'Game Adventure QQ QR code',
+    kofCollection: 'The King of Fighters',
+    streetFighterCollection: 'Street Fighter',
   },
   homeSeo: {
-    get title() {
-      return `${siteConfig.SITE_SLOGAN} | No Downloads Required`
-    },
+    title: 'Game Adventure | Play Retro Games Online',
     description:
       'Play classic retro games from GBA, NES, SNES, PS1, N64, Sega Genesis, Arcade and more directly in your browser. No downloads required.',
     keywords:
@@ -74,19 +110,27 @@ export const enMessages = {
   arcade: {
     mode: 'Arcade Mode',
     tooltip: 'Play classic arcade games online',
+    seoTitle: 'Play Arcade Games Online | Classic Arcade Library | Game Adventure',
     title: 'Arcade Games',
+    description: 'Play classic arcade games online for free. Browse popular titles or use the A-Z index and start instantly without downloads.',
     subtitle: 'Arcade machines are coin-operated commercial game systems found in arcades and entertainment venues. Born in the 1970s, they became a central part of video game history.',
     famicomMode: 'Famicom Mode',
     famicomTooltip: 'Play classic Famicom games online',
+    famicomSeoTitle: 'Play Famicom and NES Games Online | Game Adventure',
     famicomTitle: 'Famicom Games',
+    famicomDescription: 'Play classic Famicom and NES games online, including action, platform, shooting, and two-player favorites.',
     famicomSubtitle: 'Browse classic Famicom games by title and play instantly online.',
     gbaMode: 'GBA Mode',
     gbaTooltip: 'Play classic GBA games online',
+    gbaSeoTitle: 'Play GBA Games Online | Game Boy Advance Library | Game Adventure',
     gbaTitle: 'GBA Games',
+    gbaDescription: 'Browse and play classic Game Boy Advance games online, sorted by popularity or title.',
     gbaSubtitle: 'Browse classic GBA games by title and play instantly online.',
     flashMode: 'Flash Games',
     flashTooltip: 'Play classic Flash computer games online',
+    flashSeoTitle: 'Play Flash Games Online | Classic Browser Games | Game Adventure',
     flashTitle: 'Flash Games',
+    flashDescription: 'Rediscover classic Flash browser games and play instantly without installing the retired Flash Player.',
     flashSubtitle: 'Browse classic Flash computer games by title and play instantly online.',
     allGames: 'All Games',
     mostPopular: 'Most Popular',
@@ -138,9 +182,7 @@ export const enMessages = {
   },
   about: {
     title: 'About',
-    get description() {
-      return `About ${siteConfig.SITE_NAME}, a browser-based classic retro games website.`
-    },
+    description: 'About Game Adventure, a browser-based classic retro games website.',
   },
   blog: {
     title: 'Blog',

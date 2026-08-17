@@ -16,6 +16,11 @@ import {
 import { SiteLayout } from '#/components/site-layout'
 import { saveRecentPlayedGame } from '#/components/home/recent-played-games'
 import {
+  applyChineseGameGuide,
+  getChineseGameGuide,
+  type ChineseGameGuide,
+} from '#/lib/chinese-game-guides'
+import {
   getGameDetailPageData,
   getRelatedGamePageData,
   type Locale,
@@ -54,13 +59,17 @@ export const Route = createFileRoute('/$locale/games/$gameId')({
     })
   },
   loader: async ({ params }) => {
+    const locale = normalizeLocale(params.locale)
     const detail = await getGameDetailPageData({
-      data: { id: params.gameId, locale: normalizeLocale(params.locale) },
+      data: { id: params.gameId, locale },
     })
     const currentId = getGameRouteId(detail.game) || params.gameId
+    const chineseGuide = locale === 'zh-CN' ? getChineseGameGuide(detail.game) : undefined
 
     return {
       ...detail,
+      chineseGuide,
+      game: applyChineseGameGuide(detail.game, chineseGuide),
       relatedGamesPromise: getRelatedGamePageData({
         data: {
           category: detail.game.categories?.[0],
@@ -271,7 +280,7 @@ function removeEmptySchemaValues<T extends Record<string, unknown>>(schema: T) {
 }
 
 function LocalizedGameDetailPage() {
-  const { canonicalUrl, game, relatedGamesPromise } = Route.useLoaderData()
+  const { canonicalUrl, chineseGuide, game, relatedGamesPromise } = Route.useLoaderData()
   const { gameId, locale } = Route.useParams()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const lang = normalizeLocale(locale)
@@ -390,6 +399,7 @@ function LocalizedGameDetailPage() {
           <section className="grid gap-6 lg:grid-cols-[1fr_340px]">
             <div className="flex flex-col gap-6">
               <PreGameTips />
+              {chineseGuide ? <ChineseGameGuideSection guide={chineseGuide} /> : null}
               <div className="flex flex-col gap-4 lg:hidden">
                 <GameInformationSections
                   categories={categories}
@@ -1160,6 +1170,34 @@ function ContentPanel({ title, value }: { title: string; value?: string }) {
         {title}
       </h2>
       <p className="mt-4 whitespace-pre-line leading-7 text-base-content/75">{value}</p>
+    </section>
+  )
+}
+
+function ChineseGameGuideSection({ guide }: { guide: ChineseGameGuide }) {
+  const items = [
+    ['核心玩法', guide.gameplay],
+    ['操作方法', guide.controls],
+    ['出招与进阶操作', guide.moves],
+    ['存档说明', guide.save],
+    ['双人／多人说明', guide.multiplayer],
+  ] as const
+
+  return (
+    <section className="rounded-box border border-base-300 bg-base-100 p-5 sm:p-6">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h2 className="text-xl font-semibold">{guide.name} 中文玩法指南</h2>
+        <p className="text-sm text-base-content/55">别名：{guide.aliases.join('、')}</p>
+      </div>
+      <p className="mt-3 leading-7 text-base-content/75">{guide.summary}</p>
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        {items.map(([title, value]) => (
+          <article className="rounded-xl bg-base-200/70 p-4" key={title}>
+            <h3 className="font-semibold text-base-content">{title}</h3>
+            <p className="mt-2 text-sm leading-6 text-base-content/70">{value}</p>
+          </article>
+        ))}
+      </div>
     </section>
   )
 }

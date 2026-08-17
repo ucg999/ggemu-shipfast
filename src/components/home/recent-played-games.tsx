@@ -37,13 +37,14 @@ export function RecentPlayedGamesSection({
   lang: Locale
 }) {
   const games = useRecentPlayedGames()
+  const t = getI18n(lang).home
 
   return (
     <section className="bg-base-100">
       <div className="grid w-full gap-5 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.65fr)] lg:px-8">
         <div>
           <h2 className="text-xl font-semibold text-base-content">
-            {getI18n(lang).home.recentlyPlayed}
+            {t.recentlyPlayed}
           </h2>
           {games.length > 0 ? (
             <div className="mt-3 grid max-w-[50%] grid-cols-4 gap-2">
@@ -52,7 +53,7 @@ export function RecentPlayedGamesSection({
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-base-content/55">开始游玩后会显示在这里</p>
+            <p className="mt-3 text-sm text-base-content/55">{t.recentEmpty}</p>
           )}
         </div>
         <PopularGameCollections lang={lang} />
@@ -72,9 +73,11 @@ export function useRecentPlayedGames() {
 }
 
 export function PopularGameCollections({ lang }: { lang: Locale }) {
+  const t = getI18n(lang).home
+
   return (
     <div>
-      <h2 className="text-xl font-semibold text-base-content">热门游戏合集</h2>
+      <h2 className="text-xl font-semibold text-base-content">{t.popularCollections}</h2>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {GAME_COLLECTIONS.map((collection) => (
           <Link
@@ -84,12 +87,12 @@ export function PopularGameCollections({ lang }: { lang: Locale }) {
             to="/$locale/collections/$collectionId"
           >
               <img
-                alt={collection.title}
+                alt={collection.id === 'king-of-fighters' ? t.kofCollection : t.streetFighterCollection}
                 className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                 src={collection.cover}
               />
               <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-3 pb-2 pt-8 text-sm font-bold text-white">
-                {collection.title}
+                {collection.id === 'king-of-fighters' ? t.kofCollection : t.streetFighterCollection}
               </span>
           </Link>
         ))}

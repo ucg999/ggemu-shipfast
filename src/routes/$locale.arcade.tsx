@@ -42,8 +42,8 @@ export const Route = createFileRoute('/$locale/arcade')({
         ? getLocalizedSeoLinks({ locale, origin: loaderData.seoOrigin, path: '/arcade' })
         : undefined,
       meta: [
-        { title: `${t.title} | ${getI18n(locale).homeSeo.title}` },
-        { name: 'description', content: t.subtitle },
+        { title: t.seoTitle },
+        { name: 'description', content: t.description },
       ],
     }
   },
@@ -56,37 +56,53 @@ function ArcadeModePage() {
   const lang = normalizeLocale(locale)
   const t = getI18n(lang).arcade
 
-  return <PlatformModeContent games={games} lang={lang} subtitle={t.subtitle} title={t.title} />
+  return <PlatformModeContent body={t.subtitle} description={t.description} games={games} lang={lang} title={t.title} />
 }
 
 export function PlatformModeContent({
+  body,
+  description,
   games,
   lang,
-  subtitle,
   title,
 }: {
+  body: string
+  description: string
   games: Array<PublicGame>
   lang: Locale
-  subtitle: string
   title: string
 }) {
   const t = getI18n(lang).arcade
+  const home = getI18n(lang).home
   const [letter, setLetter] = useState('ALL')
+  const [query, setQuery] = useState('')
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const visibleGames = useMemo(
-    () =>
-      letter === 'HOT'
+    () => {
+      const letterGames = letter === 'HOT'
         ? [...games].sort((left, right) => (right.plays_count ?? 0) - (left.plays_count ?? 0))
         : letter === 'ALL'
           ? games
-          : games.filter((game) => game.name?.trim().toUpperCase().startsWith(letter)),
-    [games, letter],
+          : games.filter((game) => game.name?.trim().toUpperCase().startsWith(letter))
+      const normalizedQuery = query.trim().toLocaleLowerCase(lang)
+
+      return normalizedQuery
+        ? letterGames.filter((game) =>
+            [game.name, game.description, game.platform]
+              .filter(Boolean)
+              .some((value) => value?.toLocaleLowerCase(lang).includes(normalizedQuery)),
+          )
+        : letterGames
+    },
+    [games, lang, letter, query],
   )
 
   return (
     <SiteLayout locale={lang}>
       <section className="bg-base-100 px-4 py-8 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-black tracking-tight sm:text-6xl">{title}</h1>
-        <p className="mt-3 whitespace-pre-line text-base leading-relaxed text-base-content/65">{subtitle}</p>
+        <p className="mt-3 text-lg font-medium leading-relaxed text-base-content/75">{description}</p>
+        <div className="mt-5 max-w-5xl whitespace-pre-line text-base leading-relaxed text-base-content/65">{body}</div>
       </section>
 
       <nav
@@ -99,6 +115,28 @@ export function PlatformModeContent({
           {LETTERS.map((item) => (
             <LetterButton active={letter === item} key={item} label={item} onClick={() => setLetter(item)} />
           ))}
+          <button
+            aria-label={home.search}
+            className={`btn btn-sm btn-square shrink-0 rounded-full border-0 ${isSearchOpen ? 'bg-base-content text-base-100' : 'btn-ghost'}`}
+            onClick={() => setIsSearchOpen((current) => !current)}
+            title={home.search}
+            type="button"
+          >
+            <i className="ri-search-line text-lg" />
+          </button>
+          {isSearchOpen ? (
+            <label className="flex h-8 w-56 shrink-0 items-center gap-2 rounded-full border border-base-300 bg-base-100 px-3">
+              <i className="ri-search-line text-base-content/45" />
+              <input
+                autoFocus
+                className="min-w-0 flex-1 bg-transparent text-sm text-base-content outline-none placeholder:text-base-content/40"
+                onChange={(event) => setQuery(event.currentTarget.value)}
+                placeholder={home.searchPlaceholder}
+                type="search"
+                value={query}
+              />
+            </label>
+          ) : null}
         </div>
       </nav>
 

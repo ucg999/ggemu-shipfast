@@ -7,6 +7,8 @@ export type I18nMessages = {
     gameTypes: string
     latestGames: string
     mostPopularGames: string
+    weeklyPopularGames: string
+    fastestGrowingGames: string
     live: string
     explore: string
     blog: string
@@ -19,6 +21,17 @@ export type I18nMessages = {
     copyright: string
     disclaimer: string
     footer: string
+    openSidebar: string
+    closeSidebar: string
+    searchGames: string
+    watchOthers: string
+    switchToLight: string
+    switchToDark: string
+    lightTheme: string
+    darkTheme: string
+    mainNavigation: string
+    siteName: string
+    siteSlogan: string
   }
   home: {
     title: string
@@ -49,6 +62,35 @@ export type I18nMessages = {
     latestBlogSubtitle: string
     viewAllBlog: string
     blogPostFallback: string
+    latestGamesSection: string
+    dailyRandom: string
+    dailyChallenge: string
+    challengeCompleted: string
+    streakDays: string
+    randomGame: string
+    playNow: string
+    homeRecommendations: string
+    weeklyPopularGames: string
+    fastestGrowingGames: string
+    platformNavigation: string
+    mobilePlatformNavigation: string
+    recentEmpty: string
+    popularCollections: string
+    close: string
+    randomAgain: string
+    superEmulator: string
+    usefulResources: string
+    pspLibrary: string
+    psvLibrary: string
+    switchLibrary: string
+    arcadeLibrary: string
+    popularGameLibrary: string
+    findFriends: string
+    wechat: string
+    wechatQrAlt: string
+    qqQrAlt: string
+    kofCollection: string
+    streetFighterCollection: string
   }
   homeSeo: {
     title: string
@@ -58,19 +100,27 @@ export type I18nMessages = {
   arcade: {
     mode: string
     tooltip: string
+    seoTitle: string
     title: string
+    description: string
     subtitle: string
     famicomMode: string
     famicomTooltip: string
+    famicomSeoTitle: string
     famicomTitle: string
+    famicomDescription: string
     famicomSubtitle: string
     gbaMode: string
     gbaTooltip: string
+    gbaSeoTitle: string
     gbaTitle: string
+    gbaDescription: string
     gbaSubtitle: string
     flashMode: string
     flashTooltip: string
+    flashSeoTitle: string
     flashTitle: string
+    flashDescription: string
     flashSubtitle: string
     allGames: string
     mostPopular: string

@@ -45,7 +45,7 @@ import {
   normalizeSiteTemplate,
   siteConfig,
 } from '#/lib/site-config'
-import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
+import { getSeoOrigin } from '#/lib/seo'
 
 const DEFAULT_HOME_REQUEST_SIZE = 21
 const MOBILE_API_PAGE_SIZE = 36
@@ -81,6 +81,8 @@ function normalizeFilterValue(value: unknown) {
 function normalizeHomeSort(value: unknown): GameSearchSort | undefined {
   return value === 'newest' ||
     value === 'popular' ||
+    value === 'weekly' ||
+    value === 'rising' ||
     value === 'oldest' ||
     value === 'name_asc'
     ? value
@@ -240,20 +242,12 @@ export const Route = createFileRoute('/$locale')({
       seoOrigin,
     }
   },
-  head: ({ loaderData, params, match }) => {
-    const data = loaderData as unknown as HomeLoaderData | undefined
+  head: ({ params, match }) => {
     const locale = normalizeLocale(params.locale)
     const meta = getI18n(locale).homeSeo
     const isTemplatePreview = Boolean(getSearchTemplate(match.search))
 
     return {
-      links: data?.seoOrigin
-        ? getLocalizedSeoLinks({
-            locale,
-            origin: data.seoOrigin,
-            path: '/',
-          })
-        : undefined,
       meta: [
         { title: meta.title },
         { name: 'description', content: meta.description },
@@ -504,6 +498,10 @@ function LocalizedHomePage() {
 }
 
 async function loadLatestBlogPosts(locale: Locale) {
+  if (locale !== 'zh-CN') {
+    return []
+  }
+
   const result = await searchBlogPosts({
     data: {
       limit: HOME_BLOG_POST_LIMIT,

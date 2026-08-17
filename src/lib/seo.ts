@@ -1,13 +1,13 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequestUrl } from '@tanstack/react-start/server'
 
 import type { Locale } from '#/lib/ggemu'
 import { normalizeLocale } from '#/lib/i18n'
+import { SITE_ORIGIN } from '#/lib/site-url'
 
 export const seoLocales = ['zh-CN', 'zh-TW', 'en', 'ja'] as const satisfies ReadonlyArray<Locale>
 
 export const getSeoOrigin = createServerFn({ method: 'GET' }).handler(() => {
-  return getRequestUrl({ xForwardedHost: true }).origin
+  return SITE_ORIGIN
 })
 
 export function getDocumentLang(pathname: string) {

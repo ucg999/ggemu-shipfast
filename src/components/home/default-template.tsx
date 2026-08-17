@@ -16,6 +16,7 @@ import {
 import type { HomeTemplateProps } from './types'
 import type { PublicGame } from '#/lib/ggemu'
 import { getGameDetail, getRandomPlayableGame } from '#/lib/ggemu'
+import { getI18n } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { useServerFn } from '@tanstack/react-start'
 
@@ -37,6 +38,8 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
   )
   const [randomPopupGame, setRandomPopupGame] = useState<PublicGame | null>(null)
   const [isRandomGameLoading, setIsRandomGameLoading] = useState(false)
+  const [challengeCompleted, setChallengeCompleted] = useState(false)
+  const [streakDays, setStreakDays] = useState(0)
   const loadRandomGame = useServerFn(getRandomPlayableGame)
   const loadGameDetail = useServerFn(getGameDetail)
   const recentPlayedGames = useRecentPlayedGames()
@@ -44,6 +47,12 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
   useEffect(() => {
     setRandomVideoGames(selectDailyVideoGames(mostPlayedGames, 6))
   }, [mostPlayedGames])
+
+  useEffect(() => {
+    const progress = readDailyChallengeProgress()
+    setChallengeCompleted(progress.completedToday)
+    setStreakDays(progress.streak)
+  }, [])
 
   async function showOneRandomGame() {
     if (isRandomGameLoading) return
@@ -57,6 +66,9 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
       if (gameId) {
         const game = await loadGameDetail({ data: { id: gameId } })
         setRandomPopupGame(game)
+        const progress = completeDailyChallenge()
+        setChallengeCompleted(true)
+        setStreakDays(progress.streak)
       }
     } finally {
       setIsRandomGameLoading(false)
@@ -92,15 +104,17 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
 
       <div className="hidden lg:block">
         <HomeMostPlayedGamesSection
+          challengeCompleted={challengeCompleted}
           games={randomVideoGames}
           isRandomGameLoading={isRandomGameLoading}
           lang={lang}
           onRandomGame={showOneRandomGame}
+          streakDays={streakDays}
         />
       </div>
 
       <nav
-        aria-label="游戏平台导航"
+        aria-label={t.platformNavigation}
         className="hidden border-y border-base-300 bg-base-100 px-4 sm:px-6 lg:block lg:px-8"
       >
         <div className="flex items-center gap-1 overflow-x-auto py-2">
@@ -116,8 +130,18 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
             onClick={onHomeRecommendations}
             type="button"
           >
-            首页推荐
+            {t.homeRecommendations}
           </button>
+          <RankingButton
+            active={filters.sort === 'weekly' && !filters.platform && !filters.category && !filters.query}
+            label={t.weeklyPopularGames}
+            onClick={() => onFilterChange('sort', 'weekly')}
+          />
+          <RankingButton
+            active={filters.sort === 'rising' && !filters.platform && !filters.category && !filters.query}
+            label={t.fastestGrowingGames}
+            onClick={() => onFilterChange('sort', 'rising')}
+          />
 
           {orderedPlatforms.map((platform) => {
             const isActive = filters.platform === platform.name
@@ -141,7 +165,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
       </nav>
 
       <nav
-        aria-label="手机端游戏平台导航"
+        aria-label={t.mobilePlatformNavigation}
         className="border-y border-base-300 bg-base-100 px-1 lg:hidden"
       >
         <div className="flex items-center gap-1 overflow-x-auto py-1.5">
@@ -154,7 +178,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
             onClick={() => setShowMobileRecent(true)}
             type="button"
           >
-            最近玩过
+            {t.recentlyPlayed}
           </button>
           <button
             className={`btn btn-xs shrink-0 rounded-full border-0 px-3 ${
@@ -172,8 +196,26 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
             }}
             type="button"
           >
-            首页推荐
+            {t.homeRecommendations}
           </button>
+          <RankingButton
+            active={!showMobileRecent && filters.sort === 'weekly'}
+            label={t.weeklyPopularGames}
+            mobile
+            onClick={() => {
+              setShowMobileRecent(false)
+              onFilterChange('sort', 'weekly')
+            }}
+          />
+          <RankingButton
+            active={!showMobileRecent && filters.sort === 'rising'}
+            label={t.fastestGrowingGames}
+            mobile
+            onClick={() => {
+              setShowMobileRecent(false)
+              onFilterChange('sort', 'rising')
+            }}
+          />
           {orderedPlatforms.map((platform) => {
             const isActive = filters.platform === platform.name
 
@@ -200,11 +242,13 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
 
       <div className="lg:hidden">
         <HomeMostPlayedGamesSection
+          challengeCompleted={challengeCompleted}
           games={randomVideoGames}
           isRandomGameLoading={isRandomGameLoading}
           lang={lang}
           mobile
           onRandomGame={showOneRandomGame}
+          streakDays={streakDays}
         />
       </div>
 
@@ -260,6 +304,81 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
   )
 }
 
+function RankingButton({
+  active,
+  label,
+  mobile = false,
+  onClick,
+}: {
+  active: boolean
+  label: string
+  mobile?: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      className={`btn shrink-0 rounded-full border-0 ${mobile ? 'btn-xs px-3' : 'btn-sm px-4'} ${
+        active ? 'bg-base-content text-base-100' : 'btn-ghost text-base-content/65'
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      {label}
+    </button>
+  )
+}
+
+const DAILY_CHALLENGE_STORAGE_KEY = 'game-adventure-daily-challenge'
+
+type DailyChallengeProgress = {
+  completedToday: boolean
+  lastCompletedDate: string
+  streak: number
+}
+
+function readDailyChallengeProgress(): DailyChallengeProgress {
+  const today = getLocalDateKey(new Date())
+
+  try {
+    const stored = window.localStorage.getItem(DAILY_CHALLENGE_STORAGE_KEY)
+    const parsed = stored ? (JSON.parse(stored) as Partial<DailyChallengeProgress>) : null
+    return {
+      completedToday: parsed?.lastCompletedDate === today,
+      lastCompletedDate: parsed?.lastCompletedDate ?? '',
+      streak: Math.max(0, Number(parsed?.streak) || 0),
+    }
+  } catch {
+    return { completedToday: false, lastCompletedDate: '', streak: 0 }
+  }
+}
+
+function completeDailyChallenge(): DailyChallengeProgress {
+  const current = readDailyChallengeProgress()
+  if (current.completedToday) return current
+
+  const now = new Date()
+  const today = getLocalDateKey(now)
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  const streak = current.lastCompletedDate === getLocalDateKey(yesterday) ? current.streak + 1 : 1
+  const next = { completedToday: true, lastCompletedDate: today, streak }
+
+  try {
+    window.localStorage.setItem(DAILY_CHALLENGE_STORAGE_KEY, JSON.stringify(next))
+  } catch {
+    // The challenge still works for the current visit when storage is unavailable.
+  }
+
+  return next
+}
+
+function getLocalDateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function RandomGameModal({
   game,
   lang,
@@ -272,11 +391,12 @@ function RandomGameModal({
   onRandomAgain: () => void | Promise<void>
 }) {
   const gameId = getGameId(game)
+  const t = getI18n(lang).home
 
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center bg-black/65 p-4" role="presentation" onClick={onClose}>
       <section
-        aria-label="随机游戏"
+        aria-label={t.randomGame}
         aria-modal="true"
         className="w-full max-w-md overflow-hidden rounded-2xl bg-base-100 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
@@ -284,20 +404,20 @@ function RandomGameModal({
       >
         <figure className="relative aspect-[4/3] bg-base-200">
           {game.game_cover ? (
-            <img alt={game.name ?? '随机游戏'} className="h-full w-full object-cover" src={game.game_cover} />
+            <img alt={game.name ?? t.randomGame} className="h-full w-full object-cover" src={game.game_cover} />
           ) : null}
           {game.platform ? (
             <span className="absolute bottom-3 right-3 rounded bg-black/70 px-2 py-1 text-xs text-white">
               {getPlatformLabel(game.platform, lang)}
             </span>
           ) : null}
-          <button aria-label="关闭" className="btn btn-circle btn-sm absolute right-3 top-3" onClick={onClose} type="button">✕</button>
+          <button aria-label={t.close} className="btn btn-circle btn-sm absolute right-3 top-3" onClick={onClose} type="button">✕</button>
         </figure>
         <div className="p-4">
           <h3 className="truncate text-xl font-semibold">{game.name}</h3>
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <button className="btn btn-warning" onClick={onRandomAgain} type="button">再摇一次</button>
-            <Link className="btn btn-primary" params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">立即游玩</Link>
+            <button className="btn btn-warning" onClick={onRandomAgain} type="button">{t.randomAgain}</button>
+            <Link className="btn btn-primary" params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">{t.playNow}</Link>
           </div>
         </div>
       </section>
@@ -374,6 +494,8 @@ function orderHomePlatforms<T extends { name: string }>(platforms: Array<T>) {
 }
 
 function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
+  const t = getI18n(lang).home
+
   return (
     <section className="px-4 pb-4 sm:px-6 lg:hidden">
       <div className="rounded-2xl bg-base-100 p-3">
@@ -386,7 +508,7 @@ function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-base-200">
             <i className="ri-cpu-line" />
           </span>
-          超级模拟器
+          {t.superEmulator}
         </Link>
 
         <details>
@@ -394,23 +516,23 @@ function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-base-200">
               <i className="ri-gift-line" />
             </span>
-            <span className="flex-1">拿点有用的</span>
+            <span className="flex-1">{t.usefulResources}</span>
             <i className="ri-arrow-down-s-line" />
           </summary>
           <ul className="menu menu-sm ml-11">
             <li>
               <a href="https://www.kdocs.cn/etapps/query/q/TUxF4AQG" rel="noreferrer" target="_blank">
-                PSP游戏库
+                {t.pspLibrary}
               </a>
             </li>
             <li>
               <a href="https://www.kdocs.cn/etapps/query/q/RclPTyXd" rel="noreferrer" target="_blank">
-                PSV游戏库
+                {t.psvLibrary}
               </a>
             </li>
             <li>
               <a href="https://www.kdocs.cn/etapps/query/q/detUdefK" rel="noreferrer" target="_blank">
-                Switch游戏库
+                {t.switchLibrary}
               </a>
             </li>
             <li>
@@ -419,12 +541,12 @@ function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
                 rel="noreferrer"
                 target="_blank"
               >
-                街机库
+                {t.arcadeLibrary}
               </a>
             </li>
             <li>
               <a href="https://kdocs.cn/l/cqE4v1WZxdnc" rel="noreferrer" target="_blank">
-                热门游戏合集
+                {t.popularGameLibrary}
               </a>
             </li>
           </ul>
@@ -435,17 +557,17 @@ function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-base-200">
               <i className="ri-user-add-line" />
             </span>
-            <span className="flex-1">找点新朋友</span>
+            <span className="flex-1">{t.findFriends}</span>
             <i className="ri-arrow-down-s-line" />
           </summary>
           <div className="ml-11 grid grid-cols-2 gap-3 p-2">
             <details className="rounded-xl bg-base-200 p-2">
               <summary className="cursor-pointer list-none text-center text-sm font-medium">
                 <i className="ri-wechat-fill mr-1 text-[#07c160]" />
-                微信
+                {t.wechat}
               </summary>
               <img
-                alt="游戏历险记微信二维码"
+                alt={t.wechatQrAlt}
                 className="mt-2 w-full rounded-lg bg-white object-contain"
                 src="/wechat-qr.png"
               />
@@ -456,7 +578,7 @@ function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
                 QQ
               </summary>
               <img
-                alt="游戏历险记QQ二维码"
+                alt={t.qqQrAlt}
                 className="mt-2 w-full rounded-lg object-contain"
                 src="/qq-qr.jpg"
               />

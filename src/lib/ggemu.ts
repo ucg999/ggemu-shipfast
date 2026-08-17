@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequestUrl } from '@tanstack/react-start/server'
+
+import { SITE_ORIGIN } from './site-url'
 
 const API_BASE_URL = 'https://ggemu.com'
 const PAGE_SIZE = 20
@@ -10,6 +11,8 @@ export type Locale = 'zh-CN' | 'zh-TW' | 'en' | 'ja'
 export type GameSearchSort =
   | 'newest'
   | 'popular'
+  | 'weekly'
+  | 'rising'
   | 'oldest'
   | 'name_asc'
   | 'likes'
@@ -221,6 +224,8 @@ function normalizeLocale(locale: unknown): Locale {
 function normalizeSort(sort: unknown): GameSearchSort {
   if (
     sort === 'popular' ||
+    sort === 'weekly' ||
+    sort === 'rising' ||
     sort === 'oldest' ||
     sort === 'name_asc' ||
     sort === 'likes' ||
@@ -499,10 +504,38 @@ export const searchGames = createServerFn({ method: 'GET' })
     addOptionalParam(params, 'query', data.query)
     addOptionalParam(params, 'platform', data.platform)
     addOptionalParam(params, 'category', data.category)
-    addOptionalParam(params, 'sort', data.sort)
+    addOptionalParam(
+      params,
+      'sort',
+      data.sort === 'weekly' || data.sort === 'rising' ? 'popular' : data.sort,
+    )
 
-    return fetchGames(params)
+    const result = await fetchGames(params)
+
+    if (data.sort === 'weekly') {
+      result.games.sort((left, right) => weeklyTrendScore(right) - weeklyTrendScore(left))
+    } else if (data.sort === 'rising') {
+      result.games.sort((left, right) => risingScore(right) - risingScore(left))
+    }
+
+    return result
   })
+
+function weeklyTrendScore(game: PublicGame) {
+  const week = Math.floor(Date.now() / 604_800_000)
+  const identity = game.url_slug || game._id || game.name || ''
+  let hash = week
+  for (const character of identity) hash = (hash * 31 + character.charCodeAt(0)) >>> 0
+  const weeklyWeight = 0.72 + (hash % 57) / 100
+  return ((game.plays_count ?? 0) * 2 + (game.views_count ?? 0) + (game.likes_count ?? 0) * 8) * weeklyWeight
+}
+
+function risingScore(game: PublicGame) {
+  const views = Math.max(game.views_count ?? 0, 1)
+  const plays = game.plays_count ?? 0
+  const likes = game.likes_count ?? 0
+  return (plays / views) * 10_000 + (likes / views) * 25_000 + Math.log10(views + 10) * 10
+}
 
 export const searchLiveRooms = createServerFn({ method: 'GET' })
   .validator((payload: LiveRoomSearchPayload) => ({
@@ -575,10 +608,8 @@ export const getGameDetailPageData = createServerFn({ method: 'GET' })
     const params = new URLSearchParams({ id: data.id })
     const result = await fetchJson<GameDetailResponse>('/api/game/detail', params)
     const game = result.data
-    const origin = getRequestUrl({ xForwardedHost: true }).origin
-
     return {
-      canonicalUrl: getAbsoluteGameUrl(origin, data.locale, game, data.id),
+      canonicalUrl: getAbsoluteGameUrl(SITE_ORIGIN, data.locale, game, data.id),
       game,
     } satisfies GameDetailPageData
   })
@@ -625,12 +656,10 @@ export const getBlogPostDetailPageData = createServerFn({ method: 'GET' })
       `/api/blog-posts/${encodeURIComponent(data.id)}`,
       new URLSearchParams(),
     )
-    const origin = getRequestUrl({ xForwardedHost: true }).origin
-
     return {
       blogPost: result.blogPost,
       canonicalUrl: getAbsoluteBlogPostUrl(
-        origin,
+        SITE_ORIGIN,
         data.locale,
         result.blogPost,
         data.id,

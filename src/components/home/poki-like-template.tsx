@@ -7,7 +7,7 @@ import {
 } from '#/components/game-card-preview'
 import { SiteFooter } from '#/components/site-layout'
 import type { Locale, PublicGame } from '#/lib/ggemu'
-import { siteConfig } from '#/lib/site-config'
+import { getI18n } from '#/lib/i18n'
 import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
 
 import {
@@ -239,6 +239,7 @@ function PokiControlTiles({
   const themeMenuRef = useRef<HTMLDetailsElement>(null)
   const localeMenuRef = useRef<HTMLDetailsElement>(null)
   const canSwitchTheme = siteThemes.length > 1
+  const siteCopy = getI18n(lang).layout
 
   useEffect(() => {
     const storedTheme = normalizeSiteTheme(
@@ -293,14 +294,14 @@ function PokiControlTiles({
   return (
     <div className="relative h-[100px] w-[100px] overflow-visible rounded-2xl bg-white shadow-lg">
       <Link
-        aria-label={siteConfig.SITE_NAME}
+        aria-label={siteCopy.siteName}
         className="grid h-[60px] place-items-center border-b border-slate-200"
         params={{ locale: lang }}
         search={{}}
         to="/$locale"
       >
         <img
-          alt={siteConfig.SITE_NAME}
+          alt={siteCopy.siteName}
           className="h-full max-h-[52px] w-full object-contain px-3 py-2"
           src="/logo.png"
         />

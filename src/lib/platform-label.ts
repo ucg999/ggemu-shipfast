@@ -28,7 +28,16 @@ export function getPlatformLabel(name: string, locale: Locale) {
       'wonderswan color': '万代彩色掌机',
     }
 
-    return labels[name.trim().toLowerCase()] ?? name
+    const label = labels[name.trim().toLowerCase()] ?? name
+    if (locale === 'zh-TW') {
+      return label
+        .replaceAll('街机', '街機')
+        .replaceAll('电脑', '電腦')
+        .replaceAll('万代掌机', '萬代掌機')
+        .replaceAll('万代彩色掌机', '萬代彩色掌機')
+        .replaceAll('雅达利', '雅達利')
+    }
+    return label
   }
 
   return name

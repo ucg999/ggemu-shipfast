@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import { SiteFooter } from '#/components/site-layout'
 import type { Locale } from '#/lib/ggemu'
 import { getI18n } from '#/lib/i18n'
-import { siteConfig } from '#/lib/site-config'
 import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
 
 import {
@@ -136,17 +135,17 @@ function HomeSidenav({
         >
           <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-base-100">
             <img
-              alt={siteConfig.SITE_NAME}
+              alt={layoutCopy.siteName}
               className="h-full w-full object-contain"
               src="/logo.png"
             />
           </span>
           <span className="min-w-0 leading-tight">
             <span className="block truncate text-sm font-semibold">
-              {siteConfig.SITE_NAME}
+              {layoutCopy.siteName}
             </span>
             <span className="block truncate text-xs text-base-content/55">
-              {siteConfig.SITE_SLOGAN}
+              {layoutCopy.siteSlogan}
             </span>
           </span>
         </Link>

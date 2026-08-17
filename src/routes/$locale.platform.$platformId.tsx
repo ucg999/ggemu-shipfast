@@ -10,16 +10,22 @@ const PAGE_SIZE = 100
 const PLATFORM_MODES = {
   famicom: {
     apiPlatform: 'Famicom',
+    descriptionKey: 'famicomDescription',
+    seoTitleKey: 'famicomSeoTitle',
     subtitleKey: 'famicomSubtitle',
     titleKey: 'famicomTitle',
   },
   gba: {
     apiPlatform: 'Game Boy Advance',
+    descriptionKey: 'gbaDescription',
+    seoTitleKey: 'gbaSeoTitle',
     subtitleKey: 'gbaSubtitle',
     titleKey: 'gbaTitle',
   },
   flash: {
     apiPlatform: 'FLASH',
+    descriptionKey: 'flashDescription',
+    seoTitleKey: 'flashSeoTitle',
     subtitleKey: 'flashSubtitle',
     titleKey: 'flashTitle',
   },
@@ -69,8 +75,8 @@ export const Route = createFileRoute('/$locale/platform/$platformId')({
           })
         : undefined,
       meta: [
-        { title: `${copy.title} | ${getI18n(locale).homeSeo.title}` },
-        { name: 'description', content: copy.subtitle },
+        { title: copy.seoTitle },
+        { name: 'description', content: copy.description },
       ],
     }
   },
@@ -85,9 +91,10 @@ function PlatformModePage() {
 
   return (
     <PlatformModeContent
+      body={copy.subtitle}
+      description={copy.description}
       games={games}
       lang={lang}
-      subtitle={copy.subtitle}
       title={copy.title}
     />
   )
@@ -104,6 +111,8 @@ function getModeCopy(locale: Locale, modeId: PlatformModeId | undefined) {
   const mode = modeId ? PLATFORM_MODES[modeId] : PLATFORM_MODES.famicom
 
   return {
+    description: t[mode.descriptionKey],
+    seoTitle: t[mode.seoTitleKey],
     subtitle: t[mode.subtitleKey],
     title: t[mode.titleKey],
   }
