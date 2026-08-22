@@ -96,6 +96,7 @@ export const zhTwMessages = {
     qqQrAlt: '遊戲歷險記 QQ 二維碼',
     kofCollection: '拳皇系列',
     streetFighterCollection: '快打旋風系列',
+    retro8090Collection: '8090經典街機',
   },
   arcade: {
     mode: '街機模式',

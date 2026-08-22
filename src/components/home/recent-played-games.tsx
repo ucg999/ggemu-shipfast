@@ -124,7 +124,7 @@ export function PopularGameCollections({ lang }: { lang: Locale }) {
   return (
     <div className="w-full max-w-3xl">
       <h2 className="text-xl font-semibold text-base-content">{t.popularCollections}</h2>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-3 grid grid-cols-3 gap-2">
         {GAME_COLLECTIONS.map((collection) => (
           <Link
             className="group relative aspect-[16/9] overflow-hidden rounded-lg bg-base-200"
@@ -133,18 +133,27 @@ export function PopularGameCollections({ lang }: { lang: Locale }) {
             to="/$locale/collections/$collectionId"
           >
               <img
-                alt={collection.id === 'king-of-fighters' ? t.kofCollection : t.streetFighterCollection}
+                alt={getCollectionTitle(collection.id, t)}
                 className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                 src={collection.cover}
               />
               <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-3 pb-2 pt-8 text-sm font-bold text-white">
-                {collection.id === 'king-of-fighters' ? t.kofCollection : t.streetFighterCollection}
+                {getCollectionTitle(collection.id, t)}
               </span>
           </Link>
         ))}
       </div>
     </div>
   )
+}
+
+function getCollectionTitle(
+  collectionId: string,
+  t: ReturnType<typeof getI18n>['home'],
+) {
+  if (collectionId === 'king-of-fighters') return t.kofCollection
+  if (collectionId === 'street-fighter') return t.streetFighterCollection
+  return t.retro8090Collection
 }
 
 export function RecentPlayedGameCard({

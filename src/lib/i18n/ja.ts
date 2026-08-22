@@ -100,6 +100,7 @@ export const jaMessages = {
     qqQrAlt: 'ゲームアドベンチャー QQ QRコード',
     kofCollection: 'ザ・キング・オブ・ファイターズ',
     streetFighterCollection: 'ストリートファイター',
+    retro8090Collection: '1988〜1994 アーケード名作',
   },
   homeSeo: {
     title: 'レトロゲームをオンラインでプレイ | ダウンロード不要',

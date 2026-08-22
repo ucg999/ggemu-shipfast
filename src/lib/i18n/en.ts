@@ -100,6 +100,7 @@ export const enMessages = {
     qqQrAlt: 'Game Adventure QQ QR code',
     kofCollection: 'The King of Fighters',
     streetFighterCollection: 'Street Fighter',
+    retro8090Collection: '1988–1994 Arcade Classics',
   },
   homeSeo: {
     title: 'Game Adventure | Play Retro Games Online',

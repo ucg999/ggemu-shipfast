@@ -92,6 +92,7 @@ export type I18nMessages = {
     qqQrAlt: string
     kofCollection: string
     streetFighterCollection: string
+    retro8090Collection: string
   }
   homeSeo: {
     title: string

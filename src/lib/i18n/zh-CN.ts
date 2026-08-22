@@ -101,6 +101,7 @@ export const zhCnMessages = {
     qqQrAlt: '游戏历险记QQ二维码',
     kofCollection: '拳皇系列',
     streetFighterCollection: '街霸系列',
+    retro8090Collection: '8090系列',
   },
   homeSeo: {
     title: '街机游戏、小霸王游戏、GBA、PSP、Switch在线玩｜游戏历险记',

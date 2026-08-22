@@ -430,15 +430,28 @@ function RandomGameModal({
 
 function selectDailyVideoGames(games: Array<PublicGame>, limit: number) {
   const today = new Date()
-  const dailyKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`
-
-  return [...games]
+  const dayOfWeek = (today.getDay() + 6) % 7
+  const weekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  weekStart.setDate(weekStart.getDate() - dayOfWeek)
+  const weeklyKey = getLocalDateKey(weekStart)
+  const weeklyGames = [...games]
+    .filter((game) => Boolean(getGameId(game)))
     .sort(
       (left, right) =>
-        dailyGameScore(`${dailyKey}:${getGameId(left)}`) -
-        dailyGameScore(`${dailyKey}:${getGameId(right)}`),
+        dailyGameScore(`${weeklyKey}:${getGameId(left)}`) -
+        dailyGameScore(`${weeklyKey}:${getGameId(right)}`),
     )
-    .slice(0, limit)
+  const startIndex = dayOfWeek * limit
+  const dailyGames = weeklyGames.slice(startIndex, startIndex + limit)
+
+  if (dailyGames.length >= limit || weeklyGames.length <= limit) {
+    return dailyGames
+  }
+
+  return [
+    ...dailyGames,
+    ...weeklyGames.slice(0, limit - dailyGames.length),
+  ]
 }
 
 function dailyGameScore(value: string) {

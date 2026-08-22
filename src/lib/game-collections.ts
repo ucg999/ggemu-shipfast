@@ -4,6 +4,8 @@ export type GameCollection = {
   id: string
   keywords: Array<string>
   title: string
+  platform?: string
+  yearRange?: [number, number]
 }
 
 export const GAME_COLLECTIONS: Array<GameCollection> = [
@@ -22,6 +24,16 @@ export const GAME_COLLECTIONS: Array<GameCollection> = [
     id: 'street-fighter',
     keywords: ['街霸', 'street fighter'],
     title: '街霸系列',
+  },
+  {
+    cover: '/images/collections/8090-arcade-series.png',
+    description:
+      '8090系列收录 1988 至 1994 年发行的经典街机游戏。这里汇集街机黄金年代的格斗、清版动作、射击与闯关作品，重温投币、摇杆、连打和好友并肩作战的热闹记忆。',
+    id: '8090-arcade',
+    keywords: [],
+    platform: 'Arcade',
+    title: '8090系列',
+    yearRange: [1988, 1994],
   },
 ]
 

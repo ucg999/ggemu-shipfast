@@ -2,7 +2,7 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 
 import { SiteLayout } from '#/components/site-layout'
 import { searchGames, type PublicGame } from '#/lib/ggemu'
-import { getGameCollection } from '#/lib/game-collections'
+import { getGameCollection, type GameCollection } from '#/lib/game-collections'
 import { normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 
@@ -15,28 +15,9 @@ export const Route = createFileRoute('/$locale/collections/$collectionId')({
     }
 
     const locale = normalizeLocale(params.locale)
-    const results = await Promise.all(
-      collection.keywords.map((query) =>
-        searchGames({
-          data: {
-            limit: 50,
-            locale,
-            page: 1,
-            query,
-            sort: 'popular',
-          },
-        }).catch(() => ({ games: [] })),
-      ),
-    )
-    const games = Array.from(
-      new Map(
-        results
-          .flatMap((result) => result.games)
-          .map((game) => [game.url_slug || game._id, game]),
-      ).values(),
-    ).slice(0, 50)
+    const games = await loadCollectionGames(collection, locale)
 
-    return { collection, games }
+    return { collection: localizeCollection(collection, locale), games }
   },
   head: ({ loaderData }) => ({
     meta: [
@@ -49,6 +30,83 @@ export const Route = createFileRoute('/$locale/collections/$collectionId')({
   }),
   component: GameCollectionPage,
 })
+
+async function loadCollectionGames(collection: GameCollection, locale: ReturnType<typeof normalizeLocale>) {
+  if (collection.platform && collection.yearRange) {
+    const firstPage = await searchGames({
+      data: {
+        limit: 100,
+        locale,
+        page: 1,
+        platform: collection.platform,
+        sort: 'popular',
+      },
+    })
+    const remainingPages = await Promise.all(
+      Array.from({ length: Math.max(0, firstPage.pagination.pages - 1) }, (_, index) =>
+        searchGames({
+          data: {
+            limit: 100,
+            locale,
+            page: index + 2,
+            platform: collection.platform,
+            sort: 'popular',
+          },
+        }),
+      ),
+    )
+    const [fromYear, toYear] = collection.yearRange
+
+    return dedupeCollectionGames([
+      ...firstPage.games,
+      ...remainingPages.flatMap((result) => result.games),
+    ]).filter((game) => {
+      const year = Number.parseInt(game.released_year ?? '', 10)
+      return Number.isFinite(year) && year >= fromYear && year <= toYear
+    })
+  }
+
+  const results = await Promise.all(
+    collection.keywords.map((query) =>
+      searchGames({
+        data: { limit: 50, locale, page: 1, query, sort: 'popular' },
+      }).catch(() => ({ games: [] })),
+    ),
+  )
+
+  return dedupeCollectionGames(results.flatMap((result) => result.games)).slice(0, 50)
+}
+
+function dedupeCollectionGames(games: Array<PublicGame>) {
+  return Array.from(
+    new Map(games.map((game) => [game.url_slug || game._id, game])).values(),
+  ).filter((game) => Boolean(game.url_slug || game._id))
+}
+
+function localizeCollection(collection: GameCollection, locale: ReturnType<typeof normalizeLocale>) {
+  if (collection.id !== '8090-arcade') return collection
+
+  const copy = {
+    'zh-CN': {
+      description: collection.description,
+      title: '8090系列',
+    },
+    'zh-TW': {
+      description: '8090經典街機收錄 1988 至 1994 年推出的格鬥、清版動作、射擊與闖關作品，重溫投幣、搖桿與好友並肩作戰的熱鬧回憶。',
+      title: '8090經典街機',
+    },
+    en: {
+      description: 'A collection of arcade games released from 1988 to 1994, covering fighting, beat ’em ups, shooters and action classics from the golden age of arcades.',
+      title: '1988–1994 Arcade Classics',
+    },
+    ja: {
+      description: '1988年から1994年に登場した格闘、ベルトスクロール、シューティングなど、アーケード黄金期の名作を集めたコレクションです。',
+      title: '1988〜1994 アーケード名作',
+    },
+  }[locale]
+
+  return { ...collection, ...copy }
+}
 
 function GameCollectionPage() {
   const { locale } = Route.useParams()
