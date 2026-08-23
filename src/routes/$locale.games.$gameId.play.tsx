@@ -107,14 +107,14 @@ function LocalizedPlayGamePage() {
   }, [embedSrc, isPsp])
 
   return (
-    <main className="min-h-screen bg-black">
+    <main className="game-play-screen bg-black">
       <button
         aria-label={labels.exitGame}
-        className="fixed left-2 top-2 z-30 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white backdrop-blur transition hover:bg-black/90 sm:left-3 sm:top-3 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
+        className="game-play-exit fixed left-3 top-3 z-30 inline-flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-black/90"
         onClick={() => setShowRecommendations(true)}
         type="button"
       >
-        <i className="ri-logout-box-r-line text-sm sm:text-lg" />
+        <i className="ri-logout-box-r-line text-lg" />
         {labels.exitGame}
       </button>
       <iframe
@@ -124,7 +124,7 @@ function LocalizedPlayGamePage() {
             : 'autoplay; gamepad'
         }
         allowFullScreen
-        className="h-screen w-full border-0 bg-black"
+        className="game-play-frame border-0 bg-black"
         src={embedSrc}
         title={game.name ?? 'Retro game'}
       />
