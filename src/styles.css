@@ -26,6 +26,10 @@ body {
   height: 100dvh;
 }
 
+.game-play-fullscreen {
+  display: none;
+}
+
 @media (max-width: 932px), (hover: none) and (pointer: coarse) {
   html:has(.game-play-screen),
   body:has(.game-play-screen) {
@@ -36,11 +40,16 @@ body {
   }
 
   .game-play-exit {
+    display: none;
+  }
+
+  .game-play-fullscreen {
+    display: inline-flex;
     opacity: 0.28;
   }
 
-  .game-play-exit:active,
-  .game-play-exit:focus-visible {
+  .game-play-fullscreen:active,
+  .game-play-fullscreen:focus-visible {
     opacity: 0.9;
   }
 }
