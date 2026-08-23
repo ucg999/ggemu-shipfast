@@ -4,5 +4,9 @@
   "keep_vars": true,
   "compatibility_date": "2026-07-01",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry"
+  "main": "@tanstack/react-start/server-entry",
+  "routes": [
+    { "pattern": "ucg999.com", "custom_domain": true },
+    { "pattern": "www.ucg999.com", "custom_domain": true }
+  ]
 }
