@@ -72,6 +72,10 @@ function LocalizedPlayGamePage() {
   const labels = useMemo(() => getRecommendationLabels(lang), [lang])
 
   useEffect(() => {
+    setShowRecommendations(false)
+  }, [gameId])
+
+  useEffect(() => {
     const embedOrigin = new URL(embedSrc).origin
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== embedOrigin || !isGameExitMessage(event.data)) {
@@ -190,6 +194,7 @@ function GameExitRecommendations({
                     className="group min-w-0"
                     key={id}
                     params={{ gameId: id, locale: lang }}
+                    search={{ autoplay: '1' }}
                     to="/$locale/games/$gameId/play"
                   >
                     <div className="aspect-square overflow-hidden rounded-lg bg-zinc-800">
