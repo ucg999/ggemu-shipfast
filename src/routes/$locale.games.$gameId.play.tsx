@@ -25,17 +25,30 @@ export const Route = createFileRoute('/$locale/games/$gameId/play')({
     const locale = normalizeLocale(params.locale)
     const game = await getGameDetail({ data: { id: params.gameId } })
     const seriesQuery = getSeriesQuery(game.name)
-    const result = seriesQuery
-      ? await searchGames({
-          data: { limit: 18, locale, page: 1, query: seriesQuery },
-        })
-      : undefined
+    const category = game.categories?.[0]
+    const [seriesResult, categoryResult] = await Promise.all([
+      seriesQuery
+        ? searchGames({
+            data: { limit: 18, locale, page: 1, query: seriesQuery },
+          })
+        : undefined,
+      category
+        ? searchGames({
+            data: { category, limit: 18, locale, page: 1, sort: 'popular' },
+          })
+        : undefined,
+    ])
+    const seriesGames = (seriesResult?.games ?? [])
+      .filter((candidate) => isSameSeries(game, candidate, seriesQuery))
+      .slice(0, 6)
+    const categoryGames = (categoryResult?.games ?? [])
+      .filter((candidate) => !isCurrentGame(game, candidate))
+      .slice(0, 6)
 
     return {
       game,
-      seriesGames: (result?.games ?? [])
-        .filter((candidate) => isSameSeries(game, candidate, seriesQuery))
-        .slice(0, 6),
+      recommendations: seriesGames.length ? seriesGames : categoryGames,
+      recommendationType: seriesGames.length ? ('series' as const) : ('category' as const),
     }
   },
   headers: ({ loaderData }) => ({
@@ -46,7 +59,7 @@ export const Route = createFileRoute('/$locale/games/$gameId/play')({
 })
 
 function LocalizedPlayGamePage() {
-  const { game, seriesGames } = Route.useLoaderData()
+  const { game, recommendations, recommendationType } = Route.useLoaderData()
   const { gameId, locale } = Route.useParams()
   const { autoplay } = Route.useSearch()
   const lang = normalizeLocale(locale)
@@ -97,11 +110,11 @@ function LocalizedPlayGamePage() {
     <main className="min-h-screen bg-black">
       <button
         aria-label={labels.exitGame}
-        className="fixed left-3 top-3 z-30 inline-flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-black/90"
+        className="fixed left-2 top-2 z-30 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white backdrop-blur transition hover:bg-black/90 sm:left-3 sm:top-3 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
         onClick={() => setShowRecommendations(true)}
         type="button"
       >
-        <i className="ri-logout-box-r-line text-lg" />
+        <i className="ri-logout-box-r-line text-sm sm:text-lg" />
         {labels.exitGame}
       </button>
       <iframe
@@ -117,11 +130,11 @@ function LocalizedPlayGamePage() {
       />
       {showRecommendations ? (
         <GameExitRecommendations
-          currentGameId={game.url_slug || game._id || gameId}
-          games={seriesGames}
+          games={recommendations}
           labels={labels}
           lang={lang}
           onContinue={() => setShowRecommendations(false)}
+          recommendationType={recommendationType}
         />
       ) : null}
     </main>
@@ -129,17 +142,17 @@ function LocalizedPlayGamePage() {
 }
 
 function GameExitRecommendations({
-  currentGameId,
   games,
   labels,
   lang,
   onContinue,
+  recommendationType,
 }: {
-  currentGameId: string
   games: Array<PublicGame>
   labels: ReturnType<typeof getRecommendationLabels>
   lang: Locale
   onContinue: () => void
+  recommendationType: 'series' | 'category'
 }) {
   return (
     <section
@@ -154,7 +167,7 @@ function GameExitRecommendations({
             <div>
               <p className="text-sm text-white/55">{labels.finished}</p>
               <h1 className="mt-1 text-2xl font-bold sm:text-3xl" id="game-exit-recommendations-title">
-                {labels.title}
+                {recommendationType === 'series' ? labels.title : labels.categoryTitle}
               </h1>
             </div>
             <button
@@ -213,10 +226,11 @@ function GameExitRecommendations({
             </button>
             <Link
               className="rounded-full bg-yellow-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-yellow-300"
-              params={{ gameId: currentGameId, locale: lang }}
-              to="/$locale/games/$gameId"
+              params={{ locale: lang }}
+              search={{}}
+              to="/$locale"
             >
-              {labels.backToDetails}
+              {labels.backToHome}
             </Link>
           </div>
         </div>
@@ -250,6 +264,13 @@ function isSameSeries(current: PublicGame, candidate: PublicGame, seriesQuery: s
     Boolean(candidateId && candidateId !== currentId) &&
     normalizeSeriesText(candidate.name).includes(normalizeSeriesText(seriesQuery))
   )
+}
+
+function isCurrentGame(current: PublicGame, candidate: PublicGame) {
+  const currentId = current.url_slug?.trim() || current._id?.trim()
+  const candidateId = candidate.url_slug?.trim() || candidate._id?.trim()
+
+  return Boolean(currentId && candidateId && currentId === candidateId)
 }
 
 function getSeriesQuery(name: string | undefined) {
@@ -315,9 +336,10 @@ function normalizeSeriesText(value: string | undefined) {
 function getRecommendationLabels(locale: Locale) {
   if (locale === 'zh-CN') {
     return {
-      backToDetails: '退出并返回详情',
+      backToHome: '退出并返回首页',
+      categoryTitle: '再玩一款同类型游戏',
       continueGame: '继续游戏',
-      empty: '暂时没有找到同系列游戏，可以返回详情页查看更多相关游戏。',
+      empty: '暂时没有找到同系列游戏，可以返回首页继续挑选。',
       exitGame: '退出游戏',
       finished: '本局结束了吗？',
       game: '经典游戏',
@@ -328,9 +350,10 @@ function getRecommendationLabels(locale: Locale) {
 
   if (locale === 'zh-TW') {
     return {
-      backToDetails: '退出並返回詳情',
+      backToHome: '退出並返回首頁',
+      categoryTitle: '再玩一款同類型遊戲',
       continueGame: '繼續遊戲',
-      empty: '暫時沒有找到同系列遊戲，可以返回詳情頁查看更多相關遊戲。',
+      empty: '暫時沒有找到同系列遊戲，可以返回首頁繼續挑選。',
       exitGame: '退出遊戲',
       finished: '本局結束了嗎？',
       game: '經典遊戲',
@@ -341,9 +364,10 @@ function getRecommendationLabels(locale: Locale) {
 
   if (locale === 'ja') {
     return {
-      backToDetails: '終了して詳細へ戻る',
+      backToHome: '終了してホームへ戻る',
+      categoryTitle: '同じジャンルのゲーム',
       continueGame: 'ゲームを続ける',
-      empty: '同じシリーズのゲームが見つかりません。詳細ページで関連ゲームをご覧ください。',
+      empty: '同じシリーズのゲームが見つかりません。ホームでほかのゲームを探せます。',
       exitGame: 'ゲームを終了',
       finished: 'プレイを終了しますか？',
       game: 'クラシックゲーム',
@@ -353,9 +377,10 @@ function getRecommendationLabels(locale: Locale) {
   }
 
   return {
-    backToDetails: 'Exit to game details',
+    backToHome: 'Exit to home',
+    categoryTitle: 'Play another game in this genre',
     continueGame: 'Continue playing',
-    empty: 'No games from the same series were found. View more related games on the details page.',
+    empty: 'No games from the same series were found. Return home to browse more games.',
     exitGame: 'Exit game',
     finished: 'Finished this round?',
     game: 'Classic game',
