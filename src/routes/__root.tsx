@@ -47,7 +47,8 @@ export const Route = createRootRoute({
         },
         {
           name: 'viewport',
-          content: 'width=device-width, initial-scale=1',
+          content:
+            'width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content',
         },
         {
           title: `${siteConfig.SITE_SLOGAN} | No Downloads Required`,

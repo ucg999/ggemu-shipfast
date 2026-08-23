@@ -110,11 +110,11 @@ function LocalizedPlayGamePage() {
     <main className="game-play-screen bg-black">
       <button
         aria-label={labels.exitGame}
-        className="game-play-exit fixed left-3 top-3 z-30 inline-flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-black/90"
+        className="game-play-exit fixed left-2 top-2 z-30 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white backdrop-blur transition hover:bg-black/90 sm:left-3 sm:top-3 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
         onClick={() => setShowRecommendations(true)}
         type="button"
       >
-        <i className="ri-logout-box-r-line text-lg" />
+        <i className="ri-logout-box-r-line text-sm sm:text-lg" />
         {labels.exitGame}
       </button>
       <iframe

@@ -8,20 +8,40 @@ body {
 }
 
 .game-play-screen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .game-play-frame {
+  position: absolute;
+  inset: 0;
   display: block;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
 }
 
 @media (max-width: 932px), (hover: none) and (pointer: coarse) {
+  html:has(.game-play-screen),
+  body:has(.game-play-screen) {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+  }
+
   .game-play-exit {
-    display: none;
+    opacity: 0.28;
+  }
+
+  .game-play-exit:active,
+  .game-play-exit:focus-visible {
+    opacity: 0.9;
   }
 }
 
