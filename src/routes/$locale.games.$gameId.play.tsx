@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { getGameDetail, searchGames, type Locale, type PublicGame } from '#/lib/ggemu'
 import { normalizeLocale } from '#/lib/i18n'
@@ -69,27 +69,7 @@ function LocalizedPlayGamePage() {
   const theme = useCurrentSiteTheme()
   const embedSrc = `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp, theme, autoplay === '1')}`
   const [showRecommendations, setShowRecommendations] = useState(false)
-  const gameScreenRef = useRef<HTMLElement>(null)
   const labels = useMemo(() => getRecommendationLabels(lang), [lang])
-
-  const enterFullscreen = async () => {
-    const page = document.documentElement as FullscreenElement
-
-    try {
-      if (page.requestFullscreen) {
-        await page.requestFullscreen({ navigationUI: 'hide' })
-        return
-      }
-
-      await page.webkitRequestFullscreen?.()
-    } catch {
-      try {
-        await page.requestFullscreen?.()
-      } catch {
-        window.scrollTo({ behavior: 'smooth', top: 1 })
-      }
-    }
-  }
 
   useEffect(() => {
     setShowRecommendations(false)
@@ -131,7 +111,7 @@ function LocalizedPlayGamePage() {
   }, [embedSrc, isPsp])
 
   return (
-    <main className="game-play-screen bg-black" ref={gameScreenRef}>
+    <main className="game-play-screen bg-black">
       <button
         aria-label={labels.exitGame}
         className="game-play-exit fixed left-2 top-2 z-30 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white backdrop-blur transition hover:bg-black/90 sm:left-3 sm:top-3 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
@@ -140,15 +120,6 @@ function LocalizedPlayGamePage() {
       >
         <i className="ri-logout-box-r-line text-sm sm:text-lg" />
         {labels.exitGame}
-      </button>
-      <button
-        aria-label={labels.fullscreen}
-        className="game-play-fullscreen fixed left-2 top-2 z-30 items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white backdrop-blur transition"
-        onClick={enterFullscreen}
-        type="button"
-      >
-        <i className="ri-fullscreen-line text-sm" />
-        {labels.fullscreen}
       </button>
       <iframe
         allow={
@@ -367,10 +338,6 @@ function normalizeSeriesText(value: string | undefined) {
     .trim()
 }
 
-type FullscreenElement = HTMLElement & {
-  webkitRequestFullscreen?: () => Promise<void> | void
-}
-
 function getRecommendationLabels(locale: Locale) {
   if (locale === 'zh-CN') {
     return {
@@ -379,7 +346,6 @@ function getRecommendationLabels(locale: Locale) {
       continueGame: '继续游戏',
       empty: '暂时没有找到同系列游戏，可以返回首页继续挑选。',
       exitGame: '退出游戏',
-      fullscreen: '全屏',
       finished: '本局结束了吗？',
       game: '经典游戏',
       playNow: '立即游玩',
@@ -394,7 +360,6 @@ function getRecommendationLabels(locale: Locale) {
       continueGame: '繼續遊戲',
       empty: '暫時沒有找到同系列遊戲，可以返回首頁繼續挑選。',
       exitGame: '退出遊戲',
-      fullscreen: '全螢幕',
       finished: '本局結束了嗎？',
       game: '經典遊戲',
       playNow: '立即遊玩',
@@ -409,7 +374,6 @@ function getRecommendationLabels(locale: Locale) {
       continueGame: 'ゲームを続ける',
       empty: '同じシリーズのゲームが見つかりません。ホームでほかのゲームを探せます。',
       exitGame: 'ゲームを終了',
-      fullscreen: '全画面',
       finished: 'プレイを終了しますか？',
       game: 'クラシックゲーム',
       playNow: '今すぐプレイ',
@@ -423,7 +387,6 @@ function getRecommendationLabels(locale: Locale) {
     continueGame: 'Continue playing',
     empty: 'No games from the same series were found. Return home to browse more games.',
     exitGame: 'Exit game',
-    fullscreen: 'Fullscreen',
     finished: 'Finished this round?',
     game: 'Classic game',
     playNow: 'Play now',
