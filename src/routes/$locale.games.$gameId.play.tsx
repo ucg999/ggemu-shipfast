@@ -72,15 +72,23 @@ function LocalizedPlayGamePage() {
   const gameScreenRef = useRef<HTMLElement>(null)
   const labels = useMemo(() => getRecommendationLabels(lang), [lang])
 
-  const enterFullscreen = () => {
-    const screen = gameScreenRef.current as FullscreenElement | null
+  const enterFullscreen = async () => {
+    const page = document.documentElement as FullscreenElement
 
-    if (screen?.requestFullscreen) {
-      void screen.requestFullscreen().catch(() => {})
-      return
+    try {
+      if (page.requestFullscreen) {
+        await page.requestFullscreen({ navigationUI: 'hide' })
+        return
+      }
+
+      await page.webkitRequestFullscreen?.()
+    } catch {
+      try {
+        await page.requestFullscreen?.()
+      } catch {
+        window.scrollTo({ behavior: 'smooth', top: 1 })
+      }
     }
-
-    screen?.webkitRequestFullscreen?.()
   }
 
   useEffect(() => {
