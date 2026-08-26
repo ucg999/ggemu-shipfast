@@ -77,22 +77,39 @@ export function PlatformModeContent({
   const [letter, setLetter] = useState('ALL')
   const [query, setQuery] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const totalGamesLabel = `${t.allGames} (${new Intl.NumberFormat(lang).format(games.length)})`
   const visibleGames = useMemo(
     () => {
+      const normalizedQuery = query.trim().toLocaleLowerCase(lang)
+
+      if (normalizedQuery) {
+        const terms = normalizedQuery.split(/\s+/).filter(Boolean)
+
+        return games.filter((game) => {
+          const searchableText = [
+            game.name,
+            game.keywords,
+            game.description,
+            game.developer,
+            game.platform,
+            game.platform ? getPlatformLabel(game.platform, lang) : undefined,
+            ...(game.categories ?? []),
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLocaleLowerCase(lang)
+
+          return terms.every((term) => searchableText.includes(term))
+        })
+      }
+
       const letterGames = letter === 'HOT'
         ? [...games].sort((left, right) => (right.plays_count ?? 0) - (left.plays_count ?? 0))
         : letter === 'ALL'
           ? games
           : games.filter((game) => game.name?.trim().toUpperCase().startsWith(letter))
-      const normalizedQuery = query.trim().toLocaleLowerCase(lang)
 
-      return normalizedQuery
-        ? letterGames.filter((game) =>
-            [game.name, game.description, game.platform]
-              .filter(Boolean)
-              .some((value) => value?.toLocaleLowerCase(lang).includes(normalizedQuery)),
-          )
-        : letterGames
+      return letterGames
     },
     [games, lang, letter, query],
   )
@@ -110,7 +127,7 @@ export function PlatformModeContent({
         className="sticky top-[61px] z-30 border-y border-base-300 bg-base-100/95 px-4 backdrop-blur sm:px-6 lg:px-8"
       >
         <div className="flex gap-1 overflow-x-auto py-3">
-          <LetterButton active={letter === 'ALL'} label={t.allGames} onClick={() => setLetter('ALL')} />
+          <LetterButton active={letter === 'ALL'} label={totalGamesLabel} onClick={() => setLetter('ALL')} />
           <LetterButton active={letter === 'HOT'} label={t.mostPopular} onClick={() => setLetter('HOT')} />
           {LETTERS.map((item) => (
             <LetterButton active={letter === item} key={item} label={item} onClick={() => setLetter(item)} />
@@ -131,7 +148,7 @@ export function PlatformModeContent({
                 autoFocus
                 className="min-w-0 flex-1 bg-transparent text-sm text-base-content outline-none placeholder:text-base-content/40"
                 onChange={(event) => setQuery(event.currentTarget.value)}
-                placeholder={home.searchPlaceholder}
+                placeholder={t.searchPlaceholder}
                 type="search"
                 value={query}
               />

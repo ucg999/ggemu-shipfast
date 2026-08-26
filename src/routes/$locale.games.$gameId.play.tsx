@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { getGameDetail, searchGames, type Locale, type PublicGame } from '#/lib/ggemu'
 import { normalizeLocale } from '#/lib/i18n'
@@ -16,6 +16,9 @@ const pspCrossOriginIsolationHeaders = {
 const noindexHeaders = {
   'X-Robots-Tag': 'noindex, nofollow',
 } as const
+
+const COIN_BALANCE_STORAGE_KEY = 'game-adventure-coin-balance'
+const GAME_COIN_INTERVAL_MS = 60 * 1000
 
 export const Route = createFileRoute('/$locale/games/$gameId/play')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -69,11 +72,77 @@ function LocalizedPlayGamePage() {
   const theme = useCurrentSiteTheme()
   const embedSrc = `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp, theme, autoplay === '1')}`
   const [showRecommendations, setShowRecommendations] = useState(false)
+  const [settlement, setSettlement] = useState<GameSessionSettlement | null>(null)
+  const activePlayTimeRef = useRef(0)
+  const awardedCoinsRef = useRef(0)
+  const playStartedAtRef = useRef<number | null>(Date.now())
+  const sessionCoinsRef = useRef(0)
+  const settlementTimerRef = useRef<number | null>(null)
   const labels = useMemo(() => getRecommendationLabels(lang), [lang])
 
   useEffect(() => {
     setShowRecommendations(false)
+    setSettlement(null)
+    activePlayTimeRef.current = 0
+    awardedCoinsRef.current = 0
+    playStartedAtRef.current = Date.now()
+    sessionCoinsRef.current = 0
   }, [gameId])
+
+  const collectDueSessionCoins = useCallback(() => {
+    const activeTime = getCurrentActivePlayTime(
+      activePlayTimeRef.current,
+      playStartedAtRef.current,
+    )
+    const earnedCoins = Math.floor(activeTime / GAME_COIN_INTERVAL_MS)
+    const newCoins = Math.max(0, earnedCoins - awardedCoinsRef.current)
+
+    if (newCoins > 0) {
+      addStoredGameCoins(newCoins)
+      awardedCoinsRef.current = earnedCoins
+      sessionCoinsRef.current += newCoins
+    }
+
+    return {
+      coins: sessionCoinsRef.current,
+      minutes: Math.max(1, Math.ceil(activeTime / 60_000)),
+    }
+  }, [])
+
+  const settleAndShowRecommendations = useCallback(() => {
+    if (playStartedAtRef.current !== null) {
+      activePlayTimeRef.current = getCurrentActivePlayTime(
+        activePlayTimeRef.current,
+        playStartedAtRef.current,
+      )
+      playStartedAtRef.current = null
+    }
+
+    const result = collectDueSessionCoins()
+    setSettlement(result)
+    setShowRecommendations(true)
+
+    if (settlementTimerRef.current !== null) {
+      window.clearTimeout(settlementTimerRef.current)
+    }
+    settlementTimerRef.current = window.setTimeout(() => {
+      setSettlement(null)
+      settlementTimerRef.current = null
+    }, 2_200)
+  }, [collectDueSessionCoins])
+
+  const continueGame = useCallback(() => {
+    setSettlement(null)
+    setShowRecommendations(false)
+    playStartedAtRef.current = Date.now()
+  }, [])
+
+  useEffect(() => {
+    if (showRecommendations) return
+
+    const timer = window.setInterval(collectDueSessionCoins, 1_000)
+    return () => window.clearInterval(timer)
+  }, [collectDueSessionCoins, showRecommendations])
 
   useEffect(() => {
     const embedOrigin = new URL(embedSrc).origin
@@ -82,11 +151,11 @@ function LocalizedPlayGamePage() {
         return
       }
 
-      setShowRecommendations(true)
+      settleAndShowRecommendations()
     }
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setShowRecommendations(true)
+        settleAndShowRecommendations()
       }
     }
 
@@ -96,6 +165,10 @@ function LocalizedPlayGamePage() {
     return () => {
       window.removeEventListener('message', handleMessage)
       window.removeEventListener('keydown', handleKeyDown)
+
+      if (settlementTimerRef.current !== null) {
+        window.clearTimeout(settlementTimerRef.current)
+      }
 
       if (!isPsp || !window.crossOriginIsolated) {
         return
@@ -108,14 +181,14 @@ function LocalizedPlayGamePage() {
         window.location.href = url.toString()
       }, 0)
     }
-  }, [embedSrc, isPsp])
+  }, [embedSrc, isPsp, settleAndShowRecommendations])
 
   return (
     <main className="game-play-screen bg-black">
       <button
         aria-label={labels.exitGame}
         className="game-play-exit fixed left-2 top-2 z-30 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white backdrop-blur transition hover:bg-black/90 sm:left-3 sm:top-3 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
-        onClick={() => setShowRecommendations(true)}
+        onClick={settleAndShowRecommendations}
         type="button"
       >
         <i className="ri-logout-box-r-line text-sm sm:text-lg" />
@@ -137,11 +210,52 @@ function LocalizedPlayGamePage() {
           games={recommendations}
           labels={labels}
           lang={lang}
-          onContinue={() => setShowRecommendations(false)}
+          onContinue={continueGame}
           recommendationType={recommendationType}
         />
       ) : null}
+      {settlement ? (
+        <GameCoinSettlement labels={labels} settlement={settlement} />
+      ) : null}
     </main>
+  )
+}
+
+type GameSessionSettlement = {
+  coins: number
+  minutes: number
+}
+
+function GameCoinSettlement({
+  labels,
+  settlement,
+}: {
+  labels: ReturnType<typeof getRecommendationLabels>
+  settlement: GameSessionSettlement
+}) {
+  return (
+    <aside
+      aria-live="polite"
+      className="coin-reward-pop pointer-events-none fixed inset-0 z-50 grid place-items-center p-4"
+    >
+      <div className="flex items-center gap-3 rounded-2xl border border-yellow-300/40 bg-black/85 px-5 py-4 text-white shadow-2xl backdrop-blur-sm">
+        <img
+          alt=""
+          aria-hidden="true"
+          className="h-14 w-14 object-contain [image-rendering:pixelated]"
+          src="/images/coin-rewards/pixel-reward-coin.png"
+        />
+        <div className="whitespace-nowrap">
+          <p className="text-xs text-white/60">{labels.sessionSettlement}</p>
+          <p className="mt-0.5 text-xl font-black text-yellow-300">
+            +{settlement.coins} {labels.coins}
+          </p>
+          <p className="mt-0.5 text-xs text-white/70">
+            {labels.playedMinutes.replace('{minutes}', String(settlement.minutes))}
+          </p>
+        </div>
+      </div>
+    </aside>
   )
 }
 
@@ -338,17 +452,36 @@ function normalizeSeriesText(value: string | undefined) {
     .trim()
 }
 
+function getCurrentActivePlayTime(accumulatedTime: number, startedAt: number | null) {
+  return accumulatedTime + (startedAt === null ? 0 : Date.now() - startedAt)
+}
+
+function addStoredGameCoins(amount: number) {
+  try {
+    const current = Math.max(
+      0,
+      Number(window.localStorage.getItem(COIN_BALANCE_STORAGE_KEY)) || 0,
+    )
+    window.localStorage.setItem(COIN_BALANCE_STORAGE_KEY, String(current + amount))
+  } catch {
+    // Game play remains available when browser storage is unavailable.
+  }
+}
+
 function getRecommendationLabels(locale: Locale) {
   if (locale === 'zh-CN') {
     return {
       backToHome: '退出并返回首页',
       categoryTitle: '再玩一款同类型游戏',
+      coins: '金币',
       continueGame: '继续游戏',
       empty: '暂时没有找到同系列游戏，可以返回首页继续挑选。',
       exitGame: '退出游戏',
       finished: '本局结束了吗？',
       game: '经典游戏',
       playNow: '立即游玩',
+      playedMinutes: '本局游玩 {minutes} 分钟',
+      sessionSettlement: '本局金币结算',
       title: '再玩一款同系列游戏',
     }
   }
@@ -357,12 +490,15 @@ function getRecommendationLabels(locale: Locale) {
     return {
       backToHome: '退出並返回首頁',
       categoryTitle: '再玩一款同類型遊戲',
+      coins: '金幣',
       continueGame: '繼續遊戲',
       empty: '暫時沒有找到同系列遊戲，可以返回首頁繼續挑選。',
       exitGame: '退出遊戲',
       finished: '本局結束了嗎？',
       game: '經典遊戲',
       playNow: '立即遊玩',
+      playedMinutes: '本局遊玩 {minutes} 分鐘',
+      sessionSettlement: '本局金幣結算',
       title: '再玩一款同系列遊戲',
     }
   }
@@ -371,12 +507,15 @@ function getRecommendationLabels(locale: Locale) {
     return {
       backToHome: '終了してホームへ戻る',
       categoryTitle: '同じジャンルのゲーム',
+      coins: 'コイン',
       continueGame: 'ゲームを続ける',
       empty: '同じシリーズのゲームが見つかりません。ホームでほかのゲームを探せます。',
       exitGame: 'ゲームを終了',
       finished: 'プレイを終了しますか？',
       game: 'クラシックゲーム',
       playNow: '今すぐプレイ',
+      playedMinutes: '今回のプレイ：{minutes}分',
+      sessionSettlement: 'コイン精算',
       title: '同じシリーズのゲーム',
     }
   }
@@ -384,12 +523,15 @@ function getRecommendationLabels(locale: Locale) {
   return {
     backToHome: 'Exit to home',
     categoryTitle: 'Play another game in this genre',
+    coins: 'coins',
     continueGame: 'Continue playing',
     empty: 'No games from the same series were found. Return home to browse more games.',
     exitGame: 'Exit game',
     finished: 'Finished this round?',
     game: 'Classic game',
     playNow: 'Play now',
+    playedMinutes: 'Played {minutes} minutes this session',
+    sessionSettlement: 'Session coin summary',
     title: 'Play another game in the series',
   }
 }

@@ -6,7 +6,7 @@ import {
   useRouterState,
 } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { SiteLayout } from '#/components/site-layout'
 import {
@@ -21,6 +21,8 @@ import { useCurrentSiteTheme } from '#/lib/use-site-theme'
 
 const LIVE_ROOM_PAGE_SIZE = 24
 const LIVE_ROOM_REFRESH_INTERVAL = 10_000
+const LIVE_COIN_INTERVAL_MS = 60_000
+const COIN_BALANCE_STORAGE_KEY = 'game-adventure-coin-balance'
 
 type LiveRoomSearch = {
   page?: number
@@ -93,6 +95,7 @@ function LiveRoomListPage() {
   const t = getI18n(lang).live
   const [result, setResult] = useState(initialResult)
   const [activeRoom, setActiveRoom] = useState<PublicLiveRoom | null>(null)
+  const closeActiveRoom = useCallback(() => setActiveRoom(null), [])
   const { rooms, pagination } = result
   const pages = Math.max(pagination.pages, 1)
 
@@ -241,7 +244,7 @@ function LiveRoomListPage() {
       {activeRoom ? (
         <LiveRoomPlayerModal
           lang={lang}
-          onClose={() => setActiveRoom(null)}
+          onClose={closeActiveRoom}
           room={activeRoom}
         />
       ) : null}
@@ -311,6 +314,43 @@ function LiveRoomPlayerModal({
   const theme = useCurrentSiteTheme()
   const embedSrc = buildLiveRoomEmbedUrl(lang, room.roomId, theme)
   const gameId = room.game.url_slug || room.game._id
+  const coinLabels = getLiveCoinLabels(lang)
+  const [settlement, setSettlement] = useState<LiveCoinSettlement | null>(null)
+  const awardedCoinsRef = useRef(0)
+  const sessionCoinsRef = useRef(0)
+  const watchStartedAtRef = useRef(Date.now())
+  const closeTimerRef = useRef<number | null>(null)
+
+  const collectDueLiveCoins = useCallback(() => {
+    const watchedTime = Date.now() - watchStartedAtRef.current
+    const earnedCoins = Math.floor(watchedTime / LIVE_COIN_INTERVAL_MS)
+    const newCoins = Math.max(0, earnedCoins - awardedCoinsRef.current)
+
+    if (newCoins > 0) {
+      addStoredLiveCoins(newCoins)
+      awardedCoinsRef.current = earnedCoins
+      sessionCoinsRef.current += newCoins
+    }
+
+    return {
+      coins: sessionCoinsRef.current,
+      minutes: Math.max(1, Math.ceil(watchedTime / 60_000)),
+    }
+  }, [])
+
+  const settleAndClose = useCallback(() => {
+    if (closeTimerRef.current !== null) return
+
+    setSettlement(collectDueLiveCoins())
+    closeTimerRef.current = window.setTimeout(onClose, 2_200)
+  }, [collectDueLiveCoins, onClose])
+
+  useEffect(() => {
+    if (settlement) return
+
+    const timer = window.setInterval(collectDueLiveCoins, 1_000)
+    return () => window.clearInterval(timer)
+  }, [collectDueLiveCoins, settlement])
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
@@ -320,7 +360,7 @@ function LiveRoomPlayerModal({
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        onClose()
+        settleAndClose()
       }
     }
 
@@ -330,11 +370,15 @@ function LiveRoomPlayerModal({
       document.body.style.overflow = previousOverflow
       document.removeEventListener('keydown', handleKeyDown)
 
+      if (closeTimerRef.current !== null) {
+        window.clearTimeout(closeTimerRef.current)
+      }
+
       if (previousFocus instanceof HTMLElement) {
         previousFocus.focus()
       }
     }
-  }, [onClose])
+  }, [settleAndClose])
 
   return (
     <div
@@ -366,7 +410,7 @@ function LiveRoomPlayerModal({
             <button
               aria-label={t.closePlayer}
               className="btn btn-circle btn-ghost btn-sm shrink-0"
-              onClick={onClose}
+              onClick={settleAndClose}
               title={t.closePlayer}
               type="button"
             >
@@ -389,8 +433,62 @@ function LiveRoomPlayerModal({
           />
         </div>
       </section>
+      {settlement ? (
+        <aside
+          aria-live="polite"
+          className="coin-reward-pop pointer-events-none fixed inset-0 z-[120] grid place-items-center p-4"
+        >
+          <div className="flex items-center gap-3 rounded-2xl border border-yellow-300/40 bg-black/90 px-5 py-4 text-white shadow-2xl backdrop-blur-sm">
+            <img
+              alt=""
+              aria-hidden="true"
+              className="h-14 w-14 object-contain [image-rendering:pixelated]"
+              src="/images/coin-rewards/pixel-reward-coin.png"
+            />
+            <div className="whitespace-nowrap">
+              <p className="text-xs text-white/60">{coinLabels.settlement}</p>
+              <p className="mt-0.5 text-xl font-black text-yellow-300">
+                +{settlement.coins} {coinLabels.coins}
+              </p>
+              <p className="mt-0.5 text-xs text-white/70">
+                {coinLabels.minutes.replace('{minutes}', String(settlement.minutes))}
+              </p>
+            </div>
+          </div>
+        </aside>
+      ) : null}
     </div>
   )
+}
+
+type LiveCoinSettlement = {
+  coins: number
+  minutes: number
+}
+
+function addStoredLiveCoins(amount: number) {
+  try {
+    const current = Math.max(
+      0,
+      Number(window.localStorage.getItem(COIN_BALANCE_STORAGE_KEY)) || 0,
+    )
+    window.localStorage.setItem(COIN_BALANCE_STORAGE_KEY, String(current + amount))
+  } catch {
+    // Live viewing remains available when browser storage is unavailable.
+  }
+}
+
+function getLiveCoinLabels(locale: Locale) {
+  if (locale === 'zh-CN') {
+    return { coins: '金币', minutes: '本次观看 {minutes} 分钟', settlement: '直播观看结算' }
+  }
+  if (locale === 'zh-TW') {
+    return { coins: '金幣', minutes: '本次觀看 {minutes} 分鐘', settlement: '直播觀看結算' }
+  }
+  if (locale === 'ja') {
+    return { coins: 'コイン', minutes: '今回の視聴：{minutes}分', settlement: 'ライブ視聴精算' }
+  }
+  return { coins: 'coins', minutes: 'Watched {minutes} minutes', settlement: 'Live viewing summary' }
 }
 
 function buildLiveRoomEmbedUrl(locale: Locale, roomId: string, theme: string) {

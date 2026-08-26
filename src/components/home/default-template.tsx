@@ -20,7 +20,9 @@ import { getI18n } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { useServerFn } from '@tanstack/react-start'
 
-export function DefaultHomeTemplate(props: HomeTemplateProps) {
+export function DefaultHomeTemplate(
+  props: HomeTemplateProps & { onCoinsEarned?: (amount: number) => void },
+) {
   const {
     filterOptions,
     filters,
@@ -30,6 +32,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
     mostPlayedGames,
     onFilterChange,
     onHomeRecommendations,
+    onCoinsEarned,
     t,
   } = props
   const [showMobileRecent, setShowMobileRecent] = useState(false)
@@ -39,6 +42,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
   const [randomPopupGame, setRandomPopupGame] = useState<PublicGame | null>(null)
   const [isRandomGameLoading, setIsRandomGameLoading] = useState(false)
   const [challengeCompleted, setChallengeCompleted] = useState(false)
+  const [challengeReward, setChallengeReward] = useState(10)
   const [streakDays, setStreakDays] = useState(0)
   const loadRandomGame = useServerFn(getRandomPlayableGame)
   const loadGameDetail = useServerFn(getGameDetail)
@@ -51,6 +55,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
   useEffect(() => {
     const progress = readDailyChallengeProgress()
     setChallengeCompleted(progress.completedToday)
+    setChallengeReward(getDailyChallengeReward(progress))
     setStreakDays(progress.streak)
   }, [])
 
@@ -67,7 +72,11 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
         const game = await loadGameDetail({ data: { id: gameId } })
         setRandomPopupGame(game)
         const progress = completeDailyChallenge()
+        if (progress.newlyCompleted) {
+          onCoinsEarned?.(progress.streak * 10)
+        }
         setChallengeCompleted(true)
+        setChallengeReward(progress.streak * 10)
         setStreakDays(progress.streak)
       }
     } finally {
@@ -106,6 +115,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
       <div className="hidden lg:block">
         <HomeMostPlayedGamesSection
           challengeCompleted={challengeCompleted}
+          challengeReward={challengeReward}
           games={randomVideoGames}
           isRandomGameLoading={isRandomGameLoading}
           lang={lang}
@@ -244,6 +254,7 @@ export function DefaultHomeTemplate(props: HomeTemplateProps) {
       <div className="lg:hidden">
         <HomeMostPlayedGamesSection
           challengeCompleted={challengeCompleted}
+          challengeReward={challengeReward}
           games={randomVideoGames}
           isRandomGameLoading={isRandomGameLoading}
           lang={lang}
@@ -336,6 +347,7 @@ const DAILY_CHALLENGE_STORAGE_KEY = 'game-adventure-daily-challenge'
 type DailyChallengeProgress = {
   completedToday: boolean
   lastCompletedDate: string
+  newlyCompleted: boolean
   streak: number
 }
 
@@ -348,10 +360,11 @@ function readDailyChallengeProgress(): DailyChallengeProgress {
     return {
       completedToday: parsed?.lastCompletedDate === today,
       lastCompletedDate: parsed?.lastCompletedDate ?? '',
+      newlyCompleted: false,
       streak: Math.max(0, Number(parsed?.streak) || 0),
     }
   } catch {
-    return { completedToday: false, lastCompletedDate: '', streak: 0 }
+    return { completedToday: false, lastCompletedDate: '', newlyCompleted: false, streak: 0 }
   }
 }
 
@@ -364,7 +377,7 @@ function completeDailyChallenge(): DailyChallengeProgress {
   const yesterday = new Date(now)
   yesterday.setDate(now.getDate() - 1)
   const streak = current.lastCompletedDate === getLocalDateKey(yesterday) ? current.streak + 1 : 1
-  const next = { completedToday: true, lastCompletedDate: today, streak }
+  const next = { completedToday: true, lastCompletedDate: today, newlyCompleted: true, streak }
 
   try {
     window.localStorage.setItem(DAILY_CHALLENGE_STORAGE_KEY, JSON.stringify(next))
@@ -380,6 +393,16 @@ function getLocalDateKey(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+function getDailyChallengeReward(progress: DailyChallengeProgress) {
+  if (progress.completedToday) return Math.max(1, progress.streak) * 10
+
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  return progress.lastCompletedDate === getLocalDateKey(yesterday)
+    ? (progress.streak + 1) * 10
+    : 10
 }
 
 function RandomGameModal({

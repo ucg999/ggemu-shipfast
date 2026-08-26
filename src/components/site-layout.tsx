@@ -10,6 +10,7 @@ import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
 
 export function SiteLayout({
   children,
+  brandAddon,
   headerActions,
   hideHeaderNav = false,
   hideFooterOnMobile = false,
@@ -19,6 +20,7 @@ export function SiteLayout({
   topContent,
 }: {
   children: ReactNode
+  brandAddon?: ReactNode
   gameFilterOptions?: GameFilterOptions
   headerActions?: ReactNode
   hideHeaderNav?: boolean
@@ -91,8 +93,8 @@ export function SiteLayout({
   return (
     <main className="min-h-screen bg-base-100 text-base-content">
       <header className="sticky top-0 z-40 border-b border-red-700 bg-red-600 text-white shadow-sm">
-        <div className="navbar flex-wrap gap-3 px-4 sm:px-6 lg:grid lg:grid-cols-[220px_minmax(0,1fr)_auto] lg:gap-0 lg:px-8">
-          <div className="navbar-start w-auto flex-none">
+        <div className="navbar flex-nowrap gap-1 px-2 sm:px-6 lg:grid lg:grid-cols-[290px_minmax(0,1fr)_auto] lg:gap-0 lg:px-8">
+          <div className="navbar-start min-w-0 w-auto flex-none">
             {hideHeaderNav ? null : (
               <button
                 aria-label={isMobileSidebarOpen ? t.closeSidebar : t.openSidebar}
@@ -114,7 +116,7 @@ export function SiteLayout({
               params={{ locale }}
               to="/$locale"
             >
-              <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-base-100">
+              <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg bg-base-100 sm:h-10 sm:w-10">
                 <img
                   alt={t.siteName}
                   className="h-full w-full object-contain"
@@ -130,15 +132,16 @@ export function SiteLayout({
                 </span>
               </span>
             </Link>
+            {brandAddon}
           </div>
 
           {topContent ? (
-            <div className="order-3 w-full border-t border-white/20 pt-3 lg:order-none lg:min-w-0 lg:border-t-0 lg:pt-0">
+            <div className="order-3 hidden w-full border-t border-white/20 pt-3 lg:order-none lg:block lg:min-w-0 lg:border-t-0 lg:pt-0">
               {topContent}
             </div>
           ) : null}
 
-          <div className="navbar-end ml-auto w-auto flex-none gap-2">
+          <div className="navbar-end ml-auto w-auto flex-none flex-nowrap gap-1 sm:gap-2">
             {onOpenSearch ? (
               <button
                 aria-label={t.searchGames}
@@ -152,7 +155,7 @@ export function SiteLayout({
             ) : null}
             <Link
               aria-label={t.watchOthers}
-              className="btn btn-sm h-10 shrink-0 gap-2 rounded-full border border-white/70 bg-white px-4 text-sm font-semibold text-black shadow-sm hover:border-white hover:bg-gray-100 sm:h-11 sm:px-5 sm:text-base"
+              className="btn btn-xs h-8 shrink-0 gap-1 rounded-full border border-white/70 bg-white px-2 text-xs font-semibold text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm sm:h-11 sm:gap-2 sm:px-5 sm:text-base"
               params={{ locale }}
               to="/$locale/live"
             >
@@ -217,7 +220,7 @@ export function SiteLayout({
               ref={localeMenuRef}
             >
               <summary
-                className="btn btn-xs rounded-full border border-white/70 bg-white px-3 text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm"
+                className="btn btn-xs rounded-full border border-white/70 bg-white px-2 text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm sm:px-3"
                 onClick={(event) => {
                   event.preventDefault()
                   setIsLocaleMenuOpen((isOpen) => !isOpen)

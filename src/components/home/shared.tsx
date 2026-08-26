@@ -44,6 +44,7 @@ export function HomeLatestGamesRow({
 
 export function HomeMostPlayedGamesSection({
   challengeCompleted = false,
+  challengeReward = 10,
   games,
   lang,
   mobile = false,
@@ -52,6 +53,7 @@ export function HomeMostPlayedGamesSection({
   streakDays = 0,
 }: {
   challengeCompleted?: boolean
+  challengeReward?: number
   games: Array<PublicGame>
   lang: Locale
   mobile?: boolean
@@ -93,6 +95,7 @@ export function HomeMostPlayedGamesSection({
           >
             <i className={challengeCompleted ? 'ri-checkbox-circle-fill' : 'ri-fire-fill'} />
             {challengeCompleted ? t.challengeCompleted : t.dailyChallenge}
+            <span className="font-bold">+{challengeReward}</span>
           </button>
           {streakDays > 0 ? (
             <span className="shrink-0 text-xs font-semibold text-base-content/60">

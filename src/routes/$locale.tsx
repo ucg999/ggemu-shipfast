@@ -8,6 +8,13 @@ import { useServerFn } from '@tanstack/react-start'
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
 
+import {
+  CoinRewardPopup,
+  FloatingHomeCoin,
+  FlyingCollectedCoin,
+  HomeCoinBag,
+  useHomeCoinRewards,
+} from '#/components/home/coin-rewards'
 import { DefaultHomeTemplate } from '#/components/home/default-template'
 import {
   FEATURE_NEW_ARRIVAL_LIMIT,
@@ -286,6 +293,7 @@ function LocalizedHomePage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const coinRewards = useHomeCoinRewards()
 
   useEffect(() => {
     setResult(initialResult)
@@ -472,6 +480,13 @@ function LocalizedHomePage() {
   return (
     <>
       <SiteLayout
+        brandAddon={
+          <HomeCoinBag
+            balance={coinRewards.balance}
+            lang={lang}
+            onOpen={coinRewards.showBalance}
+          />
+        }
         gameFilterOptions={initialResult.filterOptions}
         hideFooterOnMobile
         locale={lang}
@@ -482,8 +497,18 @@ function LocalizedHomePage() {
           </div>
         }
       >
-        <DefaultHomeTemplate {...templateProps} />
+        <DefaultHomeTemplate
+          {...templateProps}
+          onCoinsEarned={coinRewards.addCoins}
+        />
       </SiteLayout>
+      <FloatingHomeCoin
+        lang={lang}
+        onCollect={coinRewards.collectFloatingCoin}
+        positions={coinRewards.coinPositions}
+      />
+      <FlyingCollectedCoin flight={coinRewards.collectedCoinFlight} />
+      <CoinRewardPopup feedback={coinRewards.rewardFeedback} />
       <HomeSearchOverlay
         filterOptions={initialResult.filterOptions}
         gameTotal={pagination.total}

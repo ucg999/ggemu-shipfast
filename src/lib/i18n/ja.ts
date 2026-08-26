@@ -136,6 +136,7 @@ export const jaMessages = {
     flashSubtitle: 'タイトルから名作Flashゲームを探して、すぐにオンラインで遊べます。',
     allGames: 'すべてのゲーム',
     mostPopular: '人気ゲーム',
+    searchPlaceholder: 'タイトル、別名、キーワードを検索...',
     gameInfo: 'ゲーム情報',
     startGame: 'ゲーム開始',
     empty: '該当するアーケードゲームが見つかりません',

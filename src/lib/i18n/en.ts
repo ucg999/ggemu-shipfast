@@ -136,6 +136,7 @@ export const enMessages = {
     flashSubtitle: 'Browse classic Flash computer games by title and play instantly online.',
     allGames: 'All Games',
     mostPopular: 'Most Popular',
+    searchPlaceholder: 'Search titles, aliases, or keywords...',
     gameInfo: 'Game information',
     startGame: 'Start Game',
     empty: 'No matching arcade games found',

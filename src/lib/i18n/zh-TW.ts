@@ -125,6 +125,7 @@ export const zhTwMessages = {
     flashSubtitle: '按名稱快速尋找經典Flash電腦遊戲，點擊即可線上遊玩。',
     allGames: '全部遊戲',
     mostPopular: '最熱門遊戲',
+    searchPlaceholder: '輸入遊戲名稱、別名或關鍵詞...',
     gameInfo: '遊戲資訊',
     startGame: '開始遊戲',
     empty: '沒有找到對應的街機遊戲',

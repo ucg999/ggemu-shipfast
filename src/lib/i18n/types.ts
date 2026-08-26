@@ -126,6 +126,7 @@ export type I18nMessages = {
     flashSubtitle: string
     allGames: string
     mostPopular: string
+    searchPlaceholder: string
     gameInfo: string
     startGame: string
     empty: string
