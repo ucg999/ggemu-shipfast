@@ -2,8 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 
 import type { Locale } from '#/lib/ggemu'
+import {
+  addCoinBalance,
+  COIN_BALANCE_EVENT,
+  COIN_BALANCE_STORAGE_KEY,
+  readCoinBalance,
+} from '#/lib/coin-wallet'
 
-const COIN_BALANCE_STORAGE_KEY = 'game-adventure-coin-balance'
 const COIN_INTERVAL_MS = 90_000
 const MAX_FLOATING_COINS = 3
 
@@ -35,7 +40,7 @@ export function useHomeCoinRewards() {
   const rewardTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
-    setBalance(readStoredNumber(COIN_BALANCE_STORAGE_KEY))
+    setBalance(readCoinBalance())
     setCoinPositions([createRandomCoinPosition()])
   }, [])
 
@@ -43,7 +48,11 @@ export function useHomeCoinRewards() {
     function syncCoinBalance(event?: StorageEvent) {
       if (event && event.key !== COIN_BALANCE_STORAGE_KEY) return
 
-      setBalance(readStoredNumber(COIN_BALANCE_STORAGE_KEY))
+      setBalance(readCoinBalance())
+    }
+
+    function syncLocalCoinBalance() {
+      syncCoinBalance()
     }
 
     function syncVisiblePage() {
@@ -53,10 +62,12 @@ export function useHomeCoinRewards() {
     }
 
     window.addEventListener('storage', syncCoinBalance)
+    window.addEventListener(COIN_BALANCE_EVENT, syncLocalCoinBalance)
     document.addEventListener('visibilitychange', syncVisiblePage)
 
     return () => {
       window.removeEventListener('storage', syncCoinBalance)
+      window.removeEventListener(COIN_BALANCE_EVENT, syncLocalCoinBalance)
       document.removeEventListener('visibilitychange', syncVisiblePage)
     }
   }, [])
@@ -96,11 +107,7 @@ export function useHomeCoinRewards() {
   const addCoins = useCallback((amount: number, showFeedback = true) => {
     if (!Number.isFinite(amount) || amount <= 0) return
 
-    setBalance((current) => {
-      const next = current + Math.floor(amount)
-      writeStoredNumber(COIN_BALANCE_STORAGE_KEY, next)
-      return next
-    })
+    setBalance(addCoinBalance(amount))
     if (showFeedback) {
       showRewardFeedback(Math.floor(amount), '+')
     }
@@ -177,6 +184,33 @@ export function HomeCoinBag({
       </span>
     </button>
   )
+}
+
+export function useGlobalCoinBalance() {
+  const [balance, setBalance] = useState(0)
+
+  useEffect(() => {
+    const syncBalance = () => setBalance(readCoinBalance())
+    const syncVisiblePage = () => {
+      if (document.visibilityState === 'visible') syncBalance()
+    }
+
+    syncBalance()
+    window.addEventListener('storage', syncBalance)
+    window.addEventListener(COIN_BALANCE_EVENT, syncBalance)
+    document.addEventListener('visibilitychange', syncVisiblePage)
+
+    return () => {
+      window.removeEventListener('storage', syncBalance)
+      window.removeEventListener(COIN_BALANCE_EVENT, syncBalance)
+      document.removeEventListener('visibilitychange', syncVisiblePage)
+    }
+  }, [])
+
+  return {
+    balance,
+    showBalance: () => setBalance(readCoinBalance()),
+  }
 }
 
 export function FloatingHomeCoin({
@@ -271,22 +305,6 @@ function createRandomCoinPosition(): CoinPosition {
     id: Date.now() + Math.floor(Math.random() * 100_000),
     left: 6 + Math.random() * 82,
     top: 16 + Math.random() * 68,
-  }
-}
-
-function readStoredNumber(key: string) {
-  try {
-    return Math.max(0, Number(window.localStorage.getItem(key)) || 0)
-  } catch {
-    return 0
-  }
-}
-
-function writeStoredNumber(key: string, value: number) {
-  try {
-    window.localStorage.setItem(key, String(value))
-  } catch {
-    // Rewards remain available for the current visit when storage is unavailable.
   }
 }
 

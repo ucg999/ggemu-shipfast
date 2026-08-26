@@ -7,6 +7,7 @@ import { getI18n, normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { siteConfig } from '#/lib/site-config'
 import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
+import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
 
 export function SiteLayout({
   children,
@@ -41,6 +42,7 @@ export function SiteLayout({
   const localeMenuRef = useRef<HTMLDetailsElement>(null)
   const canSwitchTheme = siteThemes.length > 1
   const sidebarSearchParams = new URLSearchParams(location.searchStr)
+  const globalCoins = useGlobalCoinBalance()
 
   useEffect(() => {
     const storedTheme = normalizeSiteTheme(
@@ -132,6 +134,11 @@ export function SiteLayout({
                 </span>
               </span>
             </Link>
+            <HomeCoinBag
+              balance={globalCoins.balance}
+              lang={locale}
+              onOpen={globalCoins.showBalance}
+            />
             {brandAddon}
           </div>
 

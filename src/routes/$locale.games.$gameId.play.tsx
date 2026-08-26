@@ -6,6 +6,8 @@ import { normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { siteConfig } from '#/lib/site-config'
 import { useCurrentSiteTheme } from '#/lib/use-site-theme'
+import { addCoinBalance, getDailyGameCoinMultiplier } from '#/lib/coin-wallet'
+import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
 
 const pspCrossOriginIsolationHeaders = {
   'Cross-Origin-Opener-Policy': 'same-origin',
@@ -17,7 +19,6 @@ const noindexHeaders = {
   'X-Robots-Tag': 'noindex, nofollow',
 } as const
 
-const COIN_BALANCE_STORAGE_KEY = 'game-adventure-coin-balance'
 const GAME_COIN_INTERVAL_MS = 60 * 1000
 
 export const Route = createFileRoute('/$locale/games/$gameId/play')({
@@ -79,6 +80,8 @@ function LocalizedPlayGamePage() {
   const sessionCoinsRef = useRef(0)
   const settlementTimerRef = useRef<number | null>(null)
   const labels = useMemo(() => getRecommendationLabels(lang), [lang])
+  const coinMultiplier = useMemo(() => getDailyGameCoinMultiplier(gameId), [gameId])
+  const globalCoins = useGlobalCoinBalance()
 
   useEffect(() => {
     setShowRecommendations(false)
@@ -95,7 +98,8 @@ function LocalizedPlayGamePage() {
       playStartedAtRef.current,
     )
     const earnedCoins = Math.floor(activeTime / GAME_COIN_INTERVAL_MS)
-    const newCoins = Math.max(0, earnedCoins - awardedCoinsRef.current)
+    const newBaseCoins = Math.max(0, earnedCoins - awardedCoinsRef.current)
+    const newCoins = newBaseCoins * coinMultiplier
 
     if (newCoins > 0) {
       addStoredGameCoins(newCoins)
@@ -107,7 +111,7 @@ function LocalizedPlayGamePage() {
       coins: sessionCoinsRef.current,
       minutes: Math.max(1, Math.ceil(activeTime / 60_000)),
     }
-  }, [])
+  }, [coinMultiplier])
 
   const settleAndShowRecommendations = useCallback(() => {
     if (playStartedAtRef.current !== null) {
@@ -194,6 +198,13 @@ function LocalizedPlayGamePage() {
         <i className="ri-logout-box-r-line text-sm sm:text-lg" />
         {labels.exitGame}
       </button>
+      <div className="fixed right-2 top-2 z-30 rounded-lg bg-black/35 backdrop-blur-sm sm:right-3 sm:top-3">
+        <HomeCoinBag
+          balance={globalCoins.balance}
+          lang={lang}
+          onOpen={globalCoins.showBalance}
+        />
+      </div>
       <iframe
         allow={
           isPsp
@@ -457,15 +468,7 @@ function getCurrentActivePlayTime(accumulatedTime: number, startedAt: number | n
 }
 
 function addStoredGameCoins(amount: number) {
-  try {
-    const current = Math.max(
-      0,
-      Number(window.localStorage.getItem(COIN_BALANCE_STORAGE_KEY)) || 0,
-    )
-    window.localStorage.setItem(COIN_BALANCE_STORAGE_KEY, String(current + amount))
-  } catch {
-    // Game play remains available when browser storage is unavailable.
-  }
+  addCoinBalance(amount)
 }
 
 function getRecommendationLabels(locale: Locale) {

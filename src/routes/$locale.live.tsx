@@ -9,6 +9,7 @@ import { useServerFn } from '@tanstack/react-start'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { SiteLayout } from '#/components/site-layout'
+import { addCoinBalance } from '#/lib/coin-wallet'
 import {
   searchLiveRooms,
   type Locale,
@@ -22,7 +23,6 @@ import { useCurrentSiteTheme } from '#/lib/use-site-theme'
 const LIVE_ROOM_PAGE_SIZE = 24
 const LIVE_ROOM_REFRESH_INTERVAL = 10_000
 const LIVE_COIN_INTERVAL_MS = 60_000
-const COIN_BALANCE_STORAGE_KEY = 'game-adventure-coin-balance'
 
 type LiveRoomSearch = {
   page?: number
@@ -467,15 +467,7 @@ type LiveCoinSettlement = {
 }
 
 function addStoredLiveCoins(amount: number) {
-  try {
-    const current = Math.max(
-      0,
-      Number(window.localStorage.getItem(COIN_BALANCE_STORAGE_KEY)) || 0,
-    )
-    window.localStorage.setItem(COIN_BALANCE_STORAGE_KEY, String(current + amount))
-  } catch {
-    // Live viewing remains available when browser storage is unavailable.
-  }
+  addCoinBalance(amount)
 }
 
 function getLiveCoinLabels(locale: Locale) {

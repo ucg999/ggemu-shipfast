@@ -10,6 +10,7 @@ import { formatCopy, getHomeFaqs, getI18n } from '#/lib/i18n'
 
 import type { GamesSectionProps, HomeCopy, SearchFormProps } from './types'
 import { getPlatformLabel } from '#/lib/platform-label'
+import { setDailyGameCoinMultiplier } from '#/lib/coin-wallet'
 
 export const HOME_BLOG_POST_LIMIT = 4
 
@@ -104,13 +105,15 @@ export function HomeMostPlayedGamesSection({
           ) : null}
         </div>
         <div className={mobile ? 'mt-2 grid grid-cols-2 gap-1.5' : 'mt-4 grid grid-cols-6 gap-2'}>
-          {items.map((game) => {
+          {items.map((game, index) => {
             const gameId = game.url_slug || game._id || ''
+            const multiplier = getDailyCoinMultiplier(items, index)
 
             return (
               <Link
                 className="group min-w-0"
                 key={gameId}
+                onClick={() => setDailyGameCoinMultiplier(gameId, multiplier)}
                 params={{ gameId, locale: lang }}
                 search={{}}
                 to="/$locale/games/$gameId"
@@ -126,6 +129,15 @@ export function HomeMostPlayedGamesSection({
                     preload="metadata"
                     src={game.game_video}
                   />
+                  <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded bg-black/75 px-1.5 py-1 text-[11px] font-black text-yellow-300 backdrop-blur-sm">
+                    <img
+                      alt=""
+                      aria-hidden="true"
+                      className="h-4 w-4 object-contain"
+                      src="/images/coin-rewards/pixel-reward-coin.png"
+                    />
+                    ×{multiplier}
+                  </span>
                   {game.platform ? (
                     <span className="absolute bottom-2 right-2 rounded bg-black/70 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
                       {getPlatformLabel(game.platform, lang)}
@@ -139,6 +151,19 @@ export function HomeMostPlayedGamesSection({
       </div>
     </section>
   )
+}
+
+function getDailyCoinMultiplier(games: Array<PublicGame>, index: number) {
+  const date = new Date()
+  const dateKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+  let hash = 2166136261
+
+  for (const character of dateKey) {
+    hash ^= character.charCodeAt(0)
+    hash = Math.imul(hash, 16777619)
+  }
+
+  return index === (hash >>> 0) % games.length ? 3 : 2
 }
 
 function SlotMachineIcon({ className }: { className: string }) {

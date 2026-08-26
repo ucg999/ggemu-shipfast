@@ -12,7 +12,6 @@ import {
   CoinRewardPopup,
   FloatingHomeCoin,
   FlyingCollectedCoin,
-  HomeCoinBag,
   useHomeCoinRewards,
 } from '#/components/home/coin-rewards'
 import { DefaultHomeTemplate } from '#/components/home/default-template'
@@ -480,13 +479,6 @@ function LocalizedHomePage() {
   return (
     <>
       <SiteLayout
-        brandAddon={
-          <HomeCoinBag
-            balance={coinRewards.balance}
-            lang={lang}
-            onOpen={coinRewards.showBalance}
-          />
-        }
         gameFilterOptions={initialResult.filterOptions}
         hideFooterOnMobile
         locale={lang}
