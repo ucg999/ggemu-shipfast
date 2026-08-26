@@ -40,6 +40,28 @@ export function useHomeCoinRewards() {
   }, [])
 
   useEffect(() => {
+    function syncCoinBalance(event?: StorageEvent) {
+      if (event && event.key !== COIN_BALANCE_STORAGE_KEY) return
+
+      setBalance(readStoredNumber(COIN_BALANCE_STORAGE_KEY))
+    }
+
+    function syncVisiblePage() {
+      if (document.visibilityState === 'visible') {
+        syncCoinBalance()
+      }
+    }
+
+    window.addEventListener('storage', syncCoinBalance)
+    document.addEventListener('visibilitychange', syncVisiblePage)
+
+    return () => {
+      window.removeEventListener('storage', syncCoinBalance)
+      document.removeEventListener('visibilitychange', syncVisiblePage)
+    }
+  }, [])
+
+  useEffect(() => {
     return () => {
       if (rewardTimerRef.current !== null) {
         window.clearTimeout(rewardTimerRef.current)
