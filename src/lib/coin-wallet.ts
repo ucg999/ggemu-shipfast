@@ -2,6 +2,7 @@ export const COIN_BALANCE_STORAGE_KEY = 'game-adventure-coin-balance'
 export const COIN_BALANCE_EVENT = 'game-adventure-coin-balance-change'
 
 const DAILY_GAME_MULTIPLIER_STORAGE_KEY = 'game-adventure-daily-game-multipliers'
+const GAME_PLAY_STARTED_STORAGE_PREFIX = 'game-adventure-play-started:'
 
 type DailyGameMultipliers = {
   date: string
@@ -30,6 +31,21 @@ export function addCoinBalance(amount: number) {
   return next
 }
 
+export function spendCoinBalance(amount: number) {
+  const cost = Math.max(0, Math.floor(amount))
+  const current = readCoinBalance()
+  if (cost === 0 || current < cost) return false
+
+  const next = current - cost
+  try {
+    window.localStorage.setItem(COIN_BALANCE_STORAGE_KEY, String(next))
+    window.dispatchEvent(new CustomEvent(COIN_BALANCE_EVENT, { detail: next }))
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function setDailyGameCoinMultiplier(gameId: string, multiplier: number) {
   if (!gameId || multiplier < 2) return
   const today = getLocalDateKey(new Date())
@@ -50,6 +66,31 @@ export function getDailyGameCoinMultiplier(gameId: string) {
   const current = readDailyGameMultipliers()
   if (current.date !== getLocalDateKey(new Date())) return 1
   return Math.max(1, Math.min(3, Number(current.games[gameId]) || 1))
+}
+
+export function markGamePlayStarted(gameId: string) {
+  if (!gameId) return
+  try {
+    window.localStorage.setItem(
+      `${GAME_PLAY_STARTED_STORAGE_PREFIX}${gameId}`,
+      String(Date.now()),
+    )
+  } catch {
+    // The timer falls back to the game screen load time.
+  }
+}
+
+export function consumeGamePlayStartedAt(gameId: string) {
+  const key = `${GAME_PLAY_STARTED_STORAGE_PREFIX}${gameId}`
+  try {
+    const startedAt = Number(window.localStorage.getItem(key))
+    window.localStorage.removeItem(key)
+    return Number.isFinite(startedAt) && startedAt > Date.now() - 60_000
+      ? startedAt
+      : Date.now()
+  } catch {
+    return Date.now()
+  }
 }
 
 function readDailyGameMultipliers(): DailyGameMultipliers {

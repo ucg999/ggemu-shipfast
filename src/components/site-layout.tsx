@@ -1,6 +1,6 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 
 import type { GameFilterOptions, Locale } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
@@ -8,6 +8,7 @@ import { getPlatformLabel } from '#/lib/platform-label'
 import { siteConfig } from '#/lib/site-config'
 import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
 import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
+import { spendCoinBalance } from '#/lib/coin-wallet'
 
 export function SiteLayout({
   children,
@@ -90,6 +91,13 @@ export function SiteLayout({
     )
 
     window.location.assign(nextPath)
+  }
+
+  function handlePaidResourceClick(event: MouseEvent<HTMLAnchorElement>) {
+    if (spendCoinBalance(10)) return
+
+    event.preventDefault()
+    window.alert(getResourceCoinCopy(locale).insufficient)
   }
 
   return (
@@ -427,46 +435,56 @@ export function SiteLayout({
                       <li>
                         <a
                           href="https://www.kdocs.cn/etapps/query/q/TUxF4AQG"
+                          onClick={handlePaidResourceClick}
                           rel="noreferrer"
                           target="_blank"
                         >
                           {homeT.pspLibrary}
+                          <ResourceCoinCost />
                         </a>
                       </li>
                       <li>
                         <a
                           href="https://www.kdocs.cn/etapps/query/q/RclPTyXd"
+                          onClick={handlePaidResourceClick}
                           rel="noreferrer"
                           target="_blank"
                         >
                           {homeT.psvLibrary}
+                          <ResourceCoinCost />
                         </a>
                       </li>
                       <li>
                         <a
                           href="https://www.kdocs.cn/etapps/query/q/detUdefK"
+                          onClick={handlePaidResourceClick}
                           rel="noreferrer"
                           target="_blank"
                         >
                           {homeT.switchLibrary}
+                          <ResourceCoinCost />
                         </a>
                       </li>
                       <li>
                         <a
                           href="https://www.kdocs.cn/etapps/query/q/zPCu5XAr?share_origin=re_share_conditionshome"
+                          onClick={handlePaidResourceClick}
                           rel="noreferrer"
                           target="_blank"
                         >
                           {homeT.arcadeLibrary}
+                          <ResourceCoinCost />
                         </a>
                       </li>
                       <li>
                         <a
                           href="https://kdocs.cn/l/cqE4v1WZxdnc"
+                          onClick={handlePaidResourceClick}
                           rel="noreferrer"
                           target="_blank"
                         >
                           {homeT.popularGameLibrary}
+                          <ResourceCoinCost />
                         </a>
                       </li>
                     </ul>
@@ -600,6 +618,33 @@ export function SiteFooter({ locale }: { locale: Locale }) {
       </div>
     </footer>
   )
+}
+
+function ResourceCoinCost() {
+  return (
+    <span className="ml-auto inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-black text-amber-800">
+      <img
+        alt=""
+        aria-hidden="true"
+        className="h-3.5 w-3.5 object-contain"
+        src="/images/coin-rewards/pixel-reward-coin.png"
+      />
+      10
+    </span>
+  )
+}
+
+function getResourceCoinCopy(locale: Locale) {
+  if (locale === 'zh-CN') {
+    return { insufficient: '余额不足。金币随处可见，玩游戏、看别人玩都可获得。' }
+  }
+  if (locale === 'zh-TW') {
+    return { insufficient: '餘額不足。金幣隨處可見，玩遊戲、看別人玩都可獲得。' }
+  }
+  if (locale === 'ja') {
+    return { insufficient: 'コイン残高が不足しています。ゲームを遊んだり、ほかの人のプレイを見たりすると獲得できます。' }
+  }
+  return { insufficient: 'Not enough coins. Find coins around the site, play games, or watch others play to earn more.' }
 }
 
 function getHomeFilterHref(

@@ -34,6 +34,7 @@ import {
 } from '#/lib/i18n'
 import { getAlternateLinksFromCanonical } from '#/lib/seo'
 import { getPlatformLabel } from '#/lib/platform-label'
+import { markGamePlayStarted } from '#/lib/coin-wallet'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -372,9 +373,10 @@ function LocalizedGameDetailPage() {
                 <a
                   className="btn btn-primary btn-lg px-8 text-primary-content hover:text-primary-content sm:w-auto"
                   href={playPath}
-                  onClick={() => saveRecentPlayedGame(game, gameId)}
-                  rel="noreferrer"
-                  target="_blank"
+                  onClick={() => {
+                    markGamePlayStarted(gameId)
+                    saveRecentPlayedGame(game, gameId)
+                  }}
                 >
                   <i className="ri-play-fill text-xl" />
                   {t.play}

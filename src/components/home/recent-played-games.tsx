@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import type { Locale, PublicGame } from '#/lib/ggemu'
 import { GAME_COLLECTIONS } from '#/lib/game-collections'
 import { getI18n } from '#/lib/i18n'
+import { markGamePlayStarted } from '#/lib/coin-wallet'
 
 const RECENT_PLAYED_GAMES_KEY = 'ggemu-recent-played-games'
 const RECENT_PLAYED_GAMES_LIMIT = 102
@@ -171,6 +172,9 @@ export function RecentPlayedGameCard({
     <Link
       aria-label={game.name}
       className="group block h-full rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+      onClick={() => {
+        if (directPlay) markGamePlayStarted(game.id)
+      }}
       params={{ gameId: game.id, locale: lang }}
       search={directPlay ? { autoplay: '1' as const } : {}}
       to={directPlay ? '/$locale/games/$gameId/play' : '/$locale/games/$gameId'}

@@ -301,9 +301,13 @@ export function CoinRewardPopup({
 }
 
 function createRandomCoinPosition(): CoinPosition {
+  const minimumLeft = window.innerWidth >= 1024
+    ? Math.min(28, (240 / window.innerWidth) * 100)
+    : 6
+
   return {
     id: Date.now() + Math.floor(Math.random() * 100_000),
-    left: 6 + Math.random() * 82,
+    left: minimumLeft + Math.random() * (88 - minimumLeft),
     top: 16 + Math.random() * 68,
   }
 }
