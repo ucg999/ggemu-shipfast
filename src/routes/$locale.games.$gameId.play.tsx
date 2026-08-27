@@ -330,12 +330,12 @@ function GameExitRecommendations({
 
           {games.length ? (
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              {games.map((game) => {
+              {games.map((game, index) => {
                 const id = game.url_slug?.trim() || game._id?.trim()
 
                 return id ? (
                   <Link
-                    className="group min-w-0"
+                    className={`group min-w-0 ${index >= 4 ? 'hidden lg:block' : ''}`}
                     key={id}
                     onClick={() => markGamePlayStarted(id)}
                     params={{ gameId: id, locale: lang }}

@@ -9,7 +9,7 @@ import {
   readCoinBalance,
 } from '#/lib/coin-wallet'
 
-const COIN_INTERVAL_MS = 90_000
+const COIN_INTERVAL_MS = 60_000
 const MAX_FLOATING_COINS = 3
 
 type CoinPosition = {
@@ -41,7 +41,6 @@ export function useHomeCoinRewards() {
 
   useEffect(() => {
     setBalance(readCoinBalance())
-    setCoinPositions([createRandomCoinPosition()])
   }, [])
 
   useEffect(() => {
