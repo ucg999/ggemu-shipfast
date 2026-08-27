@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-router'
 import QRCode from 'qrcode'
 import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties, MouseEvent } from 'react'
 
 import {
   GameCardPreviewVideo,
@@ -23,6 +24,7 @@ import {
 import {
   getGameDetailPageData,
   getRelatedGamePageData,
+  isCoinModeGame,
   type Locale,
   type PublicGame,
 } from '#/lib/ggemu'
@@ -34,7 +36,7 @@ import {
 } from '#/lib/i18n'
 import { getAlternateLinksFromCanonical } from '#/lib/seo'
 import { getPlatformLabel } from '#/lib/platform-label'
-import { markGamePlayStarted } from '#/lib/coin-wallet'
+import { markGamePlayStarted, spendCoinBalance } from '#/lib/coin-wallet'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -46,6 +48,13 @@ type InstallPromptWindow = Window & {
 }
 
 const defaultManifestHref = '/manifest.webmanifest'
+
+function getCoinGameCopy(locale: Locale) {
+  if (locale === 'zh-TW') return { insufficient: '金幣不足，需要 20 枚金幣。金幣隨處可見，玩遊戲、看別人玩都可獲得。' }
+  if (locale === 'en') return { insufficient: 'You need 20 coins. Find coins around the site, play games, or watch others play to earn more.' }
+  if (locale === 'ja') return { insufficient: '20コイン必要です。サイト内のコイン、ゲームプレイ、配信視聴で獲得できます。' }
+  return { insufficient: '金币不足，需要 20 个金币。金币随处可见，玩游戏、看别人玩都可获得。' }
+}
 
 export const Route = createFileRoute('/$locale/games/$gameId')({
   beforeLoad: ({ location, params }) => {
@@ -296,6 +305,48 @@ function LocalizedGameDetailPage() {
     name: game.name,
     startUrl: playPath,
   })
+  const playButtonRef = useRef<HTMLAnchorElement>(null)
+  const [coinFlight, setCoinFlight] = useState<{
+    id: number
+    left: number
+    top: number
+    travelX: number
+    travelY: number
+  } | null>(null)
+  const [isCoinGameLaunching, setIsCoinGameLaunching] = useState(false)
+  const isCoinGame = isCoinModeGame(game)
+
+  const startGame = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!isCoinGame) {
+      markGamePlayStarted(gameId)
+      saveRecentPlayedGame(game, gameId)
+      return
+    }
+
+    event.preventDefault()
+    if (isCoinGameLaunching) return
+    if (!spendCoinBalance(20)) {
+      window.alert(getCoinGameCopy(lang).insufficient)
+      return
+    }
+
+    const coinBox = document.querySelector<HTMLElement>('[data-coin-box]')
+    const source = coinBox?.getBoundingClientRect()
+    const target = playButtonRef.current?.getBoundingClientRect()
+    const left = source ? source.left + source.width / 2 - 24 : window.innerWidth / 2
+    const top = source ? source.top + source.height / 2 - 24 : 32
+    setCoinFlight({
+      id: Date.now(),
+      left,
+      top,
+      travelX: target ? target.left + target.width / 2 - left - 24 : 0,
+      travelY: target ? target.top + target.height / 2 - top - 24 : 0,
+    })
+    setIsCoinGameLaunching(true)
+    markGamePlayStarted(gameId)
+    saveRecentPlayedGame(game, gameId)
+    window.setTimeout(() => window.location.assign(playPath), 760)
+  }
 
   if (pathname.endsWith('/play')) {
     return <Outlet />
@@ -371,15 +422,20 @@ function LocalizedGameDetailPage() {
 
               <div className="grid gap-3 sm:flex sm:flex-row">
                 <a
+                  aria-disabled={isCoinGameLaunching}
                   className="btn btn-primary btn-lg px-8 text-primary-content hover:text-primary-content sm:w-auto"
                   href={playPath}
-                  onClick={() => {
-                    markGamePlayStarted(gameId)
-                    saveRecentPlayedGame(game, gameId)
-                  }}
+                  onClick={startGame}
+                  ref={playButtonRef}
                 >
                   <i className="ri-play-fill text-xl" />
                   {t.play}
+                  {isCoinGame ? (
+                    <span className="ml-1 flex items-center gap-1 rounded-full bg-black/25 px-2 py-1 text-sm font-black">
+                      <img alt="" aria-hidden="true" className="h-5 w-5 object-contain" src="/images/coin-rewards/pixel-reward-coin.png" />
+                      ×20
+                    </span>
+                  ) : null}
                 </a>
                 <div className="grid grid-cols-2 gap-3 sm:contents">
                   <GameInstallButton labels={t} manifestHref={manifestHref} />
@@ -397,6 +453,23 @@ function LocalizedGameDetailPage() {
               </div>
             </div>
           </section>
+
+          {coinFlight ? (
+            <div
+              aria-hidden="true"
+              className="coin-fly-to-box pointer-events-none fixed z-[140] flex h-12 w-12 items-center"
+              key={coinFlight.id}
+              style={{
+                left: coinFlight.left,
+                top: coinFlight.top,
+                '--coin-travel-x': `${coinFlight.travelX}px`,
+                '--coin-travel-y': `${coinFlight.travelY}px`,
+              } as CSSProperties}
+            >
+              <img alt="" className="h-12 w-12 object-contain [image-rendering:pixelated]" src="/images/coin-rewards/pixel-reward-coin.png" />
+              <span className="-ml-1 rounded bg-black/80 px-1.5 py-0.5 text-sm font-black text-yellow-300">×20</span>
+            </div>
+          ) : null}
 
           <section className="grid gap-6 lg:grid-cols-[1fr_340px]">
             <div className="flex flex-col gap-6">

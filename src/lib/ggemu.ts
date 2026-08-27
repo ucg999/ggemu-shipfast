@@ -6,6 +6,7 @@ const API_BASE_URL = 'https://ggemu.com'
 const PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
 const NON_GCOIN_GAME = '0'
+const COIN_MODE_GAME_NAMES = ['wow new fantasia', 'excelsior'] as const
 
 export type Locale = 'zh-CN' | 'zh-TW' | 'en' | 'ja'
 export type GameSearchSort =
@@ -263,12 +264,17 @@ async function fetchJson<T>(path: string, params: URLSearchParams) {
   return response.json() as Promise<T>
 }
 
-async function fetchGames(params: URLSearchParams) {
+async function fetchGames(params: URLSearchParams, includeCoinMode = false) {
   const result = await fetchJson<GameSearchResponse>('/api/games/search', params)
+  const games = includeCoinMode
+    ? result.data
+    : result.data.filter((game) => !isCoinModeGame(game))
 
   return {
-    games: result.data,
-    pagination: result.pagination,
+    games,
+    pagination: includeCoinMode
+      ? result.pagination
+      : { ...result.pagination, total: Math.max(0, result.pagination.total - (result.data.length - games.length)) },
   } satisfies GameSearchResult
 }
 
@@ -520,6 +526,35 @@ export const searchGames = createServerFn({ method: 'GET' })
 
     return result
   })
+
+export const searchCoinModeGames = createServerFn({ method: 'GET' })
+  .handler(async () => {
+    const results = await Promise.all(
+      COIN_MODE_GAME_NAMES.map((query) =>
+        fetchGames(new URLSearchParams({
+          is_gcoin_game: NON_GCOIN_GAME,
+          limit: '20',
+          page: '1',
+          play_online: '1',
+          query,
+          sort: 'name_asc',
+        }), true),
+      ),
+    )
+    const games = dedupeGames(results.flatMap((result) => result.games))
+      .filter((game) => isCoinModeGame(game))
+
+    return {
+      games,
+      pagination: { limit: games.length || 1, page: 1, pages: 1, total: games.length },
+    } satisfies GameSearchResult
+  })
+
+export function isCoinModeGame(game: Pick<PublicGame, 'name'> | string | undefined) {
+  const name = typeof game === 'string' ? game : game?.name
+  const normalized = name?.trim().toLocaleLowerCase() ?? ''
+  return COIN_MODE_GAME_NAMES.includes(normalized as (typeof COIN_MODE_GAME_NAMES)[number])
+}
 
 function weeklyTrendScore(game: PublicGame) {
   const week = Math.floor(Date.now() / 604_800_000)

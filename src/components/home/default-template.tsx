@@ -18,6 +18,7 @@ import type { PublicGame } from '#/lib/ggemu'
 import { getGameDetail, getRandomPlayableGame } from '#/lib/ggemu'
 import { getI18n } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
+import { setDailyGameCoinMultiplier } from '#/lib/coin-wallet'
 import { useServerFn } from '@tanstack/react-start'
 
 export function DefaultHomeTemplate(
@@ -40,6 +41,7 @@ export function DefaultHomeTemplate(
     mostPlayedGames.slice(0, 6),
   )
   const [randomPopupGame, setRandomPopupGame] = useState<PublicGame | null>(null)
+  const [randomPopupMultiplier, setRandomPopupMultiplier] = useState(2)
   const [isRandomGameLoading, setIsRandomGameLoading] = useState(false)
   const [challengeCompleted, setChallengeCompleted] = useState(false)
   const [challengeReward, setChallengeReward] = useState(10)
@@ -71,6 +73,7 @@ export function DefaultHomeTemplate(
       if (gameId) {
         const game = await loadGameDetail({ data: { id: gameId } })
         setRandomPopupGame(game)
+        setRandomPopupMultiplier(pickWeightedRandomCoinMultiplier())
         const progress = completeDailyChallenge()
         if (progress.newlyCompleted) {
           onCoinsEarned?.(progress.streak * 10)
@@ -96,8 +99,33 @@ export function DefaultHomeTemplate(
     total: mobileRecentGames.length,
   }
   const orderedPlatforms = orderHomePlatforms(filterOptions.platforms)
+  const mobileModeLabels = getMobileModeLabels(lang)
+  const mobileModes = [
+    { label: mobileModeLabels.arcade, to: '/$locale/arcade' as const },
+    { label: mobileModeLabels.famicom, platformId: 'famicom' },
+    { label: mobileModeLabels.gba, platformId: 'gba' },
+    { label: mobileModeLabels.web, platformId: 'flash' },
+    { label: mobileModeLabels.coin, platformId: 'coin' },
+  ]
   return (
     <>
+      <nav
+        aria-label={modeCopyLabel(lang)}
+        className="border-b border-base-300 bg-base-100 px-1 lg:hidden"
+      >
+        <div className="flex flex-nowrap items-center justify-around gap-1 overflow-x-auto py-1.5">
+          {mobileModes.map((mode) => mode.to ? (
+            <Link className="btn btn-ghost btn-xs shrink-0 rounded-full border-0 px-2 text-xs text-base-content/75" key={mode.label} params={{ locale: lang }} to={mode.to}>
+              {mode.label}
+            </Link>
+          ) : (
+            <Link className="btn btn-ghost btn-xs shrink-0 rounded-full border-0 px-2 text-xs text-base-content/75" key={mode.label} params={{ locale: lang, platformId: mode.platformId! }} to="/$locale/platform/$platformId">
+              {mode.label}
+            </Link>
+          ))}
+        </div>
+      </nav>
+
       <section className="hidden bg-base-100 lg:block">
         <div className="flex w-full flex-wrap items-start gap-8 px-4 py-6 sm:px-6 lg:px-8 xl:flex-nowrap">
           <div className="w-fit">
@@ -175,82 +203,6 @@ export function DefaultHomeTemplate(
         </div>
       </nav>
 
-      <nav
-        aria-label={t.mobilePlatformNavigation}
-        className="border-y border-base-300 bg-base-100 px-1 lg:hidden"
-      >
-        <div className="flex items-center gap-1 overflow-x-auto py-1.5">
-          <button
-            className={`btn btn-xs shrink-0 rounded-full border-0 px-3 ${
-              showMobileRecent
-                ? 'bg-base-content text-base-100'
-                : 'btn-ghost text-base-content/65'
-            }`}
-            onClick={() => setShowMobileRecent(true)}
-            type="button"
-          >
-            {t.recentlyPlayed}
-          </button>
-          <button
-            className={`btn btn-xs shrink-0 rounded-full border-0 px-3 ${
-              showMobileRecent ||
-              filters.platform ||
-              filters.category ||
-              filters.query ||
-              filters.sort !== 'popular'
-                ? 'btn-ghost text-base-content/65'
-                : 'bg-base-content text-base-100'
-            }`}
-            onClick={() => {
-              setShowMobileRecent(false)
-              onHomeRecommendations()
-            }}
-            type="button"
-          >
-            {t.homeRecommendations}
-          </button>
-          <RankingButton
-            active={!showMobileRecent && filters.sort === 'weekly'}
-            label={t.weeklyPopularGames}
-            mobile
-            onClick={() => {
-              setShowMobileRecent(false)
-              onFilterChange('sort', 'weekly')
-            }}
-          />
-          <RankingButton
-            active={!showMobileRecent && filters.sort === 'rising'}
-            label={t.fastestGrowingGames}
-            mobile
-            onClick={() => {
-              setShowMobileRecent(false)
-              onFilterChange('sort', 'rising')
-            }}
-          />
-          {orderedPlatforms.map((platform) => {
-            const isActive = filters.platform === platform.name
-
-            return (
-              <button
-                className={`btn btn-xs shrink-0 rounded-full border-0 px-3 ${
-                  isActive
-                    ? 'bg-base-content text-base-100'
-                    : 'btn-ghost text-base-content/65'
-                }`}
-                key={platform.name}
-                onClick={() => {
-                  setShowMobileRecent(false)
-                  onFilterChange('platform', platform.name)
-                }}
-                type="button"
-              >
-                {getPlatformLabel(platform.name, lang)}
-              </button>
-            )
-          })}
-        </div>
-      </nav>
-
       <div className="lg:hidden">
         <HomeMostPlayedGamesSection
           challengeCompleted={challengeCompleted}
@@ -263,6 +215,43 @@ export function DefaultHomeTemplate(
           streakDays={streakDays}
         />
       </div>
+
+      <nav
+        aria-label={t.mobilePlatformNavigation}
+        className="border-y border-base-300 bg-base-100 px-1 lg:hidden"
+      >
+        <div className="flex flex-nowrap items-center gap-1 overflow-x-auto py-1.5">
+          <button
+            className={`btn btn-xs shrink-0 rounded-full border-0 px-2 text-[11px] ${showMobileRecent || filters.platform || filters.category || filters.query || filters.sort !== 'popular' ? 'btn-ghost text-base-content/65' : 'bg-base-content text-base-100'}`}
+            onClick={() => {
+              setShowMobileRecent(false)
+              onHomeRecommendations()
+            }}
+            type="button"
+          >
+            {t.homeRecommendations}
+          </button>
+          <button
+            className={`btn btn-xs shrink-0 rounded-full border-0 px-3 ${showMobileRecent ? 'bg-base-content text-base-100' : 'btn-ghost text-base-content/65'}`}
+            onClick={() => setShowMobileRecent(true)}
+            type="button"
+          >
+            {t.recentlyPlayed}
+          </button>
+          <RankingButton active={!showMobileRecent && filters.sort === 'weekly'} label={t.weeklyPopularGames} mobile onClick={() => { setShowMobileRecent(false); onFilterChange('sort', 'weekly') }} />
+          <RankingButton active={!showMobileRecent && filters.sort === 'rising'} label={t.fastestGrowingGames} mobile onClick={() => { setShowMobileRecent(false); onFilterChange('sort', 'rising') }} />
+          {orderedPlatforms.map((platform) => (
+            <button
+              className={`btn btn-xs shrink-0 rounded-full border-0 px-3 ${filters.platform === platform.name ? 'bg-base-content text-base-100' : 'btn-ghost text-base-content/65'}`}
+              key={platform.name}
+              onClick={() => { setShowMobileRecent(false); onFilterChange('platform', platform.name) }}
+              type="button"
+            >
+              {getPlatformLabel(platform.name, lang)}
+            </button>
+          ))}
+        </div>
+      </nav>
 
       <div className="lg:hidden">
         <GamesSection
@@ -310,6 +299,7 @@ export function DefaultHomeTemplate(
         <RandomGameModal
           game={randomPopupGame}
           lang={lang}
+          multiplier={randomPopupMultiplier}
           onClose={() => setRandomPopupGame(null)}
           onRandomAgain={showOneRandomGame}
         />
@@ -408,11 +398,13 @@ function getDailyChallengeReward(progress: DailyChallengeProgress) {
 function RandomGameModal({
   game,
   lang,
+  multiplier,
   onClose,
   onRandomAgain,
 }: {
   game: PublicGame
   lang: HomeTemplateProps['lang']
+  multiplier: number
   onClose: () => void
   onRandomAgain: () => void | Promise<void>
 }) {
@@ -440,15 +432,37 @@ function RandomGameModal({
           <button aria-label={t.close} className="btn btn-circle btn-sm absolute right-3 top-3" onClick={onClose} type="button">✕</button>
         </figure>
         <div className="p-4">
-          <h3 className="truncate text-xl font-semibold">{game.name}</h3>
+          <div className="flex min-w-0 items-center gap-2">
+            <h3 className="min-w-0 truncate text-xl font-semibold">{game.name}</h3>
+            <span className="flex shrink-0 items-center gap-1 text-sm font-black text-amber-600">
+              <img alt="" aria-hidden="true" className="h-5 w-5 [image-rendering:pixelated]" src="/images/coin-rewards/pixel-reward-coin.png" />
+              ×{multiplier}
+            </span>
+          </div>
           <div className="mt-4 grid grid-cols-2 gap-2">
             <button className="btn btn-warning" onClick={onRandomAgain} type="button">{t.randomAgain}</button>
-            <Link className="btn btn-primary" params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">{t.playNow}</Link>
+            <Link className="btn btn-primary" onClick={() => setDailyGameCoinMultiplier(gameId, multiplier)} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">{t.playNow}</Link>
           </div>
         </div>
       </section>
     </div>
   )
+}
+
+function pickWeightedRandomCoinMultiplier() {
+  const choices = Array.from({ length: 9 }, (_, index) => ({
+    multiplier: index + 2,
+    weight: 9 - index,
+  }))
+  const totalWeight = choices.reduce((sum, choice) => sum + choice.weight, 0)
+  let draw = Math.random() * totalWeight
+
+  for (const choice of choices) {
+    draw -= choice.weight
+    if (draw < 0) return choice.multiplier
+  }
+
+  return 2
 }
 
 function selectDailyVideoGames(games: Array<PublicGame>, limit: number) {
@@ -490,6 +504,20 @@ function dailyGameScore(value: string) {
 
 function getGameId(game: PublicGame) {
   return game.url_slug?.trim() || game._id?.trim() || ''
+}
+
+function getMobileModeLabels(lang: HomeTemplateProps['lang']) {
+  if (lang === 'zh-TW') return { arcade: '街機模式', famicom: '小霸王模式', gba: 'GBA模式', web: '網頁模式', coin: '金幣模式' }
+  if (lang === 'en') return { arcade: 'Arcade Mode', famicom: 'Famicom Mode', gba: 'GBA Mode', web: 'Web Mode', coin: 'Coin Mode' }
+  if (lang === 'ja') return { arcade: 'アーケードモード', famicom: 'FCモード', gba: 'GBAモード', web: 'ウェブモード', coin: 'コインモード' }
+  return { arcade: '街机模式', famicom: '小霸王模式', gba: 'GBA模式', web: '网页模式', coin: '金币模式' }
+}
+
+function modeCopyLabel(lang: HomeTemplateProps['lang']) {
+  if (lang === 'zh-TW') return '遊戲模式'
+  if (lang === 'en') return 'Game modes'
+  if (lang === 'ja') return 'ゲームモード'
+  return '游戏模式'
 }
 
 function orderHomePlatforms<T extends { name: string }>(platforms: Array<T>) {

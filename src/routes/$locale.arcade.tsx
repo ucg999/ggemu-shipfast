@@ -64,12 +64,14 @@ export function PlatformModeContent({
   description,
   games,
   lang,
+  layout = 'list',
   title,
 }: {
   body: string
   description: string
   games: Array<PublicGame>
   lang: Locale
+  layout?: 'cards' | 'list'
   title: string
 }) {
   const t = getI18n(lang).arcade
@@ -77,7 +79,7 @@ export function PlatformModeContent({
   const [letter, setLetter] = useState('ALL')
   const [query, setQuery] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const totalGamesLabel = `${t.allGames} (${new Intl.NumberFormat(lang).format(games.length)})`
+  const totalGamesLabel = t.allGames
   const visibleGames = useMemo(
     () => {
       const normalizedQuery = query.trim().toLocaleLowerCase(lang)
@@ -117,7 +119,12 @@ export function PlatformModeContent({
   return (
     <SiteLayout locale={lang}>
       <section className="bg-base-100 px-4 py-8 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-black tracking-tight sm:text-6xl">{title}</h1>
+        <div className="flex flex-wrap items-baseline gap-2">
+          <h1 className="text-4xl font-black tracking-tight sm:text-6xl">{title}</h1>
+          <span className="text-base font-medium text-base-content/65 sm:text-lg">
+            {formatGameTotal(games.length, lang)}
+          </span>
+        </div>
         <p className="mt-3 text-lg font-medium leading-relaxed text-base-content/75">{description}</p>
         <div className="mt-5 max-w-5xl whitespace-pre-line text-base leading-relaxed text-base-content/65">{body}</div>
       </section>
@@ -159,8 +166,10 @@ export function PlatformModeContent({
 
       <section className="px-4 py-6 sm:px-6 lg:px-8">
         {visibleGames.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            {visibleGames.map((game) => (
+          <div className={layout === 'cards' ? 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'flex flex-col gap-2'}>
+            {visibleGames.map((game) => layout === 'cards' ? (
+              <CoinModeGameCard game={game} key={game.url_slug || game._id} lang={lang} />
+            ) : (
               <ArcadeGameRow game={game} key={game.url_slug || game._id} lang={lang} />
             ))}
           </div>
@@ -171,6 +180,31 @@ export function PlatformModeContent({
         )}
       </section>
     </SiteLayout>
+  )
+}
+
+function CoinModeGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
+  const gameId = game.url_slug?.trim() || game._id?.trim() || ''
+  const t = getI18n(lang).arcade
+
+  return (
+    <Link className="group min-w-0" params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
+      <article className="overflow-hidden rounded-lg border border-base-300 bg-base-100 transition hover:-translate-y-0.5 hover:border-amber-400">
+        <figure className="relative aspect-[4/3] overflow-hidden bg-base-200">
+          {game.game_cover ? (
+            <img alt={game.name ?? t.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy" src={game.game_cover} />
+          ) : null}
+          <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/75 px-2 py-1 text-xs font-black text-yellow-300">
+            <img alt="" aria-hidden="true" className="h-4 w-4 [image-rendering:pixelated]" src="/images/coin-rewards/pixel-reward-coin.png" />
+            ×20
+          </span>
+        </figure>
+        <div className="p-2.5">
+          <h2 className="truncate text-sm font-bold sm:text-base">{game.name}</h2>
+          <p className="mt-1 truncate text-xs text-base-content/55">{game.platform ? getPlatformLabel(game.platform, lang) : t.gameInfo}</p>
+        </div>
+      </article>
+    </Link>
   )
 }
 
@@ -248,6 +282,14 @@ function formatCount(value: number, locale: Locale) {
     maximumFractionDigits: 1,
     notation: 'compact',
   }).format(value)
+}
+
+function formatGameTotal(value: number, locale: Locale) {
+  const total = new Intl.NumberFormat(locale).format(value)
+  if (locale === 'zh-CN') return `${total}款`
+  if (locale === 'zh-TW') return `${total}款`
+  if (locale === 'ja') return `${total}本`
+  return `${total} games`
 }
 
 function loadArcadePage(locale: Locale, page: number) {

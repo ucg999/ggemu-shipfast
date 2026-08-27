@@ -163,26 +163,45 @@ export function HomeCoinBag({
   onOpen: () => void
 }) {
   const label = getCoinCopy(lang).bag
+  const [balancePopup, setBalancePopup] = useState<CoinRewardFeedback | null>(null)
+  const balancePopupTimer = useRef<number | null>(null)
+
+  useEffect(() => () => {
+    if (balancePopupTimer.current !== null) window.clearTimeout(balancePopupTimer.current)
+  }, [])
+
+  const handleOpen = () => {
+    onOpen()
+    if (balancePopupTimer.current !== null) window.clearTimeout(balancePopupTimer.current)
+    setBalancePopup({ amount: balance, id: Date.now(), prefix: '×' })
+    balancePopupTimer.current = window.setTimeout(() => {
+      setBalancePopup(null)
+      balancePopupTimer.current = null
+    }, 1_250)
+  }
 
   return (
-    <button
-      aria-label={`${label}: ${balance}`}
-      className="relative ml-1 grid h-9 w-9 shrink-0 place-items-center sm:ml-7 sm:h-14 sm:w-14"
-      data-coin-box
-      onClick={onOpen}
-      title={`${label}: ${balance}`}
-      type="button"
-    >
-      <img
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-contain drop-shadow-sm"
-        src="/images/coin-rewards/mystery-coin-box.png"
-      />
-      <span className="coin-box-count-blink relative grid h-6 w-6 place-items-center rounded-full border-2 border-amber-700 bg-yellow-300 text-[10px] font-black leading-none text-amber-950 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55),0_1px_2px_rgba(92,48,0,0.35)] sm:h-8 sm:w-8 sm:text-xs">
-        {balance}
-      </span>
-    </button>
+    <>
+      <button
+        aria-label={`${label}: ${balance}`}
+        className="relative ml-1 grid h-9 w-9 shrink-0 place-items-center sm:ml-7 sm:h-14 sm:w-14"
+        data-coin-box
+        onClick={handleOpen}
+        title={`${label}: ${balance}`}
+        type="button"
+      >
+        <img
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-contain drop-shadow-sm"
+          src="/images/coin-rewards/mystery-coin-box.png"
+        />
+        <span className="coin-box-count-blink relative grid h-6 w-6 place-items-center rounded-full border-2 border-amber-700 bg-yellow-300 text-[10px] font-black leading-none text-amber-950 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55),0_1px_2px_rgba(92,48,0,0.35)] sm:h-8 sm:w-8 sm:text-xs">
+          {balance}
+        </span>
+      </button>
+      <CoinRewardPopup feedback={balancePopup} />
+    </>
   )
 }
 

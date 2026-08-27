@@ -65,7 +65,7 @@ export function setDailyGameCoinMultiplier(gameId: string, multiplier: number) {
 export function getDailyGameCoinMultiplier(gameId: string) {
   const current = readDailyGameMultipliers()
   if (current.date !== getLocalDateKey(new Date())) return 1
-  return Math.max(1, Math.min(3, Number(current.games[gameId]) || 1))
+  return Math.max(1, Math.min(10, Number(current.games[gameId]) || 1))
 }
 
 export function markGamePlayStarted(gameId: string) {

@@ -163,7 +163,7 @@ function getDailyCoinMultiplier(games: Array<PublicGame>, index: number) {
     hash = Math.imul(hash, 16777619)
   }
 
-  return index === (hash >>> 0) % games.length ? 3 : 2
+  return index === (hash >>> 0) % games.length ? 5 : 2
 }
 
 function SlotMachineIcon({ className }: { className: string }) {
@@ -369,10 +369,27 @@ export function SearchForm({
             {getI18n(lang).arcade.flashMode}
           </Link>
         </div>
+        <div className="tooltip tooltip-bottom" data-tip={getCoinModeCopy(lang).tooltip}>
+          <Link
+            className="flex h-12 items-center gap-2.5 px-2 text-lg font-medium text-white/95 transition hover:text-white"
+            params={{ locale: lang, platformId: 'coin' }}
+            to="/$locale/platform/$platformId"
+          >
+            <i className="ri-coins-line text-[2rem] font-light" />
+            {getCoinModeCopy(lang).mode}
+          </Link>
+        </div>
 
       </div>
     </form>
   )
+}
+
+function getCoinModeCopy(lang: Locale) {
+  if (lang === 'zh-TW') return { mode: '金幣模式', tooltip: '使用金幣遊玩專屬遊戲' }
+  if (lang === 'en') return { mode: 'Coin Mode', tooltip: 'Play exclusive games with coins' }
+  if (lang === 'ja') return { mode: 'コインモード', tooltip: 'コインで限定ゲームを遊ぶ' }
+  return { mode: '金币模式', tooltip: '使用金币游玩专属游戏' }
 }
 
 function ArcadeCabinetIcon({ className }: { className: string }) {
