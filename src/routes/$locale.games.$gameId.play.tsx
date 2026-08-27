@@ -12,7 +12,6 @@ import {
   getDailyGameCoinMultiplier,
   markGamePlayStarted,
 } from '#/lib/coin-wallet'
-import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
 
 const pspCrossOriginIsolationHeaders = {
   'Cross-Origin-Opener-Policy': 'same-origin',
@@ -25,6 +24,9 @@ const noindexHeaders = {
 } as const
 
 const GAME_COIN_INTERVAL_MS = 60 * 1000
+const GAME_COIN_START_DELAY_MS = 2 * 60 * 1000
+const GAME_COIN_DOUBLE_AFTER_MS = 30 * 60 * 1000
+const GAME_COIN_QUADRUPLE_AFTER_MS = 60 * 60 * 1000
 
 export const Route = createFileRoute('/$locale/games/$gameId/play')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -86,7 +88,6 @@ function LocalizedPlayGamePage() {
   const settlementTimerRef = useRef<number | null>(null)
   const labels = useMemo(() => getRecommendationLabels(lang), [lang])
   const coinMultiplier = useMemo(() => getDailyGameCoinMultiplier(gameId), [gameId])
-  const globalCoins = useGlobalCoinBalance()
 
   useEffect(() => {
     setShowRecommendations(false)
@@ -102,7 +103,7 @@ function LocalizedPlayGamePage() {
       activePlayTimeRef.current,
       playStartedAtRef.current,
     )
-    const earnedCoins = Math.floor(activeTime / GAME_COIN_INTERVAL_MS)
+    const earnedCoins = getTimedGameCoinTotal(activeTime)
     const newBaseCoins = Math.max(0, earnedCoins - awardedCoinsRef.current)
     const newCoins = newBaseCoins * coinMultiplier
 
@@ -145,15 +146,6 @@ function LocalizedPlayGamePage() {
     setShowRecommendations(false)
     playStartedAtRef.current = Date.now()
   }, [])
-
-  const goBackOneStep = useCallback(() => {
-    if (window.history.length > 1) {
-      window.history.back()
-      return
-    }
-
-    window.location.assign(`/${lang}/games/${gameId}`)
-  }, [gameId, lang])
 
   useEffect(() => {
     if (showRecommendations) return
@@ -212,22 +204,6 @@ function LocalizedPlayGamePage() {
         <i className="ri-logout-box-r-line text-sm sm:text-lg" />
         {labels.exitGame}
       </button>
-      <div className="fixed right-2 top-2 z-30 flex items-center gap-1 rounded-lg bg-black/35 p-1 backdrop-blur-sm sm:right-3 sm:top-3">
-        <button
-          aria-label={labels.goBack}
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-black/65 text-white transition hover:bg-black/90 sm:h-8 sm:w-8"
-          onClick={goBackOneStep}
-          title={labels.goBack}
-          type="button"
-        >
-          <i className="ri-arrow-go-back-line text-base sm:text-lg" />
-        </button>
-        <HomeCoinBag
-          balance={globalCoins.balance}
-          lang={lang}
-          onOpen={globalCoins.showBalance}
-        />
-      </div>
       <iframe
         allow={
           isPsp
@@ -253,6 +229,26 @@ function LocalizedPlayGamePage() {
       ) : null}
     </main>
   )
+}
+
+function getTimedGameCoinTotal(activeTime: number) {
+  if (activeTime <= GAME_COIN_START_DELAY_MS) return 0
+
+  const normalPeriodEnd = Math.min(activeTime, GAME_COIN_DOUBLE_AFTER_MS)
+  const normalCoins = Math.floor(
+    Math.max(0, normalPeriodEnd - GAME_COIN_START_DELAY_MS) / GAME_COIN_INTERVAL_MS,
+  )
+
+  const doublePeriodEnd = Math.min(activeTime, GAME_COIN_QUADRUPLE_AFTER_MS)
+  const doubleCoins = Math.floor(
+    Math.max(0, doublePeriodEnd - GAME_COIN_DOUBLE_AFTER_MS) / GAME_COIN_INTERVAL_MS,
+  ) * 2
+
+  const quadrupleCoins = Math.floor(
+    Math.max(0, activeTime - GAME_COIN_QUADRUPLE_AFTER_MS) / GAME_COIN_INTERVAL_MS,
+  ) * 4
+
+  return normalCoins + doubleCoins + quadrupleCoins
 }
 
 type GameSessionSettlement = {
@@ -506,7 +502,6 @@ function getRecommendationLabels(locale: Locale) {
       exitGame: '退出游戏',
       finished: '本局结束了吗？',
       game: '经典游戏',
-      goBack: '返回上一步',
       playNow: '立即游玩',
       playedMinutes: '本局游玩 {minutes} 分钟',
       sessionSettlement: '本局金币结算',
@@ -524,7 +519,6 @@ function getRecommendationLabels(locale: Locale) {
       exitGame: '退出遊戲',
       finished: '本局結束了嗎？',
       game: '經典遊戲',
-      goBack: '返回上一步',
       playNow: '立即遊玩',
       playedMinutes: '本局遊玩 {minutes} 分鐘',
       sessionSettlement: '本局金幣結算',
@@ -542,7 +536,6 @@ function getRecommendationLabels(locale: Locale) {
       exitGame: 'ゲームを終了',
       finished: 'プレイを終了しますか？',
       game: 'クラシックゲーム',
-      goBack: '前のページに戻る',
       playNow: '今すぐプレイ',
       playedMinutes: '今回のプレイ：{minutes}分',
       sessionSettlement: 'コイン精算',
@@ -559,7 +552,6 @@ function getRecommendationLabels(locale: Locale) {
     exitGame: 'Exit game',
     finished: 'Finished this round?',
     game: 'Classic game',
-    goBack: 'Go back',
     playNow: 'Play now',
     playedMinutes: 'Played {minutes} minutes this session',
     sessionSettlement: 'Session coin summary',

@@ -450,10 +450,20 @@ function RandomGameModal({
 }
 
 function pickWeightedRandomCoinMultiplier() {
-  const choices = Array.from({ length: 9 }, (_, index) => ({
-    multiplier: index + 2,
-    weight: 9 - index,
-  }))
+  const choices = Math.random() < 0.8
+    ? [
+        { multiplier: 2, weight: 4 },
+        { multiplier: 3, weight: 3 },
+        { multiplier: 4, weight: 2 },
+        { multiplier: 5, weight: 1 },
+      ]
+    : [
+        { multiplier: 6, weight: 5 },
+        { multiplier: 7, weight: 4 },
+        { multiplier: 8, weight: 3 },
+        { multiplier: 9, weight: 2 },
+        { multiplier: 10, weight: 1 },
+      ]
   const totalWeight = choices.reduce((sum, choice) => sum + choice.weight, 0)
   let draw = Math.random() * totalWeight
 
