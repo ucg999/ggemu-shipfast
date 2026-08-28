@@ -32,7 +32,7 @@ export const zhTwMessages = {
     lightTheme: '亮色',
     darkTheme: '暗色',
     mainNavigation: '主導覽',
-    siteName: '遊戲歷險記',
+    siteName: '懷舊遊戲廳',
     siteSlogan: '線上遊戲——即點即玩',
     copyright: '版權所有 © 2026 遊戲歷險記',
     disclaimer: `所有遊戲 ROM／程式均由使用者提交或收集自網際網路，版權歸其各自權利人所有。如有任何問題，請寄信至 ${siteConfig.SITE_EMAIL}，我們會移除對應內容。`,

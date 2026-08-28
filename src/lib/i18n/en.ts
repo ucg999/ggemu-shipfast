@@ -36,7 +36,7 @@ export const enMessages = {
     lightTheme: 'Light',
     darkTheme: 'Dark',
     mainNavigation: 'Main navigation',
-    siteName: 'Game Adventure',
+    siteName: 'Retro Arcade',
     siteSlogan: 'Online Games — Click and Play',
   },
   home: {

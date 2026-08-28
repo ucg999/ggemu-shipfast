@@ -38,7 +38,7 @@ export const zhCnMessages = {
     lightTheme: '亮色',
     darkTheme: '暗色',
     mainNavigation: '主导航',
-    siteName: '游戏历险记',
+    siteName: '怀旧游戏厅',
     siteSlogan: '在线游戏--即点即玩',
   },
   home: {

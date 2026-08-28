@@ -36,7 +36,7 @@ export const jaMessages = {
     lightTheme: 'ライト',
     darkTheme: 'ダーク',
     mainNavigation: 'メインナビゲーション',
-    siteName: 'ゲームアドベンチャー',
+    siteName: 'レトロゲームセンター',
     siteSlogan: 'オンラインゲーム・すぐにプレイ',
   },
   home: {

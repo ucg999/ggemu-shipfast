@@ -191,11 +191,17 @@ export function SiteLayout({
                   src="/logo.png"
                 />
               </span>
-              <span className="hidden min-w-0 leading-tight sm:block">
-                <span className="block text-lg font-semibold tracking-wide">
+              <span className="hidden w-max min-w-0 text-left leading-tight sm:flex sm:flex-col sm:items-start">
+                <span
+                  className={`block w-full text-2xl font-bold ${
+                    locale === 'zh-CN' || locale === 'zh-TW'
+                      ? 'text-justify [text-align-last:justify]'
+                      : ''
+                  }`}
+                >
                   {t.siteName}
                 </span>
-                <span className="block truncate text-xs text-white/75">
+                <span className="block w-full truncate text-xs text-white/75">
                   {t.siteSlogan}
                 </span>
               </span>
