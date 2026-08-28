@@ -8,7 +8,7 @@ import { getPlatformLabel } from '#/lib/platform-label'
 import { siteConfig } from '#/lib/site-config'
 import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
 import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
-import { spendCoinBalance } from '#/lib/coin-wallet'
+import { unlockPaidResource } from '#/lib/paid-resource'
 
 export function SiteLayout({
   children,
@@ -53,12 +53,6 @@ export function SiteLayout({
     )
     setTheme(storedTheme)
     document.documentElement.dataset.theme = storedTheme
-  }, [])
-
-  useEffect(() => {
-    setIsDesktopSidebarCollapsed(
-      window.localStorage.getItem('game-adventure-sidebar-collapsed') === '1',
-    )
   }, [])
 
   useEffect(() => {
@@ -153,8 +147,12 @@ export function SiteLayout({
     window.location.assign(nextPath)
   }
 
-  function handlePaidResourceClick(event: MouseEvent<HTMLAnchorElement>) {
-    if (spendCoinBalance(10)) return
+  function handlePaidResourceClick(
+    event: MouseEvent<HTMLAnchorElement>,
+    resourceId: string,
+    cost = 10,
+  ) {
+    if (unlockPaidResource(resourceId, cost)) return
 
     event.preventDefault()
     window.alert(getResourceCoinCopy(locale).insufficient)
@@ -506,7 +504,7 @@ export function SiteLayout({
                       <li>
                         <a
                           href="https://www.kdocs.cn/etapps/query/q/TUxF4AQG"
-                          onClick={handlePaidResourceClick}
+                          onClick={(event) => handlePaidResourceClick(event, 'psp-library')}
                           rel="noreferrer"
                           target="_blank"
                         >
@@ -517,7 +515,7 @@ export function SiteLayout({
                       <li>
                         <a
                           href="https://www.kdocs.cn/etapps/query/q/RclPTyXd"
-                          onClick={handlePaidResourceClick}
+                          onClick={(event) => handlePaidResourceClick(event, 'psv-library')}
                           rel="noreferrer"
                           target="_blank"
                         >
@@ -528,7 +526,7 @@ export function SiteLayout({
                       <li>
                         <a
                           href="https://www.kdocs.cn/etapps/query/q/detUdefK"
-                          onClick={handlePaidResourceClick}
+                          onClick={(event) => handlePaidResourceClick(event, 'switch-library')}
                           rel="noreferrer"
                           target="_blank"
                         >
@@ -539,7 +537,7 @@ export function SiteLayout({
                       <li>
                         <a
                           href="https://www.kdocs.cn/etapps/query/q/zPCu5XAr?share_origin=re_share_conditionshome"
-                          onClick={handlePaidResourceClick}
+                          onClick={(event) => handlePaidResourceClick(event, 'arcade-library')}
                           rel="noreferrer"
                           target="_blank"
                         >
@@ -550,12 +548,23 @@ export function SiteLayout({
                       <li>
                         <a
                           href="https://kdocs.cn/l/cqE4v1WZxdnc"
-                          onClick={handlePaidResourceClick}
+                          onClick={(event) => handlePaidResourceClick(event, 'popular-library')}
                           rel="noreferrer"
                           target="_blank"
                         >
                           {homeT.popularGameLibrary}
                           <ResourceCoinCost />
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href="https://www.kdocs.cn/l/cn3lNtXTnq5W"
+                          onClick={(event) => handlePaidResourceClick(event, 'mahjong-slots', 20)}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          {homeT.mahjongSlots}
+                          <ResourceCoinCost cost={20} />
                         </a>
                       </li>
                     </ul>
@@ -691,7 +700,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
   )
 }
 
-function ResourceCoinCost() {
+function ResourceCoinCost({ cost = 10 }: { cost?: number }) {
   return (
     <span className="ml-auto inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-black text-amber-800">
       <img
@@ -700,7 +709,7 @@ function ResourceCoinCost() {
         className="h-3.5 w-3.5 object-contain"
         src="/images/coin-rewards/pixel-reward-coin.png"
       />
-      10
+      {cost}
     </span>
   )
 }

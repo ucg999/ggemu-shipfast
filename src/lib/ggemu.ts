@@ -264,7 +264,7 @@ async function fetchJson<T>(path: string, params: URLSearchParams) {
   return response.json() as Promise<T>
 }
 
-async function fetchGames(params: URLSearchParams, includeCoinMode = false) {
+async function fetchGames(params: URLSearchParams, includeCoinMode = true) {
   const result = await fetchJson<GameSearchResponse>('/api/games/search', params)
   const games = includeCoinMode
     ? result.data

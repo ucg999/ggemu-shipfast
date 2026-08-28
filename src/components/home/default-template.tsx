@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import type { MouseEvent } from 'react'
 
 import {
   GamesSection,
@@ -19,6 +20,7 @@ import { getGameDetail, getRandomPlayableGame } from '#/lib/ggemu'
 import { getI18n } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { setDailyGameCoinMultiplier } from '#/lib/coin-wallet'
+import { unlockPaidResource } from '#/lib/paid-resource'
 import { useServerFn } from '@tanstack/react-start'
 
 export function DefaultHomeTemplate(
@@ -572,6 +574,11 @@ function orderHomePlatforms<T extends { name: string }>(platforms: Array<T>) {
 
 function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
   const t = getI18n(lang).home
+  const paidLink = (resourceId: string, cost = 10) => (event: MouseEvent<HTMLAnchorElement>) => {
+    if (unlockPaidResource(resourceId, cost)) return
+    event.preventDefault()
+    window.alert(getMobileResourceCoinCopy(lang))
+  }
 
   return (
     <section className="px-4 pb-4 sm:px-6 lg:hidden">
@@ -598,23 +605,24 @@ function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
           </summary>
           <ul className="menu menu-sm ml-11">
             <li>
-              <a href="https://www.kdocs.cn/etapps/query/q/TUxF4AQG" rel="noreferrer" target="_blank">
+              <a href="https://www.kdocs.cn/etapps/query/q/TUxF4AQG" onClick={paidLink('psp-library')} rel="noreferrer" target="_blank">
                 {t.pspLibrary}
               </a>
             </li>
             <li>
-              <a href="https://www.kdocs.cn/etapps/query/q/RclPTyXd" rel="noreferrer" target="_blank">
+              <a href="https://www.kdocs.cn/etapps/query/q/RclPTyXd" onClick={paidLink('psv-library')} rel="noreferrer" target="_blank">
                 {t.psvLibrary}
               </a>
             </li>
             <li>
-              <a href="https://www.kdocs.cn/etapps/query/q/detUdefK" rel="noreferrer" target="_blank">
+              <a href="https://www.kdocs.cn/etapps/query/q/detUdefK" onClick={paidLink('switch-library')} rel="noreferrer" target="_blank">
                 {t.switchLibrary}
               </a>
             </li>
             <li>
               <a
                 href="https://www.kdocs.cn/etapps/query/q/zPCu5XAr?share_origin=re_share_conditionshome"
+                onClick={paidLink('arcade-library')}
                 rel="noreferrer"
                 target="_blank"
               >
@@ -622,8 +630,13 @@ function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
               </a>
             </li>
             <li>
-              <a href="https://kdocs.cn/l/cqE4v1WZxdnc" rel="noreferrer" target="_blank">
+              <a href="https://kdocs.cn/l/cqE4v1WZxdnc" onClick={paidLink('popular-library')} rel="noreferrer" target="_blank">
                 {t.popularGameLibrary}
+              </a>
+            </li>
+            <li>
+              <a href="https://www.kdocs.cn/l/cn3lNtXTnq5W" onClick={paidLink('mahjong-slots', 20)} rel="noreferrer" target="_blank">
+                {t.mahjongSlots} · 20
               </a>
             </li>
           </ul>
@@ -665,4 +678,11 @@ function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
       </div>
     </section>
   )
+}
+
+function getMobileResourceCoinCopy(lang: HomeTemplateProps['lang']) {
+  if (lang === 'zh-CN') return '余额不足。金币随处可见，玩游戏、看别人玩都可获得。'
+  if (lang === 'zh-TW') return '餘額不足。金幣隨處可見，玩遊戲、看別人玩都可獲得。'
+  if (lang === 'ja') return 'コイン残高が不足しています。ゲームや視聴でコインを獲得できます。'
+  return 'Not enough coins. Play games or watch others play to earn more.'
 }

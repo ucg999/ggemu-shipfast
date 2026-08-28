@@ -86,6 +86,7 @@ export type I18nMessages = {
     switchLibrary: string
     arcadeLibrary: string
     popularGameLibrary: string
+    mahjongSlots: string
     findFriends: string
     wechat: string
     wechatQrAlt: string

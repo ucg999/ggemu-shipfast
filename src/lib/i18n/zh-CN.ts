@@ -95,6 +95,7 @@ export const zhCnMessages = {
     switchLibrary: 'Switch游戏库',
     arcadeLibrary: '街机库',
     popularGameLibrary: '热门游戏合集',
+    mahjongSlots: '麻将&水果机',
     findFriends: '找点新朋友',
     wechat: '微信',
     wechatQrAlt: '游戏历险记微信二维码',
