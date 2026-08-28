@@ -200,7 +200,7 @@ export const Route = createFileRoute('/$locale')({
         loadFeaturePlatformGames(locale),
         loadGameFilterOptions(),
         loadLatestBlogPosts(locale),
-        searchGames({ data: { query: '', limit: 7, locale, page: 1, sort: 'newest' } }),
+        searchGames({ data: { query: '', limit: 14, locale, page: 1, sort: 'newest' } }),
         loadMostPlayedVideoGames(locale),
       ])
 
@@ -234,7 +234,7 @@ export const Route = createFileRoute('/$locale')({
       }),
       loadGameFilterOptions(),
       loadLatestBlogPosts(locale),
-      searchGames({ data: { query: '', limit: 7, locale, page: 1, sort: 'newest' } }),
+      searchGames({ data: { query: '', limit: 14, locale, page: 1, sort: 'newest' } }),
       loadMostPlayedVideoGames(locale),
     ])
 

@@ -40,7 +40,9 @@ export function SiteLayout({
   const [isUsefulMenuOpen, setIsUsefulMenuOpen] = useState(false)
   const [isFriendsMenuOpen, setIsFriendsMenuOpen] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false)
   const localeMenuRef = useRef<HTMLDetailsElement>(null)
+  const edgeSwipeRef = useRef<{ identifier: number; x: number; y: number } | null>(null)
   const canSwitchTheme = siteThemes.length > 1
   const sidebarSearchParams = new URLSearchParams(location.searchStr)
   const globalCoins = useGlobalCoinBalance()
@@ -52,6 +54,56 @@ export function SiteLayout({
     setTheme(storedTheme)
     document.documentElement.dataset.theme = storedTheme
   }, [])
+
+  useEffect(() => {
+    setIsDesktopSidebarCollapsed(
+      window.localStorage.getItem('game-adventure-sidebar-collapsed') === '1',
+    )
+  }, [])
+
+  useEffect(() => {
+    if (hideHeaderNav) return
+
+    const handleTouchStart = (event: TouchEvent) => {
+      const touch = event.changedTouches[0]
+      if (!touch || touch.clientX > 28 || isMobileSidebarOpen) return
+      edgeSwipeRef.current = {
+        identifier: touch.identifier,
+        x: touch.clientX,
+        y: touch.clientY,
+      }
+    }
+    const handleTouchMove = (event: TouchEvent) => {
+      const start = edgeSwipeRef.current
+      if (!start) return
+      const touch = Array.from(event.changedTouches).find(
+        (item) => item.identifier === start.identifier,
+      )
+      if (!touch) return
+      const distanceX = touch.clientX - start.x
+      const distanceY = Math.abs(touch.clientY - start.y)
+      if (distanceX > 64 && distanceX > distanceY * 1.25) {
+        event.preventDefault()
+        edgeSwipeRef.current = null
+        setIsMobileSidebarOpen(true)
+      }
+    }
+    const clearTouch = () => {
+      edgeSwipeRef.current = null
+    }
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: true })
+    document.addEventListener('touchmove', handleTouchMove, { passive: false })
+    document.addEventListener('touchend', clearTouch, { passive: true })
+    document.addEventListener('touchcancel', clearTouch, { passive: true })
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart)
+      document.removeEventListener('touchmove', handleTouchMove)
+      document.removeEventListener('touchend', clearTouch)
+      document.removeEventListener('touchcancel', clearTouch)
+    }
+  }, [hideHeaderNav, isMobileSidebarOpen])
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -81,6 +133,14 @@ export function SiteLayout({
 
   function toggleTheme() {
     handleThemeChange(theme === 'dark' ? 'light' : 'dark')
+  }
+
+  function toggleDesktopSidebar() {
+    setIsDesktopSidebarCollapsed((current) => {
+      const next = !current
+      window.localStorage.setItem('game-adventure-sidebar-collapsed', next ? '1' : '0')
+      return next
+    })
   }
 
   function handleLocaleChange(nextValue: string) {
@@ -290,15 +350,26 @@ export function SiteLayout({
         className={
           hideHeaderNav
             ? 'min-w-0'
-            : 'min-w-0 lg:grid lg:grid-cols-[220px_minmax(0,1fr)]'
+            : isDesktopSidebarCollapsed
+              ? 'min-w-0 lg:grid lg:grid-cols-[72px_minmax(0,1fr)]'
+              : 'min-w-0 lg:grid lg:grid-cols-[220px_minmax(0,1fr)]'
         }
       >
         {hideHeaderNav ? null : (
           <aside
-            className={`fixed bottom-0 left-0 top-[61px] z-40 w-[min(82vw,280px)] overflow-y-auto border-r border-base-300 bg-base-100 px-3 py-5 shadow-2xl transition-transform duration-200 lg:sticky lg:top-[65px] lg:block lg:h-[calc(100vh-65px)] lg:w-auto lg:translate-x-0 lg:shadow-none ${
+            className={`fixed bottom-0 left-0 top-[61px] z-40 w-[min(82vw,280px)] overflow-y-auto border-r border-base-300 bg-base-100 px-3 py-5 shadow-2xl transition-all duration-200 lg:sticky lg:top-[65px] lg:block lg:h-[calc(100vh-65px)] lg:w-auto lg:translate-x-0 lg:shadow-none ${
               isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}
+            } ${isDesktopSidebarCollapsed ? 'lg:px-2 lg:[&_.sidebar-label]:hidden lg:[&_.sidebar-submenu]:hidden lg:[&_nav_.menu>li>a]:justify-center lg:[&_nav_.menu>li>details>summary]:justify-center lg:[&_nav_.menu>li>details>summary]:after:hidden' : ''}`}
           >
+            <button
+              aria-label={isDesktopSidebarCollapsed ? t.openSidebar : t.closeSidebar}
+              className="mb-3 ml-auto hidden h-8 w-8 place-items-center rounded-lg bg-base-200 text-base-content transition hover:bg-base-300 lg:grid"
+              onClick={toggleDesktopSidebar}
+              title={isDesktopSidebarCollapsed ? t.openSidebar : t.closeSidebar}
+              type="button"
+            >
+              <i className={isDesktopSidebarCollapsed ? 'ri-menu-unfold-line' : 'ri-menu-fold-line'} />
+            </button>
             <nav aria-label={t.mainNavigation}>
               <ul className="menu gap-1 p-0 text-sm">
                 <li>

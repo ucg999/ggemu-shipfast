@@ -27,6 +27,9 @@ const GAME_COIN_INTERVAL_MS = 60 * 1000
 const GAME_COIN_START_DELAY_MS = 2 * 60 * 1000
 const GAME_COIN_DOUBLE_AFTER_MS = 30 * 60 * 1000
 const GAME_COIN_QUADRUPLE_AFTER_MS = 60 * 60 * 1000
+const GAME_IDLE_TIMEOUT_MS = 2 * 60 * 1000
+const GAME_SESSION_BASE_COIN_CAP = 10
+const GAME_SESSION_CAP_DOUBLE_MS = 60 * 60 * 1000
 
 export const Route = createFileRoute('/$locale/games/$gameId/play')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -84,6 +87,7 @@ function LocalizedPlayGamePage() {
   const activePlayTimeRef = useRef(0)
   const awardedCoinsRef = useRef(0)
   const playStartedAtRef = useRef<number | null>(null)
+  const lastActivityAtRef = useRef(Date.now())
   const sessionCoinsRef = useRef(0)
   const settlementTimerRef = useRef<number | null>(null)
   const labels = useMemo(() => getRecommendationLabels(lang), [lang])
@@ -95,6 +99,7 @@ function LocalizedPlayGamePage() {
     activePlayTimeRef.current = 0
     awardedCoinsRef.current = 0
     playStartedAtRef.current = consumeGamePlayStartedAt(gameId)
+    lastActivityAtRef.current = Date.now()
     sessionCoinsRef.current = 0
   }, [gameId])
 
@@ -105,11 +110,17 @@ function LocalizedPlayGamePage() {
     )
     const earnedCoins = getTimedGameCoinTotal(activeTime)
     const newBaseCoins = Math.max(0, earnedCoins - awardedCoinsRef.current)
-    const newCoins = newBaseCoins * coinMultiplier
+    const sessionCoinCap = getGameSessionCoinCap(
+      activeTime,
+      coinMultiplier > 1 ? 20 : GAME_SESSION_BASE_COIN_CAP,
+    )
+    const remainingCoins = Math.max(0, sessionCoinCap - sessionCoinsRef.current)
+    const newCoins = Math.min(newBaseCoins * coinMultiplier, remainingCoins)
+
+    awardedCoinsRef.current = earnedCoins
 
     if (newCoins > 0) {
       addStoredGameCoins(newCoins)
-      awardedCoinsRef.current = earnedCoins
       sessionCoinsRef.current += newCoins
     }
 
@@ -145,23 +156,41 @@ function LocalizedPlayGamePage() {
     setSettlement(null)
     setShowRecommendations(false)
     playStartedAtRef.current = Date.now()
+    lastActivityAtRef.current = Date.now()
   }, [])
+
+  const markGameActivity = useCallback(() => {
+    if (showRecommendations) return
+    const now = Date.now()
+    lastActivityAtRef.current = now
+    if (playStartedAtRef.current === null) {
+      playStartedAtRef.current = now
+    }
+  }, [showRecommendations])
 
   useEffect(() => {
     if (showRecommendations) return
 
-    const timer = window.setInterval(collectDueSessionCoins, 1_000)
+    const timer = window.setInterval(() => {
+      if (
+        playStartedAtRef.current !== null &&
+        Date.now() - lastActivityAtRef.current >= GAME_IDLE_TIMEOUT_MS
+      ) {
+        const idleStartedAt = lastActivityAtRef.current + GAME_IDLE_TIMEOUT_MS
+        activePlayTimeRef.current += Math.max(0, idleStartedAt - playStartedAtRef.current)
+        playStartedAtRef.current = null
+      }
+      collectDueSessionCoins()
+    }, 1_000)
     return () => window.clearInterval(timer)
   }, [collectDueSessionCoins, showRecommendations])
 
   useEffect(() => {
     const embedOrigin = new URL(embedSrc).origin
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== embedOrigin || !isGameExitMessage(event.data)) {
-        return
-      }
-
-      settleAndShowRecommendations()
+      if (event.origin !== embedOrigin) return
+      if (isGameExitMessage(event.data)) settleAndShowRecommendations()
+      else markGameActivity()
     }
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -171,10 +200,20 @@ function LocalizedPlayGamePage() {
 
     window.addEventListener('message', handleMessage)
     window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('pointerdown', markGameActivity)
+    window.addEventListener('pointermove', markGameActivity)
+    window.addEventListener('touchstart', markGameActivity, { passive: true })
+    window.addEventListener('wheel', markGameActivity, { passive: true })
+    window.addEventListener('focus', markGameActivity)
 
     return () => {
       window.removeEventListener('message', handleMessage)
       window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('pointerdown', markGameActivity)
+      window.removeEventListener('pointermove', markGameActivity)
+      window.removeEventListener('touchstart', markGameActivity)
+      window.removeEventListener('wheel', markGameActivity)
+      window.removeEventListener('focus', markGameActivity)
 
       if (settlementTimerRef.current !== null) {
         window.clearTimeout(settlementTimerRef.current)
@@ -191,7 +230,7 @@ function LocalizedPlayGamePage() {
         window.location.href = url.toString()
       }, 0)
     }
-  }, [embedSrc, isPsp, settleAndShowRecommendations])
+  }, [embedSrc, isPsp, markGameActivity, settleAndShowRecommendations])
 
   return (
     <main className="game-play-screen bg-black">
@@ -212,6 +251,9 @@ function LocalizedPlayGamePage() {
         }
         allowFullScreen
         className="game-play-frame border-0 bg-black"
+        onFocus={markGameActivity}
+        onLoad={markGameActivity}
+        onPointerEnter={markGameActivity}
         src={embedSrc}
         title={game.name ?? 'Retro game'}
       />
@@ -249,6 +291,14 @@ function getTimedGameCoinTotal(activeTime: number) {
   ) * 4
 
   return normalCoins + doubleCoins + quadrupleCoins
+}
+
+function getGameSessionCoinCap(activeTime: number, baseCoinCap: number) {
+  const completedHours = Math.min(
+    10,
+    Math.floor(Math.max(0, activeTime) / GAME_SESSION_CAP_DOUBLE_MS),
+  )
+  return baseCoinCap * 2 ** completedHours
 }
 
 type GameSessionSettlement = {
