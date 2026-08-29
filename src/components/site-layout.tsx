@@ -40,7 +40,7 @@ export function SiteLayout({
   const [isUsefulMenuOpen, setIsUsefulMenuOpen] = useState(true)
   const [isFriendsMenuOpen, setIsFriendsMenuOpen] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
-  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false)
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(true)
   const localeMenuRef = useRef<HTMLDetailsElement>(null)
   const edgeSwipeRef = useRef<{ identifier: number; x: number; y: number } | null>(null)
   const canSwitchTheme = siteThemes.length > 1
@@ -54,6 +54,11 @@ export function SiteLayout({
     setTheme(storedTheme)
     document.documentElement.dataset.theme = storedTheme
   }, [])
+
+  useEffect(() => {
+    setIsDesktopSidebarCollapsed(true)
+    setIsMobileSidebarOpen(false)
+  }, [location.pathname])
 
   useEffect(() => {
     if (hideHeaderNav) return
@@ -130,11 +135,7 @@ export function SiteLayout({
   }
 
   function toggleDesktopSidebar() {
-    setIsDesktopSidebarCollapsed((current) => {
-      const next = !current
-      window.localStorage.setItem('game-adventure-sidebar-collapsed', next ? '1' : '0')
-      return next
-    })
+    setIsDesktopSidebarCollapsed((current) => !current)
   }
 
   function handleLocaleChange(nextValue: string) {
@@ -363,11 +364,13 @@ export function SiteLayout({
           <aside
             className={`fixed bottom-0 left-0 top-[61px] z-40 w-[min(82vw,280px)] overflow-y-auto border-r border-base-300 bg-base-100 px-3 py-5 shadow-2xl transition-all duration-200 lg:sticky lg:top-[65px] lg:block lg:h-[calc(100vh-65px)] lg:w-auto lg:translate-x-0 lg:shadow-none ${
               isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            } ${isDesktopSidebarCollapsed ? 'lg:px-2 lg:[&_.sidebar-label]:hidden lg:[&_.sidebar-submenu]:hidden lg:[&_nav_.menu>li>a]:justify-center lg:[&_nav_.menu>li>details>summary]:justify-center lg:[&_nav_.menu>li>details>summary]:after:hidden' : ''}`}
+            } ${isDesktopSidebarCollapsed ? 'lg:px-2 lg:[&_.sidebar-label]:hidden lg:[&_.sidebar-badge]:hidden lg:[&_.sidebar-submenu]:hidden lg:[&_nav_.menu>li>a]:justify-center lg:[&_nav_.menu>li>details>summary]:justify-center lg:[&_nav_.menu>li>details>summary]:after:hidden' : ''}`}
           >
             <button
               aria-label={isDesktopSidebarCollapsed ? t.openSidebar : t.closeSidebar}
-              className="mb-3 ml-auto hidden h-8 w-8 place-items-center rounded-lg bg-base-200 text-base-content transition hover:bg-base-300 lg:grid"
+              className={`mb-3 hidden h-8 w-8 place-items-center rounded-lg bg-base-200 text-base-content transition hover:bg-base-300 lg:grid ${
+                isDesktopSidebarCollapsed ? 'mx-auto' : 'ml-auto'
+              }`}
               onClick={toggleDesktopSidebar}
               title={isDesktopSidebarCollapsed ? t.openSidebar : t.closeSidebar}
               type="button"
@@ -505,7 +508,7 @@ export function SiteLayout({
                         <i className="ri-gift-line text-base" />
                       </span>
                       <span className="sidebar-label min-w-0 flex-1 whitespace-nowrap">{homeT.usefulResources}</span>
-                      <span className="inline-flex h-3.5 shrink-0 items-center rounded bg-red-500 px-1 text-[8px] font-bold leading-none text-white">
+                      <span className="sidebar-badge inline-flex h-3.5 shrink-0 items-center rounded bg-red-500 px-1 text-[8px] font-bold leading-none text-white">
                         HOT
                       </span>
                     </summary>
