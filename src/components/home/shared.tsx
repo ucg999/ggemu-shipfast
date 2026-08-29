@@ -29,15 +29,25 @@ export function HomeLatestGamesRow({
   return (
     <section className="bg-base-100 px-3 pb-4 pt-2">
       <h2 className="mb-3 text-2xl font-semibold text-base-content">{t.latestGamesSection}</h2>
-      <div className="grid grid-cols-7 gap-2">
-        {items.map((game, index) => (
-          <GameCard
-            game={game}
-            key={game.url_slug || game._id}
-            lang={lang}
-            layoutIndex={index}
-          />
-        ))}
+      <div className="latest-games-marquee overflow-hidden">
+        <div className="latest-games-marquee-track flex w-max">
+          {[0, 1].map((copyIndex) => (
+            <div
+              aria-hidden={copyIndex === 1 ? 'true' : undefined}
+              className="grid w-[calc(100vw-1.5rem)] shrink-0 grid-cols-7 gap-2 pr-2"
+              key={copyIndex}
+            >
+              {items.map((game, index) => (
+                <GameCard
+                  game={game}
+                  key={`${copyIndex}-${game.url_slug || game._id}`}
+                  lang={lang}
+                  layoutIndex={index}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   )

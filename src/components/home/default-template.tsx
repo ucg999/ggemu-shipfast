@@ -595,48 +595,49 @@ function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
           {t.superEmulator}
         </Link>
 
-        <details>
-          <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 rounded-xl px-3 py-2.5 font-medium hover:bg-base-200">
+        <details open>
+          <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 font-medium hover:bg-base-200">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-base-200">
               <i className="ri-gift-line" />
             </span>
-            <span className="flex-1">{t.usefulResources}</span>
+            <span className="flex-1 whitespace-nowrap">{t.usefulResources}</span>
+            <span className="inline-flex h-3.5 shrink-0 items-center rounded bg-red-500 px-1 text-[8px] font-bold leading-none text-white">HOT</span>
             <i className="ri-arrow-down-s-line" />
           </summary>
           <ul className="menu menu-sm ml-11">
             <li>
-              <a href="https://www.kdocs.cn/etapps/query/q/TUxF4AQG" onClick={paidLink('psp-library')} rel="noreferrer" target="_blank">
-                {t.pspLibrary}
+              <a href="https://www.kdocs.cn/etapps/query/q/TUxF4AQG" onClick={paidLink('psp-library', 20)} rel="noreferrer" target="_blank">
+                {t.pspLibrary} · 20
               </a>
             </li>
             <li>
-              <a href="https://www.kdocs.cn/etapps/query/q/RclPTyXd" onClick={paidLink('psv-library')} rel="noreferrer" target="_blank">
-                {t.psvLibrary}
+              <a href="https://www.kdocs.cn/etapps/query/q/RclPTyXd" onClick={paidLink('psv-library', 20)} rel="noreferrer" target="_blank">
+                {t.psvLibrary} · 20
               </a>
             </li>
             <li>
-              <a href="https://www.kdocs.cn/etapps/query/q/detUdefK" onClick={paidLink('switch-library')} rel="noreferrer" target="_blank">
-                {t.switchLibrary}
+              <a href="https://www.kdocs.cn/etapps/query/q/detUdefK" onClick={paidLink('switch-library', 20)} rel="noreferrer" target="_blank">
+                {t.switchLibrary} · 20
               </a>
             </li>
             <li>
               <a
                 href="https://www.kdocs.cn/etapps/query/q/zPCu5XAr?share_origin=re_share_conditionshome"
-                onClick={paidLink('arcade-library')}
+                onClick={paidLink('arcade-library', 20)}
                 rel="noreferrer"
                 target="_blank"
               >
-                {t.arcadeLibrary}
+                {t.arcadeLibrary} · 20
               </a>
             </li>
             <li>
-              <a href="https://kdocs.cn/l/cqE4v1WZxdnc" onClick={paidLink('popular-library')} rel="noreferrer" target="_blank">
-                {t.popularGameLibrary}
+              <a href="https://kdocs.cn/l/cqE4v1WZxdnc" onClick={paidLink('popular-library', 50)} rel="noreferrer" target="_blank">
+                {t.popularGameLibrary} · 50
               </a>
             </li>
             <li>
-              <a href="https://www.kdocs.cn/l/cn3lNtXTnq5W" onClick={paidLink('mahjong-slots', 20)} rel="noreferrer" target="_blank">
-                {t.mahjongSlots} · 20
+              <a href="https://www.kdocs.cn/l/cn3lNtXTnq5W" onClick={paidLink('mahjong-slots', 50)} rel="noreferrer" target="_blank">
+                {t.mahjongSlots} · 50
               </a>
             </li>
           </ul>

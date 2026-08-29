@@ -37,7 +37,7 @@ export function SiteLayout({
   const siteThemes = getSiteThemes()
   const [theme, setTheme] = useState(() => normalizeSiteTheme(null))
   const [isLocaleMenuOpen, setIsLocaleMenuOpen] = useState(false)
-  const [isUsefulMenuOpen, setIsUsefulMenuOpen] = useState(false)
+  const [isUsefulMenuOpen, setIsUsefulMenuOpen] = useState(true)
   const [isFriendsMenuOpen, setIsFriendsMenuOpen] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false)
@@ -500,77 +500,80 @@ export function SiteLayout({
                     }
                     open={isUsefulMenuOpen}
                   >
-                    <summary className="group min-h-12 gap-3 rounded-xl px-3 py-2.5 font-medium">
+                    <summary className="group min-h-12 gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 font-medium">
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
                         <i className="ri-gift-line text-base" />
                       </span>
-                      <span className="sidebar-label min-w-0 flex-1">{homeT.usefulResources}</span>
+                      <span className="sidebar-label min-w-0 flex-1 whitespace-nowrap">{homeT.usefulResources}</span>
+                      <span className="inline-flex h-3.5 shrink-0 items-center rounded bg-red-500 px-1 text-[8px] font-bold leading-none text-white">
+                        HOT
+                      </span>
                     </summary>
                     <ul className="sidebar-submenu">
                       <li>
                         <a
                           href="https://www.kdocs.cn/etapps/query/q/TUxF4AQG"
-                          onClick={(event) => handlePaidResourceClick(event, 'psp-library')}
+                          onClick={(event) => handlePaidResourceClick(event, 'psp-library', 20)}
                           rel="noreferrer"
                           target="_blank"
                         >
                           {homeT.pspLibrary}
-                          <ResourceCoinCost />
+                          <ResourceCoinCost cost={20} />
                         </a>
                       </li>
                       <li>
                         <a
                           href="https://www.kdocs.cn/etapps/query/q/RclPTyXd"
-                          onClick={(event) => handlePaidResourceClick(event, 'psv-library')}
+                          onClick={(event) => handlePaidResourceClick(event, 'psv-library', 20)}
                           rel="noreferrer"
                           target="_blank"
                         >
                           {homeT.psvLibrary}
-                          <ResourceCoinCost />
+                          <ResourceCoinCost cost={20} />
                         </a>
                       </li>
                       <li>
                         <a
                           href="https://www.kdocs.cn/etapps/query/q/detUdefK"
-                          onClick={(event) => handlePaidResourceClick(event, 'switch-library')}
+                          onClick={(event) => handlePaidResourceClick(event, 'switch-library', 20)}
                           rel="noreferrer"
                           target="_blank"
                         >
                           {homeT.switchLibrary}
-                          <ResourceCoinCost />
+                          <ResourceCoinCost cost={20} />
                         </a>
                       </li>
                       <li>
                         <a
                           href="https://www.kdocs.cn/etapps/query/q/zPCu5XAr?share_origin=re_share_conditionshome"
-                          onClick={(event) => handlePaidResourceClick(event, 'arcade-library')}
+                          onClick={(event) => handlePaidResourceClick(event, 'arcade-library', 20)}
                           rel="noreferrer"
                           target="_blank"
                         >
                           {homeT.arcadeLibrary}
-                          <ResourceCoinCost />
+                          <ResourceCoinCost cost={20} />
                         </a>
                       </li>
                       <li>
                         <a
                           href="https://kdocs.cn/l/cqE4v1WZxdnc"
-                          onClick={(event) => handlePaidResourceClick(event, 'popular-library')}
+                          onClick={(event) => handlePaidResourceClick(event, 'popular-library', 50)}
                           rel="noreferrer"
                           target="_blank"
                         >
                           {homeT.popularGameLibrary}
-                          <ResourceCoinCost />
+                          <ResourceCoinCost cost={50} />
                         </a>
                       </li>
                       <li>
                         <a
                           href="https://www.kdocs.cn/l/cn3lNtXTnq5W"
-                          onClick={(event) => handlePaidResourceClick(event, 'mahjong-slots', 20)}
+                          onClick={(event) => handlePaidResourceClick(event, 'mahjong-slots', 50)}
                           rel="noreferrer"
                           target="_blank"
                         >
                           {homeT.mahjongSlots}
-                          <ResourceCoinCost cost={20} />
+                          <ResourceCoinCost cost={50} />
                         </a>
                       </li>
                     </ul>

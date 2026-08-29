@@ -105,6 +105,21 @@ body {
   }
 }
 
+@keyframes latest-games-scroll-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.latest-games-marquee-track {
+  animation: latest-games-scroll-left 36s linear infinite;
+  will-change: transform;
+}
+
+.latest-games-marquee:hover .latest-games-marquee-track,
+.latest-games-marquee:focus-within .latest-games-marquee-track {
+  animation-play-state: paused;
+}
+
 .live-watch-eye {
   position: relative;
   display: inline-flex;
@@ -135,7 +150,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .rainbow-title,
-  .live-watch-pupil {
+  .live-watch-pupil,
+  .latest-games-marquee-track {
     animation: none;
   }
 }
