@@ -200,7 +200,7 @@ export const Route = createFileRoute('/$locale')({
         loadFeaturePlatformGames(locale),
         loadGameFilterOptions(),
         loadLatestBlogPosts(locale),
-        searchGames({ data: { query: '', limit: 14, locale, page: 1, sort: 'newest' } }),
+        searchGames({ data: { query: '', limit: 20, locale, page: 1, sort: 'newest' } }),
         loadMostPlayedVideoGames(locale),
       ])
 
@@ -213,7 +213,7 @@ export const Route = createFileRoute('/$locale')({
         filterOptions,
         layoutSeed: getPokiDailyLayoutSeed(),
         latestBlogPosts,
-        latestGames: latestGamesResult.games.slice(0, 7),
+        latestGames: latestGamesResult.games.slice(0, 20),
         mostPlayedGames,
         seoOrigin,
       }
@@ -234,7 +234,7 @@ export const Route = createFileRoute('/$locale')({
       }),
       loadGameFilterOptions(),
       loadLatestBlogPosts(locale),
-      searchGames({ data: { query: '', limit: 14, locale, page: 1, sort: 'newest' } }),
+      searchGames({ data: { query: '', limit: 20, locale, page: 1, sort: 'newest' } }),
       loadMostPlayedVideoGames(locale),
     ])
 
@@ -243,7 +243,7 @@ export const Route = createFileRoute('/$locale')({
       filterOptions,
       layoutSeed: getPokiDailyLayoutSeed(),
       latestBlogPosts,
-      latestGames: latestGamesResult.games.slice(0, 7),
+      latestGames: latestGamesResult.games.slice(0, 20),
       mostPlayedGames,
       seoOrigin,
     }

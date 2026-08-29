@@ -111,7 +111,7 @@ body {
 }
 
 .latest-games-marquee-track {
-  animation: latest-games-scroll-left 36s linear infinite;
+  animation: latest-games-scroll-left 90s linear infinite;
   will-change: transform;
 }
 

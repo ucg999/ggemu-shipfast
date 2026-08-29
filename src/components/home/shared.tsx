@@ -21,7 +21,7 @@ export function HomeLatestGamesRow({
   games: Array<PublicGame>
   lang: Locale
 }) {
-  const items = games.slice(0, 7)
+  const items = games.slice(0, 20)
   const t = getI18n(lang).home
 
   if (items.length === 0) return null
@@ -34,16 +34,20 @@ export function HomeLatestGamesRow({
           {[0, 1].map((copyIndex) => (
             <div
               aria-hidden={copyIndex === 1 ? 'true' : undefined}
-              className="grid w-[calc(100vw-1.5rem)] shrink-0 grid-cols-7 gap-2 pr-2"
+              className="flex shrink-0 gap-2 pr-2"
               key={copyIndex}
             >
               {items.map((game, index) => (
-                <GameCard
-                  game={game}
+                <div
+                  className="w-[calc((100vw-4.5rem)/7)] shrink-0"
                   key={`${copyIndex}-${game.url_slug || game._id}`}
-                  lang={lang}
-                  layoutIndex={index}
-                />
+                >
+                  <GameCard
+                    game={game}
+                    lang={lang}
+                    layoutIndex={index}
+                  />
+                </div>
               ))}
             </div>
           ))}
