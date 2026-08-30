@@ -23,13 +23,10 @@ const noindexHeaders = {
   'X-Robots-Tag': 'noindex, nofollow',
 } as const
 
-const GAME_COIN_INTERVAL_MS = 60 * 1000
-const GAME_COIN_START_DELAY_MS = 2 * 60 * 1000
-const GAME_COIN_DOUBLE_AFTER_MS = 30 * 60 * 1000
-const GAME_COIN_QUADRUPLE_AFTER_MS = 60 * 60 * 1000
+const GAME_COIN_INTERVAL_MS = 2 * 60 * 1000
 const GAME_IDLE_TIMEOUT_MS = 2 * 60 * 1000
-const GAME_SESSION_BASE_COIN_CAP = 10
-const GAME_SESSION_CAP_DOUBLE_MS = 60 * 60 * 1000
+const GAME_SESSION_COIN_CAP = 100
+const RANDOM_GAME_SESSION_COIN_CAP = 200
 
 export const Route = createFileRoute('/$locale/games/$gameId/play')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -110,10 +107,9 @@ function LocalizedPlayGamePage() {
     )
     const earnedCoins = getTimedGameCoinTotal(activeTime)
     const newBaseCoins = Math.max(0, earnedCoins - awardedCoinsRef.current)
-    const sessionCoinCap = getGameSessionCoinCap(
-      activeTime,
-      coinMultiplier > 1 ? 20 : GAME_SESSION_BASE_COIN_CAP,
-    )
+    const sessionCoinCap = coinMultiplier > 1
+      ? RANDOM_GAME_SESSION_COIN_CAP
+      : GAME_SESSION_COIN_CAP
     const remainingCoins = Math.max(0, sessionCoinCap - sessionCoinsRef.current)
     const newCoins = Math.min(newBaseCoins * coinMultiplier, remainingCoins)
 
@@ -279,31 +275,7 @@ function LocalizedPlayGamePage() {
 }
 
 function getTimedGameCoinTotal(activeTime: number) {
-  if (activeTime <= GAME_COIN_START_DELAY_MS) return 0
-
-  const normalPeriodEnd = Math.min(activeTime, GAME_COIN_DOUBLE_AFTER_MS)
-  const normalCoins = Math.floor(
-    Math.max(0, normalPeriodEnd - GAME_COIN_START_DELAY_MS) / GAME_COIN_INTERVAL_MS,
-  )
-
-  const doublePeriodEnd = Math.min(activeTime, GAME_COIN_QUADRUPLE_AFTER_MS)
-  const doubleCoins = Math.floor(
-    Math.max(0, doublePeriodEnd - GAME_COIN_DOUBLE_AFTER_MS) / GAME_COIN_INTERVAL_MS,
-  ) * 2
-
-  const quadrupleCoins = Math.floor(
-    Math.max(0, activeTime - GAME_COIN_QUADRUPLE_AFTER_MS) / GAME_COIN_INTERVAL_MS,
-  ) * 4
-
-  return normalCoins + doubleCoins + quadrupleCoins
-}
-
-function getGameSessionCoinCap(activeTime: number, baseCoinCap: number) {
-  const completedHours = Math.min(
-    10,
-    Math.floor(Math.max(0, activeTime) / GAME_SESSION_CAP_DOUBLE_MS),
-  )
-  return baseCoinCap * 2 ** completedHours
+  return Math.floor(Math.max(0, activeTime) / GAME_COIN_INTERVAL_MS)
 }
 
 type GameSessionSettlement = {
