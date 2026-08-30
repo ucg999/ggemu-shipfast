@@ -139,7 +139,12 @@ function LocalizedPlayGamePage() {
       playStartedAtRef.current = null
     }
 
-    const result = collectDueSessionCoins()
+    let result = collectDueSessionCoins()
+    if (result.coins < 1) {
+      addStoredGameCoins(1)
+      sessionCoinsRef.current = 1
+      result = { ...result, coins: 1 }
+    }
     setSettlement(result)
     setShowRecommendations(true)
 

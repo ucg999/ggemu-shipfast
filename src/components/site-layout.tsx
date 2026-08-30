@@ -8,7 +8,10 @@ import { getPlatformLabel } from '#/lib/platform-label'
 import { siteConfig } from '#/lib/site-config'
 import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
 import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
+import { addCoinBalance } from '#/lib/coin-wallet'
 import { unlockPaidResource } from '#/lib/paid-resource'
+
+const SITE_VISIT_COIN_SESSION_KEY = 'game-adventure-site-visit-coin-awarded'
 
 export function SiteLayout({
   children,
@@ -53,6 +56,16 @@ export function SiteLayout({
     )
     setTheme(storedTheme)
     document.documentElement.dataset.theme = storedTheme
+  }, [])
+
+  useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem(SITE_VISIT_COIN_SESSION_KEY) === '1') return
+      window.sessionStorage.setItem(SITE_VISIT_COIN_SESSION_KEY, '1')
+      addCoinBalance(1)
+    } catch {
+      // The site remains usable when session storage is unavailable.
+    }
   }, [])
 
   useEffect(() => {
