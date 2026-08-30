@@ -1,4 +1,5 @@
 import type { BlogPost, Locale } from './ggemu'
+import { CASTLEVANIA_GBA_POST } from './castlevania-gba-post.ts'
 import { METAL_SLUG_CLASSICS_POST } from './metal-slug-classics-post.ts'
 import { MONSTER_HUNTER_RECOMMENDATION_POST } from './monster-hunter-post.ts'
 import { SONIC_CLASSICS_POST } from './sonic-classics-post.ts'
@@ -190,6 +191,7 @@ const KARATE_BLAZERS_POST = {
 export function getLocalBlogPosts(locale: Locale) {
   return locale === 'zh-CN' || locale === 'zh-TW'
     ? [
+        CASTLEVANIA_GBA_POST,
         METAL_SLUG_CLASSICS_POST,
         SONIC_CLASSICS_POST,
         MONSTER_HUNTER_RECOMMENDATION_POST,
