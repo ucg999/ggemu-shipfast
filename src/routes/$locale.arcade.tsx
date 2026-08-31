@@ -65,6 +65,7 @@ export function PlatformModeContent({
   games,
   lang,
   layout = 'list',
+  showCoinChallenge = false,
   title,
 }: {
   body: string
@@ -72,6 +73,7 @@ export function PlatformModeContent({
   games: Array<PublicGame>
   lang: Locale
   layout?: 'cards' | 'list'
+  showCoinChallenge?: boolean
   title: string
 }) {
   const t = getI18n(lang).arcade
@@ -80,6 +82,13 @@ export function PlatformModeContent({
   const [query, setQuery] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const totalGamesLabel = t.allGames
+  const coinChallengeTitle = getCoinChallengeTitle(lang)
+  const normalizedQuery = query.trim().toLocaleLowerCase(lang)
+  const showCoinChallengeCard =
+    showCoinChallenge &&
+    letter === 'ALL' &&
+    (!normalizedQuery ||
+      coinChallengeTitle.toLocaleLowerCase(lang).includes(normalizedQuery))
   const visibleGames = useMemo(
     () => {
       const normalizedQuery = query.trim().toLocaleLowerCase(lang)
@@ -122,7 +131,7 @@ export function PlatformModeContent({
         <div className="flex flex-wrap items-baseline gap-2">
           <h1 className="text-4xl font-black tracking-tight sm:text-6xl">{title}</h1>
           <span className="text-base font-medium text-base-content/65 sm:text-lg">
-            {formatGameTotal(games.length, lang)}
+            {formatGameTotal(games.length + (showCoinChallenge ? 1 : 0), lang)}
           </span>
         </div>
         <p className="mt-3 text-lg font-medium leading-relaxed text-base-content/75">{description}</p>
@@ -165,8 +174,9 @@ export function PlatformModeContent({
       </nav>
 
       <section className="px-4 py-6 sm:px-6 lg:px-8">
-        {visibleGames.length > 0 ? (
+        {visibleGames.length > 0 || showCoinChallengeCard ? (
           <div className={layout === 'cards' ? 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'flex flex-col gap-2'}>
+            {showCoinChallengeCard ? <CoinChallengeGameCard lang={lang} /> : null}
             {visibleGames.map((game) => layout === 'cards' ? (
               <CoinModeGameCard game={game} key={game.url_slug || game._id} lang={lang} />
             ) : (
@@ -181,6 +191,47 @@ export function PlatformModeContent({
       </section>
     </SiteLayout>
   )
+}
+
+function CoinChallengeGameCard({ lang }: { lang: Locale }) {
+  const title = getCoinChallengeTitle(lang)
+  const modeLabel = getCoinChallengeModeLabel(lang)
+
+  return (
+    <Link
+      className="group min-w-0"
+      params={{ locale: lang }}
+      to="/$locale/coin-challenge"
+    >
+      <article className="overflow-hidden rounded-lg border border-base-300 bg-base-100 transition hover:-translate-y-0.5 hover:border-amber-400">
+        <figure className="relative aspect-[4/3] overflow-hidden bg-black">
+          <img
+            alt={title}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            src="/coin-challenge-classic-bg.jpg"
+          />
+        </figure>
+        <div className="p-2.5">
+          <h2 className="truncate text-sm font-bold sm:text-base">{title}</h2>
+          <p className="mt-1 truncate text-xs text-base-content/55">{modeLabel}</p>
+        </div>
+      </article>
+    </Link>
+  )
+}
+
+function getCoinChallengeTitle(locale: Locale) {
+  if (locale === 'zh-TW') return '金幣挑戰機'
+  if (locale === 'en') return 'Coin Challenge Machine'
+  if (locale === 'ja') return 'コインチャレンジマシン'
+  return '金币挑战机'
+}
+
+function getCoinChallengeModeLabel(locale: Locale) {
+  if (locale === 'zh-TW') return '金幣模式'
+  if (locale === 'en') return 'Coin Mode'
+  if (locale === 'ja') return 'コインモード'
+  return '金币模式'
 }
 
 function CoinModeGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {

@@ -94,6 +94,7 @@ function PlatformModePage() {
       games={games}
       lang={lang}
       layout={modeId === 'coin' ? 'cards' : 'list'}
+      showCoinChallenge={modeId === 'coin'}
       title={copy.title}
     />
   )

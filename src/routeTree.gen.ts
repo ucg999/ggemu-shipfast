@@ -20,6 +20,7 @@ import { Route as LocaleIndexRouteImport } from './routes/$locale.index'
 import { Route as LocaleAboutRouteImport } from './routes/$locale.about'
 import { Route as LocaleArcadeRouteImport } from './routes/$locale.arcade'
 import { Route as LocaleBlogRouteImport } from './routes/$locale.blog'
+import { Route as LocaleCoinChallengeRouteImport } from './routes/$locale.coin-challenge'
 import { Route as LocaleDealsRouteImport } from './routes/$locale.deals'
 import { Route as LocaleLiveRouteImport } from './routes/$locale.live'
 import { Route as LocalePlayMyRomRouteImport } from './routes/$locale.play-my-rom'
@@ -92,6 +93,11 @@ const LocaleArcadeRoute = LocaleArcadeRouteImport.update({
 const LocaleBlogRoute = LocaleBlogRouteImport.update({
   id: '/blog',
   path: '/blog',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleCoinChallengeRoute = LocaleCoinChallengeRouteImport.update({
+  id: '/coin-challenge',
+  path: '/coin-challenge',
   getParentRoute: () => LocaleRoute,
 } as any)
 const LocaleDealsRoute = LocaleDealsRouteImport.update({
@@ -199,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/$locale/about': typeof LocaleAboutRoute
   '/$locale/arcade': typeof LocaleArcadeRoute
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
+  '/$locale/coin-challenge': typeof LocaleCoinChallengeRoute
   '/$locale/deals': typeof LocaleDealsRoute
   '/$locale/live': typeof LocaleLiveRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
@@ -229,6 +236,7 @@ export interface FileRoutesByTo {
   '/$locale/about': typeof LocaleAboutRoute
   '/$locale/arcade': typeof LocaleArcadeRoute
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
+  '/$locale/coin-challenge': typeof LocaleCoinChallengeRoute
   '/$locale/deals': typeof LocaleDealsRoute
   '/$locale/live': typeof LocaleLiveRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
@@ -261,6 +269,7 @@ export interface FileRoutesById {
   '/$locale/about': typeof LocaleAboutRoute
   '/$locale/arcade': typeof LocaleArcadeRoute
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
+  '/$locale/coin-challenge': typeof LocaleCoinChallengeRoute
   '/$locale/deals': typeof LocaleDealsRoute
   '/$locale/live': typeof LocaleLiveRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
@@ -294,6 +303,7 @@ export interface FileRouteTypes {
     | '/$locale/about'
     | '/$locale/arcade'
     | '/$locale/blog'
+    | '/$locale/coin-challenge'
     | '/$locale/deals'
     | '/$locale/live'
     | '/$locale/play-my-rom'
@@ -324,6 +334,7 @@ export interface FileRouteTypes {
     | '/$locale/about'
     | '/$locale/arcade'
     | '/$locale/blog'
+    | '/$locale/coin-challenge'
     | '/$locale/deals'
     | '/$locale/live'
     | '/$locale/play-my-rom'
@@ -355,6 +366,7 @@ export interface FileRouteTypes {
     | '/$locale/about'
     | '/$locale/arcade'
     | '/$locale/blog'
+    | '/$locale/coin-challenge'
     | '/$locale/deals'
     | '/$locale/live'
     | '/$locale/play-my-rom'
@@ -467,6 +479,13 @@ declare module '@tanstack/react-router' {
       path: '/blog'
       fullPath: '/$locale/blog'
       preLoaderRoute: typeof LocaleBlogRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/coin-challenge': {
+      id: '/$locale/coin-challenge'
+      path: '/coin-challenge'
+      fullPath: '/$locale/coin-challenge'
+      preLoaderRoute: typeof LocaleCoinChallengeRouteImport
       parentRoute: typeof LocaleRoute
     }
     '/$locale/deals': {
@@ -625,6 +644,7 @@ interface LocaleRouteChildren {
   LocaleAboutRoute: typeof LocaleAboutRoute
   LocaleArcadeRoute: typeof LocaleArcadeRoute
   LocaleBlogRoute: typeof LocaleBlogRouteWithChildren
+  LocaleCoinChallengeRoute: typeof LocaleCoinChallengeRoute
   LocaleDealsRoute: typeof LocaleDealsRoute
   LocaleLiveRoute: typeof LocaleLiveRoute
   LocalePlayMyRomRoute: typeof LocalePlayMyRomRoute
@@ -643,6 +663,7 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleAboutRoute: LocaleAboutRoute,
   LocaleArcadeRoute: LocaleArcadeRoute,
   LocaleBlogRoute: LocaleBlogRouteWithChildren,
+  LocaleCoinChallengeRoute: LocaleCoinChallengeRoute,
   LocaleDealsRoute: LocaleDealsRoute,
   LocaleLiveRoute: LocaleLiveRoute,
   LocalePlayMyRomRoute: LocalePlayMyRomRoute,
