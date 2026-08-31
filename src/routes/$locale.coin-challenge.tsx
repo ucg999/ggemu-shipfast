@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 
 import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
 import type { Locale } from '#/lib/ggemu'
@@ -31,6 +32,14 @@ const RESERVED_MAIN_LIGHTS = new Set([
 const CHALLENGE_OPTION_COUNT = 8
 const MAIN_SPIN_DURATION_MS = 5000
 const BOTTOM_OPTION_ORDER = [7, 6, 5, 4, 3, 2, 1, 0] as const
+const MOBILE_BET_SHIFT_CLASSES = [
+  '-translate-x-[30%]', '-translate-x-[20%]', '-translate-x-[12%]', '-translate-x-[6%]',
+  'translate-x-[6%]', 'translate-x-[12%]', 'translate-x-[20%]', 'translate-x-[30%]',
+] as const
+const DESKTOP_BET_SHIFT_CLASSES = [
+  'sm:translate-x-[30%]', 'sm:translate-x-[20%]', 'sm:translate-x-[12%]', 'sm:translate-x-[6%]',
+  'sm:-translate-x-[6%]', 'sm:-translate-x-[12%]', 'sm:-translate-x-[20%]', 'sm:-translate-x-[30%]',
+] as const
 const OPTION_PAYOUT_MULTIPLIERS = [5, 10, 10, 10, 20, 20, 20, 100] as const
 
 const TRACK_LIGHTS = createTrackLights()
@@ -644,7 +653,7 @@ function CoinChallengePage() {
           src="/coin-challenge-position-map.jpg"
         />
 
-        <div className="absolute left-[20.5%] top-[8%] h-[5.35%] w-[20.5%]">
+        <div className="absolute left-[19%] top-[8%] h-[5.35%] w-[20.5%] sm:left-[20.5%]">
           <SevenSegmentNumber
             digits={4}
             value={transferDisplay?.win ?? machine.bonusWin}
@@ -653,7 +662,7 @@ function CoinChallengePage() {
 
         <button
           aria-label={copy.insertCredit}
-          className="absolute left-[60.5%] top-[8%] h-[5.35%] w-[20.5%] cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
+          className="absolute left-[63.5%] top-[8%] h-[5.35%] w-[20.5%] cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 sm:left-[60.5%]"
           onKeyDown={(event) => {
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault()
@@ -707,13 +716,17 @@ function CoinChallengePage() {
         {TRACK_LIGHTS.map((light, index) => (
           <span
             aria-hidden="true"
-            className={`pointer-events-none absolute z-[3] block aspect-square w-[2.7%] -translate-x-1/2 -translate-y-1/2 rounded-[18%] transition-[background-color,box-shadow,transform] duration-75 ${
+            className={`pointer-events-none absolute z-[3] block aspect-square w-[2.7%] -translate-x-1/2 -translate-y-1/2 rounded-[18%] transition-[background-color,box-shadow,transform] duration-75 [left:var(--track-x)] max-sm:[left:calc(var(--track-x)_+_var(--mobile-track-shift))] ${
               activeLight === index || luckyLitLights.includes(index)
                 ? 'scale-110 bg-red-500 shadow-[0_0_10px_3px_rgba(255,20,20,0.95)]'
                 : 'bg-transparent shadow-none'
             }`}
             key={`${light.x}-${light.y}`}
-            style={{ left: `${light.x}%`, top: `${light.y}%` }}
+            style={{
+              '--mobile-track-shift': getMobileTrackShift(light),
+              '--track-x': `${light.x}%`,
+              top: `${light.y}%`,
+            } as CSSProperties}
           />
         ))}
 
@@ -735,10 +748,7 @@ function CoinChallengePage() {
               type="button"
             >
               <span
-                className="absolute inset-x-0 top-0 h-[26.25%] transition group-active:brightness-150"
-                style={{
-                  transform: `translateX(${[30, 20, 12, 6, -6, -12, -20, -30][displayIndex]}%)`,
-                }}
+                className={`absolute inset-x-0 top-0 h-[26.25%] transition group-active:brightness-150 ${MOBILE_BET_SHIFT_CLASSES[displayIndex]} ${DESKTOP_BET_SHIFT_CLASSES[displayIndex]}`}
               >
                 <SevenSegmentNumber compact digits={1} value={machine.bets[optionIndex]} />
               </span>
@@ -978,6 +988,18 @@ function pickWeightedWinningTarget(
     if (roll <= 0) return item.target.index
   }
   return weighted[weighted.length - 1].target.index
+}
+
+function getMobileTrackShift(light: { x: number; y: number }) {
+  const isBottomRow = Math.abs(light.y - 64.14) < 0.1
+  const isLeftColumn = Math.abs(light.x - 21.7) < 0.1
+  const isRightColumn = Math.abs(light.x - 78.27) < 0.1
+  let shift = light.x < 50 ? -2.5 : light.x > 50 ? 2.5 : 0
+
+  if (isLeftColumn) shift -= 0.5
+  if (isRightColumn) shift += 0.5
+  if (isBottomRow) shift += 0.8
+  return `${shift}%`
 }
 
 function getCoinChallengeTitle(locale: Locale) {

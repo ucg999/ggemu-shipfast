@@ -6,7 +6,7 @@ import {
 } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import type { FormEvent } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import {
   CoinRewardPopup,
@@ -44,6 +44,7 @@ import {
   searchGames,
 } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
+import { addCoinBalance } from '#/lib/coin-wallet'
 import { getLocalBlogPosts } from '#/lib/local-blog-posts'
 import {
   type SiteTemplate,
@@ -296,7 +297,38 @@ function LocalizedHomePage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [innerPageReward, setInnerPageReward] = useState<{
+    amount: number
+    id: number
+    prefix: '+'
+  } | null>(null)
+  const lastRewardPathRef = useRef<string | null>(null)
+  const innerRewardTimerRef = useRef<number | null>(null)
   const coinRewards = useHomeCoinRewards()
+
+  useEffect(() => {
+    if (pathname === `/${locale}` || lastRewardPathRef.current === pathname) return
+    lastRewardPathRef.current = pathname
+    if (Math.random() >= 0.35) return
+
+    const amount = Math.random() < 0.5 ? 1 : 2
+    addCoinBalance(amount)
+    setInnerPageReward({ amount, id: Date.now(), prefix: '+' })
+    if (innerRewardTimerRef.current !== null) {
+      window.clearTimeout(innerRewardTimerRef.current)
+    }
+    innerRewardTimerRef.current = window.setTimeout(() => {
+      setInnerPageReward(null)
+      innerRewardTimerRef.current = null
+    }, 1400)
+
+    return () => {
+      if (innerRewardTimerRef.current !== null) {
+        window.clearTimeout(innerRewardTimerRef.current)
+        innerRewardTimerRef.current = null
+      }
+    }
+  }, [locale, pathname])
 
   useEffect(() => {
     setResult(initialResult)
@@ -371,7 +403,12 @@ function LocalizedHomePage() {
   }
 
   if (pathname !== `/${locale}`) {
-    return <Outlet />
+    return (
+      <>
+        <Outlet />
+        <CoinRewardPopup feedback={innerPageReward} />
+      </>
+    )
   }
 
   async function loadGames(nextFilters: Filters, nextPage: number) {
