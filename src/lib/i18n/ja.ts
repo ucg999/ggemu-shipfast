@@ -5,6 +5,7 @@ export const jaMessages = {
   layout: {
     games: 'ホーム',
     gameLibrary: 'ゲームライブラリ',
+    gameDeals: 'ゲームセール',
     allGames: 'すべてのゲーム',
     gamePlatforms: 'プラットフォーム',
     gameTypes: 'ゲームジャンル',
@@ -38,6 +39,19 @@ export const jaMessages = {
     mainNavigation: 'メインナビゲーション',
     siteName: 'レトロゲームセンター',
     siteSlogan: 'オンラインゲーム・すぐにプレイ',
+  },
+  deals: {
+    seoTitle: 'Steam ゲームセールと過去最安値 | レトロゲームセンター', title: '人気ゲームセール',
+    description: 'Steam の注目ゲームセール、現在価格、割引率、過去最安値を確認できます。', eyebrow: 'セール開催中',
+    regionLabel: '地域と通貨', regionUs: '米国', regionJp: '日本', regionCn: '中国', regionGb: '英国', regionDe: 'ドイツ', regionTh: 'タイ',
+    updated: '{time} 更新', steamReference: 'Steam の現在参考価格', historicalLowest: '過去最安値', historicalLowNow: '現在価格が過去最安値',
+    viewDetails: 'ゲーム詳細を見る', backToDeals: 'ゲームセールに戻る',
+    detailSeoTitle: '{name} の Steam セール・現在価格・過去最安値 | レトロゲームセンター',
+    detailSeoDescription: '{name} の Steam 現在価格は {price}、割引率は {discount}%、過去最安値は {historicalLow}。スクリーンショット、販売元、対応環境も確認できます。',
+    overview: 'ゲーム概要', gameInfo: 'ゲーム情報', developer: '開発元', publisher: '販売元', releaseDate: '発売日', genres: 'ジャンル',
+    platforms: '対応環境', languages: '対応言語', screenshots: 'スクリーンショット', buyOnSteam: 'Steam で見る',
+    priceSummary: '価格と購入', free: '無料', notFound: 'このセールゲームは見つかりませんでした。販売終了または一時的に利用できない可能性があります。',
+    noData: 'データなし', empty: '現在表示できるゲームセールはありません。しばらくしてからお試しください。', attribution: 'セール・価格データ提供：',
   },
   home: {
     title: 'レトロゲームをオンラインでプレイ',

@@ -5,6 +5,7 @@ export const zhCnMessages = {
   layout: {
     games: '首页',
     gameLibrary: '游戏库',
+    gameDeals: '游戏折扣',
     allGames: '全部游戏',
     gamePlatforms: '游戏平台',
     gameTypes: '游戏类型',
@@ -25,7 +26,7 @@ export const zhCnMessages = {
       return `版权所有 © 2026 ${siteConfig.SITE_NAME}`
     },
     get disclaimer() {
-      return `所有游戏 ROM / 程序均由用户提交或收集自互联网，版权归其各自所有者所有。如有任何问题，请发送邮件至 ${siteConfig.SITE_EMAIL}，我们会移除对应内容。`
+      return '所有游戏 ROM / 程序均由用户提交或收集自互联网，版权归其各自所有者所有。如有任何问题，请联系我们，我们会移除对应内容。'
     },
     footer:
       '你们可以在【小红书】【抖音】【视频号】等各大平台找到我们的推荐视频。',
@@ -40,6 +41,27 @@ export const zhCnMessages = {
     mainNavigation: '主导航',
     siteName: '怀旧游戏厅',
     siteSlogan: '在线游戏--即点即玩',
+  },
+  deals: {
+    seoTitle: 'Steam 游戏折扣与历史最低价 | 怀旧游戏厅',
+    title: '热门游戏折扣',
+    description: '发现 Steam 当前精选折扣，查看游戏现价、折扣比例与历史最低价，找到值得入手的特价游戏。',
+    eyebrow: '正在打折',
+    regionLabel: '区域与货币',
+    regionUs: '美国', regionJp: '日本', regionCn: '中国', regionGb: '英国', regionDe: '德国', regionTh: '泰国',
+    updated: '更新于 {time}',
+    steamReference: 'Steam 当前参考价',
+    historicalLowest: '历史最低',
+    historicalLowNow: '历史最低',
+    viewDetails: '查看游戏详情',
+    backToDeals: '返回游戏折扣',
+    detailSeoTitle: '{name} Steam 折扣、现价与历史最低 | 怀旧游戏厅',
+    detailSeoDescription: '{name} Steam 现价 {price}，优惠 {discount}%，历史最低 {historicalLow}。查看游戏介绍、截图、发行商与支持平台。',
+    overview: '游戏简介', gameInfo: '游戏信息', developer: '开发商', publisher: '发行商', releaseDate: '发行日期',
+    genres: '游戏类型', platforms: '支持平台', languages: '支持语言', screenshots: '游戏截图',
+    buyOnSteam: '前往 Steam', priceSummary: '价格与购买', free: '免费',
+    notFound: '没有找到这款折扣游戏，可能已经下架或暂时不可用。',
+    noData: '暂无', empty: '暂时没有可展示的游戏折扣，请稍后再试。', attribution: '折扣与价格数据来源：',
   },
   home: {
     title: '回到小时候的快乐，即点即玩，乐趣无穷！',

@@ -12,6 +12,7 @@ import { addCoinBalance } from '#/lib/coin-wallet'
 import { unlockPaidResource } from '#/lib/paid-resource'
 
 const SITE_VISIT_COIN_SESSION_KEY = 'game-adventure-site-visit-coin-awarded'
+const DESKTOP_SIDEBAR_STATE_KEY = 'retro-games-desktop-sidebar-state'
 
 export function SiteLayout({
   children,
@@ -69,9 +70,22 @@ export function SiteLayout({
   }, [])
 
   useEffect(() => {
-    setIsDesktopSidebarCollapsed(true)
     setIsMobileSidebarOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    try {
+      const storedState = window.localStorage.getItem(DESKTOP_SIDEBAR_STATE_KEY)
+
+      if (storedState === 'open') {
+        setIsDesktopSidebarCollapsed(false)
+      } else if (storedState === 'closed') {
+        setIsDesktopSidebarCollapsed(true)
+      }
+    } catch {
+      // Keep the default collapsed state when local storage is unavailable.
+    }
+  }, [])
 
   useEffect(() => {
     if (hideHeaderNav) return
@@ -148,7 +162,30 @@ export function SiteLayout({
   }
 
   function toggleDesktopSidebar() {
-    setIsDesktopSidebarCollapsed((current) => !current)
+    setIsDesktopSidebarCollapsed((current) => {
+      const nextState = !current
+      saveDesktopSidebarState(nextState)
+      return nextState
+    })
+  }
+
+  function handleCollapsedSidebarClick(event: MouseEvent<HTMLElement>) {
+    if (
+      !isDesktopSidebarCollapsed ||
+      !window.matchMedia('(min-width: 1024px)').matches
+    ) {
+      return
+    }
+
+    const target = event.target
+    if (!(target instanceof Element) || !target.closest('nav a, nav summary')) {
+      return
+    }
+
+    event.preventDefault()
+    event.stopPropagation()
+    setIsDesktopSidebarCollapsed(false)
+    saveDesktopSidebarState(false)
   }
 
   function handleLocaleChange(nextValue: string) {
@@ -374,22 +411,13 @@ export function SiteLayout({
         }
       >
         {hideHeaderNav ? null : (
+          <>
           <aside
             className={`fixed bottom-0 left-0 top-[61px] z-40 w-[min(82vw,280px)] overflow-y-auto border-r border-base-300 bg-base-100 px-3 py-5 shadow-2xl transition-all duration-200 lg:sticky lg:top-[65px] lg:block lg:h-[calc(100vh-65px)] lg:w-auto lg:translate-x-0 lg:shadow-none ${
               isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
             } ${isDesktopSidebarCollapsed ? 'lg:px-2 lg:[&_.sidebar-label]:hidden lg:[&_.sidebar-badge]:hidden lg:[&_.sidebar-submenu]:hidden lg:[&_nav_.menu>li>a]:justify-center lg:[&_nav_.menu>li>details>summary]:justify-center lg:[&_nav_.menu>li>details>summary]:after:hidden' : ''}`}
+            onClickCapture={handleCollapsedSidebarClick}
           >
-            <button
-              aria-label={isDesktopSidebarCollapsed ? t.openSidebar : t.closeSidebar}
-              className={`mb-3 hidden h-8 w-8 place-items-center rounded-lg bg-base-200 text-base-content transition hover:bg-base-300 lg:grid ${
-                isDesktopSidebarCollapsed ? 'mx-auto' : 'ml-auto'
-              }`}
-              onClick={toggleDesktopSidebar}
-              title={isDesktopSidebarCollapsed ? t.openSidebar : t.closeSidebar}
-              type="button"
-            >
-              <i className={isDesktopSidebarCollapsed ? 'ri-menu-unfold-line' : 'ri-menu-fold-line'} />
-            </button>
             <nav aria-label={t.mainNavigation}>
               <ul className="menu gap-1 p-0 text-sm">
                 <li>
@@ -483,6 +511,23 @@ export function SiteLayout({
                       </li>
                     </ul>
                   </details>
+                </li>
+                <li>
+                  <Link
+                    className={`group flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition hover:bg-base-200 ${
+                      location.pathname.startsWith(`/${locale}/deals`)
+                        ? 'bg-base-200 font-semibold text-primary'
+                        : ''
+                    }`}
+                    params={{ locale }}
+                    search={{ region: undefined }}
+                    to="/$locale/deals"
+                  >
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
+                      <i className="ri-price-tag-3-line text-base" />
+                    </span>
+                    <span className="sidebar-label min-w-0 flex-1">{t.gameDeals}</span>
+                  </Link>
                 </li>
                 <li>
                   <Link
@@ -645,6 +690,25 @@ export function SiteLayout({
               </ul>
             </nav>
           </aside>
+          <button
+            aria-label={isDesktopSidebarCollapsed ? t.openSidebar : t.closeSidebar}
+            className="fixed top-1/2 z-[70] hidden h-9 w-5 -translate-y-1/2 cursor-pointer text-base-content transition-[left,color] duration-200 hover:text-primary lg:block"
+            onClick={toggleDesktopSidebar}
+            style={{ left: isDesktopSidebarCollapsed ? '54px' : '202px' }}
+            title={isDesktopSidebarCollapsed ? t.openSidebar : t.closeSidebar}
+            type="button"
+          >
+            <span className="absolute bottom-0 left-[6px] top-0 w-px rounded-full bg-base-content/65" />
+            <span className="absolute bottom-0 left-[11px] top-0 w-px rounded-full bg-base-content/65" />
+            <i
+              className={`absolute left-[9px] top-1/2 -translate-x-1/2 -translate-y-1/2 bg-base-100 py-0.5 text-sm font-bold leading-none ${
+                isDesktopSidebarCollapsed
+                  ? 'ri-arrow-right-s-line'
+                  : 'ri-arrow-left-s-line'
+              }`}
+            />
+          </button>
+          </>
         )}
 
         <div className="min-w-0">
@@ -750,6 +814,17 @@ function getResourceCoinCopy(locale: Locale) {
     return { insufficient: 'コイン残高が不足しています。ゲームを遊んだり、ほかの人のプレイを見たりすると獲得できます。' }
   }
   return { insufficient: 'Not enough coins. Find coins around the site, play games, or watch others play to earn more.' }
+}
+
+function saveDesktopSidebarState(collapsed: boolean) {
+  try {
+    window.localStorage.setItem(
+      DESKTOP_SIDEBAR_STATE_KEY,
+      collapsed ? 'closed' : 'open',
+    )
+  } catch {
+    // The sidebar still works for the current page when storage is unavailable.
+  }
 }
 
 function getHomeFilterHref(

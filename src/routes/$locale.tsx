@@ -248,7 +248,11 @@ export const Route = createFileRoute('/$locale')({
       seoOrigin,
     }
   },
-  head: ({ params, match }) => {
+  head: ({ params, match, matches }) => {
+    if (matches.at(-1)?.routeId !== match.routeId) {
+      return {}
+    }
+
     const locale = normalizeLocale(params.locale)
     const meta = getI18n(locale).homeSeo
     const isTemplatePreview = Boolean(getSearchTemplate(match.search))
