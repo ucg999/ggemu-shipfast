@@ -184,8 +184,24 @@ export const Route = createFileRoute('/$locale')({
     template: getSearchTemplate(search),
     view: normalizeHomeView(search.view),
   }),
-  loader: async ({ deps, params }): Promise<HomeLoaderData> => {
+  loader: async ({ deps, location, params }): Promise<HomeLoaderData> => {
     const locale = normalizeLocale(params.locale)
+
+    // Child routes such as the locally hosted coin challenge do not need the
+    // remote GGEMU catalogue. Keep them available when that API is offline.
+    if (location.pathname !== `/${params.locale}`) {
+      return {
+        games: [],
+        pagination: { total: 0, page: 1, limit: 1, pages: 1 },
+        filterOptions: { platforms: [], categories: [] },
+        layoutSeed: getPokiDailyLayoutSeed(),
+        latestBlogPosts: [],
+        latestGames: [],
+        mostPlayedGames: [],
+        seoOrigin: await getSeoOrigin(),
+      }
+    }
+
     const template = getSiteTemplate(getSearchTemplate(deps))
 
     if (template === 'features') {
