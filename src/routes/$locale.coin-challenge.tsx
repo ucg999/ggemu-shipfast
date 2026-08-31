@@ -383,7 +383,7 @@ function CoinChallengePage() {
   }
 
   function handleCompareStart() {
-    if (isSpinning || isWithdrawing || compareMode || poolTransferDisplay || creditTransferDisplay || machine.bonusWin < 1) return
+    if (isSpinning || isWithdrawing || compareMode || poolTransferDisplay || creditTransferDisplay || collectibleWin < 1) return
     setCompareMode(true)
     setLuckyLitLights(LEFT_COMPARE_LIGHTS)
     let previewSide = false
@@ -394,6 +394,22 @@ function CoinChallengePage() {
     }, 180)
   }
 
+  function handleCompareOrReset() {
+    if (collectibleWin > 0) {
+      handleCompareStart()
+      return
+    }
+    if (isSpinning || isWithdrawing || compareMode || poolTransferDisplay || creditTransferDisplay) return
+    const refund = machine.bets.reduce((sum, value) => sum + value, 0)
+    if (refund < 1) return
+    updateMachine((current) => ({
+      ...current,
+      bets: Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0),
+      credits: Math.min(9999, current.credits + refund),
+    }))
+    setShouldResetAllBets(false)
+  }
+
   function handleCompareChoice(choice: 'big' | 'small') {
     if (!compareMode || isSpinning) return
     if (comparePreviewTimerRef.current !== null) {
@@ -402,6 +418,7 @@ function CoinChallengePage() {
     }
     setIsSpinning(true)
     let step = 0
+    const compareStake = collectibleWin
     const playerWins = Math.random() < 0.45
     const finalSide = playerWins ? choice : choice === 'big' ? 'small' : 'big'
     const animate = () => {
@@ -411,12 +428,8 @@ function CoinChallengePage() {
       step += 1
       if (step >= 16) {
         setLuckyLitLights(finalSide === 'big' ? LEFT_COMPARE_LIGHTS : RIGHT_COMPARE_LIGHTS)
-        updateMachine((current) => ({
-          ...current,
-          bonusWin: 0,
-        }))
-        setRoundWin(playerWins ? Math.min(999, machine.bonusWin * 2) : 0)
-        setCollectibleWin(playerWins ? Math.min(999, machine.bonusWin * 2) : 0)
+        setRoundWin(playerWins ? Math.min(999, compareStake * 2) : 0)
+        setCollectibleWin(playerWins ? Math.min(9999, compareStake * 2) : 0)
         setCompareMode(false)
         setIsSpinning(false)
         spinTimerRef.current = window.setTimeout(() => setLuckyLitLights([]), 900)
@@ -862,10 +875,11 @@ function CoinChallengePage() {
           type="button"
         />
         <button
-          aria-label={copy.compare}
+          aria-label={collectibleWin > 0 ? copy.compare : copy.resetBet}
           className="absolute left-[84%] top-[87.2%] z-10 h-[9.3%] w-[15%] cursor-pointer rounded-full bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 disabled:cursor-not-allowed"
-          disabled={isSpinning || isWithdrawing || compareMode || Boolean(poolTransferDisplay) || Boolean(creditTransferDisplay) || machine.bonusWin < 1}
-          onClick={handleCompareStart}
+          disabled={isSpinning || isWithdrawing || compareMode || Boolean(poolTransferDisplay) || Boolean(creditTransferDisplay) || (collectibleWin < 1 && !machine.bets.some((value) => value > 0))}
+          onClick={handleCompareOrReset}
+          title={collectibleWin > 0 ? copy.compare : copy.resetBet}
           type="button"
         />
 
@@ -1202,6 +1216,7 @@ function getCoinChallengeCopy(locale: Locale) {
       big: '大',
       small: '小',
       compare: '比大小',
+      resetBet: '清空下注並退回 CREDIT',
       walletEmpty: '金幣箱餘額不足，玩遊戲或看別人玩可以獲得金幣。',
     }
   }
@@ -1225,6 +1240,7 @@ function getCoinChallengeCopy(locale: Locale) {
       big: 'BIG',
       small: 'SMALL',
       compare: 'DOUBLE OR NOTHING',
+      resetBet: 'Reset bets and refund CREDIT',
       walletEmpty: 'Your coin box is empty. Play games or watch others play to earn coins.',
     }
   }
@@ -1248,6 +1264,7 @@ function getCoinChallengeCopy(locale: Locale) {
       big: '大',
       small: '小',
       compare: '大小勝負',
+      resetBet: 'ベットをリセットしてCREDITへ戻す',
       walletEmpty: 'コイン箱の残高が不足しています。ゲームを遊ぶか、ほかの人のプレイを見てコインを獲得できます。',
     }
   }
@@ -1270,6 +1287,7 @@ function getCoinChallengeCopy(locale: Locale) {
     big: '大',
     small: '小',
     compare: '比大小',
+    resetBet: '清空下注并退回 CREDIT',
     walletEmpty: '金币箱余额不足，玩游戏或看别人玩可以获得金币。',
   }
 }
