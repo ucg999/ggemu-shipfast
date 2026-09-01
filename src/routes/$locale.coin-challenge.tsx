@@ -578,6 +578,16 @@ function CoinChallengePage() {
       .filter((light) =>
         light.option !== null && (light.multiplier === 2 || light.multiplier === 3),
       )
+    const selectedLowMultiplierTargets = lowMultiplierTargets.filter(
+      (light) => light.option !== null && roundBets[light.option] > 0,
+    )
+    const scaledLowMultiplierRate = Math.max(
+      0,
+      (activeBetOptions.length - 1) * (0.7 / 7),
+    )
+    const chooseScaledLowMultiplier = chooseScaledWin &&
+      selectedLowMultiplierTargets.length > 0 &&
+      Math.random() < scaledLowMultiplierRate
     const chooseLowMultiplier = allOptionsBet &&
       lowMultiplierTargets.length > 0 &&
       Math.random() < 0.7
@@ -621,7 +631,9 @@ function CoinChallengePage() {
       ? otherTargets
       : TRACK_LIGHTS.map((light, index) => ({ ...light, index }))
           .filter((light) => light.option !== null)
-    const targetPool = chooseScaledWin
+    const targetPool = chooseScaledLowMultiplier
+      ? selectedLowMultiplierTargets
+      : chooseScaledWin
       ? scaledWinningTargets
       : chooseLowMultiplier
         ? lowMultiplierTargets
@@ -636,8 +648,16 @@ function CoinChallengePage() {
         : roundWins
           ? winningTargets
           : fallbackTargets
-    const target = chooseScaledWin
-      ? pickWeightedWinningTarget(targetPool)
+    const scaledTargetOption = chooseScaledWin && !chooseScaledLowMultiplier
+      ? activeBetOptions[Math.floor(Math.random() * activeBetOptions.length)]?.option
+      : undefined
+    const scaledOptionTargets = scaledTargetOption === undefined
+      ? []
+      : targetPool.filter((light) => light.option === scaledTargetOption)
+    const target = chooseScaledLowMultiplier
+      ? targetPool[Math.floor(Math.random() * targetPool.length)]?.index ?? 0
+      : chooseScaledWin
+      ? scaledOptionTargets[Math.floor(Math.random() * scaledOptionTargets.length)]?.index ?? 0
       : chooseLowMultiplier
       ? targetPool[Math.floor(Math.random() * targetPool.length)]?.index ?? 0
       : roundWins && !chooseLucky && selectedBarIndex === null
