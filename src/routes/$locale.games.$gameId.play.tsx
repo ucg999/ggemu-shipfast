@@ -300,7 +300,7 @@ function GameCoinSettlement({
           alt=""
           aria-hidden="true"
           className="h-14 w-14 object-contain [image-rendering:pixelated]"
-          src="/images/coin-rewards/pixel-reward-coin.png"
+          src="/images/coin-rewards/pixel-reward-coin.webp"
         />
         <div className="whitespace-nowrap">
           <p className="text-xs text-white/60">{labels.sessionSettlement}</p>

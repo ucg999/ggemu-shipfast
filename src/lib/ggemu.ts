@@ -255,7 +255,9 @@ function addOptionalParam(
 
 async function fetchJson<T>(path: string, params: URLSearchParams) {
   const query = params.toString()
-  const response = await fetch(`${API_BASE_URL}${path}${query ? `?${query}` : ''}`)
+  const response = await fetch(`${API_BASE_URL}${path}${query ? `?${query}` : ''}`, {
+    signal: AbortSignal.timeout(8_000),
+  })
 
   if (!response.ok) {
     throw new Error(`GGEMU API request failed with ${response.status}`)

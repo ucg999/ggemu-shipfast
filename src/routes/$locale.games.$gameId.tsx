@@ -432,7 +432,7 @@ function LocalizedGameDetailPage() {
                   {t.play}
                   {isCoinGame ? (
                     <span className="ml-1 flex items-center gap-1 rounded-full bg-black/25 px-2 py-1 text-sm font-black">
-                      <img alt="" aria-hidden="true" className="h-5 w-5 object-contain" src="/images/coin-rewards/pixel-reward-coin.png" />
+                      <img alt="" aria-hidden="true" className="h-5 w-5 object-contain" src="/images/coin-rewards/pixel-reward-coin.webp" />
                       ×20
                     </span>
                   ) : null}
@@ -466,7 +466,7 @@ function LocalizedGameDetailPage() {
                 '--coin-travel-y': `${coinFlight.travelY}px`,
               } as CSSProperties}
             >
-              <img alt="" className="h-12 w-12 object-contain [image-rendering:pixelated]" src="/images/coin-rewards/pixel-reward-coin.png" />
+              <img alt="" className="h-12 w-12 object-contain [image-rendering:pixelated]" src="/images/coin-rewards/pixel-reward-coin.webp" />
               <span className="-ml-1 rounded bg-black/80 px-1.5 py-0.5 text-sm font-black text-yellow-300">×20</span>
             </div>
           ) : null}

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import {
   GameCardPreviewVideo,
@@ -133,14 +133,9 @@ export function HomeMostPlayedGamesSection({
                 to="/$locale/games/$gameId"
               >
                 <figure className="relative aspect-[4/3] overflow-hidden rounded-md bg-base-200">
-                  <video
-                    autoPlay
+                  <LazyAutoplayVideo
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loop
-                    muted
-                    playsInline
                     poster={game.game_cover}
-                    preload="metadata"
                     src={game.game_video}
                   />
                   <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded bg-black/75 px-1.5 py-1 text-[11px] font-black text-yellow-300 backdrop-blur-sm">
@@ -148,7 +143,7 @@ export function HomeMostPlayedGamesSection({
                       alt=""
                       aria-hidden="true"
                       className="h-4 w-4 object-contain"
-                      src="/images/coin-rewards/pixel-reward-coin.png"
+                      src="/images/coin-rewards/pixel-reward-coin.webp"
                     />
                     ×{multiplier}
                   </span>
@@ -164,6 +159,39 @@ export function HomeMostPlayedGamesSection({
         </div>
       </div>
     </section>
+  )
+}
+
+function LazyAutoplayVideo({ className, poster, src }: { className: string; poster?: string; src?: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [isNearViewport, setIsNearViewport] = useState(false)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsNearViewport(entry.isIntersecting)
+      },
+      { rootMargin: '200px' },
+    )
+    observer.observe(video)
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <video
+      autoPlay={isNearViewport}
+      className={className}
+      loop
+      muted
+      playsInline
+      poster={poster}
+      preload="none"
+      ref={videoRef}
+      src={isNearViewport ? src : undefined}
+    />
   )
 }
 

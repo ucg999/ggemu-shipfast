@@ -139,6 +139,7 @@ function parseHomeSearchStr(searchStr: string) {
 }
 
 export const Route = createFileRoute('/$locale')({
+  staleTime: 60_000,
   validateSearch: validateHomeSearch,
   headers: ({ match }) =>
     getSearchTemplate(match.search)
@@ -219,7 +220,7 @@ export const Route = createFileRoute('/$locale')({
         loadFeaturePlatformGames(locale),
         loadGameFilterOptions(),
         loadLatestBlogPosts(locale),
-        searchGames({ data: { query: '', limit: 20, locale, page: 1, sort: 'newest' } }),
+        safeSearchGames({ query: '', limit: 20, locale, page: 1, sort: 'newest' }),
         loadMostPlayedVideoGames(locale),
       ])
 
@@ -240,8 +241,7 @@ export const Route = createFileRoute('/$locale')({
 
     const [seoOrigin, result, filterOptions, latestBlogPosts, latestGamesResult, mostPlayedGames] = await Promise.all([
       getSeoOrigin(),
-      searchGames({
-        data: {
+      safeSearchGames({
           query: '',
           limit: getHomeRequestLimit(template, deps.sort, deps.view),
           locale,
@@ -249,11 +249,10 @@ export const Route = createFileRoute('/$locale')({
           platform: deps.platform,
           category: deps.category,
           sort: deps.sort ?? getHomeSort(template),
-        },
       }),
       loadGameFilterOptions(),
       loadLatestBlogPosts(locale),
-      searchGames({ data: { query: '', limit: 20, locale, page: 1, sort: 'newest' } }),
+      safeSearchGames({ query: '', limit: 20, locale, page: 1, sort: 'newest' }),
       loadMostPlayedVideoGames(locale),
     ])
 
@@ -711,26 +710,18 @@ async function loadFeaturePlatformGames(locale: Locale) {
 }
 
 async function loadMostPlayedVideoGames(locale: Locale) {
-  const results = await Promise.all(
-    (['plays_count', 'newest', 'popular'] as const).flatMap((sort) =>
-      [1, 2, 3].map((page) =>
-        searchGames({
-          data: {
-            query: '',
-            limit: 100,
-            locale,
-            page,
-            sort,
-          },
-        }),
-      ),
+  const results = await Promise.allSettled(
+    (['plays_count', 'popular'] as const).map((sort) =>
+      searchGames({
+        data: { query: '', limit: 100, locale, page: 1, sort },
+      }),
     ),
   )
 
   const uniqueGames = new Map<string, PublicGame>()
 
   results
-    .flatMap((result) => result.games)
+    .flatMap((result) => result.status === 'fulfilled' ? result.value.games : [])
     .filter((game) => Boolean(game.game_video?.trim()))
     .forEach((game) => {
       const id = game.url_slug?.trim() || game._id?.trim()
@@ -741,6 +732,17 @@ async function loadMostPlayedVideoGames(locale: Locale) {
     })
 
   return [...uniqueGames.values()]
+}
+
+async function safeSearchGames(data: Parameters<typeof searchGames>[0]['data']) {
+  try {
+    return await searchGames({ data })
+  } catch {
+    return {
+      games: [],
+      pagination: { total: 0, page: 1, limit: data.limit, pages: 1 },
+    } satisfies GameSearchResult
+  }
 }
 
 function shuffleGames(games: Array<PublicGame>) {

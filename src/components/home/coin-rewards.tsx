@@ -208,7 +208,7 @@ export function HomeCoinBag({
           alt=""
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-contain drop-shadow-sm"
-          src="/images/coin-rewards/mystery-coin-box.png"
+          src="/images/coin-rewards/mystery-coin-box.webp"
         />
         <span className={`coin-box-count-blink relative grid h-6 w-6 place-items-center overflow-hidden rounded-full border-2 border-amber-700 bg-yellow-300 px-px font-black tabular-nums leading-none text-amber-950 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55),0_1px_2px_rgba(92,48,0,0.35)] sm:h-8 sm:w-8 ${balanceTextClass}`}>
           {balance}
@@ -273,7 +273,7 @@ export function FloatingHomeCoin({
           alt=""
           aria-hidden="true"
           className="h-full w-full object-contain"
-          src="/images/coin-rewards/floating-gold-coin.png"
+          src="/images/coin-rewards/floating-gold-coin.webp"
         />
       </button>
     ))
@@ -301,7 +301,7 @@ export function FlyingCollectedCoin({
       <img
         alt=""
         className="h-full w-full object-contain"
-        src="/images/coin-rewards/floating-gold-coin.png"
+        src="/images/coin-rewards/floating-gold-coin.webp"
       />
     </div>
   )
@@ -325,7 +325,7 @@ export function CoinRewardPopup({
           alt=""
           aria-hidden="true"
           className="h-14 w-14 object-contain [image-rendering:pixelated] sm:h-16 sm:w-16"
-          src="/images/coin-rewards/pixel-reward-coin.png"
+          src="/images/coin-rewards/pixel-reward-coin.webp"
         />
         <span>{feedback.prefix}{feedback.amount}</span>
       </div>

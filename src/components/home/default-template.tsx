@@ -437,7 +437,7 @@ function RandomGameModal({
           <div className="flex min-w-0 items-center gap-2">
             <h3 className="min-w-0 truncate text-xl font-semibold">{game.name}</h3>
             <span className="flex shrink-0 items-center gap-1 text-sm font-black text-amber-600">
-              <img alt="" aria-hidden="true" className="h-5 w-5 [image-rendering:pixelated]" src="/images/coin-rewards/pixel-reward-coin.png" />
+              <img alt="" aria-hidden="true" className="h-5 w-5 [image-rendering:pixelated]" src="/images/coin-rewards/pixel-reward-coin.webp" />
               ×{multiplier}
             </span>
           </div>

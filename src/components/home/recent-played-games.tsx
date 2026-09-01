@@ -136,6 +136,8 @@ export function PopularGameCollections({ lang }: { lang: Locale }) {
               <img
                 alt={getCollectionTitle(collection.id, t)}
                 className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                decoding="async"
+                loading="lazy"
                 src={collection.cover}
               />
               <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-3 pb-2 pt-8 text-sm font-bold text-white">

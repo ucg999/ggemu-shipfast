@@ -796,7 +796,7 @@ function ResourceCoinCost({ cost = 10 }: { cost?: number }) {
         alt=""
         aria-hidden="true"
         className="h-3.5 w-3.5 object-contain"
-        src="/images/coin-rewards/pixel-reward-coin.png"
+        src="/images/coin-rewards/pixel-reward-coin.webp"
       />
       {cost}
     </span>

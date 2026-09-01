@@ -246,7 +246,7 @@ function CoinModeGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
             <img alt={game.name ?? t.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy" src={game.game_cover} />
           ) : null}
           <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/75 px-2 py-1 text-xs font-black text-yellow-300">
-            <img alt="" aria-hidden="true" className="h-4 w-4 [image-rendering:pixelated]" src="/images/coin-rewards/pixel-reward-coin.png" />
+            <img alt="" aria-hidden="true" className="h-4 w-4 [image-rendering:pixelated]" src="/images/coin-rewards/pixel-reward-coin.webp" />
             ×20
           </span>
         </figure>
