@@ -38,6 +38,7 @@ export function useHomeCoinRewards() {
   const [rewardFeedback, setRewardFeedback] = useState<CoinRewardFeedback | null>(null)
   const [collectedCoinFlight, setCollectedCoinFlight] = useState<CollectedCoinFlight | null>(null)
   const rewardTimerRef = useRef<number | null>(null)
+  const spawnedInitialCoinRef = useRef(false)
 
   useEffect(() => {
     setBalance(readCoinBalance())
@@ -92,6 +93,15 @@ export function useHomeCoinRewards() {
   }, [])
 
   useEffect(() => {
+    if (!spawnedInitialCoinRef.current) {
+      spawnedInitialCoinRef.current = true
+      setCoinPositions((current) =>
+        current.length >= MAX_FLOATING_COINS
+          ? current
+          : [...current, createRandomCoinPosition()],
+      )
+    }
+
     const timer = window.setInterval(() => {
       setCoinPositions((current) =>
         current.length >= MAX_FLOATING_COINS
@@ -162,6 +172,11 @@ export function HomeCoinBag({
   onOpen: () => void
 }) {
   const label = getCoinCopy(lang).bag
+  const balanceTextClass = balance >= 10_000
+    ? 'text-[6px] tracking-[-0.08em] sm:text-[8px]'
+    : balance >= 1_000
+      ? 'text-[7px] tracking-[-0.05em] sm:text-[9px]'
+      : 'text-[10px] sm:text-xs'
   const [balancePopup, setBalancePopup] = useState<CoinRewardFeedback | null>(null)
   const balancePopupTimer = useRef<number | null>(null)
 
@@ -195,7 +210,7 @@ export function HomeCoinBag({
           className="absolute inset-0 h-full w-full object-contain drop-shadow-sm"
           src="/images/coin-rewards/mystery-coin-box.png"
         />
-        <span className="coin-box-count-blink relative grid h-6 w-6 place-items-center rounded-full border-2 border-amber-700 bg-yellow-300 text-[10px] font-black leading-none text-amber-950 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55),0_1px_2px_rgba(92,48,0,0.35)] sm:h-8 sm:w-8 sm:text-xs">
+        <span className={`coin-box-count-blink relative grid h-6 w-6 place-items-center overflow-hidden rounded-full border-2 border-amber-700 bg-yellow-300 px-px font-black tabular-nums leading-none text-amber-950 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55),0_1px_2px_rgba(92,48,0,0.35)] sm:h-8 sm:w-8 ${balanceTextClass}`}>
           {balance}
         </span>
       </button>

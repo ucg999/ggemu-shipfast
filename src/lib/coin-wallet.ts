@@ -1,5 +1,6 @@
 export const COIN_BALANCE_STORAGE_KEY = 'game-adventure-coin-balance'
 export const COIN_BALANCE_EVENT = 'game-adventure-coin-balance-change'
+export const MAX_COIN_BALANCE = 99_999
 
 const DAILY_GAME_MULTIPLIER_STORAGE_KEY = 'game-adventure-daily-game-multipliers'
 const GAME_PLAY_STARTED_STORAGE_PREFIX = 'game-adventure-play-started:'
@@ -11,7 +12,10 @@ type DailyGameMultipliers = {
 
 export function readCoinBalance() {
   try {
-    return Math.max(0, Number(window.localStorage.getItem(COIN_BALANCE_STORAGE_KEY)) || 0)
+    return Math.min(
+      MAX_COIN_BALANCE,
+      Math.max(0, Math.floor(Number(window.localStorage.getItem(COIN_BALANCE_STORAGE_KEY)) || 0)),
+    )
   } catch {
     return 0
   }
@@ -19,7 +23,7 @@ export function readCoinBalance() {
 
 export function addCoinBalance(amount: number) {
   if (!Number.isFinite(amount) || amount <= 0) return readCoinBalance()
-  const next = readCoinBalance() + Math.floor(amount)
+  const next = Math.min(MAX_COIN_BALANCE, readCoinBalance() + Math.floor(amount))
 
   try {
     window.localStorage.setItem(COIN_BALANCE_STORAGE_KEY, String(next))
