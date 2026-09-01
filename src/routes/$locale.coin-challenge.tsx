@@ -11,7 +11,7 @@ import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 const COIN_CHALLENGE_STORAGE_KEY = 'retro-games-coin-challenge-machine'
 const COIN_CHALLENGE_RTP_STORAGE_KEY = 'retro-games-coin-challenge-rtp-ledger'
 const TARGET_RETURN_RATE = 0.8
-const SPECIAL_CELL_RATE = 0.05
+const SPECIAL_CELL_RATE = 0.12
 const BAR_50_RATE = 0.015
 const BAR_100_RATE = 0.002
 const BAR_25_RATE = 0.025
@@ -120,6 +120,8 @@ function CoinChallengePage() {
   const coinDropAudioRef = useRef<HTMLAudioElement | null>(null)
   const withdrawAudioRef = useRef<HTMLAudioElement | null>(null)
   const winAudioRef = useRef<HTMLAudioElement | null>(null)
+  const winAudioSourceRef = useRef<MediaElementAudioSourceNode | null>(null)
+  const winAudioGainRef = useRef<GainNode | null>(null)
   const poolAudioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
@@ -202,6 +204,29 @@ function CoinChallengePage() {
   function celebrateWin(lightIndex: number) {
     const winAudio = winAudioRef.current
     if (winAudio) {
+      try {
+        const AudioContextClass =
+          window.AudioContext ??
+          (window as typeof window & { webkitAudioContext?: typeof AudioContext })
+            .webkitAudioContext
+        if (AudioContextClass) {
+          const context = audioContextRef.current ?? new AudioContextClass()
+          audioContextRef.current = context
+          if (!winAudioSourceRef.current || !winAudioGainRef.current) {
+            const source = context.createMediaElementSource(winAudio)
+            const gain = context.createGain()
+            gain.gain.value = 2.8
+            source.connect(gain)
+            gain.connect(context.destination)
+            winAudioSourceRef.current = source
+            winAudioGainRef.current = gain
+          }
+          if (context.state === 'suspended') void context.resume()
+        }
+      } catch {
+        // Fall back to the media element's normal volume.
+      }
+      winAudio.volume = 1
       winAudio.currentTime = 0
       winAudio.onended = () => setWinningLight(null)
       void winAudio.play().catch(() => {
@@ -423,8 +448,11 @@ function CoinChallengePage() {
       return
     }
     if (isSpinning || isWithdrawing || compareMode || poolTransferDisplay || creditTransferDisplay) return
-    const refund = machine.bets.reduce((sum, value) => sum + value, 0)
-    if (refund < 1) return
+    const displayedBet = machine.bets.reduce((sum, value) => sum + value, 0)
+    if (displayedBet < 1) return
+    // Bets left visible after a completed round are only the repeat-bet template.
+    // Refund coins only while the displayed bet belongs to the pending round.
+    const refund = shouldResetAllBets ? 0 : displayedBet
     updateMachine((current) => ({
       ...current,
       bets: Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0),
@@ -565,12 +593,17 @@ function CoinChallengePage() {
       .map((value, option) => ({ option, value }))
       .filter(({ value }) => value > 0)
     const usesScaledPartialRate = activeBetOptions.length > 0 && !allOptionsBet
-    const scaledWinRate = 0.3 +
-      Math.max(0, activeBetOptions.length - 1) * (0.4 / 7)
+    const scaledWinRate = 0.2 +
+      Math.max(0, activeBetOptions.length - 1) * (0.5 / 7)
     const scaledWinningTargets = TRACK_LIGHTS
       .map((light, index) => ({ ...light, index }))
       .filter((light) => light.option !== null && roundBets[light.option] > 0)
+    const outcomeRoll = Math.random()
+    const chooseLucky = outcomeRoll < SPECIAL_CELL_RATE && luckyTargets.length > 0
+    const choosePenalty = outcomeRoll >= SPECIAL_CELL_RATE && outcomeRoll < SPECIAL_CELL_RATE * 2
     const chooseScaledWin = usesScaledPartialRate &&
+      !chooseLucky &&
+      !choosePenalty &&
       scaledWinningTargets.length > 0 &&
       Math.random() < scaledWinRate
     const lowMultiplierTargets = TRACK_LIGHTS
@@ -589,11 +622,10 @@ function CoinChallengePage() {
       selectedLowMultiplierTargets.length > 0 &&
       Math.random() < scaledLowMultiplierRate
     const chooseLowMultiplier = allOptionsBet &&
+      !chooseLucky &&
+      !choosePenalty &&
       lowMultiplierTargets.length > 0 &&
       Math.random() < 0.7
-    const outcomeRoll = Math.random()
-    const chooseLucky = !usesScaledPartialRate && !chooseLowMultiplier && outcomeRoll < SPECIAL_CELL_RATE && luckyTargets.length > 0
-    const choosePenalty = !usesScaledPartialRate && !chooseLowMultiplier && outcomeRoll >= SPECIAL_CELL_RATE && outcomeRoll < SPECIAL_CELL_RATE * 2
     const barStart = SPECIAL_CELL_RATE * 2
     const bar50End = barStart + BAR_50_RATE
     const bar100End = bar50End + BAR_100_RATE
@@ -814,7 +846,9 @@ function CoinChallengePage() {
     ) => {
       const candidates = TRACK_LIGHTS
         .map((light, index) => ({ ...light, index }))
-        .filter((light) => light.option !== null)
+        .filter((light) =>
+          light.option !== null && roundBets[light.option] > 0,
+        )
       const selected = candidates[Math.floor(Math.random() * candidates.length)]
 
       if (!selected || selected.option === null) {
