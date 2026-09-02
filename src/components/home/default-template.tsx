@@ -40,7 +40,7 @@ export function DefaultHomeTemplate(
   } = props
   const [showMobileRecent, setShowMobileRecent] = useState(false)
   const [randomVideoGames, setRandomVideoGames] = useState(() =>
-    mostPlayedGames.slice(0, 6),
+    mostPlayedGames.slice(0, 5),
   )
   const [randomPopupGame, setRandomPopupGame] = useState<PublicGame | null>(null)
   const [randomPopupMultiplier, setRandomPopupMultiplier] = useState(2)
@@ -53,7 +53,7 @@ export function DefaultHomeTemplate(
   const recentPlayedGames = useRecentPlayedGames()
 
   useEffect(() => {
-    setRandomVideoGames(selectDailyVideoGames(mostPlayedGames, 6))
+    setRandomVideoGames(selectDailyVideoGames(mostPlayedGames, 5))
   }, [mostPlayedGames])
 
   useEffect(() => {
@@ -490,10 +490,11 @@ function selectDailyVideoGames(games: Array<PublicGame>, limit: number) {
         dailyGameScore(`${weeklyKey}:${getGameId(left)}`) -
         dailyGameScore(`${weeklyKey}:${getGameId(right)}`),
     )
-  const startIndex = dayOfWeek * limit
+  if (weeklyGames.length <= limit) return weeklyGames
+  const startIndex = (dayOfWeek * limit) % weeklyGames.length
   const dailyGames = weeklyGames.slice(startIndex, startIndex + limit)
 
-  if (dailyGames.length >= limit || weeklyGames.length <= limit) {
+  if (dailyGames.length >= limit) {
     return dailyGames
   }
 

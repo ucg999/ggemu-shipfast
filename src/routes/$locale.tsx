@@ -2,6 +2,7 @@ import {
   Outlet,
   createFileRoute,
   redirect,
+  useRouter,
   useRouterState,
 } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
@@ -139,7 +140,9 @@ function parseHomeSearchStr(searchStr: string) {
 }
 
 export const Route = createFileRoute('/$locale')({
-  staleTime: 60_000,
+  staleTime: 0,
+  staleReloadMode: 'blocking',
+  shouldReload: ({ location, params }) => location.pathname.replace(/\/$/, '') === `/${params.locale}`,
   validateSearch: validateHomeSearch,
   headers: ({ match }) =>
     getSearchTemplate(match.search)
@@ -190,7 +193,7 @@ export const Route = createFileRoute('/$locale')({
 
     // Child routes such as the locally hosted coin challenge do not need the
     // remote GGEMU catalogue. Keep them available when that API is offline.
-    if (location.pathname !== `/${params.locale}`) {
+    if (location.pathname.replace(/\/$/, '') !== `/${params.locale}`) {
       return {
         games: [],
         pagination: { total: 0, page: 1, limit: 1, pages: 1 },
@@ -234,7 +237,8 @@ export const Route = createFileRoute('/$locale')({
         layoutSeed: getPokiDailyLayoutSeed(),
         latestBlogPosts,
         latestGames: latestGamesResult.games.slice(0, 20),
-        mostPlayedGames,
+        mostPlayedGames: mostPlayedGames.games,
+        videoLoadFailed: mostPlayedGames.loadFailed,
         seoOrigin,
       }
     }
@@ -262,7 +266,8 @@ export const Route = createFileRoute('/$locale')({
       layoutSeed: getPokiDailyLayoutSeed(),
       latestBlogPosts,
       latestGames: latestGamesResult.games.slice(0, 20),
-      mostPlayedGames,
+      mostPlayedGames: mostPlayedGames.games,
+      videoLoadFailed: mostPlayedGames.loadFailed,
       seoOrigin,
     }
   },
@@ -300,6 +305,9 @@ function LocalizedHomePage() {
   const homeSearch = Route.useSearch()
   const template = getSearchTemplate(homeSearch)
   const initialResult = Route.useLoaderData() as HomeLoaderData
+  const [lastVideoGames, setLastVideoGames] = useState<{ locale: string; games: Array<PublicGame> }>({ locale, games: initialResult.mostPlayedGames })
+  const router = useRouter()
+  const [isRetrying, setIsRetrying] = useState(false)
   const runSearch = useServerFn(searchGames)
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const lang = normalizeLocale(locale)
@@ -390,12 +398,19 @@ function LocalizedHomePage() {
   }
 
   useEffect(() => {
-    setResult(initialResult)
+    if (!initialResult.loadFailed) setResult(initialResult)
   }, [initialResult])
+
+  useEffect(() => {
+    if (initialResult.mostPlayedGames.length > 0) {
+      setLastVideoGames({ locale, games: initialResult.mostPlayedGames })
+    }
+  }, [initialResult.mostPlayedGames, locale])
 
   useEffect(() => {
     if (
       currentTemplate !== 'default' ||
+      pathname.replace(/\/$/, '') !== `/${locale}` ||
       !window.matchMedia('(max-width: 1023px)').matches
     ) {
       return
@@ -421,12 +436,14 @@ function LocalizedHomePage() {
       if (!isCancelled) {
         setResult(mergeMobileResults(mobileResults, 1))
       }
+    }).catch(() => {
+      // Preserve the current cards if the mobile refresh fails.
     })
 
     return () => {
       isCancelled = true
     }
-  }, [currentTemplate, initialResult, lang, runSearch])
+  }, [currentTemplate, initialResult, lang, runSearch, pathname, locale])
 
   const { games, pagination } = result
   const page = pagination.page
@@ -443,7 +460,9 @@ function LocalizedHomePage() {
     layoutSeed: initialResult.layoutSeed,
     latestBlogPosts: initialResult.latestBlogPosts,
     latestGames: initialResult.latestGames,
-    mostPlayedGames: initialResult.mostPlayedGames,
+    mostPlayedGames: initialResult.videoLoadFailed && initialResult.mostPlayedGames.length === 0 && lastVideoGames.locale === locale
+      ? lastVideoGames.games
+      : initialResult.mostPlayedGames,
     onFilterChange: updateFilter,
     onHomeRecommendations: showHomeRecommendations,
     onLoadPage: (nextPage: number) => loadGames(filters, nextPage),
@@ -461,7 +480,7 @@ function LocalizedHomePage() {
     t,
   }
 
-  if (pathname !== `/${locale}`) {
+  if (pathname.replace(/\/$/, '') !== `/${locale}`) {
     return (
       <>
         <Outlet />
@@ -595,6 +614,20 @@ function LocalizedHomePage() {
           </div>
         }
       >
+        {initialResult.loadFailed || initialResult.videoLoadFailed ? (
+          <div role="status" className="mx-4 my-3 flex items-center justify-between gap-3 rounded-lg bg-base-200 p-3 text-sm">
+            <span>{lang === 'en' ? 'Games could not be loaded. Please retry.' : lang === 'ja' ? 'ゲームを読み込めませんでした。再試行してください。' : lang === 'zh-TW' ? '遊戲暫時載入失敗，請重新載入。' : '游戏暂时加载失败，请重新加载。'}</span>
+            <button
+              className="btn btn-sm shrink-0"
+              disabled={isRetrying}
+              onClick={async () => {
+                setIsRetrying(true)
+                try { await router.invalidate({ sync: true }) } finally { setIsRetrying(false) }
+              }}
+              type="button"
+            >{lang === 'en' ? 'Retry' : lang === 'ja' ? '再試行' : lang === 'zh-TW' ? '重新載入' : '重新加载'}</button>
+          </div>
+        ) : null}
         <DefaultHomeTemplate
           {...templateProps}
           onCoinsEarned={coinRewards.addCoins}
@@ -731,17 +764,21 @@ async function loadMostPlayedVideoGames(locale: Locale) {
       }
     })
 
-  return [...uniqueGames.values()]
+  return {
+    games: [...uniqueGames.values()],
+    loadFailed: results.some((result) => result.status === 'rejected'),
+  }
 }
 
-async function safeSearchGames(data: Parameters<typeof searchGames>[0]['data']) {
+async function safeSearchGames(data: Parameters<typeof searchGames>[0]['data']): Promise<GameSearchResult & { loadFailed?: boolean }> {
   try {
     return await searchGames({ data })
   } catch {
     return {
       games: [],
+      loadFailed: true,
       pagination: { total: 0, page: 1, limit: data.limit, pages: 1 },
-    } satisfies GameSearchResult
+    }
   }
 }
 

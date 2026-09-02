@@ -32,6 +32,8 @@ export type FeaturePlatformGames = {
 }
 
 export type HomeLoaderData = GameSearchResult & {
+  loadFailed?: boolean
+  videoLoadFailed?: boolean
   featureSections?: Array<FeatureSection>
   filterOptions: GameFilterOptions
   layoutSeed: number
