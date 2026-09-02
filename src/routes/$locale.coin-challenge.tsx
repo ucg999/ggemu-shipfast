@@ -85,6 +85,30 @@ export const Route = createFileRoute('/$locale/coin-challenge')({
   component: CoinChallengePage,
 })
 
+function chooseModeTarget(
+  mode: 'gold' | 'ghost',
+  completedRounds: number,
+  suggestedTarget: number,
+  bets: Array<number>,
+  random = Math.random,
+) {
+  const exits = [BAR_50_LIGHT_INDEX, BAR_25_LIGHT_INDEX, LUCKY_LIGHT_INDEX, PENALTY_LIGHT_INDEX]
+  const weights = mode === 'gold' ? [4, 3, 2, 1] : [1, 2, 3, 4]
+  // Conditional exit odds produce the desired distribution of 1–4 paid rounds.
+  const exitWeight = weights[completedRounds - 1] ?? 0
+  const remainingWeight = weights.slice(Math.max(0, completedRounds - 1)).reduce((sum, weight) => sum + weight, 0)
+  const shouldExit = completedRounds >= 4 ||
+    (completedRounds > 0 && random() < exitWeight / remainingWeight)
+  if (shouldExit) return exits[Math.floor(random() * exits.length)]
+
+  // A continuing round must land on a wagered symbol, never an early exit or a zero payout.
+  const candidates = TRACK_LIGHTS
+    .map((light, index) => ({ ...light, index }))
+    .filter(light => !exits.includes(light.index) && light.option !== null && bets[light.option] > 0)
+  if (candidates.some(light => light.index === suggestedTarget)) return suggestedTarget
+  return candidates[Math.floor(random() * candidates.length)]?.index ?? exits[0]
+}
+
 function ModeBackground({ active, src }: { active: boolean; src: string }) {
   const [requested, setRequested] = useState(false)
   const [loaded, setLoaded] = useState(false)
@@ -964,10 +988,9 @@ function CoinChallengePage() {
         ? pickWeightedWinningTarget(targetPool)
       : targetPool[Math.floor(Math.random() * targetPool.length)]?.index ?? 0)
     const exitLights = [BAR_50_LIGHT_INDEX, BAR_25_LIGHT_INDEX, LUCKY_LIGHT_INDEX, PENALTY_LIGHT_INDEX]
-    const forceModeExit = gameMode !== 'normal' && (modeRounds >= 3 || Math.random() < 0.25)
-    const target = forceModeExit
-      ? exitLights[Math.floor(Math.random() * exitLights.length)]
-      : normalTarget
+    const target = gameMode === 'normal'
+      ? normalTarget
+      : chooseModeTarget(gameMode, modeRounds, normalTarget, roundBets)
     const outcome = TRACK_LIGHTS[target]
     const trackLength = TRACK_LIGHTS.length
     const distance = (target - activeLight + trackLength) % trackLength

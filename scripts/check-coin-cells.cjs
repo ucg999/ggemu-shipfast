@@ -15,7 +15,7 @@ function visit(node) {
 visit(ast)
 const constants = source.slice(source.indexOf('const COIN_CHALLENGE_STORAGE_KEY'), source.indexOf('export const Route'))
 let code = constants + '\n' + functions.join('\n')
-code = code.replace(/const target = forceModeExit[\s\S]*?(?=const outcome =)/, 'const target = forcedTarget;\n')
+code = code.replace(/const target = gameMode[\s\S]*?(?=const outcome =)/, 'const target = forcedTarget;\n')
 code = ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
 
 let checks = 0
