@@ -85,6 +85,31 @@ export const Route = createFileRoute('/$locale/coin-challenge')({
   component: CoinChallengePage,
 })
 
+function ModeBackground({ active, src }: { active: boolean; src: string }) {
+  const [requested, setRequested] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    if (active) setRequested(true)
+  }, [active])
+
+  // Keep a visited background mounted for fade-out and subsequent mode entries.
+  // Unvisited modes never receive an image src or make a network request.
+  if (!requested) return null
+
+  return (
+    <img
+      alt=""
+      aria-hidden="true"
+      draggable={false}
+      src={src}
+      onLoad={() => setLoaded(true)}
+      onError={() => setLoaded(false)}
+      className={`pointer-events-none absolute inset-0 h-full w-full object-contain transition-opacity duration-1000 ease-in-out motion-reduce:transition-none ${active && loaded ? 'opacity-100' : 'opacity-0'}`}
+    />
+  )
+}
+
 function CoinChallengePage() {
   const { locale } = Route.useParams()
   const lang = normalizeLocale(locale)
@@ -1277,13 +1302,10 @@ function CoinChallengePage() {
           src="/coin-challenge-classic-bg.jpg?v=20260902"
         />
         {(['gold', 'ghost'] as const).map((mode) => (
-          <img
+          <ModeBackground
             key={mode}
-            alt=""
-            aria-hidden="true"
-            draggable={false}
+            active={gameMode === mode}
             src={`/coin-challenge-${mode}.jpg`}
-            className={`pointer-events-none absolute inset-0 h-full w-full object-contain transition-opacity duration-1000 ease-in-out motion-reduce:transition-none ${gameMode === mode ? 'opacity-100' : 'opacity-0'}`}
           />
         ))}
         {[BAR_50_LIGHT_INDEX, BAR_25_LIGHT_INDEX].includes(winningLight ?? -1) ? (
@@ -1293,13 +1315,6 @@ function CoinChallengePage() {
             style={{ left: winningLight === BAR_50_LIGHT_INDEX ? '30.8%' : '56.65%' }}
           />
         ) : null}
-        <img
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 h-full w-full object-contain opacity-0"
-          draggable={false}
-          src="/coin-challenge-position-map.jpg"
-        />
 
         {specialCellEffect === 'lucky' ? (
           <div

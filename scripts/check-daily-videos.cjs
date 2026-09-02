@@ -26,7 +26,7 @@ for (let count = 0; count <= 50; count++) {
   }
 }
 async function checkFailures() {
-  const loader = extract('src/routes/$locale.tsx', ['loadMostPlayedVideoGames'])
+  const loader = extract('src/routes/$locale.index.tsx', ['loadMostPlayedVideoGames'])
   for (const failures of [0, 1, 2]) {
     let calls = 0
     const context = { searchGames: async () => {
