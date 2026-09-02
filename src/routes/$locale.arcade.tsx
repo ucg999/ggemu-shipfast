@@ -203,17 +203,17 @@ function CoinChallengeGameCard({ lang }: { lang: Locale }) {
       params={{ locale: lang }}
       to="/$locale/coin-challenge"
     >
-      <article className="overflow-hidden rounded-lg border border-base-300 bg-base-100 transition hover:-translate-y-0.5 hover:border-amber-400">
-        <figure className="relative aspect-[4/3] overflow-hidden bg-black">
+      <article className="relative aspect-square overflow-hidden rounded-lg border border-base-300 bg-base-100 transition hover:-translate-y-0.5 hover:border-amber-400">
+        <figure className="relative aspect-square overflow-hidden bg-black">
           <img
             alt={title}
             className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-            src="/coin-challenge-classic-bg.jpg"
+            src="/coin-fruit-machine-cover.jpg"
           />
         </figure>
-        <div className="p-2.5">
+        <div className="absolute inset-x-0 bottom-0 bg-black/75 p-2.5 text-white">
           <h2 className="truncate text-sm font-bold sm:text-base">{title}</h2>
-          <p className="mt-1 truncate text-xs text-base-content/55">{modeLabel}</p>
+          <p className="mt-1 truncate text-xs text-white/75">{modeLabel}</p>
         </div>
       </article>
     </Link>
@@ -221,10 +221,10 @@ function CoinChallengeGameCard({ lang }: { lang: Locale }) {
 }
 
 function getCoinChallengeTitle(locale: Locale) {
-  if (locale === 'zh-TW') return '金幣挑戰機'
-  if (locale === 'en') return 'Coin Challenge Machine'
-  if (locale === 'ja') return 'コインチャレンジマシン'
-  return '金币挑战机'
+  if (locale === 'zh-TW') return '金幣水果機'
+  if (locale === 'en') return 'Coin Fruit Machine'
+  if (locale === 'ja') return 'コインフルーツマシン'
+  return '金币水果机'
 }
 
 function getCoinChallengeModeLabel(locale: Locale) {

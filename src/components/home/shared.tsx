@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { CoinFruitCard } from '#/components/coin-fruit-card'
 import { useEffect, useRef, useState } from 'react'
 
 import {
@@ -76,12 +77,8 @@ export function HomeMostPlayedGamesSection({
   onRandomGame: () => void | Promise<void>
   streakDays?: number
 }) {
-  const items = games.slice(0, mobile ? 4 : 6)
+  const items = games.slice(0, 5)
   const t = getI18n(lang).home
-
-  if (items.length === 0) {
-    return null
-  }
 
   return (
     <section className="bg-base-100">
@@ -118,7 +115,7 @@ export function HomeMostPlayedGamesSection({
             </span>
           ) : null}
         </div>
-        <div className={mobile ? 'mt-2 grid grid-cols-2 gap-1.5' : 'mt-4 grid grid-cols-6 gap-2'}>
+        <div className={mobile ? 'mt-7 grid grid-cols-2 gap-x-1.5 gap-y-7' : 'mt-7 grid grid-cols-6 gap-2'}>
           {items.map((game, index) => {
             const gameId = game.url_slug || game._id || ''
             const multiplier = getDailyCoinMultiplier(items, index)
@@ -156,6 +153,7 @@ export function HomeMostPlayedGamesSection({
               </Link>
             )
           })}
+          <CoinFruitCard lang={lang} videoAligned />
         </div>
       </div>
     </section>

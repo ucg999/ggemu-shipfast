@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { CoinFruitCard, matchesCoinFruitQuery } from '#/components/coin-fruit-card'
 import { useServerFn } from '@tanstack/react-start'
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
@@ -39,6 +40,7 @@ export function HomeSearchOverlay({
   })
   const [result, setResult] = useState<GameSearchResult | null>(null)
   const [isSearching, setIsSearching] = useState(false)
+  const [showCoinFruit, setShowCoinFruit] = useState(false)
   const searchGamesList = result?.games ?? []
   const searchPlaceholder = getSearchPlaceholder(t, gameTotal)
 
@@ -58,6 +60,7 @@ export function HomeSearchOverlay({
 
   async function searchOverlayGames(nextFilters: Filters) {
     setIsSearching(true)
+    setShowCoinFruit(matchesCoinFruitQuery(nextFilters.query))
 
     try {
       const nextResult = await runSearch({
@@ -73,6 +76,8 @@ export function HomeSearchOverlay({
       })
 
       setResult(nextResult)
+    } catch {
+      setResult({ games: [], pagination: { total: 0, page: 1, limit: 24, pages: 1 } })
     } finally {
       setIsSearching(false)
     }
@@ -91,6 +96,7 @@ export function HomeSearchOverlay({
   }
 
   function resetSearch() {
+    setShowCoinFruit(false)
     setFilters({
       query: '',
       platform: '',
@@ -144,9 +150,10 @@ export function HomeSearchOverlay({
         </form>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
-          {result ? (
-            searchGamesList.length > 0 ? (
+          {result || showCoinFruit ? (
+            searchGamesList.length > 0 || showCoinFruit ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                {showCoinFruit ? <CoinFruitCard lang={lang} /> : null}
                 {searchGamesList.map((game) => (
                   <SearchResultCard
                     game={game}
