@@ -927,7 +927,6 @@ function CoinChallengePage() {
     const roundWins = chooseScaledWin || chooseLowMultiplier || chooseLucky ||
       (selectedBarIndex !== null && roundBets[7] > 0) ||
       (chooseNormalWin && winningTargets.length > 0)
-    const suppressFullBetFallbackPayout = questionTarget === null && allOptionsBet && !roundWins
     const fallbackTargets = otherTargets.length > 0
       ? otherTargets
       : TRACK_LIGHTS.map((light, index) => ({ ...light, index }))
@@ -1062,9 +1061,8 @@ function CoinChallengePage() {
         }
 
         finishRound(
-          suppressFullBetFallbackPayout
-            ? 0
-            : roundBets[outcome.option] * outcome.multiplier,
+          // Selection controls the odds; a landed, wagered symbol always pays.
+          roundBets[outcome.option] * outcome.multiplier,
           outcome.option,
           outcome.multiplier,
           target,
