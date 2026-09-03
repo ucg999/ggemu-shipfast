@@ -6,7 +6,7 @@ const ts = require('typescript')
 // Exercise actual round handlers with deterministic landing cells and fake timers.
 const source = fs.readFileSync('src/routes/$locale.coin-challenge.tsx', 'utf8')
 const ast = ts.createSourceFile('game.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
-const names = new Set(['createTrackLights', 'pickWeightedWinningTarget', 'safelyRunAudio', 'handleStart', 'playMainSpinAudio', 'celebrateWin', 'playTrackTick', 'playLuckyAudio', 'playPenaltyAudio', 'playJackpotAudio', 'playPoolAudio'])
+const names = new Set(['createTrackLights', 'chooseStandardTarget', 'safelyRunAudio', 'handleStart', 'playMainSpinAudio', 'celebrateWin', 'playTrackTick', 'playLuckyAudio', 'playPenaltyAudio', 'playJackpotAudio', 'playPoolAudio'])
 const functions = []
 function visit(node) {
   if (ts.isFunctionDeclaration(node) && names.has(node.name?.text)) functions.push(node.getText(ast))
@@ -35,9 +35,9 @@ for (const mode of ['normal', 'gold', 'ghost']) {
         },
       }
       const context = {
-        forcedTarget: cell, gameMode: mode, modeRounds: 0,
+        forcedTarget: cell, gameMode: mode, modeRounds: mask % 2,
         Math: Object.assign(Object.create(Math), { random: () => 0.99 }),
-        machine: { bets: [...bets], credits: 1000, bonusWin: 1000 },
+        machine: { bets: [...bets], credits: mode === 'ghost' || (mode === 'gold' && mask % 2 === 0) ? 0 : 1000, bonusWin: 1000 },
         collectibleWin: 0, roundWin: 0, activeLight: 0,
         shouldResetAllBets: true, isSpinning: false, compareMode: false,
         poolTransferDisplay: null, creditTransferDisplay: null,
@@ -70,9 +70,17 @@ for (const mode of ['normal', 'gold', 'ghost']) {
         const payout = vm.runInContext(`machine.bets[TRACK_LIGHTS[${cell}].option] * TRACK_LIGHTS[${cell}].multiplier`, context)
         assert.equal(context.collectibleWin, mode === 'ghost' ? 0 : payout * (mode === 'gold' ? 2 : 1), label + ' payout')
         if (mode === 'ghost') assert.equal(context.machine.bonusWin, 1000 - payout, label + ' deduction')
+        const expectedCredits = mode === 'ghost' || (mode === 'gold' && mask % 2 === 0)
+          ? 0 : 1000 - bets.reduce((sum, bet) => sum + bet, 0)
+        assert.equal(context.machine.credits, expectedCredits, label + ' ghost always free / gold first free')
       } else if (mode !== 'normal') {
         assert.equal(context.gameMode, 'normal', label + ' exit failed')
         assert.equal(context.collectibleWin, 0, label + ' exit paid unexpectedly')
+        if (mode === 'ghost') {
+          assert.equal(context.machine.bonusWin, 1000, label + ' mode exit must preserve prize pool')
+          assert.equal(context.machine.credits, 0, label + ' mode exit must preserve credits')
+          assert.equal(context.collectibleWinRef.current, 0, label + ' exit must clear refund reference')
+        }
       } else if (cell === 2 || cell === 4) {
         assert.equal(context.gameMode, cell === 2 ? 'gold' : 'ghost', label + ' entry failed')
       } else if (cell === 21 || cell === 9) {

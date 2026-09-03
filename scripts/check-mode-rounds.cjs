@@ -19,18 +19,22 @@ for (const mode of ['gold', 'ghost']) {
     for (let suggested = 0; suggested < 24; suggested++) {
       for (let rounds = 0; rounds <= 4; rounds++) {
         const target = choose(mode, rounds, suggested, bets, () => rounds === 0 ? 0 : 0.999999)
-        if (rounds === 4) assert.ok(exits.includes(target), 'fifth spin must exit')
+        if (rounds >= 3) assert.ok(exits.includes(target), 'fourth spin must exit')
         else {
           assert.ok(!exits.includes(target), 'continuing round must not exit early')
-          assert.ok(bets[lights[target].option] > 0, 'continuing round must have a wagered payout')
+          assert.ok(lights[target].option !== null)
+          if (!exits.includes(suggested)) assert.equal(target, suggested, 'unwagered landings must remain possible')
         }
         cases++
       }
     }
   }
+}
+
+for (const mode of ['gold', 'ghost']) {
+  const expected = mode === 'gold' ? [0.6, 0.3, 0.1] : [0.1, 0.3, 0.6]
   let survival = 1
-  const expected = mode === 'gold' ? [0.4, 0.3, 0.2, 0.1] : [0.1, 0.2, 0.3, 0.4]
-  for (let rounds = 1; rounds <= 4; rounds++) {
+  for (let rounds = 1; rounds <= 3; rounds++) {
     let exitCount = 0
     for (let i = 0; i < 10000; i++) {
       if (exits.includes(choose(mode, rounds, 0, Array(8).fill(1), () => (i + 0.5) / 10000))) exitCount++
@@ -40,4 +44,4 @@ for (const mode of ['gold', 'ghost']) {
     survival *= 1 - conditional
   }
 }
-console.log(`PASS: ${cases} mode/round/bet/target cases; gold 40/30/20/10 and ghost 10/20/30/40`)
+console.log(`PASS: ${cases} mode/round/bet/target cases; gold 60/30/10, ghost 10/30/60; fourth spin exits`)

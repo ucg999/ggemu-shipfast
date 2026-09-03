@@ -10,26 +10,11 @@ import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 
 const COIN_CHALLENGE_STORAGE_KEY = 'retro-games-coin-challenge-machine'
 const COIN_CHALLENGE_RTP_STORAGE_KEY = 'retro-games-coin-challenge-rtp-ledger'
-const TARGET_RETURN_RATE = 0.8
-const SPECIAL_CELL_RATE = 0.12
-const QUESTION_CELL_RATE = 0.1
-const BAR_50_RATE = 0
-const BAR_100_RATE = 0.002
-const BAR_25_RATE = 0
-const NORMAL_WIN_RATE_FACTOR = 0.75
-const NORMAL_WIN_RATE_CAP = 0.35
 const BAR_50_LIGHT_INDEX = 2
 const BAR_100_LIGHT_INDEX = 3
 const BAR_25_LIGHT_INDEX = 4
 const PENALTY_LIGHT_INDEX = 9
 const LUCKY_LIGHT_INDEX = 21
-const RESERVED_MAIN_LIGHTS = new Set([
-  PENALTY_LIGHT_INDEX,
-  LUCKY_LIGHT_INDEX,
-  BAR_50_LIGHT_INDEX,
-  BAR_100_LIGHT_INDEX,
-  BAR_25_LIGHT_INDEX,
-])
 const CHALLENGE_OPTION_COUNT = 8
 const MAIN_SPIN_DURATION_MS = 5000
 const BOTTOM_OPTION_ORDER = [7, 6, 5, 4, 3, 2, 1, 0] as const
@@ -42,6 +27,20 @@ const DESKTOP_BET_SHIFT_CLASSES = [
   'sm:-translate-x-[6%]', 'sm:-translate-x-[12%]', 'sm:-translate-x-[20%]', 'sm:-translate-x-[30%]',
 ] as const
 const OPTION_PAYOUT_MULTIPLIERS = [5, 10, 10, 10, 20, 20, 20, 100] as const
+
+// Weights belong to outcome categories, not individual symbols or bet patterns.
+const LANDING_GROUPS = [
+  { name: 'x2', weight: 16.25, cells: [11, 17, 23] },
+  { name: 'x3', weight: 16.25, cells: [8, 14, 20] },
+  { name: 'five', weight: 20, cells: [5, 10, 16, 22] },
+  { name: 'ten', weight: 15, cells: [0, 1, 6, 12, 13, 18] },
+  { name: 'bomb', weight: 5, cells: [PENALTY_LIGHT_INDEX] },
+  { name: 'ghost', weight: 9, cells: [BAR_25_LIGHT_INDEX] },
+  { name: 'twenty', weight: 8, cells: [7, 15, 19] },
+  { name: 'gold', weight: 6, cells: [BAR_50_LIGHT_INDEX] },
+  { name: 'lucky', weight: 2.5, cells: [LUCKY_LIGHT_INDEX] },
+  { name: 'hundred', weight: 2, cells: [BAR_100_LIGHT_INDEX] },
+] as const
 
 const TRACK_LIGHTS = createTrackLights()
 const LEFT_COMPARE_LIGHTS = TRACK_LIGHTS
@@ -89,22 +88,20 @@ function chooseModeTarget(
   mode: 'gold' | 'ghost',
   completedRounds: number,
   suggestedTarget: number,
-  bets: Array<number>,
+  _bets: Array<number>,
   random = Math.random,
 ) {
   const exits = [BAR_50_LIGHT_INDEX, BAR_25_LIGHT_INDEX, LUCKY_LIGHT_INDEX, PENALTY_LIGHT_INDEX]
-  const weights = mode === 'gold' ? [4, 3, 2, 1] : [1, 2, 3, 4]
-  // Conditional exit odds produce the desired distribution of 1–4 paid rounds.
-  const exitWeight = weights[completedRounds - 1] ?? 0
+  const weights = mode === 'gold' ? [6, 3, 1] : [1, 3, 6]
   const remainingWeight = weights.slice(Math.max(0, completedRounds - 1)).reduce((sum, weight) => sum + weight, 0)
-  const shouldExit = completedRounds >= 4 ||
-    (completedRounds > 0 && random() < exitWeight / remainingWeight)
+  const shouldExit = completedRounds >= 3 ||
+    (completedRounds > 0 && random() < weights[completedRounds - 1] / remainingWeight)
   if (shouldExit) return exits[Math.floor(random() * exits.length)]
 
-  // A continuing round must land on a wagered symbol, never an early exit or a zero payout.
+  // Count spins, including unwagered symbols, rather than successful payouts.
   const candidates = TRACK_LIGHTS
     .map((light, index) => ({ ...light, index }))
-    .filter(light => !exits.includes(light.index) && light.option !== null && bets[light.option] > 0)
+    .filter(light => !exits.includes(light.index) && light.option !== null)
   if (candidates.some(light => light.index === suggestedTarget)) return suggestedTarget
   return candidates[Math.floor(random() * candidates.length)]?.index ?? exits[0]
 }
@@ -188,6 +185,16 @@ function CoinChallengePage() {
   const ghostEntryAudioRef = useRef<HTMLAudioElement | null>(null)
   const machineRef = useRef<CoinChallengeState>(createEmptyChallengeState())
   const collectibleWinRef = useRef(0)
+  const gameModeRef = useRef(gameMode)
+  gameModeRef.current = gameMode
+
+  useEffect(() => {
+    if (gameMode === 'ghost' && !isSpinning &&
+      machine.credits + machine.bonusWin + collectibleWin <= 0) {
+      setGameMode('normal')
+      setModeRounds(0)
+    }
+  }, [gameMode, isSpinning, machine.credits, machine.bonusWin, collectibleWin])
 
   useEffect(() => {
     const storedMachine = readCoinChallengeState()
@@ -214,7 +221,7 @@ function CoinChallengePage() {
       stopCreditHold()
       const current = machineRef.current
       const refund = current.credits + current.bonusWin + collectibleWinRef.current
-      if (refund > 0) addCoinBalance(refund)
+      if (gameModeRef.current !== 'ghost' && refund > 0) addCoinBalance(refund)
       const resetMachine = createEmptyChallengeState()
       machineRef.current = resetMachine
       collectibleWinRef.current = 0
@@ -828,7 +835,8 @@ function CoinChallengePage() {
     }
 
     const totalBet = roundBets.reduce((sum, value) => sum + value, 0)
-    const repeatBetCost = shouldResetAllBets && !usedAutomaticBet ? totalBet : 0
+    const freeModeSpin = gameMode === 'ghost' || (gameMode === 'gold' && modeRounds === 0)
+    const repeatBetCost = !freeModeSpin && shouldResetAllBets && !usedAutomaticBet ? totalBet : 0
     if (machine.credits < repeatBetCost) {
       window.alert(copy.creditEmpty)
       return
@@ -846,11 +854,7 @@ function CoinChallengePage() {
     }
     const mainSpinDurationMs = playMainSpinAudio()
     const rtpLedger = readRtpLedger()
-    const nextTotalWagered = rtpLedger.wagered + totalBet
-    const payoutBudget = Math.max(
-      0,
-      Math.floor(nextTotalWagered * TARGET_RETURN_RATE) - rtpLedger.paid,
-    )
+    const nextTotalWagered = rtpLedger.wagered + (freeModeSpin ? 0 : totalBet)
     saveRtpLedger({ ...rtpLedger, wagered: nextTotalWagered })
 
     updateMachine((current) => ({
@@ -859,134 +863,7 @@ function CoinChallengePage() {
       credits: Math.max(0, current.credits - repeatBetCost),
     }))
 
-    const winningTargets = TRACK_LIGHTS
-      .map((light, index) => ({ ...light, index }))
-      .filter((light) =>
-        !RESERVED_MAIN_LIGHTS.has(light.index) &&
-        light.option !== null &&
-        roundBets[light.option] > 0,
-      )
-    const otherTargets = TRACK_LIGHTS
-      .map((light, index) => ({ ...light, index }))
-      .filter((light) =>
-        !RESERVED_MAIN_LIGHTS.has(light.index) &&
-        light.option !== null && roundBets[light.option] === 0,
-      )
-    const luckyTargets = payoutBudget > 0
-      ? TRACK_LIGHTS.map((light, index) => ({ ...light, index }))
-          .filter((light) => light.index === LUCKY_LIGHT_INDEX)
-      : []
-    const allOptionsBet = roundBets.every((value) => value > 0)
-    const activeBetOptions = roundBets
-      .map((value, option) => ({ option, value }))
-      .filter(({ value }) => value > 0)
-    const usesScaledPartialRate = activeBetOptions.length > 0 && !allOptionsBet
-    const scaledWinRate = 0.2 +
-      Math.max(0, activeBetOptions.length - 1) * (0.5 / 7)
-    const scaledWinningTargets = TRACK_LIGHTS
-      .map((light, index) => ({ ...light, index }))
-      .filter((light) => light.index !== BAR_50_LIGHT_INDEX && light.index !== BAR_25_LIGHT_INDEX && light.option !== null && roundBets[light.option] > 0)
-    // Reserve exclusive 10% intervals for the two question cells.
-    const questionRoll = Math.random()
-    const questionTarget = questionRoll < QUESTION_CELL_RATE
-      ? BAR_50_LIGHT_INDEX
-      : questionRoll < QUESTION_CELL_RATE * 2 ? BAR_25_LIGHT_INDEX : null
-    const outcomeRoll = Math.random()
-    const chooseLucky = outcomeRoll < SPECIAL_CELL_RATE && luckyTargets.length > 0
-    const choosePenalty = outcomeRoll >= SPECIAL_CELL_RATE && outcomeRoll < SPECIAL_CELL_RATE * 2
-    const chooseScaledWin = usesScaledPartialRate &&
-      !chooseLucky &&
-      !choosePenalty &&
-      scaledWinningTargets.length > 0 &&
-      Math.random() < scaledWinRate
-    const lowMultiplierTargets = TRACK_LIGHTS
-      .map((light, index) => ({ ...light, index }))
-      .filter((light) =>
-        light.option !== null && (light.multiplier === 2 || light.multiplier === 3),
-      )
-    const selectedLowMultiplierTargets = lowMultiplierTargets.filter(
-      (light) => light.option !== null && roundBets[light.option] > 0,
-    )
-    const scaledLowMultiplierRate = Math.max(
-      0,
-      (activeBetOptions.length - 1) * (0.7 / 7),
-    )
-    const chooseScaledLowMultiplier = chooseScaledWin &&
-      selectedLowMultiplierTargets.length > 0 &&
-      Math.random() < scaledLowMultiplierRate
-    const chooseLowMultiplier = allOptionsBet &&
-      !chooseLucky &&
-      !choosePenalty &&
-      lowMultiplierTargets.length > 0 &&
-      Math.random() < 0.7
-    const barStart = SPECIAL_CELL_RATE * 2
-    const bar50End = barStart + BAR_50_RATE
-    const bar100End = bar50End + BAR_100_RATE
-    const bar25End = bar100End + BAR_25_RATE
-    const chooseBar50 = !usesScaledPartialRate && !chooseLowMultiplier && outcomeRoll >= barStart && outcomeRoll < bar50End
-    const chooseBar100 = !usesScaledPartialRate && !chooseLowMultiplier && outcomeRoll >= bar50End && outcomeRoll < bar100End
-    const chooseBar25 = !usesScaledPartialRate && !chooseLowMultiplier && outcomeRoll >= bar100End && outcomeRoll < bar25End
-    const selectedBarIndex = chooseBar50
-      ? BAR_50_LIGHT_INDEX
-      : chooseBar100
-        ? BAR_100_LIGHT_INDEX
-        : chooseBar25
-          ? BAR_25_LIGHT_INDEX
-          : null
-    const averageWinningPayout = winningTargets.length > 0
-      ? winningTargets.reduce(
-          (sum, light) => sum + roundBets[light.option!] * light.multiplier,
-          0,
-        ) / winningTargets.length
-      : 0
-    const normalWinRate = averageWinningPayout > 0
-      ? Math.min(
-          NORMAL_WIN_RATE_CAP,
-          (payoutBudget / averageWinningPayout) * NORMAL_WIN_RATE_FACTOR,
-        )
-      : 0
-    const chooseNormalWin = !usesScaledPartialRate && !chooseLowMultiplier && outcomeRoll >= SPECIAL_CELL_RATE * 2 &&
-      selectedBarIndex === null &&
-      outcomeRoll < bar25End + normalWinRate
-    const roundWins = chooseScaledWin || chooseLowMultiplier || chooseLucky ||
-      (selectedBarIndex !== null && roundBets[7] > 0) ||
-      (chooseNormalWin && winningTargets.length > 0)
-    const fallbackTargets = otherTargets.length > 0
-      ? otherTargets
-      : TRACK_LIGHTS.map((light, index) => ({ ...light, index }))
-          .filter((light) => light.index !== BAR_50_LIGHT_INDEX && light.index !== BAR_25_LIGHT_INDEX && light.option !== null)
-    const targetPool = chooseScaledLowMultiplier
-      ? selectedLowMultiplierTargets
-      : chooseScaledWin
-      ? scaledWinningTargets
-      : chooseLowMultiplier
-        ? lowMultiplierTargets
-      : chooseLucky
-        ? luckyTargets
-      : choosePenalty
-        ? TRACK_LIGHTS.map((light, index) => ({ ...light, index }))
-            .filter((light) => light.index === PENALTY_LIGHT_INDEX)
-        : selectedBarIndex !== null
-          ? TRACK_LIGHTS.map((light, index) => ({ ...light, index }))
-              .filter((light) => light.index === selectedBarIndex)
-        : roundWins
-          ? winningTargets
-          : fallbackTargets
-    const scaledTargetOption = chooseScaledWin && !chooseScaledLowMultiplier
-      ? activeBetOptions[Math.floor(Math.random() * activeBetOptions.length)]?.option
-      : undefined
-    const scaledOptionTargets = scaledTargetOption === undefined
-      ? []
-      : targetPool.filter((light) => light.option === scaledTargetOption)
-    const normalTarget = questionTarget ?? (chooseScaledLowMultiplier
-      ? targetPool[Math.floor(Math.random() * targetPool.length)]?.index ?? 0
-      : chooseScaledWin
-      ? scaledOptionTargets[Math.floor(Math.random() * scaledOptionTargets.length)]?.index ?? 0
-      : chooseLowMultiplier
-      ? targetPool[Math.floor(Math.random() * targetPool.length)]?.index ?? 0
-      : roundWins && !chooseLucky && selectedBarIndex === null
-        ? pickWeightedWinningTarget(targetPool)
-      : targetPool[Math.floor(Math.random() * targetPool.length)]?.index ?? 0)
+    const normalTarget = chooseStandardTarget()
     const exitLights = [BAR_50_LIGHT_INDEX, BAR_25_LIGHT_INDEX, LUCKY_LIGHT_INDEX, PENALTY_LIGHT_INDEX]
     const target = gameMode === 'normal'
       ? normalTarget
@@ -1038,9 +915,9 @@ function CoinChallengePage() {
       if (completedSteps >= totalSteps) {
         if (gameMode !== 'normal') {
           if (exitLights.includes(target)) {
+            finishRound(0, 0, 0, target)
             setGameMode('normal')
             setModeRounds(0)
-            finishRound(0, 0, 0, target)
             setWinningLight(target)
           } else {
             setModeRounds((current) => current + 1)
@@ -1697,26 +1574,15 @@ function createTrackLights() {
   return lights
 }
 
-function pickWeightedWinningTarget(
-  targets: Array<{
-    index: number
-    multiplier: number
-    option: number | null
-  }>,
-) {
-  if (targets.length === 0) return 0
-  const weighted = targets.map((target) => ({
-    target,
-    weight: target.option === 0 || target.multiplier === 2 || target.multiplier === 3
-      ? 3.5
-      : 1,
-  }))
-  let roll = Math.random() * weighted.reduce((sum, item) => sum + item.weight, 0)
-  for (const item of weighted) {
-    roll -= item.weight
-    if (roll <= 0) return item.target.index
+function chooseStandardTarget(random = Math.random) {
+  let roll = random() * 100
+  for (const group of LANDING_GROUPS) {
+    if (roll < group.weight) {
+      return group.cells[Math.floor(random() * group.cells.length)]
+    }
+    roll -= group.weight
   }
-  return weighted[weighted.length - 1].target.index
+  return BAR_100_LIGHT_INDEX
 }
 
 function getMobileTrackShift(light: { x: number; y: number }) {
