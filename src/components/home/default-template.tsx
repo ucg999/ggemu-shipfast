@@ -20,7 +20,7 @@ import { getGameDetail, getRandomPlayableGame } from '#/lib/ggemu'
 import { getI18n } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { setDailyGameCoinMultiplier } from '#/lib/coin-wallet'
-import { unlockPaidResource } from '#/lib/paid-resource'
+import { confirmResourceDownload, unlockPaidResource } from '#/lib/paid-resource'
 import { useServerFn } from '@tanstack/react-start'
 
 export function DefaultHomeTemplate(
@@ -576,6 +576,10 @@ function orderHomePlatforms<T extends { name: string }>(platforms: Array<T>) {
 function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
   const t = getI18n(lang).home
   const paidLink = (resourceId: string, cost = 10) => (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!confirmResourceDownload(lang, cost)) {
+      event.preventDefault()
+      return
+    }
     if (unlockPaidResource(resourceId, cost)) return
     event.preventDefault()
     window.alert(getMobileResourceCoinCopy(lang))

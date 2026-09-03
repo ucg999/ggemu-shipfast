@@ -9,7 +9,7 @@ import { siteConfig } from '#/lib/site-config'
 import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
 import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
 import { addCoinBalance } from '#/lib/coin-wallet'
-import { unlockPaidResource } from '#/lib/paid-resource'
+import { confirmResourceDownload, unlockPaidResource } from '#/lib/paid-resource'
 
 const SITE_VISIT_COIN_SESSION_KEY = 'game-adventure-site-visit-coin-awarded'
 const DESKTOP_SIDEBAR_STATE_KEY = 'retro-games-desktop-sidebar-state'
@@ -203,6 +203,10 @@ export function SiteLayout({
     resourceId: string,
     cost = 10,
   ) {
+    if (!confirmResourceDownload(locale, cost)) {
+      event.preventDefault()
+      return
+    }
     if (unlockPaidResource(resourceId, cost)) return
 
     event.preventDefault()
