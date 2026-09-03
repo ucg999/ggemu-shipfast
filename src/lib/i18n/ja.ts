@@ -108,7 +108,7 @@ export const jaMessages = {
     switchLibrary: 'Switchゲームライブラリ',
     arcadeLibrary: 'アーケードライブラリ',
     popularGameLibrary: '人気ゲームコレクション',
-    mahjongSlots: '麻雀＆スロット',
+    mahjongSlots: 'アーケード麻雀',
     findFriends: '仲間を探す',
     wechat: 'WeChat',
     wechatQrAlt: 'ゲームアドベンチャー WeChat QRコード',

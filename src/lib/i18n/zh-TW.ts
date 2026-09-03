@@ -108,7 +108,7 @@ export const zhTwMessages = {
     switchLibrary: 'Switch 遊戲庫',
     arcadeLibrary: '街機遊戲庫',
     popularGameLibrary: '熱門遊戲合集',
-    mahjongSlots: '麻將＆水果機',
+    mahjongSlots: '街機麻將',
     findFriends: '找點新朋友',
     wechat: '微信',
     wechatQrAlt: '遊戲歷險記微信二維碼',

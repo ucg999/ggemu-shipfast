@@ -111,7 +111,7 @@ export const enMessages = {
     switchLibrary: 'Switch Game Library',
     arcadeLibrary: 'Arcade Library',
     popularGameLibrary: 'Popular Game Collection',
-    mahjongSlots: 'Mahjong & Slots',
+    mahjongSlots: 'Arcade Mahjong',
     findFriends: 'Find New Friends',
     wechat: 'WeChat',
     wechatQrAlt: 'Game Adventure WeChat QR code',

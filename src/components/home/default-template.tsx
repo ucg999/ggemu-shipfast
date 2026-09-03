@@ -40,7 +40,7 @@ export function DefaultHomeTemplate(
   } = props
   const [showMobileRecent, setShowMobileRecent] = useState(false)
   const [randomVideoGames, setRandomVideoGames] = useState(() =>
-    mostPlayedGames.slice(0, 5),
+    mostPlayedGames.slice(0, 6),
   )
   const [randomPopupGame, setRandomPopupGame] = useState<PublicGame | null>(null)
   const [randomPopupMultiplier, setRandomPopupMultiplier] = useState(2)
@@ -53,7 +53,7 @@ export function DefaultHomeTemplate(
   const recentPlayedGames = useRecentPlayedGames()
 
   useEffect(() => {
-    setRandomVideoGames(selectDailyVideoGames(mostPlayedGames, 5))
+    setRandomVideoGames(selectDailyVideoGames(mostPlayedGames, 6))
   }, [mostPlayedGames])
 
   useEffect(() => {

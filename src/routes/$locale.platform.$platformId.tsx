@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { CoinMachineWelcome } from '#/components/coin-machine-welcome'
 
 import type { Locale, PublicGame } from '#/lib/ggemu'
 import { searchCoinModeGames, searchGames } from '#/lib/ggemu'
@@ -88,6 +89,8 @@ function PlatformModePage() {
   const copy = getModeCopy(lang, modeId)
 
   return (
+    <>
+    {modeId === 'coin' ? <CoinMachineWelcome lang={lang} /> : null}
     <PlatformModeContent
       body={copy.subtitle}
       description={copy.description}
@@ -97,6 +100,7 @@ function PlatformModePage() {
       showCoinChallenge={modeId === 'coin'}
       title={copy.title}
     />
+    </>
   )
 }
 

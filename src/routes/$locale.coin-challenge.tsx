@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 
 import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
+import { CoinMachineWelcome } from '#/components/coin-machine-welcome'
 import type { Locale } from '#/lib/ggemu'
 import { addCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
 import { normalizeLocale } from '#/lib/i18n'
@@ -1191,6 +1192,7 @@ function CoinChallengePage() {
       </div>
 
       <h1 className="sr-only">{title}</h1>
+      <CoinMachineWelcome lang={lang} />
       <div className="flex min-h-screen items-center justify-center bg-black p-0 sm:p-4">
         <div className="relative aspect-[5/8] w-full max-w-[min(750px,62.5vh)] shrink-0 select-none">
         <img

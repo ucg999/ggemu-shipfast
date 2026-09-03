@@ -19,8 +19,8 @@ for (let count = 0; count <= 50; count++) {
     const games = Array.from({ length: count }, (_, index) => ({ _id: String(index), game_video: 'video.mp4' }))
     const context = { Date: TestDate, games }
     vm.createContext(context)
-    const result = vm.runInContext(selection + ';selectDailyVideoGames(games, 5)', context)
-    assert.equal(result.length, Math.min(5, count), `count=${count}, day=${day}`)
+    const result = vm.runInContext(selection + ';selectDailyVideoGames(games, 6)', context)
+    assert.equal(result.length, Math.min(6, count), `count=${count}, day=${day}`)
     assert.equal(new Set(result.map(game => game._id)).size, result.length)
     cases++
   }

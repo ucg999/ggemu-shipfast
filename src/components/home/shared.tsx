@@ -1,5 +1,4 @@
 import { Link } from '@tanstack/react-router'
-import { CoinFruitCard } from '#/components/coin-fruit-card'
 import { useEffect, useRef, useState } from 'react'
 
 import {
@@ -77,7 +76,7 @@ export function HomeMostPlayedGamesSection({
   onRandomGame: () => void | Promise<void>
   streakDays?: number
 }) {
-  const items = games.slice(0, 5)
+  const items = games.slice(0, 6)
   const t = getI18n(lang).home
 
   return (
@@ -153,7 +152,6 @@ export function HomeMostPlayedGamesSection({
               </Link>
             )
           })}
-          <CoinFruitCard lang={lang} videoAligned />
         </div>
       </div>
     </section>
