@@ -86,17 +86,17 @@ export const Route = createFileRoute('/$locale/coin-challenge')({
 })
 
 function chooseModeTarget(
-  mode: 'gold' | 'ghost',
+  _mode: 'gold' | 'ghost',
   completedRounds: number,
   suggestedTarget: number,
   _bets: Array<number>,
   random = Math.random,
 ) {
   const exits = [BAR_50_LIGHT_INDEX, BAR_25_LIGHT_INDEX, LUCKY_LIGHT_INDEX, PENALTY_LIGHT_INDEX]
-  const weights = mode === 'gold' ? [6, 3, 1] : [1, 3, 6]
-  const remainingWeight = weights.slice(Math.max(0, completedRounds - 1)).reduce((sum, weight) => sum + weight, 0)
+  // Equal overall odds for 0, 1, 2, or 3 regular spins before the exit spin.
+  // Conditional exit odds are 1/4, 1/3, 1/2, then guaranteed.
   const shouldExit = completedRounds >= 3 ||
-    (completedRounds > 0 && random() < weights[completedRounds - 1] / remainingWeight)
+    random() < 1 / (4 - Math.max(0, completedRounds))
   if (shouldExit) return exits[Math.floor(random() * exits.length)]
 
   // Count spins, including unwagered symbols, rather than successful payouts.
@@ -1613,17 +1613,17 @@ function getDesktopTrackShift(light: { x: number; y: number }) {
 }
 
 function getCoinChallengeTitle(locale: Locale) {
-  if (locale === 'zh-TW') return '金幣水果機'
-  if (locale === 'en') return 'Coin Fruit Machine'
-  if (locale === 'ja') return 'コインフルーツマシン'
-  return '金币水果机'
+  if (locale === 'zh-TW') return '金幣娛樂遊戲'
+  if (locale === 'en') return 'Coin Entertainment Game'
+  if (locale === 'ja') return 'コインエンターテインメントゲーム'
+  return '金币娱乐游戏'
 }
 
 function getCoinChallengeDescription(locale: Locale) {
-  if (locale === 'zh-TW') return '金幣水果機獨立遊戲介面。'
-  if (locale === 'en') return 'The dedicated Coin Fruit Machine game screen.'
-  if (locale === 'ja') return 'コインフルーツマシンの専用ゲーム画面です。'
-  return '金币水果机独立游戏界面。'
+  if (locale === 'zh-TW') return '金幣娛樂遊戲獨立遊戲介面。'
+  if (locale === 'en') return 'The dedicated Coin Entertainment Game screen.'
+  if (locale === 'ja') return 'コインエンターテインメントゲームの専用画面です。'
+  return '金币娱乐游戏独立游戏界面。'
 }
 
 function getCoinChallengeCopy(locale: Locale) {

@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router'
 import type { Locale } from '#/lib/ggemu'
 
 export function CoinFruitCard({ lang, videoAligned = false }: { lang: Locale; videoAligned?: boolean }) {
-  const title = lang === 'zh-TW' ? '金幣水果機' : lang === 'en' ? 'Coin Fruit Machine' : lang === 'ja' ? 'コインフルーツマシン' : '金币水果机'
+  const title = lang === 'zh-TW' ? '金幣娛樂遊戲' : lang === 'en' ? 'Coin Entertainment Game' : lang === 'ja' ? 'コインエンターテインメントゲーム' : '金币娱乐游戏'
   if (videoAligned) {
     return (
       <div className="relative aspect-[4/3] min-w-0">
@@ -21,9 +21,4 @@ export function CoinFruitCard({ lang, videoAligned = false }: { lang: Locale; vi
       <span className="absolute inset-x-0 bottom-0 bg-black/75 px-2 py-1 text-center text-sm font-bold text-white">{title}</span>
     </Link>
   )
-}
-
-export function matchesCoinFruitQuery(query: string) {
-  const normalized = query.trim().toLowerCase().replace(/\s+/g, '')
-  return normalized.length > 0 && ['金币水果机', '金幣水果機', '水果机', '水果機', '老虎机', '老虎機', '金币挑战机', '金幣挑戰機', 'coinfruitmachine', 'coinchallengemachine', 'コインフルーツマシン'].some(name => name.includes(normalized))
 }

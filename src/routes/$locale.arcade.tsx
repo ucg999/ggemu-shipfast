@@ -221,10 +221,10 @@ function CoinChallengeGameCard({ lang }: { lang: Locale }) {
 }
 
 function getCoinChallengeTitle(locale: Locale) {
-  if (locale === 'zh-TW') return '金幣水果機'
-  if (locale === 'en') return 'Coin Fruit Machine'
-  if (locale === 'ja') return 'コインフルーツマシン'
-  return '金币水果机'
+  if (locale === 'zh-TW') return '金幣娛樂遊戲'
+  if (locale === 'en') return 'Coin Entertainment Game'
+  if (locale === 'ja') return 'コインエンターテインメントゲーム'
+  return '金币娱乐游戏'
 }
 
 function getCoinChallengeModeLabel(locale: Locale) {
