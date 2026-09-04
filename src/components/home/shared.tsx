@@ -33,7 +33,7 @@ export function HomeLatestGamesRow({
   if (items.length === 0 && !pinnedCoin) return null
 
   return (
-    <section className="bg-base-100 px-4 py-1 sm:px-6 lg:px-8">
+    <section className="bg-base-100 px-0 py-1 lg:px-8">
       <h2 className="mb-1 text-left text-sm lg:text-lg font-semibold text-base-content">{title ?? t.latestGamesSection}</h2>
       <CardScrollRow lang={lang}>
         {pinnedCoin ? <div className="w-[72px] shrink-0 sm:w-[88px] lg:w-48"><CoinFruitCard lang={lang} hideTitle /></div> : null}
@@ -79,7 +79,7 @@ export function HomeMostPlayedGamesSection({
 
   return (
     <section className="bg-base-100">
-      <div className={mobile ? 'w-full px-4 py-1' : 'w-full px-4 pt-1 sm:px-6 lg:px-8'}>
+      <div className={mobile ? 'w-full px-0 py-1' : 'w-full px-4 pt-1 sm:px-6 lg:px-8'}>
         <div className="flex items-center gap-2">
           <h2 className="text-left text-sm lg:text-lg font-semibold text-base-content">
             {t.dailyRandom}

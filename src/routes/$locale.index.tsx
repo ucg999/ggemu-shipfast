@@ -6,6 +6,7 @@ import {
 import { useServerFn } from '@tanstack/react-start'
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
+import { readHomeCards, saveHomeCards } from '#/lib/home-card-cache'
 
 import {
   CoinRewardPopup,
@@ -215,7 +216,23 @@ function LocalizedHomePage() {
   const { locale } = Route.useParams()
   const homeSearch = Route.useSearch()
   const template = getSearchTemplate(homeSearch)
-  const initialResult = Route.useLoaderData() as HomeLoaderData
+  const loadedResult = Route.useLoaderData() as HomeLoaderData
+  const [initialResult, setInitialResult] = useState(loadedResult)
+  const cacheKey = `${locale}:home:${JSON.stringify(homeSearch)}`
+  useEffect(() => {
+    const previous = readHomeCards<HomeLoaderData>(cacheKey)
+    const next = {
+      ...loadedResult,
+      games: loadedResult.games.length ? loadedResult.games : previous?.games ?? [],
+      pagination: loadedResult.games.length ? loadedResult.pagination : previous?.pagination ?? loadedResult.pagination,
+      latestGames: loadedResult.latestGames.length ? loadedResult.latestGames : previous?.latestGames ?? [],
+      mostPlayedGames: loadedResult.videoLoadFailed && previous?.mostPlayedGames.length
+        ? previous.mostPlayedGames
+        : loadedResult.mostPlayedGames.length ? loadedResult.mostPlayedGames : previous?.mostPlayedGames ?? [],
+    }
+    saveHomeCards(cacheKey, next)
+    setInitialResult(next)
+  }, [loadedResult, cacheKey])
   const [lastVideoGames, setLastVideoGames] = useState<{ locale: string; games: Array<PublicGame> }>({ locale, games: initialResult.mostPlayedGames })
   const router = useRouter()
   const [isRetrying, setIsRetrying] = useState(false)
@@ -235,8 +252,11 @@ function LocalizedHomePage() {
   const coinRewards = useHomeCoinRewards()
 
   useEffect(() => {
-    if (!initialResult.loadFailed) setResult(initialResult)
-  }, [initialResult])
+    const mobile = window.matchMedia('(max-width: 1023px)').matches
+      ? readHomeCards<GameSearchResult>(`${cacheKey}:mobile`) : undefined
+    if (mobile?.games.length) setResult(mobile)
+    else if (initialResult.games.length > 0) setResult(initialResult)
+  }, [initialResult, cacheKey])
 
   useEffect(() => {
     if (initialResult.mostPlayedGames.length > 0) {
@@ -271,7 +291,11 @@ function LocalizedHomePage() {
       ),
     ).then((mobileResults) => {
       if (!isCancelled) {
-        setResult(mergeMobileResults(mobileResults, 1))
+        const next = mergeMobileResults(mobileResults, 1)
+        if (next.games.length > 0) {
+          saveHomeCards(`${cacheKey}:mobile`, next)
+          setResult(next)
+        }
       }
     }).catch(() => {
       // Preserve the current cards if the mobile refresh fails.
@@ -280,7 +304,7 @@ function LocalizedHomePage() {
     return () => {
       isCancelled = true
     }
-  }, [currentTemplate, initialResult, lang, runSearch, pathname, locale])
+  }, [currentTemplate, initialResult, lang, runSearch, pathname, locale, cacheKey])
 
   const { games, pagination } = result
   const page = pagination.page

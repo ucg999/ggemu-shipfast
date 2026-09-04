@@ -22,6 +22,7 @@ import { getPlatformLabel } from '#/lib/platform-label'
 import { setDailyGameCoinMultiplier } from '#/lib/coin-wallet'
 import { confirmResourceDownload, unlockPaidResource } from '#/lib/paid-resource'
 import { useServerFn } from '@tanstack/react-start'
+import { readHomeCards, saveHomeCards } from '#/lib/home-card-cache'
 
 export function DefaultHomeTemplate(
   props: HomeTemplateProps & { onCoinsEarned?: (amount: number) => void },
@@ -41,17 +42,25 @@ export function DefaultHomeTemplate(
   const [showMobileRecent, setShowMobileRecent] = useState(false)
   const [rankingRows, setRankingRows] = useState<{ weekly: PublicGame[]; rising: PublicGame[] }>({ weekly: [], rising: [] })
   const loadRanking = useServerFn(searchGames)
+  const [rankingRetry, setRankingRetry] = useState(0)
+  const [rankingFailed, setRankingFailed] = useState(false)
   useEffect(() => {
     let cancelled = false
-    setRankingRows({ weekly: [], rising: [] })
+    setRankingRows(readHomeCards<{ weekly: PublicGame[]; rising: PublicGame[] }>(`${lang}:rankings`) ?? { weekly: [], rising: [] })
+    setRankingFailed(false)
     for (const sort of ['weekly', 'rising'] as const) {
       void loadRanking({ data: { locale: lang, query: '', sort, page: 1, limit: 20 } })
         .then((result) => {
-          if (!cancelled) setRankingRows((current) => ({ ...current, [sort]: result.games }))
-        }).catch(() => {})
+          if (!cancelled && result.games.length > 0) setRankingRows((current) => {
+            const next = { ...current, [sort]: result.games }
+            saveHomeCards(`${lang}:rankings`, next)
+            return next
+          })
+          else if (!cancelled) setRankingFailed(true)
+        }).catch(() => { if (!cancelled) setRankingFailed(true) })
     }
     return () => { cancelled = true }
-  }, [lang, loadRanking])
+  }, [lang, loadRanking, rankingRetry])
   const [randomVideoGames, setRandomVideoGames] = useState(() =>
     mostPlayedGames.slice(0, 6),
   )
@@ -66,7 +75,7 @@ export function DefaultHomeTemplate(
   const recentPlayedGames = useRecentPlayedGames()
 
   useEffect(() => {
-    setRandomVideoGames(selectDailyVideoGames(mostPlayedGames, 6))
+    if (mostPlayedGames.length > 0) setRandomVideoGames(selectDailyVideoGames(mostPlayedGames, 6))
   }, [mostPlayedGames])
 
   useEffect(() => {
@@ -124,6 +133,10 @@ export function DefaultHomeTemplate(
   ]
   return (
     <>
+      {rankingFailed ? <div role="status" className="flex items-center gap-2 px-4 py-1 text-xs">
+        <span>{lang === 'en' ? 'Rankings could not refresh.' : lang === 'ja' ? 'ランキングを更新できませんでした。' : lang === 'zh-TW' ? '榜單更新失敗，已保留原卡片。' : '榜单更新失败，已保留原卡片。'}</span>
+        <button type="button" className="underline" onClick={() => setRankingRetry((value) => value + 1)}>{lang === 'en' ? 'Retry' : lang === 'ja' ? '再試行' : '重试'}</button>
+      </div> : null}
       <nav
         aria-label={modeCopyLabel(lang)}
         className="border-b border-base-300 bg-base-100 px-1 lg:hidden"
@@ -273,7 +286,7 @@ export function DefaultHomeTemplate(
           pagination={
             showMobileRecent ? mobileRecentPagination : props.pagination
           }
-          sectionClassName="flex w-full flex-col gap-1 px-4 py-1 sm:px-6"
+          sectionClassName="flex w-full min-w-0 flex-col gap-1 px-0 py-1"
           showHeader={false}
         />
       </div>
@@ -291,7 +304,7 @@ export function DefaultHomeTemplate(
         />
       </div>
 
-      <section className="px-4 py-1 sm:px-6 lg:hidden">
+      <section className="px-0 py-1 lg:hidden">
         <PopularGameCollections lang={lang} />
       </section>
 
