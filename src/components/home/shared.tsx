@@ -150,7 +150,7 @@ export function HomeMostPlayedGamesSection({
               </Link>
             )
           })}
-          {!mobile ? <div className="aspect-[4/3] min-w-0"><div className="mx-auto w-3/4"><CoinFruitCard lang={lang} /></div></div> : null}
+          {!mobile ? <div className="aspect-[4/3] min-w-0"><div className="mx-auto w-3/4"><CoinFruitCard lang={lang} hideTitle /></div></div> : null}
         </div>
       </div>
     </section>
