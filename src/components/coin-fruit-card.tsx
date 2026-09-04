@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import type { Locale } from '#/lib/ggemu'
 
-export function CoinFruitCard({ lang, videoAligned = false }: { lang: Locale; videoAligned?: boolean }) {
+export function CoinFruitCard({ lang, videoAligned = false, hideTitle = false }: { lang: Locale; videoAligned?: boolean; hideTitle?: boolean }) {
   const title = lang === 'zh-TW' ? '金幣娛樂遊戲' : lang === 'en' ? 'Coin Entertainment Game' : lang === 'ja' ? 'コインエンターテインメントゲーム' : '金币娱乐游戏'
   if (videoAligned) {
     return (
@@ -18,7 +18,7 @@ export function CoinFruitCard({ lang, videoAligned = false }: { lang: Locale; vi
   return (
     <Link className="group relative block aspect-square overflow-hidden rounded-md bg-black" to="/$locale/coin-challenge" params={{ locale: lang }} aria-label={title}>
       <img src="/coin-fruit-machine-cover.jpg" alt={title} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-      <span className="absolute inset-x-0 bottom-0 bg-black/75 px-2 py-1 text-center text-sm font-bold text-white">{title}</span>
+      {!hideTitle && <span className="absolute inset-x-0 bottom-0 bg-black/75 px-2 py-1 text-center text-sm font-bold text-white">{title}</span>}
     </Link>
   )
 }

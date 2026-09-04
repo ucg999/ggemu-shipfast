@@ -5,6 +5,7 @@ import type { Locale, PublicGame } from '#/lib/ggemu'
 import { GAME_COLLECTIONS } from '#/lib/game-collections'
 import { getI18n } from '#/lib/i18n'
 import { markGamePlayStarted } from '#/lib/coin-wallet'
+import { CardScrollRow } from './card-scroll-row'
 
 const RECENT_PLAYED_GAMES_KEY = 'ggemu-recent-played-games'
 const RECENT_PLAYED_GAMES_LIMIT = 102
@@ -123,12 +124,12 @@ export function PopularGameCollections({ lang }: { lang: Locale }) {
   const t = getI18n(lang).home
 
   return (
-    <div className="w-full max-w-3xl">
-      <h2 className="text-xl font-semibold text-base-content">{t.popularCollections}</h2>
-      <div className="mt-3 grid grid-cols-3 gap-2">
+    <div className="w-full">
+      <h2 className="text-left text-lg font-semibold text-base-content">{t.popularCollections}</h2>
+      <div className="mt-1"><CardScrollRow lang={lang}>
         {GAME_COLLECTIONS.map((collection) => (
           <Link
-            className="group relative aspect-[16/9] overflow-hidden rounded-lg bg-base-200"
+            className="group relative aspect-[16/9] w-48 shrink-0 overflow-hidden rounded-lg bg-base-200"
             key={collection.id}
             params={{ collectionId: collection.id, locale: lang }}
             to="/$locale/collections/$collectionId"
@@ -145,7 +146,7 @@ export function PopularGameCollections({ lang }: { lang: Locale }) {
               </span>
           </Link>
         ))}
-      </div>
+      </CardScrollRow></div>
     </div>
   )
 }

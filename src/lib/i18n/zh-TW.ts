@@ -60,7 +60,7 @@ export const zhTwMessages = {
     ...zhCnMessages.home,
     title: '回到小時候的快樂，即點即玩，樂趣無窮！',
     nostalgiaSubtitle: '小霸王，其樂無窮。開心遊玩各種街機遊戲、小霸王遊戲、GBA遊戲、PSP遊戲、Switch遊戲。',
-    searchPlaceholder: '搜尋遊戲名稱、平台或系列...',
+    searchPlaceholder: '搜尋我們的10萬款遊戲',
     search: '搜尋',
     reset: '重設',
     allPlatforms: '全部平台',

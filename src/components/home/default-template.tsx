@@ -16,7 +16,7 @@ import {
 } from './recent-played-games'
 import type { HomeTemplateProps } from './types'
 import type { PublicGame } from '#/lib/ggemu'
-import { getGameDetail, getRandomPlayableGame } from '#/lib/ggemu'
+import { getGameDetail, getRandomPlayableGame, searchGames } from '#/lib/ggemu'
 import { getI18n } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { setDailyGameCoinMultiplier } from '#/lib/coin-wallet'
@@ -39,6 +39,19 @@ export function DefaultHomeTemplate(
     t,
   } = props
   const [showMobileRecent, setShowMobileRecent] = useState(false)
+  const [rankingRows, setRankingRows] = useState<{ weekly: PublicGame[]; rising: PublicGame[] }>({ weekly: [], rising: [] })
+  const loadRanking = useServerFn(searchGames)
+  useEffect(() => {
+    let cancelled = false
+    setRankingRows({ weekly: [], rising: [] })
+    for (const sort of ['weekly', 'rising'] as const) {
+      void loadRanking({ data: { locale: lang, query: '', sort, page: 1, limit: 20 } })
+        .then((result) => {
+          if (!cancelled) setRankingRows((current) => ({ ...current, [sort]: result.games }))
+        }).catch(() => {})
+    }
+    return () => { cancelled = true }
+  }, [lang, loadRanking])
   const [randomVideoGames, setRandomVideoGames] = useState(() =>
     mostPlayedGames.slice(0, 6),
   )
@@ -152,6 +165,9 @@ export function DefaultHomeTemplate(
           onRandomGame={showOneRandomGame}
           streakDays={streakDays}
         />
+        <HomeLatestGamesRow games={latestGames} lang={lang} />
+        <HomeLatestGamesRow games={rankingRows.weekly} lang={lang} title={t.weeklyPopularGames} />
+        <HomeLatestGamesRow games={rankingRows.rising} lang={lang} title={t.fastestGrowingGames} />
       </div>
 
       <nav
@@ -171,18 +187,8 @@ export function DefaultHomeTemplate(
             onClick={onHomeRecommendations}
             type="button"
           >
-            {t.homeRecommendations}
+            {getI18n(lang).layout.allGames}
           </button>
-          <RankingButton
-            active={filters.sort === 'weekly' && !filters.platform && !filters.category && !filters.query}
-            label={t.weeklyPopularGames}
-            onClick={() => onFilterChange('sort', 'weekly')}
-          />
-          <RankingButton
-            active={filters.sort === 'rising' && !filters.platform && !filters.category && !filters.query}
-            label={t.fastestGrowingGames}
-            onClick={() => onFilterChange('sort', 'rising')}
-          />
 
           {orderedPlatforms.map((platform) => {
             const isActive = filters.platform === platform.name
@@ -216,6 +222,9 @@ export function DefaultHomeTemplate(
           onRandomGame={showOneRandomGame}
           streakDays={streakDays}
         />
+        <HomeLatestGamesRow games={latestGames} lang={lang} />
+        <HomeLatestGamesRow games={rankingRows.weekly} lang={lang} title={t.weeklyPopularGames} pinnedCoin />
+        <HomeLatestGamesRow games={rankingRows.rising} lang={lang} title={t.fastestGrowingGames} />
       </div>
 
       <nav
@@ -231,7 +240,7 @@ export function DefaultHomeTemplate(
             }}
             type="button"
           >
-            {t.homeRecommendations}
+            {getI18n(lang).layout.allGames}
           </button>
           <button
             className={`btn btn-xs shrink-0 rounded-full border-0 px-3 ${showMobileRecent ? 'bg-base-content text-base-100' : 'btn-ghost text-base-content/65'}`}
@@ -240,8 +249,6 @@ export function DefaultHomeTemplate(
           >
             {t.recentlyPlayed}
           </button>
-          <RankingButton active={!showMobileRecent && filters.sort === 'weekly'} label={t.weeklyPopularGames} mobile onClick={() => { setShowMobileRecent(false); onFilterChange('sort', 'weekly') }} />
-          <RankingButton active={!showMobileRecent && filters.sort === 'rising'} label={t.fastestGrowingGames} mobile onClick={() => { setShowMobileRecent(false); onFilterChange('sort', 'rising') }} />
           {orderedPlatforms.map((platform) => (
             <button
               className={`btn btn-xs shrink-0 rounded-full border-0 px-3 ${filters.platform === platform.name ? 'bg-base-content text-base-100' : 'btn-ghost text-base-content/65'}`}
@@ -259,14 +266,14 @@ export function DefaultHomeTemplate(
         <GamesSection
           {...props}
           games={showMobileRecent ? mobileRecentGames : props.games}
-          gridClassName="game-mosaic-grid grid grid-flow-dense grid-cols-12 gap-1 sm:grid-cols-12"
+          gridClassName="game-mosaic-grid grid grid-flow-dense grid-cols-12 gap-px sm:grid-cols-12"
           mobileItemLimit={36}
           page={showMobileRecent ? 1 : props.page}
           pages={showMobileRecent ? 1 : props.pages}
           pagination={
             showMobileRecent ? mobileRecentPagination : props.pagination
           }
-          sectionClassName="flex w-full flex-col gap-3 p-1"
+          sectionClassName="flex w-full flex-col gap-1 px-4 py-1 sm:px-6"
           showHeader={false}
         />
       </div>
@@ -275,22 +282,21 @@ export function DefaultHomeTemplate(
         <GamesSection
           {...props}
           games={props.games}
-          gridClassName="game-mosaic-grid grid grid-flow-dense grid-cols-7 gap-2"
+          gridClassName="grid grid-cols-7 gap-2"
           page={props.page}
           pages={props.pages}
           pagination={props.pagination}
-          sectionClassName="flex w-full flex-col gap-3 px-3 py-3"
+          sectionClassName="flex w-full flex-col gap-1 px-4 py-1 sm:px-6 lg:px-8"
           showHeader={false}
         />
-        <HomeLatestGamesRow games={latestGames} lang={lang} />
       </div>
 
-      <section className="px-3 pb-5 pt-4 lg:hidden">
+      <section className="px-4 py-1 sm:px-6 lg:hidden">
         <PopularGameCollections lang={lang} />
       </section>
 
       <div className="hidden lg:block">
-        <section className="bg-base-100 px-4 py-5 sm:px-6 lg:px-8">
+        <section className="bg-base-100 px-4 py-1 sm:px-6 lg:px-8">
           <PopularGameCollections lang={lang} />
         </section>
         <HomeLatestBlogPostsSection blogPosts={latestBlogPosts} lang={lang} />
@@ -307,30 +313,6 @@ export function DefaultHomeTemplate(
         />
       ) : null}
     </>
-  )
-}
-
-function RankingButton({
-  active,
-  label,
-  mobile = false,
-  onClick,
-}: {
-  active: boolean
-  label: string
-  mobile?: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      className={`btn shrink-0 rounded-full border-0 ${mobile ? 'btn-xs px-3' : 'btn-sm px-4'} ${
-        active ? 'bg-base-content text-base-100' : 'btn-ghost text-base-content/65'
-      }`}
-      onClick={onClick}
-      type="button"
-    >
-      {label}
-    </button>
   )
 }
 

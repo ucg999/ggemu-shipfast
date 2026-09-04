@@ -58,7 +58,7 @@ export const jaMessages = {
     nostalgiaSubtitle: '小霸王、楽しさは無限大。アーケード、小霸王、GBA、PSP、Switchのゲームをオンラインで楽しもう。',
     subtitle:
       'GBA、NES、SNES、PS1、N64、Sega Genesis、アーケードなどの名作をブラウザーでそのまま遊べます。ダウンロード不要。',
-    searchPlaceholder: 'ゲーム名、機種、シリーズを検索...',
+    searchPlaceholder: '10万本のゲームを検索',
     search: '検索',
     reset: 'リセット',
     allPlatforms: 'すべての機種',

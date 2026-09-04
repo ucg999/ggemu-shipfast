@@ -28,7 +28,6 @@ import {
   getPokiDailyLayoutSeed,
 } from '#/components/home/poki-like-template'
 import { SidenavHomeTemplate } from '#/components/home/sidenav-template'
-import { HomeSearchOverlay } from '#/components/home/search-overlay'
 import { HOME_BLOG_POST_LIMIT, SearchForm } from '#/components/home/shared'
 import type { Filters, HomeLoaderData } from '#/components/home/types'
 import { TwoColumnHomeTemplate } from '#/components/home/two-column-template'
@@ -233,7 +232,6 @@ function LocalizedHomePage() {
     sort: normalizeHomeSort(homeSearch.sort) ?? 'popular',
   })
   const [isLoading, setIsLoading] = useState(false)
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const coinRewards = useHomeCoinRewards()
 
   useEffect(() => {
@@ -372,7 +370,7 @@ function LocalizedHomePage() {
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setIsSearchOpen(true)
+    window.location.assign(`/${lang}/search?q=${encodeURIComponent(filters.query)}`)
   }
 
   function updateFilter<Key extends keyof Filters>(key: Key, value: Filters[Key]) {
@@ -431,7 +429,7 @@ function LocalizedHomePage() {
         gameFilterOptions={initialResult.filterOptions}
         hideFooterOnMobile
         locale={lang}
-        onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenSearch={() => window.location.assign(`/${lang}/search`)}
         topContent={
           <div className="hidden w-full lg:block">
             <SearchForm {...templateProps} mode="default" />
@@ -464,15 +462,6 @@ function LocalizedHomePage() {
       />
       <FlyingCollectedCoin flight={coinRewards.collectedCoinFlight} />
       <CoinRewardPopup feedback={coinRewards.rewardFeedback} />
-      <HomeSearchOverlay
-        filterOptions={initialResult.filterOptions}
-        gameTotal={pagination.total}
-        initialQuery={filters.query}
-        isOpen={isSearchOpen}
-        lang={lang}
-        onClose={() => setIsSearchOpen(false)}
-        t={t}
-      />
     </>
   )
 }

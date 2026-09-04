@@ -68,7 +68,7 @@ export const zhCnMessages = {
     nostalgiaSubtitle: '小霸王，其乐无穷。开心游玩各种街机游戏，小霸王游戏，GBA游戏，PSP游戏，Switch游戏。',
     subtitle:
       '在浏览器里直接游玩 GBA、NES、SNES、PS1、N64、Sega Genesis、街机等经典游戏，无需下载。',
-    searchPlaceholder: '搜索游戏名、平台或系列...',
+    searchPlaceholder: '搜索我们的10万款游戏',
     search: '搜索',
     reset: '重置',
     allPlatforms: '全部平台',

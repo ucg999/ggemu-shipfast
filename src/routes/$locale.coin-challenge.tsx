@@ -1177,9 +1177,9 @@ function CoinChallengePage() {
       <Link
         aria-label={getBackLabel(lang)}
         className="absolute left-3 top-3 z-10 grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-black/65 text-xl text-white backdrop-blur transition hover:bg-white hover:text-black"
-        params={{ locale: lang, platformId: 'coin' }}
+        params={{ locale: lang }}
         title={getBackLabel(lang)}
-        to="/$locale/platform/$platformId"
+        to="/$locale"
       >
         <i className="ri-arrow-left-line" />
       </Link>
@@ -1724,8 +1724,8 @@ function getCoinChallengeCopy(locale: Locale) {
 }
 
 function getBackLabel(locale: Locale) {
-  if (locale === 'zh-TW') return '返回金幣模式'
-  if (locale === 'en') return 'Back to Coin Mode'
-  if (locale === 'ja') return 'コインモードに戻る'
-  return '返回金币模式'
+  if (locale === 'zh-TW') return '返回首頁'
+  if (locale === 'en') return 'Back to Home'
+  if (locale === 'ja') return 'ホームに戻る'
+  return '返回首页'
 }

@@ -26,6 +26,7 @@ import { Route as LocaleLiveRouteImport } from './routes/$locale.live'
 import { Route as LocalePlayMyRomRouteImport } from './routes/$locale.play-my-rom'
 import { Route as LocalePrivacyPolicyRouteImport } from './routes/$locale.privacy-policy'
 import { Route as LocaleRandomRouteImport } from './routes/$locale.random'
+import { Route as LocaleSearchRouteImport } from './routes/$locale.search'
 import { Route as LocaleTermsOfServiceRouteImport } from './routes/$locale.terms-of-service'
 import { Route as ApiShareImageRouteImport } from './routes/api/share-image'
 import { Route as GamesGameIdRouteImport } from './routes/games/$gameId'
@@ -125,6 +126,11 @@ const LocaleRandomRoute = LocaleRandomRouteImport.update({
   path: '/random',
   getParentRoute: () => LocaleRoute,
 } as any)
+const LocaleSearchRoute = LocaleSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => LocaleRoute,
+} as any)
 const LocaleTermsOfServiceRoute = LocaleTermsOfServiceRouteImport.update({
   id: '/terms-of-service',
   path: '/terms-of-service',
@@ -211,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
   '/$locale/random': typeof LocaleRandomRoute
+  '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
@@ -242,6 +249,7 @@ export interface FileRoutesByTo {
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
   '/$locale/random': typeof LocaleRandomRoute
+  '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
   '/$locale/random': typeof LocaleRandomRoute
+  '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
@@ -309,6 +318,7 @@ export interface FileRouteTypes {
     | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
     | '/$locale/random'
+    | '/$locale/search'
     | '/$locale/terms-of-service'
     | '/api/share-image'
     | '/games/$gameId'
@@ -340,6 +350,7 @@ export interface FileRouteTypes {
     | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
     | '/$locale/random'
+    | '/$locale/search'
     | '/$locale/terms-of-service'
     | '/api/share-image'
     | '/games/$gameId'
@@ -372,6 +383,7 @@ export interface FileRouteTypes {
     | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
     | '/$locale/random'
+    | '/$locale/search'
     | '/$locale/terms-of-service'
     | '/api/share-image'
     | '/games/$gameId'
@@ -523,6 +535,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleRandomRouteImport
       parentRoute: typeof LocaleRoute
     }
+    '/$locale/search': {
+      id: '/$locale/search'
+      path: '/search'
+      fullPath: '/$locale/search'
+      preLoaderRoute: typeof LocaleSearchRouteImport
+      parentRoute: typeof LocaleRoute
+    }
     '/$locale/terms-of-service': {
       id: '/$locale/terms-of-service'
       path: '/terms-of-service'
@@ -650,6 +669,7 @@ interface LocaleRouteChildren {
   LocalePlayMyRomRoute: typeof LocalePlayMyRomRoute
   LocalePrivacyPolicyRoute: typeof LocalePrivacyPolicyRoute
   LocaleRandomRoute: typeof LocaleRandomRoute
+  LocaleSearchRoute: typeof LocaleSearchRoute
   LocaleTermsOfServiceRoute: typeof LocaleTermsOfServiceRoute
   LocaleIndexRoute: typeof LocaleIndexRoute
   LocaleCollectionsCollectionIdRoute: typeof LocaleCollectionsCollectionIdRoute
@@ -669,6 +689,7 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocalePlayMyRomRoute: LocalePlayMyRomRoute,
   LocalePrivacyPolicyRoute: LocalePrivacyPolicyRoute,
   LocaleRandomRoute: LocaleRandomRoute,
+  LocaleSearchRoute: LocaleSearchRoute,
   LocaleTermsOfServiceRoute: LocaleTermsOfServiceRoute,
   LocaleIndexRoute: LocaleIndexRoute,
   LocaleCollectionsCollectionIdRoute: LocaleCollectionsCollectionIdRoute,

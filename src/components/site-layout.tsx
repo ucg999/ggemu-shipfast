@@ -20,6 +20,7 @@ export function SiteLayout({
   headerActions,
   hideHeaderNav = false,
   hideFooterOnMobile = false,
+  hideFooter = false,
   gameFilterOptions,
   locale,
   onOpenSearch,
@@ -31,6 +32,7 @@ export function SiteLayout({
   headerActions?: ReactNode
   hideHeaderNav?: boolean
   hideFooterOnMobile?: boolean
+  hideFooter?: boolean
   locale: Locale
   onOpenSearch?: () => void
   topContent?: ReactNode
@@ -157,10 +159,6 @@ export function SiteLayout({
     window.localStorage.setItem('retro-games-theme', nextTheme)
   }
 
-  function toggleTheme() {
-    handleThemeChange(theme === 'dark' ? 'light' : 'dark')
-  }
-
   function toggleDesktopSidebar() {
     setIsDesktopSidebarCollapsed((current) => {
       const nextState = !current
@@ -178,12 +176,14 @@ export function SiteLayout({
     }
 
     const target = event.target
-    if (!(target instanceof Element) || !target.closest('nav a, nav summary')) {
+    if (!(target instanceof Element) || !target.closest('nav summary')) {
       return
     }
 
     event.preventDefault()
     event.stopPropagation()
+    const details = target.closest('summary')?.parentElement
+    if (details instanceof HTMLDetailsElement) details.open = true
     setIsDesktopSidebarCollapsed(false)
     saveDesktopSidebarState(false)
   }
@@ -279,7 +279,7 @@ export function SiteLayout({
             {onOpenSearch ? (
               <button
                 aria-label={t.searchGames}
-                className="btn btn-circle btn-xs shrink-0 border border-white/70 bg-white text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm lg:hidden"
+                className="btn btn-circle btn-xs shrink-0 border border-rose-200 bg-rose-100 text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 sm:btn-sm lg:hidden"
                 onClick={onOpenSearch}
                 title={t.searchGames}
                 type="button"
@@ -289,7 +289,7 @@ export function SiteLayout({
             ) : null}
             <Link
               aria-label={t.watchOthers}
-              className="btn btn-xs h-8 shrink-0 gap-1 rounded-full border border-white/70 bg-white px-2 text-xs font-semibold text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm sm:h-11 sm:gap-2 sm:px-5 sm:text-base"
+              className="btn h-6 min-h-6 lg:h-9 lg:min-h-9 shrink-0 gap-0.5 rounded-full border border-rose-200 bg-rose-100 px-1.5 text-[10px] font-semibold text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 lg:gap-2 lg:px-4 lg:text-sm max-lg:[&_.live-watch-eye]:scale-75"
               params={{ locale }}
               to="/$locale/live"
             >
@@ -303,45 +303,38 @@ export function SiteLayout({
 
             {canSwitchTheme ? (
               <>
-                <button
-                  aria-label={t.theme}
-                  aria-pressed={theme === 'dark'}
-                  className="btn btn-circle btn-xs shrink-0 border border-white/70 bg-white text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm lg:hidden"
-                  onClick={toggleTheme}
-                  title={theme === 'dark' ? t.switchToLight : t.switchToDark}
-                  type="button"
-                >
-                  <i className={theme === 'dark' ? 'ri-sun-line' : 'ri-moon-line'} />
-                </button>
                 <div
                   aria-label={t.theme}
-                  className="join hidden shrink-0 rounded-full border border-white/70 bg-white p-0.5 text-black shadow-sm lg:flex"
+                  role="group"
+                  className="join flex h-6 lg:h-9 shrink-0 items-stretch overflow-hidden rounded-full border border-rose-200 bg-rose-100 text-black"
                 >
                   <button
+                    aria-label={t.lightTheme}
+                    title={t.lightTheme}
                     aria-pressed={theme === 'light'}
-                    className={`btn join-item btn-sm rounded-l-full border-0 ${
+                    className={`grid h-full w-5 lg:w-8 place-items-center border-r border-rose-200 text-[10px] lg:text-sm ${
                       theme === 'light'
-                        ? 'bg-base-100 shadow-sm'
+                        ? 'bg-rose-200 text-black shadow-sm'
                         : 'bg-transparent opacity-60'
                     }`}
                     onClick={() => handleThemeChange('light')}
                     type="button"
                   >
                     <i className="ri-sun-line" />
-                    <span>{t.lightTheme}</span>
                   </button>
                   <button
+                    aria-label={t.darkTheme}
+                    title={t.darkTheme}
                     aria-pressed={theme === 'dark'}
-                    className={`btn join-item btn-sm rounded-r-full border-0 ${
+                    className={`grid h-full w-5 lg:w-8 place-items-center text-[10px] lg:text-sm ${
                       theme === 'dark'
-                        ? 'bg-base-100 shadow-sm'
+                        ? 'bg-rose-200 text-black shadow-sm'
                         : 'bg-transparent opacity-60'
                     }`}
                     onClick={() => handleThemeChange('dark')}
                     type="button"
                   >
                     <i className="ri-moon-line" />
-                    <span>{t.darkTheme}</span>
                   </button>
                 </div>
               </>
@@ -354,7 +347,7 @@ export function SiteLayout({
               ref={localeMenuRef}
             >
               <summary
-                className="btn btn-xs rounded-full border border-white/70 bg-white px-2 text-black shadow-sm hover:border-white hover:bg-gray-100 sm:btn-sm sm:px-3"
+                className="btn h-6 min-h-6 lg:h-9 lg:min-h-9 gap-0.5 lg:gap-2 rounded-full border border-rose-200 bg-rose-100 px-1 text-[10px] lg:text-sm text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 lg:px-3"
                 onClick={(event) => {
                   event.preventDefault()
                   setIsLocaleMenuOpen((isOpen) => !isOpen)
@@ -423,7 +416,7 @@ export function SiteLayout({
             onClickCapture={handleCollapsedSidebarClick}
           >
             <nav aria-label={t.mainNavigation}>
-              <ul className="menu gap-1 p-0 text-sm">
+              <ul className="menu gap-1 p-0 text-sm [&_.sidebar-submenu_a]:text-xs [&_.sidebar-submenu_a]:font-normal [&_.sidebar-submenu_summary]:text-xs [&_.sidebar-submenu_summary]:font-normal [&_.sidebar-submenu_button]:text-xs [&_.sidebar-submenu_button]:font-normal">
                 <li>
                   <Link
                     className={`group flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition hover:bg-base-200 ${
@@ -435,9 +428,9 @@ export function SiteLayout({
                     to="/$locale"
                   >
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
-                      <i className="ri-home-5-fill text-base" />
+                      <i className="ri-home-5-fill text-base text-red-500" />
                     </span>
-                    <span className="sidebar-label min-w-0 flex-1">{t.games}</span>
+                    <span className="sidebar-label min-w-0 flex-1 text-red-500">{t.games}</span>
                   </Link>
                 </li>
                 <li>
@@ -717,7 +710,7 @@ export function SiteLayout({
 
         <div className="min-w-0">
           {children}
-          {hideFooterOnMobile ? (
+          {hideFooter ? null : hideFooterOnMobile ? (
             <div className="hidden lg:block">
               <SiteFooter locale={locale} />
             </div>
@@ -732,6 +725,8 @@ export function SiteLayout({
 
 export function SiteFooter({ locale }: { locale: Locale }) {
   const t = getI18n(locale).layout
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  if (pathname.replace(/\/+$/, '') !== `/${locale}` && pathname !== '/') return null
 
   return (
     <footer className="border-t border-base-300 bg-base-100">

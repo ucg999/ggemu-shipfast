@@ -11,48 +11,46 @@ import { formatCopy, getHomeFaqs, getI18n } from '#/lib/i18n'
 import type { GamesSectionProps, HomeCopy, SearchFormProps } from './types'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { setDailyGameCoinMultiplier } from '#/lib/coin-wallet'
+import { CardScrollRow } from './card-scroll-row'
+import { CoinFruitCard } from '#/components/coin-fruit-card'
 
 export const HOME_BLOG_POST_LIMIT = 4
 
 export function HomeLatestGamesRow({
   games,
   lang,
+  title,
+  pinnedCoin = false,
 }: {
   games: Array<PublicGame>
   lang: Locale
+  title?: string
+  pinnedCoin?: boolean
 }) {
   const items = games.slice(0, 20)
   const t = getI18n(lang).home
 
-  if (items.length === 0) return null
+  if (items.length === 0 && !pinnedCoin) return null
 
   return (
-    <section className="bg-base-100 px-3 pb-4 pt-2">
-      <h2 className="mb-3 text-2xl font-semibold text-base-content">{t.latestGamesSection}</h2>
-      <div className="latest-games-marquee overflow-hidden">
-        <div className="latest-games-marquee-track flex w-max">
-          {[0, 1].map((copyIndex) => (
-            <div
-              aria-hidden={copyIndex === 1 ? 'true' : undefined}
-              className="flex shrink-0 gap-2 pr-2"
-              key={copyIndex}
-            >
+    <section className="bg-base-100 px-4 py-1 sm:px-6 lg:px-8">
+      <h2 className="mb-1 text-left text-sm lg:text-lg font-semibold text-base-content">{title ?? t.latestGamesSection}</h2>
+      <CardScrollRow lang={lang}>
+        {pinnedCoin ? <div className="w-[72px] shrink-0 sm:w-[88px] lg:w-48"><CoinFruitCard lang={lang} hideTitle /></div> : null}
               {items.map((game, index) => (
                 <div
-                  className="w-[calc((100vw-4.5rem)/7)] shrink-0"
-                  key={`${copyIndex}-${game.url_slug || game._id}`}
+                  className="w-[72px] shrink-0 sm:w-[88px] lg:w-48"
+                  key={game.url_slug || game._id}
                 >
                   <GameCard
                     game={game}
                     lang={lang}
                     layoutIndex={index}
+                    mobileCoverOnly
                   />
                 </div>
               ))}
-            </div>
-          ))}
-        </div>
-      </div>
+      </CardScrollRow>
     </section>
   )
 }
@@ -76,14 +74,14 @@ export function HomeMostPlayedGamesSection({
   onRandomGame: () => void | Promise<void>
   streakDays?: number
 }) {
-  const items = games.slice(0, 6)
+  const items = games.slice(0, mobile ? 4 : 5)
   const t = getI18n(lang).home
 
   return (
     <section className="bg-base-100">
-      <div className={mobile ? 'w-full px-1 py-3' : 'w-full px-4 pt-6 sm:px-6 lg:px-8'}>
+      <div className={mobile ? 'w-full px-4 py-1' : 'w-full px-4 pt-1 sm:px-6 lg:px-8'}>
         <div className="flex items-center gap-2">
-          <h2 className={mobile ? 'px-1 text-lg font-semibold text-base-content' : 'text-2xl font-semibold text-base-content'}>
+          <h2 className="text-left text-sm lg:text-lg font-semibold text-base-content">
             {t.dailyRandom}
           </h2>
           <button
@@ -114,7 +112,7 @@ export function HomeMostPlayedGamesSection({
             </span>
           ) : null}
         </div>
-        <div className={mobile ? 'mt-7 grid grid-cols-2 gap-x-1.5 gap-y-7' : 'mt-7 grid grid-cols-6 gap-2'}>
+        <div className={mobile ? 'mt-1 grid grid-cols-2 gap-px' : 'mt-1 grid grid-cols-6 gap-2'}>
           {items.map((game, index) => {
             const gameId = game.url_slug || game._id || ''
             const multiplier = getDailyCoinMultiplier(items, index)
@@ -152,6 +150,7 @@ export function HomeMostPlayedGamesSection({
               </Link>
             )
           })}
+          {!mobile ? <div className="aspect-[4/3] min-w-0"><div className="mx-auto w-3/4"><CoinFruitCard lang={lang} /></div></div> : null}
         </div>
       </div>
     </section>
@@ -244,10 +243,10 @@ export function HomeLatestBlogPostsSection({
 
   return (
     <section className="bg-base-100">
-      <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
+      <div className="w-full px-4 py-1 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-3xl">
-            <h2 className="text-2xl font-semibold text-base-content">
+            <h2 className="text-left text-lg font-semibold text-base-content">
               {t.latestBlogPosts}
             </h2>
             <p className="mt-2 text-sm leading-6 text-base-content/65">
@@ -263,7 +262,7 @@ export function HomeLatestBlogPostsSection({
           </Link>
         </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-1"><CardScrollRow lang={lang} className="[&>*]:w-52 [&>*]:shrink-0">
           {posts.map((post) => (
             <HomeBlogPostCard
               blogPost={post}
@@ -271,7 +270,7 @@ export function HomeLatestBlogPostsSection({
               lang={lang}
             />
           ))}
-        </div>
+        </CardScrollRow></div>
       </div>
     </section>
   )
@@ -283,7 +282,7 @@ export function HomeFaqSection({ lang }: { lang: Locale }) {
   return (
     <section className="bg-base-100">
       <div className="w-full px-4 py-5 sm:px-6 lg:px-8">
-        <h2 className="text-xl font-semibold text-base-content">{faq.title}</h2>
+        <h2 className="text-left text-lg font-semibold text-base-content">{faq.title}</h2>
 
         <div className="mt-3 grid max-w-6xl border-t border-base-300 sm:grid-cols-2 sm:gap-x-8 lg:grid-cols-3">
           {faq.items.map((item) => (
@@ -348,10 +347,11 @@ export function SearchForm({
   return (
     <form className="flex w-full flex-col gap-3" onSubmit={onSearch}>
       <div className="flex flex-wrap items-center gap-2">
-        <label className="flex w-full min-w-0 items-center gap-3 rounded-full border border-white/70 bg-white px-5 shadow-sm transition focus-within:border-gray-300 focus-within:bg-white focus-within:shadow-md sm:w-96">
+        <label className="flex h-9 w-full min-w-0 items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 shadow-sm transition focus-within:border-rose-300 focus-within:bg-white sm:w-64">
           <i className="ri-search-line text-lg text-gray-500" />
           <input
-            className="h-12 min-w-0 flex-1 bg-transparent text-sm text-black caret-black outline-none placeholder:text-gray-500"
+            className="h-full min-w-0 flex-1 bg-transparent text-xs text-black caret-black outline-none placeholder:text-gray-500"
+            onFocus={() => window.location.assign(`/${lang}/search`)}
             onChange={(event) => onQueryChange(event.currentTarget.value)}
             placeholder={searchPlaceholder}
             type="search"
@@ -359,7 +359,7 @@ export function SearchForm({
           />
           <button
             aria-label={t.search}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-base-content text-base-100 transition hover:scale-105"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-red-800 text-white transition hover:bg-red-900"
             disabled={isLoading}
             type="submit"
           >
@@ -369,51 +369,46 @@ export function SearchForm({
 
         <div className="tooltip tooltip-bottom" data-tip={getI18n(lang).arcade.tooltip}>
           <Link
-            className="flex h-12 items-center gap-2.5 px-2 text-lg font-medium text-white/95 transition hover:text-white"
+            className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white"
             params={{ locale: lang }}
             to="/$locale/arcade"
           >
-            <ArcadeCabinetIcon className="h-8 w-8" />
             {getI18n(lang).arcade.mode}
           </Link>
         </div>
         <div className="tooltip tooltip-bottom" data-tip={getI18n(lang).arcade.famicomTooltip}>
           <Link
-            className="flex h-12 items-center gap-2.5 px-2 text-lg font-medium text-white/95 transition hover:text-white"
+            className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white"
             params={{ locale: lang, platformId: 'famicom' }}
             to="/$locale/platform/$platformId"
           >
-            <FamicomConsoleIcon className="h-8 w-8" />
             {getI18n(lang).arcade.famicomMode}
           </Link>
         </div>
         <div className="tooltip tooltip-bottom" data-tip={getI18n(lang).arcade.gbaTooltip}>
           <Link
-            className="flex h-12 items-center gap-2.5 px-2 text-lg font-medium text-white/95 transition hover:text-white"
+            className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white"
             params={{ locale: lang, platformId: 'gba' }}
             to="/$locale/platform/$platformId"
           >
-            <GbaHandheldIcon className="h-8 w-8" />
             {getI18n(lang).arcade.gbaMode}
           </Link>
         </div>
         <div className="tooltip tooltip-bottom" data-tip={getI18n(lang).arcade.flashTooltip}>
           <Link
-            className="flex h-12 items-center gap-2.5 px-2 text-lg font-medium text-white/95 transition hover:text-white"
+            className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white"
             params={{ locale: lang, platformId: 'flash' }}
             to="/$locale/platform/$platformId"
           >
-            <ComputerGameIcon className="h-8 w-8" />
             {getI18n(lang).arcade.flashMode}
           </Link>
         </div>
         <div className="tooltip tooltip-bottom" data-tip={getCoinModeCopy(lang).tooltip}>
           <Link
-            className="flex h-12 items-center gap-2.5 px-2 text-lg font-medium text-white/95 transition hover:text-white"
+            className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white"
             params={{ locale: lang, platformId: 'coin' }}
             to="/$locale/platform/$platformId"
           >
-            <i className="ri-coins-line text-[2rem] font-light" />
             {getCoinModeCopy(lang).mode}
           </Link>
         </div>
@@ -430,53 +425,6 @@ function getCoinModeCopy(lang: Locale) {
   return { mode: '金币模式', tooltip: '使用金币游玩专属游戏' }
 }
 
-function ArcadeCabinetIcon({ className }: { className: string }) {
-  return (
-    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 32 32">
-      <path d="M9 3H23L25 10L23 29H9L7 10L9 3Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.6" />
-      <rect height="8" rx="1.5" stroke="currentColor" strokeWidth="1.6" width="12" x="10" y="7" />
-      <path d="M10 19H22M13 23H19M16 19V16" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
-      <circle cx="20.5" cy="19.5" fill="currentColor" r="1.2" />
-      <path d="M11 29V31M21 29V31" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
-    </svg>
-  )
-}
-
-function FamicomConsoleIcon({ className }: { className: string }) {
-  return (
-    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 32 32">
-      <rect height="12" rx="2.5" stroke="currentColor" strokeWidth="1.6" width="22" x="5" y="4" />
-      <path d="M9 8H23M11 12H16" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
-      <rect height="10" rx="3" stroke="currentColor" strokeWidth="1.6" width="26" x="3" y="19" />
-      <path d="M9 22V27M6.5 24.5H11.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
-      <circle cx="22" cy="24" fill="currentColor" r="1.3" />
-      <circle cx="25.5" cy="24" fill="currentColor" r="1.3" />
-      <path d="M16 16V19" stroke="currentColor" strokeWidth="1.6" />
-    </svg>
-  )
-}
-
-function GbaHandheldIcon({ className }: { className: string }) {
-  return (
-    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 32 32">
-      <rect height="18" rx="7" stroke="currentColor" strokeWidth="1.6" width="28" x="2" y="7" />
-      <rect height="12" rx="2" stroke="currentColor" strokeWidth="1.6" width="14" x="9" y="10" />
-      <path d="M6 14V20M3 17H9" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
-      <circle cx="26" cy="15" fill="currentColor" r="1.3" />
-      <circle cx="27" cy="19" fill="currentColor" r="1.3" />
-    </svg>
-  )
-}
-
-function ComputerGameIcon({ className }: { className: string }) {
-  return (
-    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 32 32">
-      <rect height="18" rx="2.5" stroke="currentColor" strokeWidth="1.6" width="26" x="3" y="3" />
-      <path d="M7 17H25M16 21V26M10 29H22" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
-      <path d="M12 9L18 12L12 15V9Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.6" />
-    </svg>
-  )
-}
 
 export function FilterSelects({
   filterOptions,
@@ -541,8 +489,8 @@ export function FilterSelects({
   )
 }
 
-export function getSearchPlaceholder(t: HomeCopy, total: number) {
-  return `${t.searchPlaceholder} ${formatCopy(t.totalGames, { total })}`
+export function getSearchPlaceholder(t: HomeCopy, _total: number) {
+  return t.searchPlaceholder
 }
 
 export function GamesSection({
@@ -634,6 +582,7 @@ export function GamesSection({
       ) : null}
 
       {games.length > 0 ? (
+        <div className={gridClassName.includes('flex-nowrap') ? 'relative' : ''}>
         <div
           className={`${gridClassName} scroll-mt-20 ${isLoading ? 'opacity-60' : ''}`}
           ref={gamesGridRef}
@@ -663,6 +612,15 @@ export function GamesSection({
               />
             )
           })}
+        </div>
+        {gridClassName.includes('flex-nowrap') ? <button type="button" aria-label={t.previous} className="absolute -left-4 top-1/2 grid h-10 w-4 -translate-y-1/2 place-items-center text-black" onClick={() => {
+          const row = gamesGridRef.current
+          if (row) row.scrollBy({ left: -row.clientWidth * 0.8, behavior: 'smooth' })
+        }}><svg aria-hidden="true" width="12" height="16" viewBox="0 0 12 16" fill="none"><path d="m8 4-4 4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></button> : null}
+        {gridClassName.includes('flex-nowrap') ? <button type="button" aria-label={t.next} className="absolute -right-4 top-1/2 grid h-10 w-4 -translate-y-1/2 place-items-center text-black" onClick={() => {
+          const row = gamesGridRef.current
+          if (row) row.scrollBy({ left: row.clientWidth * 0.8, behavior: 'smooth' })
+        }}><svg aria-hidden="true" width="12" height="16" viewBox="0 0 12 16" fill="none"><path d="m4 4 4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></button> : null}
         </div>
       ) : (
         <div className="rounded-box border border-base-300 bg-base-100 p-12 text-center text-base-content/60">
@@ -726,11 +684,13 @@ function GameCard({
   isCompactTail = false,
   lang,
   layoutIndex = 1,
+  mobileCoverOnly = false,
 }: {
   game: PublicGame
   isCompactTail?: boolean
   lang: Locale
   layoutIndex?: number
+  mobileCoverOnly?: boolean
 }) {
   const gameId = game.url_slug || game._id || ''
   const viewCount = game.views_count ?? 0
@@ -761,6 +721,7 @@ function GameCard({
           </div>
         )}
         <GameCardPreviewVideo src={game.game_video} />
+        <div className={mobileCoverOnly ? 'hidden lg:contents' : 'contents'}>
         <span className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full border border-base-300 bg-base-100/90 text-xs text-base-content opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 sm:right-3 sm:top-3">
           ▶
         </span>
@@ -780,6 +741,7 @@ function GameCard({
           <i className="ri-eye-line" />
           {formatGameCount(viewCount, lang)}
         </span>
+        </div>
       </figure>
     </Link>
   )

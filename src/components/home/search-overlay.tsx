@@ -10,7 +10,8 @@ import {
 import type { GameFilterOptions, GameSearchResult, Locale, PublicGame } from '#/lib/ggemu'
 import { searchGames } from '#/lib/ggemu'
 
-import { FilterSelects, getSearchPlaceholder } from './shared'
+import { getSearchPlaceholder } from './shared'
+import { getPlatformLabel } from '#/lib/platform-label'
 import type { Filters, HomeCopy } from './types'
 
 export function HomeSearchOverlay({
@@ -104,45 +105,56 @@ export function HomeSearchOverlay({
 
   return (
     <>
-      <div
-        className={`fixed inset-0 z-[110] bg-black/20 transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
-        onClick={onClose}
-      />
       <aside
-        aria-modal="true"
-        className={`fixed inset-x-3 bottom-3 top-3 z-[120] mx-auto flex w-auto max-w-6xl flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-2xl transition duration-200 sm:inset-x-6 sm:bottom-8 sm:top-8 ${isOpen ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0'}`}
-        role="dialog"
+        className="mx-auto flex w-full max-w-6xl flex-col bg-base-100"
       >
         <header className="flex items-center justify-between border-b border-base-300 px-4 py-3">
-          <h2 className="text-base font-semibold">{t.search}</h2>
+          <h1 className="text-xl font-semibold">{t.search}</h1>
           <button className="btn btn-ghost btn-sm btn-square" onClick={onClose} type="button">
             <i className="ri-close-line text-xl" />
           </button>
         </header>
 
         <form className="grid gap-3 border-b border-base-300 p-4" onSubmit={handleSearch}>
+          <div className="flex items-center gap-1 rounded-full border border-base-300 bg-base-100 py-1 pl-4 pr-1">
           <input
             autoFocus={isOpen}
-            className="input input-bordered w-full"
+            className="h-9 min-w-0 flex-1 bg-transparent text-base-content outline-none"
             onChange={(event) => updateFilter('query', event.currentTarget.value)}
             placeholder={searchPlaceholder}
             type="search"
             value={filters.query}
           />
-
-          <FilterSelects
-            filterOptions={filterOptions}
-            filters={filters}
-            isLoading={isSearching}
-            onFilterChange={updateFilter}
-            onReset={resetSearch}
-            t={t}
-          />
-
-          <button className="btn btn-primary w-full" disabled={isSearching} type="submit">
+          <button className="btn btn-sm shrink-0 rounded-full border-0 bg-red-600 text-white hover:bg-red-700" disabled={isSearching} type="submit">
             <i className="ri-search-line" />
             {t.search}
           </button>
+          <button className="btn btn-ghost btn-sm shrink-0 rounded-full" onClick={resetSearch} disabled={isSearching} type="button">
+            <i className="ri-refresh-line" />{t.reset}
+          </button>
+          </div>
+
+          <div className="flex flex-nowrap items-center gap-2 overflow-x-auto">
+            <select aria-label={t.allPlatforms} className="select select-bordered w-auto shrink-0" value={filters.platform} onChange={(event) => updateFilter('platform', event.currentTarget.value)}>
+              <option value="">{t.allPlatforms}</option>
+              {filterOptions.platforms.map((platform) => <option key={platform.name} value={platform.name}>{getPlatformLabel(platform.name, lang)}</option>)}
+            </select>
+            <select aria-label={t.allCategories} className="select select-bordered w-auto shrink-0" value={filters.category} onChange={(event) => updateFilter('category', event.currentTarget.value)}>
+              <option value="">{t.allCategories}</option>
+              {filterOptions.categories.map((category) => <option key={category.name} value={category.name}>{category.name}</option>)}
+            </select>
+            {([
+              ['newest', t.newest], ['popular', t.popular], ['oldest', t.oldest], ['name_asc', t.nameAsc],
+            ] as const).map(([sort, label]) => (
+              <button key={sort} type="button" aria-pressed={filters.sort === sort} disabled={isSearching}
+                className={`shrink-0 whitespace-nowrap px-3 py-2 text-sm ${filters.sort === sort ? 'font-medium text-red-600' : 'text-base-content/70'}`}
+                onClick={() => {
+                  const next = { ...filters, sort }
+                  setFilters(next)
+                  void searchOverlayGames(next)
+                }}>{label}</button>
+            ))}
+          </div>
         </form>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
