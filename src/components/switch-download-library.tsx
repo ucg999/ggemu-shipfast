@@ -64,13 +64,13 @@ export function SwitchDownloadLibrary({ lang }: { lang: Locale }) {
               <button className="btn btn-error btn-sm text-white" type="submit">{copy.confirm}</button>
             </form>
           ) : null}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {games.map((game) => (
               <Link className="group overflow-hidden rounded-xl bg-base-100" key={game.id} params={{ gameId: game.id, locale: lang }} to="/$locale/platform/switch/$gameId">
                 <SwitchLibraryImage className="aspect-[616/353] w-full transition group-hover:scale-[1.02]" src={game.cover} alt={game.title} />
-                <div className="p-4">
-                  <h2 className="text-lg font-semibold text-base-content">{game.title}</h2>
-                  <div className="mt-2 flex gap-2 text-xs text-base-content/55">
+                <div className="p-2.5 sm:p-4">
+                  <h2 className="text-sm font-semibold text-base-content sm:text-lg">{game.title}</h2>
+                  <div className="mt-1.5 flex flex-wrap gap-x-1.5 gap-y-0.5 text-[10px] text-base-content/55 sm:mt-2 sm:gap-2 sm:text-xs">
                     <span>Switch</span><span>·</span><span>{game.language}</span><span>·</span><time>{game.releaseDate}</time>
                   </div>
                 </div>
@@ -84,8 +84,8 @@ export function SwitchDownloadLibrary({ lang }: { lang: Locale }) {
 }
 
 function getCopy(lang: Locale) {
-  if (lang === 'zh-TW') return { title: 'Switch 遊戲下載庫', genre: '遊戲類型', publisher: '遊戲廠商', releaseDate: '發行日期', search: '搜尋', confirm: '確認' }
-  if (lang === 'en') return { title: 'Switch Download Library', genre: 'Game genre', publisher: 'Publisher', releaseDate: 'Release date', search: 'Search ', confirm: 'Confirm' }
-  if (lang === 'ja') return { title: 'Switch ダウンロードライブラリ', genre: 'ジャンル', publisher: 'メーカー', releaseDate: '発売日', search: '検索：', confirm: '確認' }
-  return { title: 'Switch游戏下载库', genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', search: '搜索', confirm: '确认' }
+  if (lang === 'zh-TW') return { title: 'Switch 遊戲庫', genre: '遊戲類型', publisher: '遊戲廠商', releaseDate: '發行日期', search: '搜尋', confirm: '確認' }
+  if (lang === 'en') return { title: 'Switch Game Library', genre: 'Game genre', publisher: 'Publisher', releaseDate: 'Release date', search: 'Search ', confirm: 'Confirm' }
+  if (lang === 'ja') return { title: 'Switch ゲームライブラリ', genre: 'ジャンル', publisher: 'メーカー', releaseDate: '発売日', search: '検索：', confirm: '確認' }
+  return { title: 'Switch游戏库', genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', search: '搜索', confirm: '确认' }
 }

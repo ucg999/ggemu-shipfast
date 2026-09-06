@@ -135,10 +135,10 @@ function getModeCopy(locale: Locale, modeId: PlatformModeId | undefined) {
 }
 
 function getSwitchLibraryCopy(locale: Locale) {
-  if (locale === 'zh-TW') return { description: 'Switch 遊戲下載庫，集中展示可下載的中文 Switch 遊戲。', seoTitle: 'Switch遊戲下載庫｜懷舊遊戲廳', subtitle: '瀏覽可下載的 Switch 遊戲。', title: 'Switch遊戲下載庫' }
-  if (locale === 'en') return { description: 'Browse available Switch game downloads.', seoTitle: 'Switch Download Library | Retro Game Hall', subtitle: 'Browse available Switch games.', title: 'Switch Download Library' }
-  if (locale === 'ja') return { description: 'Switchゲームのダウンロード一覧です。', seoTitle: 'Switchダウンロードライブラリ｜懐かしゲームセンター', subtitle: 'Switchゲームを探せます。', title: 'Switchダウンロードライブラリ' }
-  return { description: 'Switch 游戏下载库，集中展示可下载的中文 Switch 游戏。', seoTitle: 'Switch游戏下载库｜怀旧游戏厅', subtitle: '浏览可下载的 Switch 游戏。', title: 'Switch游戏下载库' }
+  if (locale === 'zh-TW') return { description: 'Switch 遊戲庫，集中展示中文 Switch 遊戲。', seoTitle: 'Switch遊戲庫｜懷舊遊戲廳', subtitle: '瀏覽 Switch 遊戲。', title: 'Switch遊戲庫' }
+  if (locale === 'en') return { description: 'Browse available Switch games.', seoTitle: 'Switch Game Library | Retro Game Hall', subtitle: 'Browse available Switch games.', title: 'Switch Game Library' }
+  if (locale === 'ja') return { description: 'Switchゲームの一覧です。', seoTitle: 'Switchゲームライブラリ｜懐かしゲームセンター', subtitle: 'Switchゲームを探せます。', title: 'Switchゲームライブラリ' }
+  return { description: 'Switch 游戏库，集中展示中文 Switch 游戏。', seoTitle: 'Switch游戏库｜怀旧游戏厅', subtitle: '浏览 Switch 游戏。', title: 'Switch游戏库' }
 }
 
 async function loadModeGames(locale: Locale, platform: string) {

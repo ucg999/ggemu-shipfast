@@ -137,6 +137,22 @@ export function DefaultHomeTemplate(
         <span>{lang === 'en' ? 'Rankings could not refresh.' : lang === 'ja' ? 'ランキングを更新できませんでした。' : lang === 'zh-TW' ? '榜單更新失敗，已保留原卡片。' : '榜单更新失败，已保留原卡片。'}</span>
         <button type="button" className="underline" onClick={() => setRankingRetry((value) => value + 1)}>{lang === 'en' ? 'Retry' : lang === 'ja' ? '再試行' : '重试'}</button>
       </div> : null}
+      <nav aria-label="PSP and Switch" className="grid w-full grid-cols-2 bg-blue-600 text-white lg:hidden">
+        <Link
+          className="flex h-9 items-center justify-center border-r border-white/25 text-sm font-medium transition hover:bg-blue-700"
+          params={{ locale: lang, platformId: 'psp' }}
+          to="/$locale/platform/$platformId"
+        >
+          PSP
+        </Link>
+        <Link
+          className="flex h-9 items-center justify-center text-sm font-medium transition hover:bg-blue-700"
+          params={{ locale: lang, platformId: 'switch' }}
+          to="/$locale/platform/$platformId"
+        >
+          Switch
+        </Link>
+      </nav>
       <nav
         aria-label={modeCopyLabel(lang)}
         className="mx-3 border-b border-base-300 bg-base-100 px-1 sm:mx-4 lg:hidden"
