@@ -5,7 +5,7 @@ export const enMessages = {
   layout: {
     games: 'Home',
     gameLibrary: 'Game Library',
-    gameDeals: 'Game Deals',
+    gameDeals: 'Steam Deals',
     allGames: 'All Games',
     gamePlatforms: 'Platforms',
     gameTypes: 'Genres',

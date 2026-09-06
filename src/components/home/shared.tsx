@@ -33,7 +33,7 @@ export function HomeLatestGamesRow({
   if (items.length === 0 && !pinnedCoin) return null
 
   return (
-    <section className="bg-base-100 px-0 py-1 lg:px-8">
+    <section className="bg-base-100 px-3 py-1 sm:px-4 lg:px-8">
       <h2 className="mb-1 text-left text-sm lg:text-lg font-semibold text-base-content">{title ?? t.latestGamesSection}</h2>
       <CardScrollRow lang={lang}>
         {pinnedCoin ? <div className="w-[72px] shrink-0 sm:w-[88px] lg:w-48"><CoinFruitCard lang={lang} hideTitle /></div> : null}
@@ -79,7 +79,7 @@ export function HomeMostPlayedGamesSection({
 
   return (
     <section className="bg-base-100">
-      <div className={mobile ? 'w-full px-0 py-1' : 'w-full px-4 pt-1 sm:px-6 lg:px-8'}>
+      <div className={mobile ? 'w-full px-3 py-1 sm:px-4' : 'w-full px-4 pt-1 sm:px-6 lg:px-8'}>
         <div className="flex items-center gap-2">
           <h2 className="text-left text-sm lg:text-lg font-semibold text-base-content">
             {t.dailyRandom}
@@ -112,7 +112,7 @@ export function HomeMostPlayedGamesSection({
             </span>
           ) : null}
         </div>
-        <div className={mobile ? 'mt-1 grid grid-cols-2 gap-px' : 'mt-1 grid grid-cols-6 gap-2'}>
+        <div className={mobile ? 'mt-1 grid grid-cols-2 gap-2' : 'mt-1 grid grid-cols-6 gap-2'}>
           {items.map((game, index) => {
             const gameId = game.url_slug || game._id || ''
             const multiplier = getDailyCoinMultiplier(items, index)
@@ -411,6 +411,12 @@ export function SearchForm({
           >
             {getCoinModeCopy(lang).mode}
           </Link>
+        </div>
+        <div className="tooltip tooltip-bottom" data-tip="PSP">
+          <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
+        </div>
+        <div className="tooltip tooltip-bottom" data-tip="Switch">
+          <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
         </div>
 
       </div>

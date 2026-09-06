@@ -8,7 +8,7 @@ export const zhTwMessages = {
     ...zhCnMessages.layout,
     games: '首頁',
     gameLibrary: '遊戲庫',
-    gameDeals: '遊戲折扣',
+    gameDeals: 'Steam遊戲優惠中',
     allGames: '全部遊戲',
     gamePlatforms: '遊戲平台',
     gameTypes: '遊戲類型',

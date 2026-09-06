@@ -166,7 +166,11 @@ function CoinChallengePage() {
   const comparePreviewTimerRef = useRef<number | null>(null)
   const creditHoldTimeoutRef = useRef<number | null>(null)
   const creditHoldIntervalRef = useRef<number | null>(null)
+  const betHoldTimeoutRef = useRef<number | null>(null)
+  const betHoldIntervalRef = useRef<number | null>(null)
+  const shouldResetAllBetsRef = useRef(shouldResetAllBets)
   const walletEmptyAlertShownRef = useRef(false)
+  const creditEmptyAlertShownRef = useRef(false)
   const betNoteIndexRef = useRef(0)
   const audioContextRef = useRef<AudioContext | null>(null)
   const coinDropAudioRef = useRef<HTMLAudioElement | null>(null)
@@ -188,6 +192,7 @@ function CoinChallengePage() {
   const collectibleWinRef = useRef(0)
   const gameModeRef = useRef(gameMode)
   gameModeRef.current = gameMode
+  shouldResetAllBetsRef.current = shouldResetAllBets
 
   useEffect(() => {
     if (gameMode === 'ghost' && !isSpinning &&
@@ -279,6 +284,7 @@ function CoinChallengePage() {
       }
       window.speechSynthesis?.cancel()
       stopCreditHold()
+      stopBetHold()
       if (audioContextRef.current) {
         void audioContextRef.current.close()
         audioContextRef.current = null
@@ -763,16 +769,22 @@ function CoinChallengePage() {
   function handleBet(index: number) {
     if (gameMode !== 'normal') return
     if (isSpinning || compareMode || poolTransferDisplay || creditTransferDisplay) return
-    if (!shouldResetAllBets && machine.bets[index] >= 9) return
-    if (machine.credits < 1) {
-      window.alert(copy.creditEmpty)
+    const resetAllBets = shouldResetAllBetsRef.current
+    const currentMachine = machineRef.current
+    if (!resetAllBets && currentMachine.bets[index] >= 9) return
+    if (currentMachine.credits < 1) {
+      stopBetHold()
+      showCreditEmptyOnce()
       return
     }
 
     playBetClick()
+    // A hold callback outlives the render that created it. Update the ref
+    // immediately so subsequent ticks do not keep clearing the bet grid.
+    shouldResetAllBetsRef.current = false
     updateMachine((current) => {
       if (current.credits < 1) return current
-      const currentBets = shouldResetAllBets
+      const currentBets = resetAllBets
         ? Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0)
         : current.bets
       if (currentBets[index] >= 9) return current
@@ -786,6 +798,28 @@ function CoinChallengePage() {
       }
     })
     setShouldResetAllBets(false)
+  }
+
+  function startBetHold(index: number) {
+    stopBetHold()
+    const timeout = window.setTimeout(() => {
+      handleBet(index)
+      betHoldIntervalRef.current = window.setInterval(() => handleBet(index), 140)
+    }, 320)
+    betHoldTimeoutRef.current = timeout
+  }
+
+  function stopBetHold() {
+    if (betHoldTimeoutRef.current !== null) window.clearTimeout(betHoldTimeoutRef.current)
+    if (betHoldIntervalRef.current !== null) window.clearInterval(betHoldIntervalRef.current)
+    betHoldTimeoutRef.current = null
+    betHoldIntervalRef.current = null
+  }
+
+  function showCreditEmptyOnce() {
+    if (creditEmptyAlertShownRef.current) return
+    creditEmptyAlertShownRef.current = true
+    window.alert(copy.creditEmpty)
   }
 
   function handleStart() {
@@ -818,7 +852,7 @@ function CoinChallengePage() {
     if (!roundBets.some((value) => value > 0)) {
       if (gameMode !== 'normal') return
       if (machine.credits < 1) {
-        window.alert(copy.creditEmpty)
+        showCreditEmptyOnce()
         return
       }
       const randomOption = Math.floor(Math.random() * CHALLENGE_OPTION_COUNT)
@@ -839,7 +873,7 @@ function CoinChallengePage() {
     const freeModeSpin = gameMode === 'ghost' || (gameMode === 'gold' && modeRounds === 0)
     const repeatBetCost = !freeModeSpin && shouldResetAllBets && !usedAutomaticBet ? totalBet : 0
     if (machine.credits < repeatBetCost) {
-      window.alert(copy.creditEmpty)
+      showCreditEmptyOnce()
       return
     }
     const carriedWin = collectibleWin
@@ -905,6 +939,7 @@ function CoinChallengePage() {
       machine.credits - repeatBetCost - (usedAutomaticBet ? 1 : 0),
     )
 
+    creditEmptyAlertShownRef.current = false
     setIsSpinning(true)
     setLuckyLitLights([])
     setWinningLight(null)
@@ -1163,7 +1198,8 @@ function CoinChallengePage() {
 
   return (
     <main
-      className="relative min-h-screen overflow-hidden bg-black text-white"
+      className="relative min-h-screen touch-manipulation overflow-hidden bg-black text-white"
+      onDoubleClick={(event) => event.preventDefault()}
       onPointerDownCapture={(event) => {
         if ((event.target as Element).closest('button, a')) stopCelebrationAudio()
       }}
@@ -1344,6 +1380,12 @@ function CoinChallengePage() {
               disabled={gameMode !== 'normal' || isSpinning || compareMode || Boolean(poolTransferDisplay) || Boolean(creditTransferDisplay)}
               key={optionIndex}
               onClick={() => handleBet(optionIndex)}
+              onPointerDown={(event) => {
+                event.currentTarget.setPointerCapture(event.pointerId)
+                startBetHold(optionIndex)
+              }}
+              onPointerCancel={stopBetHold}
+              onPointerUp={stopBetHold}
               title={copy.addBet(optionIndex + 1)}
               type="button"
             >

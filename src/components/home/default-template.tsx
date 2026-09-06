@@ -132,14 +132,14 @@ export function DefaultHomeTemplate(
     { label: mobileModeLabels.coin, platformId: 'coin' },
   ]
   return (
-    <>
+    <div className="w-full min-w-0 max-w-full overflow-x-clip">
       {rankingFailed ? <div role="status" className="flex items-center gap-2 px-4 py-1 text-xs">
         <span>{lang === 'en' ? 'Rankings could not refresh.' : lang === 'ja' ? 'ランキングを更新できませんでした。' : lang === 'zh-TW' ? '榜單更新失敗，已保留原卡片。' : '榜单更新失败，已保留原卡片。'}</span>
         <button type="button" className="underline" onClick={() => setRankingRetry((value) => value + 1)}>{lang === 'en' ? 'Retry' : lang === 'ja' ? '再試行' : '重试'}</button>
       </div> : null}
       <nav
         aria-label={modeCopyLabel(lang)}
-        className="border-b border-base-300 bg-base-100 px-1 lg:hidden"
+        className="mx-3 border-b border-base-300 bg-base-100 px-1 sm:mx-4 lg:hidden"
       >
         <div className="flex flex-nowrap items-center justify-around gap-1 overflow-x-auto py-1.5">
           {mobileModes.map((mode) => mode.to ? (
@@ -242,7 +242,7 @@ export function DefaultHomeTemplate(
 
       <nav
         aria-label={t.mobilePlatformNavigation}
-        className="border-y border-base-300 bg-base-100 px-1 lg:hidden"
+        className="mx-3 border-y border-base-300 bg-base-100 px-1 sm:mx-4 lg:hidden"
       >
         <div className="flex flex-nowrap items-center gap-1 overflow-x-auto py-1.5">
           <button
@@ -279,14 +279,14 @@ export function DefaultHomeTemplate(
         <GamesSection
           {...props}
           games={showMobileRecent ? mobileRecentGames : props.games}
-          gridClassName="game-mosaic-grid grid grid-flow-dense grid-cols-12 gap-px sm:grid-cols-12"
+          gridClassName="game-mosaic-grid grid grid-flow-dense grid-cols-12 gap-2 sm:grid-cols-12"
           mobileItemLimit={36}
           page={showMobileRecent ? 1 : props.page}
           pages={showMobileRecent ? 1 : props.pages}
           pagination={
             showMobileRecent ? mobileRecentPagination : props.pagination
           }
-          sectionClassName="flex w-full min-w-0 flex-col gap-1 px-0 py-1"
+          sectionClassName="flex w-full min-w-0 flex-col gap-1 px-3 py-1 sm:px-4"
           showHeader={false}
         />
       </div>
@@ -304,7 +304,7 @@ export function DefaultHomeTemplate(
         />
       </div>
 
-      <section className="px-0 py-1 lg:hidden">
+      <section className="px-3 py-1 sm:px-4 lg:hidden">
         <PopularGameCollections lang={lang} />
       </section>
 
@@ -325,7 +325,7 @@ export function DefaultHomeTemplate(
           onRandomAgain={showOneRandomGame}
         />
       ) : null}
-    </>
+    </div>
   )
 }
 

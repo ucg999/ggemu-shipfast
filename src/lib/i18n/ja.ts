@@ -5,7 +5,7 @@ export const jaMessages = {
   layout: {
     games: 'ホーム',
     gameLibrary: 'ゲームライブラリ',
-    gameDeals: 'ゲームセール',
+    gameDeals: 'Steamセール中',
     allGames: 'すべてのゲーム',
     gamePlatforms: 'プラットフォーム',
     gameTypes: 'ゲームジャンル',

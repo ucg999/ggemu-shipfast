@@ -40,6 +40,7 @@ import { Route as UsernameStatusStatusidRouteImport } from './routes/$username/s
 import { Route as GamesGameIdPlayRouteImport } from './routes/games/$gameId/play'
 import { Route as LocaleDealsSteamSteamAppIdRouteImport } from './routes/$locale.deals_.steam.$steamAppId'
 import { Route as LocaleGamesGameIdPlayRouteImport } from './routes/$locale.games.$gameId.play'
+import { Route as LocalePlatformSwitchGameIdRouteImport } from './routes/$locale.platform.switch.$gameId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -199,6 +200,12 @@ const LocaleGamesGameIdPlayRoute = LocaleGamesGameIdPlayRouteImport.update({
   path: '/play',
   getParentRoute: () => LocaleGamesGameIdRoute,
 } as any)
+const LocalePlatformSwitchGameIdRoute =
+  LocalePlatformSwitchGameIdRouteImport.update({
+    id: '/platform/switch/$gameId',
+    path: '/platform/switch/$gameId',
+    getParentRoute: () => LocaleRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -232,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/games/$gameId/play': typeof GamesGameIdPlayRoute
   '/$locale/deals/steam/$steamAppId': typeof LocaleDealsSteamSteamAppIdRoute
   '/$locale/games/$gameId/play': typeof LocaleGamesGameIdPlayRoute
+  '/$locale/platform/switch/$gameId': typeof LocalePlatformSwitchGameIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -264,6 +272,7 @@ export interface FileRoutesByTo {
   '/games/$gameId/play': typeof GamesGameIdPlayRoute
   '/$locale/deals/steam/$steamAppId': typeof LocaleDealsSteamSteamAppIdRoute
   '/$locale/games/$gameId/play': typeof LocaleGamesGameIdPlayRoute
+  '/$locale/platform/switch/$gameId': typeof LocalePlatformSwitchGameIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -298,6 +307,7 @@ export interface FileRoutesById {
   '/games/$gameId/play': typeof GamesGameIdPlayRoute
   '/$locale/deals_/steam/$steamAppId': typeof LocaleDealsSteamSteamAppIdRoute
   '/$locale/games/$gameId/play': typeof LocaleGamesGameIdPlayRoute
+  '/$locale/platform/switch/$gameId': typeof LocalePlatformSwitchGameIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -333,6 +343,7 @@ export interface FileRouteTypes {
     | '/games/$gameId/play'
     | '/$locale/deals/steam/$steamAppId'
     | '/$locale/games/$gameId/play'
+    | '/$locale/platform/switch/$gameId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -365,6 +376,7 @@ export interface FileRouteTypes {
     | '/games/$gameId/play'
     | '/$locale/deals/steam/$steamAppId'
     | '/$locale/games/$gameId/play'
+    | '/$locale/platform/switch/$gameId'
   id:
     | '__root__'
     | '/'
@@ -398,6 +410,7 @@ export interface FileRouteTypes {
     | '/games/$gameId/play'
     | '/$locale/deals_/steam/$steamAppId'
     | '/$locale/games/$gameId/play'
+    | '/$locale/platform/switch/$gameId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -633,6 +646,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleGamesGameIdPlayRouteImport
       parentRoute: typeof LocaleGamesGameIdRoute
     }
+    '/$locale/platform/switch/$gameId': {
+      id: '/$locale/platform/switch/$gameId'
+      path: '/platform/switch/$gameId'
+      fullPath: '/$locale/platform/switch/$gameId'
+      preLoaderRoute: typeof LocalePlatformSwitchGameIdRouteImport
+      parentRoute: typeof LocaleRoute
+    }
   }
 }
 
@@ -677,6 +697,7 @@ interface LocaleRouteChildren {
   LocalePlatformPlatformIdRoute: typeof LocalePlatformPlatformIdRoute
   LocaleRankingsRankingIdRoute: typeof LocaleRankingsRankingIdRoute
   LocaleDealsSteamSteamAppIdRoute: typeof LocaleDealsSteamSteamAppIdRoute
+  LocalePlatformSwitchGameIdRoute: typeof LocalePlatformSwitchGameIdRoute
 }
 
 const LocaleRouteChildren: LocaleRouteChildren = {
@@ -697,6 +718,7 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocalePlatformPlatformIdRoute: LocalePlatformPlatformIdRoute,
   LocaleRankingsRankingIdRoute: LocaleRankingsRankingIdRoute,
   LocaleDealsSteamSteamAppIdRoute: LocaleDealsSteamSteamAppIdRoute,
+  LocalePlatformSwitchGameIdRoute: LocalePlatformSwitchGameIdRoute,
 }
 
 const LocaleRouteWithChildren =

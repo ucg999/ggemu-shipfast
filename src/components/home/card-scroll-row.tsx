@@ -6,8 +6,8 @@ export function CardScrollRow({ children, lang, className = '' }: { children: Re
   const row = useRef<HTMLDivElement>(null)
   const label = lang === 'en' ? 'Scroll right' : lang === 'ja' ? '右へスクロール' : lang === 'zh-TW' ? '向右翻動' : '向右翻动'
   return (
-    <div className="relative">
-      <div ref={row} className={`flex flex-nowrap gap-px lg:gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}>
+    <div className="relative w-full min-w-0 max-w-full">
+      <div ref={row} className={`flex flex-nowrap gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}>
         {children}
       </div>
       <button type="button" aria-label={lang === 'en' ? 'Scroll left' : lang === 'ja' ? '左へスクロール' : '向左翻动'} className="absolute left-0 lg:-left-4 top-1/2 grid h-10 w-4 -translate-y-1/2 place-items-center text-black" onClick={() => {

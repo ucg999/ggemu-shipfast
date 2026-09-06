@@ -5,7 +5,7 @@ export const zhCnMessages = {
   layout: {
     games: '首页',
     gameLibrary: '游戏库',
-    gameDeals: '游戏折扣',
+    gameDeals: 'Steam游戏优惠中',
     allGames: '全部游戏',
     gamePlatforms: '游戏平台',
     gameTypes: '游戏类型',

@@ -214,24 +214,22 @@ export function SiteLayout({
   }
 
   return (
-    <main className="min-h-screen bg-base-100 text-base-content">
+    <main className="min-h-screen w-full max-w-full overflow-x-clip bg-base-100 text-base-content">
       <header className="sticky top-0 z-40 border-b border-red-700 bg-red-600 text-white shadow-sm">
-        <div className="navbar flex-nowrap gap-1 px-2 sm:px-6 lg:grid lg:grid-cols-[290px_minmax(0,1fr)_auto] lg:gap-0 lg:px-8">
+        <div className="navbar flex-nowrap gap-1 pl-0 pr-2 sm:px-6 lg:grid lg:grid-cols-[290px_minmax(0,1fr)_auto] lg:gap-0 lg:px-8">
           <div className="navbar-start min-w-0 w-auto flex-none">
             {hideHeaderNav ? null : (
               <button
                 aria-label={isMobileSidebarOpen ? t.closeSidebar : t.openSidebar}
-                className="btn btn-circle btn-xs mr-1 border border-white/40 bg-white/10 text-white hover:bg-white/20 sm:btn-sm lg:hidden"
+                className="mr-1 grid h-6 w-3 shrink-0 place-items-start bg-transparent p-0 text-white/90 hover:text-white lg:hidden"
                 onClick={() => setIsMobileSidebarOpen((isOpen) => !isOpen)}
                 type="button"
               >
-                <i
-                  className={
-                    isMobileSidebarOpen
-                      ? 'ri-menu-fold-line text-lg'
-                      : 'ri-menu-unfold-line text-lg'
-                  }
-                />
+                <span aria-hidden="true" className="mt-1.5 grid w-2 gap-[2px]">
+                  <span className="h-px w-2 bg-current" />
+                  <span className="h-px w-2 bg-current" />
+                  <span className="h-px w-2 bg-current" />
+                </span>
               </button>
             )}
             <Link
@@ -708,7 +706,7 @@ export function SiteLayout({
           </>
         )}
 
-        <div className="min-w-0">
+        <div className="w-full min-w-0 max-w-full overflow-x-clip">
           {children}
           {hideFooter ? null : hideFooterOnMobile ? (
             <div className="hidden lg:block">

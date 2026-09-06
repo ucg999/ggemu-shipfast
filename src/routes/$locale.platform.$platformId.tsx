@@ -6,6 +6,7 @@ import { searchCoinModeGames, searchGames } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 import { PlatformModeContent } from './$locale.arcade'
+import { SwitchDownloadLibrary } from '#/components/switch-download-library'
 
 const PAGE_SIZE = 100
 const PLATFORM_MODES = {
@@ -36,6 +37,13 @@ const PLATFORM_MODES = {
     seoTitleKey: 'flashSeoTitle',
     subtitleKey: 'flashSubtitle',
     titleKey: 'flashTitle',
+  },
+  switch: {
+    apiPlatform: 'switch-library',
+    descriptionKey: 'gbaDescription',
+    seoTitleKey: 'gbaSeoTitle',
+    subtitleKey: 'gbaSubtitle',
+    titleKey: 'gbaTitle',
   },
 } as const
 
@@ -88,6 +96,8 @@ function PlatformModePage() {
   const lang = normalizeLocale(locale)
   const copy = getModeCopy(lang, modeId)
 
+  if (modeId === 'switch') return <SwitchDownloadLibrary lang={lang} />
+
   return (
     <>
     {modeId === 'coin' ? <CoinMachineWelcome lang={lang} /> : null}
@@ -112,6 +122,7 @@ function getPlatformMode(value: string) {
 
 function getModeCopy(locale: Locale, modeId: PlatformModeId | undefined) {
   if (modeId === 'coin') return getCoinModeCopy(locale)
+  if (modeId === 'switch') return getSwitchLibraryCopy(locale)
   const t = getI18n(locale).arcade
   const mode = modeId ? PLATFORM_MODES[modeId] : PLATFORM_MODES.famicom
 
@@ -123,7 +134,15 @@ function getModeCopy(locale: Locale, modeId: PlatformModeId | undefined) {
   }
 }
 
+function getSwitchLibraryCopy(locale: Locale) {
+  if (locale === 'zh-TW') return { description: 'Switch 遊戲下載庫，集中展示可下載的中文 Switch 遊戲。', seoTitle: 'Switch遊戲下載庫｜懷舊遊戲廳', subtitle: '瀏覽可下載的 Switch 遊戲。', title: 'Switch遊戲下載庫' }
+  if (locale === 'en') return { description: 'Browse available Switch game downloads.', seoTitle: 'Switch Download Library | Retro Game Hall', subtitle: 'Browse available Switch games.', title: 'Switch Download Library' }
+  if (locale === 'ja') return { description: 'Switchゲームのダウンロード一覧です。', seoTitle: 'Switchダウンロードライブラリ｜懐かしゲームセンター', subtitle: 'Switchゲームを探せます。', title: 'Switchダウンロードライブラリ' }
+  return { description: 'Switch 游戏下载库，集中展示可下载的中文 Switch 游戏。', seoTitle: 'Switch游戏下载库｜怀旧游戏厅', subtitle: '浏览可下载的 Switch 游戏。', title: 'Switch游戏下载库' }
+}
+
 async function loadModeGames(locale: Locale, platform: string) {
+  if (platform === 'switch-library') return []
   if (platform === 'coin') {
     return (await searchCoinModeGames()).games
   }
