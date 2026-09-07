@@ -5,14 +5,15 @@ type SwitchLibraryImageProps = {
   className?: string
   eager?: boolean
   src: string
+  transparent?: boolean
 }
 
-export function SwitchLibraryImage({ alt, className = '', eager = false, src }: SwitchLibraryImageProps) {
+export function SwitchLibraryImage({ alt, className = '', eager = false, src, transparent = false }: SwitchLibraryImageProps) {
   const [loaded, setLoaded] = useState(false)
   const [failed, setFailed] = useState(false)
 
   return (
-    <span className={`relative block overflow-hidden bg-base-300 ${className}`}>
+    <span className={`relative block overflow-hidden ${transparent ? 'bg-transparent' : 'bg-base-300'} ${className}`}>
       {!loaded ? (
         <span className="absolute inset-0 z-[1] grid place-items-center bg-base-300" aria-live="polite">
           {failed

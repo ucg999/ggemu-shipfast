@@ -4,7 +4,7 @@ import { METAL_SLUG_CLASSICS_POST } from './metal-slug-classics-post.ts'
 import { MONSTER_HUNTER_RECOMMENDATION_POST } from './monster-hunter-post.ts'
 import { SONIC_CLASSICS_POST } from './sonic-classics-post.ts'
 
-const MONSTER_HUNTER_SERIES_POST = {
+export const MONSTER_HUNTER_SERIES_POST = {
   _id: 'local-monster-hunter-series',
   slug: 'monster-hunter-series-hunting-memories-guide',
   title: '《怪物猎人》系列回顾：从第一次猫车，到和朋友再来一场狩猎',

@@ -394,7 +394,7 @@ function PokiControlTiles({
   )
 }
 
-function PokiSearchResultCard({
+export function PokiSearchResultCard({
   game,
   lang,
 }: {

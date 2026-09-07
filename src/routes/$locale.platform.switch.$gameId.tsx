@@ -26,6 +26,7 @@ function SwitchGameDetailPage() {
             <section className="min-w-0">
               <header className="mb-7 w-full max-w-2xl text-center">
                 <h1 className="border-b border-dashed border-base-content/20 pb-4 text-4xl font-bold tracking-tight sm:text-5xl">{game.title}</h1>
+                {game.foreignTitle ? <p className="mt-3 text-sm text-base-content/60">{game.foreignTitle}</p> : null}
                 <SwitchLibraryImage
                   className="mt-5 aspect-[600/338] w-full rounded-lg"
                   src={game.cover}

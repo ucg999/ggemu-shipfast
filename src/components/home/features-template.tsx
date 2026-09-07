@@ -1,6 +1,5 @@
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
-
 import {
   GameCardPreviewVideo,
   gameCardPreviewHandlers,
@@ -83,7 +82,6 @@ export function FeaturesHomeTemplate({
     </SiteLayout>
   )
 }
-
 export function getFeatureSections({
   newArrival,
   platformGames = [],
@@ -280,14 +278,3 @@ function FeatureGameCard({
   )
 }
 
-function sortFeatureGames(games: Array<PublicGame>, key: keyof PublicGame) {
-  return [...games]
-    .sort((left, right) => getFeatureScore(right, key) - getFeatureScore(left, key))
-    .slice(0, FEATURE_SECTION_LIMIT)
-}
-
-function getFeatureScore(game: PublicGame, key: keyof PublicGame) {
-  const value = game[key]
-
-  return typeof value === 'number' ? value : 0
-}

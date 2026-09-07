@@ -526,15 +526,16 @@ export function GamesSection({
   }
 
   const paginationControls = (
-    <div className="join mx-auto pt-1">
+    <div className="join mx-auto flex w-fit max-w-full justify-center pt-1 [&>.btn]:justify-center max-sm:[&>.btn]:h-7 max-sm:[&>.btn]:min-h-7 max-sm:[&>.btn]:min-w-0 max-sm:[&>.btn]:gap-0.5 max-sm:[&>.btn]:px-1 max-sm:[&>.btn]:text-[10px] max-sm:[&>.btn]:whitespace-nowrap max-sm:[&>.btn>i]:text-[10px]">
       <button
         className={`btn btn-sm join-item ${page <= 1 ? 'btn-disabled' : ''}`}
         disabled={isLoading || page <= 1}
         onClick={() => loadPageAndShowFirstRow(1)}
+        aria-label={t.latestPage}
+        title={t.latestPage}
         type="button"
       >
         <i className="ri-skip-left-line" />
-        {t.latestPage}
       </button>
       <button
         className={`btn btn-sm join-item ${page <= 1 ? 'btn-disabled' : ''}`}
@@ -563,9 +564,10 @@ export function GamesSection({
         className={`btn btn-sm join-item ${page >= pages ? 'btn-disabled' : ''}`}
         disabled={isLoading || page >= pages}
         onClick={() => loadPageAndShowFirstRow(pages)}
+        aria-label={t.lastPage}
+        title={t.lastPage}
         type="button"
       >
-        {t.lastPage}
         <i className="ri-skip-right-line" />
       </button>
     </div>

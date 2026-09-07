@@ -488,31 +488,93 @@ function pickWeightedRandomCoinMultiplier() {
   return 2
 }
 
+const WEEKLY_VIDEO_CARD_HISTORY_KEY = 'game-adventure-weekly-video-card-history'
+const RECENT_VIDEO_CARD_LIMIT = 84
+
+type WeeklyVideoCardHistory = {
+  recentIds: Array<string>
+  selections: Record<string, Array<string>>
+  weekKey: string
+}
+
 function selectDailyVideoGames(games: Array<PublicGame>, limit: number) {
   const today = new Date()
   const dayOfWeek = (today.getDay() + 6) % 7
   const weekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
   weekStart.setDate(weekStart.getDate() - dayOfWeek)
   const weeklyKey = getLocalDateKey(weekStart)
-  const weeklyGames = [...games]
-    .filter((game) => Boolean(getGameId(game)))
+  const todayKey = getLocalDateKey(today)
+  const weeklyGames = dedupeVideoGames(games)
     .sort(
       (left, right) =>
         dailyGameScore(`${weeklyKey}:${getGameId(left)}`) -
         dailyGameScore(`${weeklyKey}:${getGameId(right)}`),
     )
-  if (weeklyGames.length <= limit) return weeklyGames
-  const startIndex = (dayOfWeek * limit) % weeklyGames.length
-  const dailyGames = weeklyGames.slice(startIndex, startIndex + limit)
+  if (weeklyGames.length <= limit || typeof window === 'undefined') return weeklyGames.slice(0, limit)
 
-  if (dailyGames.length >= limit) {
-    return dailyGames
+  const history = readWeeklyVideoCardHistory()
+  const isCurrentWeek = history?.weekKey === weeklyKey
+  const selections = isCurrentWeek ? history.selections : {}
+  const recentIds = isCurrentWeek
+    ? history.recentIds
+    : Array.from(new Set([...(history?.recentIds ?? []), ...Object.values(history?.selections ?? {}).flat()])).slice(-RECENT_VIDEO_CARD_LIMIT)
+  const savedIds = selections[todayKey] ?? []
+  const gamesById = new Map(weeklyGames.map((game) => [getGameId(game), game]))
+  const savedGames = savedIds.map((id) => gamesById.get(id)).filter((game): game is PublicGame => Boolean(game))
+  const usedThisWeek = new Set(Object.values(selections).flat())
+  const unseenRecently = weeklyGames.filter((game) => {
+    const id = getGameId(game)
+    return !usedThisWeek.has(id) && !recentIds.includes(id)
+  })
+  const unseenThisWeek = weeklyGames.filter((game) => !usedThisWeek.has(getGameId(game)))
+  const nextGames = [...savedGames]
+
+  for (const candidates of [unseenRecently, unseenThisWeek, weeklyGames]) {
+    for (const game of candidates) {
+      if (nextGames.length >= limit) break
+      if (!nextGames.some((item) => getGameId(item) === getGameId(game))) nextGames.push(game)
+    }
   }
 
-  return [
-    ...dailyGames,
-    ...weeklyGames.slice(0, limit - dailyGames.length),
-  ]
+  if (nextGames.length > 0) {
+    const nextSelections = { ...selections, [todayKey]: nextGames.map(getGameId) }
+    saveWeeklyVideoCardHistory({ recentIds, selections: nextSelections, weekKey: weeklyKey })
+  }
+
+  return nextGames
+}
+
+function dedupeVideoGames(games: Array<PublicGame>) {
+  const seen = new Set<string>()
+  return games.filter((game) => {
+    const id = getGameId(game)
+    if (!id || seen.has(id)) return false
+    seen.add(id)
+    return true
+  })
+}
+
+function readWeeklyVideoCardHistory(): WeeklyVideoCardHistory | undefined {
+  try {
+    const value = window.localStorage.getItem(WEEKLY_VIDEO_CARD_HISTORY_KEY)
+    const parsed = value ? JSON.parse(value) as Partial<WeeklyVideoCardHistory> : undefined
+    if (!parsed || typeof parsed.weekKey !== 'string' || !parsed.selections || typeof parsed.selections !== 'object') return undefined
+    return {
+      recentIds: Array.isArray(parsed.recentIds) ? parsed.recentIds.filter((id): id is string => typeof id === 'string') : [],
+      selections: parsed.selections as Record<string, Array<string>>,
+      weekKey: parsed.weekKey,
+    }
+  } catch {
+    return undefined
+  }
+}
+
+function saveWeeklyVideoCardHistory(history: WeeklyVideoCardHistory) {
+  try {
+    window.localStorage.setItem(WEEKLY_VIDEO_CARD_HISTORY_KEY, JSON.stringify(history))
+  } catch {
+    // The deterministic weekly ordering remains available without local storage.
+  }
 }
 
 function dailyGameScore(value: string) {
@@ -584,7 +646,7 @@ function orderHomePlatforms<T extends { name: string }>(platforms: Array<T>) {
   return remaining
 }
 
-function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
+export function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
   const t = getI18n(lang).home
   const paidLink = (resourceId: string, cost = 10) => (event: MouseEvent<HTMLAnchorElement>) => {
     if (!confirmResourceDownload(lang, cost)) {

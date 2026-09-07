@@ -319,6 +319,7 @@ function ArcadeGameRow({ game, lang }: { game: PublicGame; lang: Locale }) {
       <Link
         className="btn btn-primary btn-sm shrink-0 rounded-full sm:btn-md"
         params={{ gameId, locale: lang }}
+        search={{ autoplay: undefined }}
         to="/$locale/games/$gameId/play"
       >
         <i className="ri-play-fill" />

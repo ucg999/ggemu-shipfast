@@ -7,9 +7,17 @@ import { getI18n, normalizeLocale } from '#/lib/i18n'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 import { PlatformModeContent } from './$locale.arcade'
 import { SwitchDownloadLibrary } from '#/components/switch-download-library'
+import { PspDownloadLibrary } from '#/components/psp-download-library'
 
 const PAGE_SIZE = 100
 const PLATFORM_MODES = {
+  psp: {
+    apiPlatform: 'psp-library',
+    descriptionKey: 'gbaDescription',
+    seoTitleKey: 'gbaSeoTitle',
+    subtitleKey: 'gbaSubtitle',
+    titleKey: 'gbaTitle',
+  },
   famicom: {
     apiPlatform: 'Famicom',
     descriptionKey: 'famicomDescription',
@@ -97,6 +105,7 @@ function PlatformModePage() {
   const copy = getModeCopy(lang, modeId)
 
   if (modeId === 'switch') return <SwitchDownloadLibrary lang={lang} />
+  if (modeId === 'psp') return <PspDownloadLibrary lang={lang} />
 
   return (
     <>
@@ -123,6 +132,10 @@ function getPlatformMode(value: string) {
 function getModeCopy(locale: Locale, modeId: PlatformModeId | undefined) {
   if (modeId === 'coin') return getCoinModeCopy(locale)
   if (modeId === 'switch') return getSwitchLibraryCopy(locale)
+  if (modeId === 'psp') {
+    const copy = getSwitchLibraryCopy(locale)
+    return { description: copy.description.replaceAll('Switch', 'PSP'), seoTitle: copy.seoTitle.replaceAll('Switch', 'PSP'), subtitle: copy.subtitle.replaceAll('Switch', 'PSP'), title: copy.title.replaceAll('Switch', 'PSP') }
+  }
   const t = getI18n(locale).arcade
   const mode = modeId ? PLATFORM_MODES[modeId] : PLATFORM_MODES.famicom
 
@@ -142,7 +155,7 @@ function getSwitchLibraryCopy(locale: Locale) {
 }
 
 async function loadModeGames(locale: Locale, platform: string) {
-  if (platform === 'switch-library') return []
+  if (platform === 'switch-library' || platform === 'psp-library') return []
   if (platform === 'coin') {
     return (await searchCoinModeGames()).games
   }

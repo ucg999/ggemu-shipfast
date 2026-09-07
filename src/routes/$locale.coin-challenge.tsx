@@ -956,8 +956,13 @@ function CoinChallengePage() {
             setModeRounds(0)
             setWinningLight(target)
           } else {
+            const option = outcome.option
+            if (option === null) {
+              finishRound(0, 0, 0, target)
+              return
+            }
             setModeRounds((current) => current + 1)
-            finishRound(roundBets[outcome.option] * outcome.multiplier, outcome.option, outcome.multiplier, target)
+            finishRound(roundBets[option] * outcome.multiplier, option, outcome.multiplier, target)
           }
           return
         }
@@ -991,6 +996,11 @@ function CoinChallengePage() {
           runPenaltyRounds(target, 1, 0)
           return
         }
+        const option = outcome.option
+        if (option === null) {
+          finishRound(0, 0, 0, target)
+          return
+        }
         if (target === BAR_100_LIGHT_INDEX && roundBets[7] > 0) {
           setSpecialCellEffect('jackpot')
           playJackpotAudio()
@@ -998,8 +1008,8 @@ function CoinChallengePage() {
 
         finishRound(
           // Selection controls the odds; a landed, wagered symbol always pays.
-          roundBets[outcome.option] * outcome.multiplier,
-          outcome.option,
+          roundBets[option] * outcome.multiplier,
+          option,
           outcome.multiplier,
           target,
         )
@@ -1021,6 +1031,8 @@ function CoinChallengePage() {
       lightIndex: number,
       lucky = false,
     ) => {
+      void option
+      void multiplier
       const adjustedPayout = gameMode === 'gold' ? payout * 2 : payout
       if (gameMode === 'ghost' && adjustedPayout > 0) {
         let remaining = adjustedPayout
@@ -1078,6 +1090,7 @@ function CoinChallengePage() {
         finishRound(accumulatedPayout, 0, 1, startIndex, true)
         return
       }
+      const selectedOption = selected.option
 
       const luckyDistance =
         (selected.index - startIndex + trackLength) % trackLength
@@ -1096,11 +1109,11 @@ function CoinChallengePage() {
               : [...current, selected.index],
           )
           const chancePayout =
-            roundBets[selected.option] * selected.multiplier
+            roundBets[selectedOption] * selected.multiplier
           const nextPayout = accumulatedPayout + chancePayout
 
           if (remaining <= 1) {
-            finishRound(nextPayout, selected.option, selected.multiplier, selected.index, true)
+            finishRound(nextPayout, selectedOption, selected.multiplier, selected.index, true)
             return
           }
 
@@ -1134,6 +1147,7 @@ function CoinChallengePage() {
         spinTimerRef.current = null
         return
       }
+      const selectedOption = selected.option
 
       const distance = (selected.index - startIndex + trackLength) % trackLength
       const steps = trackLength + distance
@@ -1144,7 +1158,7 @@ function CoinChallengePage() {
         setActiveLight((current) => (current + 1) % trackLength)
 
         if (completed >= steps) {
-          const penalty = roundBets[selected.option] * selected.multiplier
+          const penalty = roundBets[selectedOption] * selected.multiplier
           let remainingPenalty = penalty
           const pendingDeduction = Math.min(penaltyPendingBalance, remainingPenalty)
           penaltyPendingBalance -= pendingDeduction

@@ -5,7 +5,6 @@ import type { MouseEvent, ReactNode } from 'react'
 import type { GameFilterOptions, Locale } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
-import { siteConfig } from '#/lib/site-config'
 import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
 import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
 import { addCoinBalance } from '#/lib/coin-wallet'
@@ -40,6 +39,7 @@ export function SiteLayout({
   const t = getI18n(locale).layout
   const homeT = getI18n(locale).home
   const location = useRouterState({ select: (state) => state.location })
+  const isHomePage = location.pathname.replace(/\/+$/, '') === `/${locale}` || location.pathname === '/'
   const siteThemes = getSiteThemes()
   const [theme, setTheme] = useState(() => normalizeSiteTheme(null))
   const [isLocaleMenuOpen, setIsLocaleMenuOpen] = useState(false)
@@ -285,7 +285,7 @@ export function SiteLayout({
                 <i className="ri-search-line text-base" />
               </button>
             ) : null}
-            <Link
+            {isHomePage ? <Link
               aria-label={t.watchOthers}
               className="btn h-6 min-h-6 lg:h-9 lg:min-h-9 shrink-0 gap-0.5 rounded-full border border-rose-200 bg-rose-100 px-1.5 text-[10px] font-semibold text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 lg:gap-2 lg:px-4 lg:text-sm max-lg:[&_.live-watch-eye]:scale-75"
               params={{ locale }}
@@ -295,11 +295,11 @@ export function SiteLayout({
                 <span className="live-watch-pupil" />
               </span>
               <span>{t.watchOthers}</span>
-            </Link>
+            </Link> : null}
 
             {headerActions}
 
-            {canSwitchTheme ? (
+            {isHomePage && canSwitchTheme ? (
               <>
                 <div
                   aria-label={t.theme}
@@ -338,7 +338,7 @@ export function SiteLayout({
               </>
             ) : null}
 
-            <details
+            {isHomePage ? <details
               className="dropdown dropdown-end"
               onToggle={(event) => setIsLocaleMenuOpen(event.currentTarget.open)}
               open={isLocaleMenuOpen}
@@ -382,7 +382,7 @@ export function SiteLayout({
                   </button>
                 </li>
               </ul>
-            </details>
+            </details> : null}
           </div>
         </div>
       </header>

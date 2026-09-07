@@ -1,10 +1,10 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import tailwindcss from '@tailwindcss/vite'
 import { cloudflare } from '@cloudflare/vite-plugin'
 import viteReact from '@vitejs/plugin-react'
 
-function cloudflareWorkersClientShim() {
+function cloudflareWorkersClientShim(): Plugin {
   const moduleId = '\0cloudflare-workers-client-shim'
 
   return {
