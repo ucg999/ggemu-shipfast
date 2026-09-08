@@ -3,6 +3,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import tailwindcss from '@tailwindcss/vite'
 import { cloudflare } from '@cloudflare/vite-plugin'
 import viteReact from '@vitejs/plugin-react'
+import { libraryUpdatesPlugin } from './scripts/library-updates.mjs'
 
 function cloudflareWorkersClientShim(): Plugin {
   const moduleId = '\0cloudflare-workers-client-shim'
@@ -29,6 +30,7 @@ function cloudflareWorkersClientShim(): Plugin {
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
   plugins: [
+    libraryUpdatesPlugin(),
     cloudflareWorkersClientShim(),
     cloudflare({ viteEnvironment: { name: 'ssr' } }),
     tanstackStart(),

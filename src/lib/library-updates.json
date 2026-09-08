@@ -1,0 +1,38 @@
+{
+  "switch/warriors-abyss": {
+    "fingerprint": "7522baf64661651f4802893be06db00812af76b81b92f955a70f310f13c2774d",
+    "updatedAt": null
+  },
+  "switch/dave-the-diver": {
+    "fingerprint": "48dd04f01bfee173d0a6e983aabbc7ba6104d00f7b29243951b9520f14f1b491",
+    "updatedAt": null
+  },
+  "switch/tmnt-splintered-fate": {
+    "fingerprint": "dd0770e2c8543a9c9eacd3bd18c35b3fafb6f0069935d573a4a1db90f987b061",
+    "updatedAt": "2026-09-07T16:21:47+00:00"
+  },
+  "switch/hello-kitty-island-adventure": {
+    "fingerprint": "653d81f974e490d082c4b2218ad7171c9562f94ee22b65640d27b71c6da5e4d6",
+    "updatedAt": "2026-09-07T16:21:48+00:00"
+  },
+  "switch/nin-nin-days-2": {
+    "fingerprint": "395346dd02728dfaa2f06b26fd6f8a4b0cec38ed1fe9c6e54d2116d2b734c6d8",
+    "updatedAt": "2026-09-07T16:59:38+00:00"
+  },
+  "switch/final-fantasy-resonance-demo": {
+    "fingerprint": "f5eb781ab977fdf64545e1e75a18470200d5408c74ea560713f76d35f85897d1",
+    "updatedAt": "2026-09-07T16:59:38+00:00"
+  },
+  "switch/gta5-switch-port": {
+    "fingerprint": "db26aed30c11bfd0b3033912ce1548589f4d066b92c45af8afbb43598ae20f4f",
+    "updatedAt": "2026-09-07T16:59:38+00:00"
+  },
+  "psp/tales-of-phantasia-narikiri-dungeon-x": {
+    "fingerprint": "bd5fba21bbcd4cf95afe756c58d77e223810d796820dfc326b0399043c8feafb",
+    "updatedAt": "2026-09-08T14:19:59.852Z"
+  },
+  "psp/ridge-racer": {
+    "fingerprint": "81dbb4cb905f55e98b9607b2f73f35e8ef69cf2ef30faf1795628975284396ff",
+    "updatedAt": "2026-09-08T14:29:05.778Z"
+  }
+}

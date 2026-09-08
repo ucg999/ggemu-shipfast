@@ -684,17 +684,17 @@ export function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) 
           </summary>
           <ul className="menu menu-sm ml-11">
             <li>
-              <a href="https://www.kdocs.cn/etapps/query/q/TUxF4AQG" onClick={paidLink('psp-library', 20)} rel="noreferrer" target="_blank">
+              <a href="https://www.kdocs.cn/l/coH3Z1VLgop3" onClick={paidLink('psp-library', 20)} rel="noreferrer" target="_blank">
                 {t.pspLibrary} · 20
               </a>
             </li>
             <li>
-              <a href="https://www.kdocs.cn/etapps/query/q/RclPTyXd" onClick={paidLink('psv-library', 20)} rel="noreferrer" target="_blank">
+              <a href="https://www.kdocs.cn/l/cl536kMzB2WN" onClick={paidLink('psv-library', 20)} rel="noreferrer" target="_blank">
                 {t.psvLibrary} · 20
               </a>
             </li>
             <li>
-              <a href="https://www.kdocs.cn/etapps/query/q/detUdefK" onClick={paidLink('switch-library', 20)} rel="noreferrer" target="_blank">
+              <a href="https://www.kdocs.cn/l/cn1VaihcGuzA" onClick={paidLink('switch-library', 20)} rel="noreferrer" target="_blank">
                 {t.switchLibrary} · 20
               </a>
             </li>

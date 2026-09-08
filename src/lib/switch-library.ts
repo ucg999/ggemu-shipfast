@@ -9,6 +9,7 @@ export type SwitchLibraryGame = {
   requiredSystem: string
   language: string
   downloadUrl?: string
+  videoUrl?: string
   popularity?: number
   // ISO timestamp of the latest game content update; unknown dates stay unset.
   updatedAt?: string

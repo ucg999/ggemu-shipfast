@@ -4,9 +4,17 @@ import { SiteLayout } from '#/components/site-layout'
 import { SwitchLibraryImage } from '#/components/switch-library-image'
 import type { Locale } from '#/lib/ggemu'
 import { SWITCH_LIBRARY_GAMES } from '#/lib/switch-library'
+import { PSP_LIBRARY_GAMES } from '#/lib/psp-library'
+import updates from '#/lib/library-updates.json'
 
 export function SwitchDownloadLibrary({ lang }: { lang: Locale }) {
-  const copy = getCopy(lang)
+  return <DownloadLibrary lang={lang} platform="switch" />
+}
+
+export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 'switch' | 'psp' }) {
+  const platformName = platform === 'psp' ? 'PSP' : 'Switch'
+  const library = platform === 'psp' ? PSP_LIBRARY_GAMES : SWITCH_LIBRARY_GAMES
+  const copy = { ...getCopy(lang), title: getCopy(lang).title.replace('Switch', platformName) }
   const [sortField, setSortField] = useState<'random' | 'popular' | 'updatedAt' | 'releaseDate'>('releaseDate')
   const [searchField, setSearchField] = useState<'genre' | 'publisher' | null>(null)
   const [draftField, setDraftField] = useState<'genre' | 'publisher' | null>(null)
@@ -38,10 +46,10 @@ export function SwitchDownloadLibrary({ lang }: { lang: Locale }) {
   }, [isSearchOpen])
   const games = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase()
-    const filtered = SWITCH_LIBRARY_GAMES.filter((game) => {
+    const filtered = library.filter((game) => {
       const values = searchField
         ? [game[searchField]]
-        : [game.title, game.foreignTitle ?? '', game.genre, game.publisher, game.releaseDate, game.language, game.requiredSystem, game.description, game.shareVersion ?? '', game.downloadStatus ?? '', 'Switch']
+        : [game.title, game.foreignTitle ?? '', game.genre, game.publisher, game.releaseDate, game.language, game.requiredSystem, game.description, game.shareVersion ?? '', game.downloadStatus ?? '', platformName]
       return values.some((value) => value.toLocaleLowerCase().includes(query))
     })
     return filtered.sort((a, b) => {
@@ -49,10 +57,14 @@ export function SwitchDownloadLibrary({ lang }: { lang: Locale }) {
       if (sortField === 'random') result = randomIds.indexOf(a.id) - randomIds.indexOf(b.id)
       else if (sortField === 'popular') result = (b.popularity ?? 0) - (a.popularity ?? 0)
       else if (sortField === 'releaseDate') result = b.releaseDate.localeCompare(a.releaseDate)
-      else result = (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '')
+      else {
+        const timestamps = updates as Record<string, { updatedAt?: string | null }>
+        const time = (game: typeof a) => Date.parse(timestamps[platform + '/' + game.id]?.updatedAt ?? game.updatedAt ?? '') || 0
+        result = time(b) - time(a)
+      }
       return reverse ? -result : result
     })
-  }, [sortField, reverse, randomIds, searchQuery, searchField])
+  }, [sortField, reverse, randomIds, searchQuery, searchField, library, platform, platformName])
   const pageCount = Math.max(1, Math.ceil(games.length / 20))
   const visibleGames = games.slice((page - 1) * 20, page * 20)
   const filters = [
@@ -64,13 +76,27 @@ export function SwitchDownloadLibrary({ lang }: { lang: Locale }) {
     { field: 'releaseDate' as const, label: copy.releaseDate },
   ]
   return (
-    <SiteLayout locale={lang} hideFooter>
+    <SiteLayout locale={lang} hideFooter brandAddon={
+      <nav className="ml-1 flex items-center gap-1" aria-label="游戏库切换">
+        {(['psp', 'switch'] as const).map((libraryPlatform) => (
+          <Link
+            key={libraryPlatform}
+            to="/$locale/platform/$platformId"
+            params={{ locale: lang, platformId: libraryPlatform }}
+            aria-current={platform === libraryPlatform ? 'page' : undefined}
+            className="whitespace-nowrap px-2 py-1.5 text-xs font-medium text-white sm:text-sm"
+          >
+            {libraryPlatform === 'psp' ? 'PSP' : 'Switch'}
+          </Link>
+        ))}
+      </nav>
+    }>
       <main className="min-h-screen bg-base-200 px-3 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-baseline gap-2">
               <h1 className="text-3xl font-bold text-base-content">{copy.title}</h1>
-              <span className="text-xs font-normal text-base-content/55">{copy.gameCount(SWITCH_LIBRARY_GAMES.length)}</span>
+              <span className="text-xs font-normal text-base-content/55">{copy.gameCount(library.length)}</span>
             </div>
             <div className="flex min-w-0 max-w-full flex-nowrap items-center justify-end gap-1 overflow-x-auto max-sm:w-full max-sm:justify-center max-sm:gap-0 max-sm:[&>.btn]:h-7 max-sm:[&>.btn]:min-h-7 max-sm:[&>.btn]:min-w-0 max-sm:[&>.btn]:shrink max-sm:[&>.btn]:gap-0.5 max-sm:[&>.btn]:px-1 max-sm:[&>.btn]:text-[clamp(11px,3vw,13px)] max-sm:[&>.btn]:whitespace-nowrap max-sm:[&>.btn-square]:w-7 max-sm:[&>.btn-square]:shrink-0 max-sm:[&>.btn>i]:text-sm">
               {filters.map(({ field, label }) => (
@@ -88,7 +114,7 @@ export function SwitchDownloadLibrary({ lang }: { lang: Locale }) {
                       return
                     }
                     if (field === 'random') {
-                      const ids = SWITCH_LIBRARY_GAMES.map((game) => game.id)
+                      const ids = library.map((game) => game.id)
                       for (let i = ids.length - 1; i > 0; i--) {
                         const j = Math.floor(Math.random() * (i + 1))
                         ;[ids[i], ids[j]] = [ids[j], ids[i]]
@@ -138,12 +164,12 @@ export function SwitchDownloadLibrary({ lang }: { lang: Locale }) {
           {games.length === 0 ? <p className="py-12 text-center text-base-content/60">{copy.empty}</p> : null}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
             {visibleGames.map((game) => (
-              <Link className="group overflow-hidden rounded-xl bg-base-100" key={game.id} params={{ gameId: game.id, locale: lang }} to="/$locale/platform/switch/$gameId">
-                <SwitchLibraryImage className="aspect-[616/353] w-full transition group-hover:scale-[1.02]" src={game.cover} alt={game.title} />
+              <Link className="group overflow-hidden rounded-xl bg-base-100" key={game.id} params={{ gameId: game.id, locale: lang }} to={platform === 'psp' ? '/$locale/platform/psp/$gameId' : '/$locale/platform/switch/$gameId'}>
+                <SwitchLibraryImage clickable className="aspect-[616/353] w-full transition group-hover:scale-[1.02]" src={game.cover} alt={game.title} />
                 <div className="p-2.5 sm:py-4">
                   <h2 className="truncate text-sm font-semibold text-base-content sm:text-lg" title={game.title}>{game.title}</h2>
                   <div className="mt-1.5 overflow-hidden text-ellipsis whitespace-nowrap text-[9px] text-base-content/55 sm:mt-2 sm:text-xs">
-                    <span>Switch</span>{' · '}<span>{getCardLanguage(game.language)}</span>{' · '}<span>{game.genre.split('、')[0]}</span>{' · '}<time>{game.releaseDate}</time>
+                    <span>{platformName}</span>{' · '}<span>{getCardLanguage('cardLanguage' in game ? String(game.cardLanguage ?? game.language) : game.language)}</span>{' · '}<span>{game.genre.split('、')[0]}</span>{' · '}<time>{game.releaseDate}</time>
                   </div>
                 </div>
               </Link>
@@ -167,8 +193,8 @@ function getCardLanguage(language: string) {
 }
 
 function getCopy(lang: Locale) {
-  if (lang === 'zh-TW') return { random: '隨機', popular: '最受歡迎', updatedAt: '修改時間', clear: '清除搜尋', empty: '沒有找到相關遊戲', pagination: '分頁', previous: '上一頁', next: '下一頁', title: 'Switch 遊戲庫', gameCount: (count: number) => `共 ${count} 款遊戲`, genre: '遊戲類型', publisher: '遊戲廠商', releaseDate: '發行日期', search: '搜尋', confirm: '確認' }
+  if (lang === 'zh-TW') return { random: '隨機', popular: '最受歡迎', updatedAt: '更新時間', clear: '清除搜尋', empty: '沒有找到相關遊戲', pagination: '分頁', previous: '上一頁', next: '下一頁', title: 'Switch 遊戲庫', gameCount: (count: number) => `共 ${count} 款遊戲`, genre: '遊戲類型', publisher: '遊戲廠商', releaseDate: '發行日期', search: '搜尋', confirm: '確認' }
   if (lang === 'en') return { random: 'Random', popular: 'Most popular', updatedAt: 'Last updated', clear: 'Clear search', empty: 'No games found', pagination: 'Pagination', previous: 'Previous', next: 'Next', title: 'Switch Game Library', gameCount: (count: number) => `${count} games`, genre: 'Game genre', publisher: 'Publisher', releaseDate: 'Release date', search: 'Search ', confirm: 'Confirm' }
   if (lang === 'ja') return { random: 'ランダム', popular: '人気順', updatedAt: '更新日時', clear: '検索をクリア', empty: 'ゲームが見つかりません', pagination: 'ページ', previous: '前へ', next: '次へ', title: 'Switch ゲームライブラリ', gameCount: (count: number) => `${count}本`, genre: 'ジャンル', publisher: 'メーカー', releaseDate: '発売日', search: '検索：', confirm: '確認' }
-  return { random: '随机', popular: '最受欢迎', updatedAt: '修改时间', clear: '清除搜索', empty: '没有找到相关游戏', pagination: '分页', previous: '上一页', next: '下一页', title: 'Switch游戏库', gameCount: (count: number) => `共 ${count} 款游戏`, genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', search: '搜索', confirm: '确认' }
+  return { random: '随机', popular: '最受欢迎', updatedAt: '更新时间', clear: '清除搜索', empty: '没有找到相关游戏', pagination: '分页', previous: '上一页', next: '下一页', title: 'Switch游戏库', gameCount: (count: number) => `共 ${count} 款游戏`, genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', search: '搜索', confirm: '确认' }
 }

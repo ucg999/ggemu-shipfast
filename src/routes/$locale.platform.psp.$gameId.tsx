@@ -28,7 +28,7 @@ function PspGameDetailPage() {
                 <h1 className="border-b border-dashed border-base-content/20 pb-4 text-4xl font-bold tracking-tight sm:text-5xl">{game.title}</h1>
                 <SwitchLibraryImage
                   className="mt-5 aspect-[600/338] w-full rounded-lg [&_img]:object-contain"
-                  src={game.cover}
+                  src={game.detailCover ?? game.cover}
                   alt={`${game.title} ${copy.screenshot} 1`}
                   eager
                 />
@@ -59,15 +59,23 @@ function PspGameDetailPage() {
                 <div className="flex justify-between gap-4 py-3"><dt className="text-base-content/50">{copy.language}</dt><dd>{game.language}</dd></div>
               </dl>
             </aside>
-            {game.boxCover ? <SwitchLibraryImage className="mt-4 aspect-[2/3] w-full [&_img]:object-contain" src={game.boxCover} alt={`${game.title} 封面`} transparent /> : null}
+            <div className="mt-4 flex flex-col gap-3">
+              {game.videoUrl ? <a className="btn btn-outline" href={game.videoUrl} target="_blank" rel="noopener noreferrer">{copy.videoButton}</a> : <button className="btn btn-outline" disabled type="button">{copy.videoPending}</button>}
             </div>
-          </div>
-          <section className="mt-7 rounded-xl bg-base-100 p-5 shadow-sm">
-            <div className="flex flex-wrap items-center gap-3">
+            {game.boxCover ? <SwitchLibraryImage className="mt-4 aspect-[2/3] w-full [&_img]:object-contain" src={game.boxCover} alt={`${game.title} 封面`} transparent /> : null}
+          <section className="mt-4 rounded-xl bg-base-100 p-5 shadow-sm">
+            <div className="flex flex-col gap-3">
+              <div className="text-sm leading-6 text-base-content/75">
+                <p>解压密码：进群可见</p>
+                <p>游戏交流Q群：62119057</p>
+              </div>
               {game.downloadUrl ? <a className="btn btn-error text-white" href={game.downloadUrl} target="_blank" rel="noopener noreferrer">{copy.downloadButton}</a> : <button className="btn" disabled type="button">{game.downloadStatus ?? copy.preparing}</button>}
               {game.shareVersion ? <span className="text-sm text-base-content/60">{game.shareVersion}</span> : null}
             </div>
           </section>
+            </div>
+          </div>
+
         </article>
       </main>
     </SiteLayout>
@@ -75,8 +83,8 @@ function PspGameDetailPage() {
 }
 
 function getCopy(lang: ReturnType<typeof normalizeLocale>) {
-  if (lang === 'zh-TW') return { back: '返回PSP遊戲庫', information: '遊戲資訊', gameName: '遊戲名稱', genre: '遊戲類型', platform: '平台', publisher: '遊戲廠商', language: '語言', release: '發行日期', requiredSystem: '所需系統', screenshots: '遊戲截圖', screenshot: '遊戲截圖', downloadButton: '遊戲分享', preparing: '分享資源待添加' }
-  if (lang === 'en') return { back: 'Back to PSP Library', information: 'Game information', gameName: 'Game title', genre: 'Genre', platform: 'Platform', publisher: 'Publisher', language: 'Language', release: 'Release date', requiredSystem: 'Required system', screenshots: 'Screenshots', screenshot: 'screenshot', downloadButton: 'Game share', preparing: 'Share link coming soon' }
-  if (lang === 'ja') return { back: 'PSPライブラリへ戻る', information: 'ゲーム情報', gameName: 'ゲーム名', genre: 'ジャンル', platform: '機種', publisher: 'メーカー', language: '言語', release: '発売日', requiredSystem: '必要システム', screenshots: 'スクリーンショット', screenshot: 'スクリーンショット', downloadButton: 'ゲーム共有', preparing: '共有リンク準備中' }
-  return { back: '返回PSP游戏库', information: '游戏信息', gameName: '游戏名称', genre: '游戏类型', platform: '平台', publisher: '游戏厂商', language: '语言', release: '发行日期', requiredSystem: '所需系统', screenshots: '游戏截图', screenshot: '游戏截图', downloadButton: '游戏分享', preparing: '分享资源待添加' }
+  if (lang === 'zh-TW') return { back: '返回PSP遊戲庫', information: '遊戲資訊', gameName: '遊戲名稱', genre: '遊戲類型', platform: '平台', publisher: '遊戲廠商', language: '語言', release: '發行日期', requiredSystem: '所需系統', screenshots: '遊戲截圖', screenshot: '遊戲截圖', videoPending: '影片待更新', videoButton: '遊戲影片', downloadButton: '遊戲分享', preparing: '分享資源待添加' }
+  if (lang === 'en') return { back: 'Back to PSP Library', information: 'Game information', gameName: 'Game title', genre: 'Genre', platform: 'Platform', publisher: 'Publisher', language: 'Language', release: 'Release date', requiredSystem: 'Required system', screenshots: 'Screenshots', screenshot: 'screenshot', videoPending: 'Video coming soon', videoButton: 'Game video', downloadButton: 'Game share', preparing: 'Share link coming soon' }
+  if (lang === 'ja') return { back: 'PSPライブラリへ戻る', information: 'ゲーム情報', gameName: 'ゲーム名', genre: 'ジャンル', platform: '機種', publisher: 'メーカー', language: '言語', release: '発売日', requiredSystem: '必要システム', screenshots: 'スクリーンショット', screenshot: 'スクリーンショット', videoPending: '動画更新待ち', videoButton: 'ゲーム動画', downloadButton: 'ゲーム共有', preparing: '共有リンク準備中' }
+  return { back: '返回PSP游戏库', information: '游戏信息', gameName: '游戏名称', genre: '游戏类型', platform: '平台', publisher: '游戏厂商', language: '语言', release: '发行日期', requiredSystem: '所需系统', screenshots: '游戏截图', screenshot: '游戏截图', videoPending: '视频待更新', videoButton: '游戏视频', downloadButton: '游戏分享', preparing: '分享资源待添加' }
 }

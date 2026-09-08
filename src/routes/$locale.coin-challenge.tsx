@@ -6,6 +6,7 @@ import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-reward
 import { CoinMachineWelcome } from '#/components/coin-machine-welcome'
 import type { Locale } from '#/lib/ggemu'
 import { addCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
+import { createSpinAudioClock } from '#/lib/spin-audio-clock'
 import { normalizeLocale } from '#/lib/i18n'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 
@@ -161,6 +162,7 @@ function CoinChallengePage() {
     credits: number
     pool: number
   } | null>(null)
+  const spinClockRef = useRef<ReturnType<typeof createSpinAudioClock> | null>(null)
   const spinTimerRef = useRef<number | null>(null)
   const transferTimerRef = useRef<number | null>(null)
   const comparePreviewTimerRef = useRef<number | null>(null)
@@ -212,6 +214,8 @@ function CoinChallengePage() {
     setMachine(emptyMachine)
 
     const cashOutOnExit = () => {
+      spinClockRef.current?.stop()
+      spinClockRef.current = null
       if (spinTimerRef.current !== null) {
         window.clearTimeout(spinTimerRef.current)
         spinTimerRef.current = null
@@ -246,7 +250,7 @@ function CoinChallengePage() {
     coinDropAudioRef.current = new Audio('/coin-challenge-drop.mp3')
     coinDropAudioRef.current.preload = 'none'
     mainSpinAudioRef.current = new Audio('/coin-challenge-spin-main.mp3')
-    mainSpinAudioRef.current.preload = 'metadata'
+    mainSpinAudioRef.current.preload = 'auto'
     mainSpinAudioRef.current.volume = 1
     withdrawAudioRef.current = new Audio('/coin-challenge-withdraw.mp3')
     withdrawAudioRef.current.preload = 'none'
@@ -359,26 +363,6 @@ function CoinChallengePage() {
       oscillator.stop(now + (emphasized ? 0.15 : 0.08))
     } catch {
       // Audio remains optional when the browser blocks playback.
-    }
-  }
-
-  function playMainSpinAudio() {
-    try {
-    const audio = mainSpinAudioRef.current
-    if (!audio) return MAIN_SPIN_DURATION_MS
-    const playbackRate = 0.9
-    audio.pause()
-    audio.currentTime = 0
-    audio.playbackRate = playbackRate
-    audio.preservesPitch = true
-    void audio.play().catch(() => {
-      // The running lights remain usable if audio playback is blocked.
-    })
-    return Number.isFinite(audio.duration) && audio.duration > 0
-      ? Math.round((audio.duration * 1000) / playbackRate)
-      : Math.round(MAIN_SPIN_DURATION_MS / playbackRate)
-    } catch {
-      return Math.round(MAIN_SPIN_DURATION_MS / 0.9)
     }
   }
 
@@ -887,7 +871,8 @@ function CoinChallengePage() {
       setCollectibleWin(0)
       setRoundWin(0)
     }
-    const mainSpinDurationMs = playMainSpinAudio()
+    const mainSpinDurationMs = MAIN_SPIN_DURATION_MS / 0.9
+    const runningLightsDurationMs = mainSpinDurationMs - 350
     const rtpLedger = readRtpLedger()
     const nextTotalWagered = rtpLedger.wagered + (freeModeSpin ? 0 : totalBet)
     saveRtpLedger({ ...rtpLedger, wagered: nextTotalWagered })
@@ -922,15 +907,20 @@ function CoinChallengePage() {
     const spinWeightTotal = spinWeights.reduce((sum, weight) => sum + weight, 0)
     const minimumStepDelayMs = 12
     const openingDelayMs = 80
-    const endingLeadMs = 700
     const spinDelayBudgetMs = Math.max(
       spinWeights.length * minimumStepDelayMs,
-      mainSpinDurationMs - openingDelayMs - endingLeadMs,
+      runningLightsDurationMs - openingDelayMs,
     )
     const weightedDelayBudgetMs = Math.max(
       0,
       spinDelayBudgetMs - spinWeights.length * minimumStepDelayMs,
     )
+    const stepTimes = [openingDelayMs]
+    for (const weight of spinWeights) {
+      stepTimes.push(stepTimes[stepTimes.length - 1] + minimumStepDelayMs +
+        (weight / spinWeightTotal) * weightedDelayBudgetMs)
+    }
+    stepTimes[stepTimes.length - 1] = runningLightsDurationMs
     let completedSteps = 0
     let penaltyPendingBalance = collectibleWin
     let penaltyPoolBalance = Math.min(9999, machine.bonusWin + carriedWin)
@@ -945,10 +935,15 @@ function CoinChallengePage() {
     setWinningLight(null)
 
     const advance = () => {
-      completedSteps += 1
-      setActiveLight((current) => (current + 1) % trackLength)
+      const elapsed = spinClockRef.current?.elapsed() ?? 0
+      while (completedSteps < totalSteps && elapsed >= stepTimes[completedSteps]) {
+        completedSteps += 1
+      }
+      setActiveLight((activeLight + completedSteps) % trackLength)
 
       if (completedSteps >= totalSteps) {
+        spinClockRef.current?.stop()
+        spinClockRef.current = null
         if (gameMode !== 'normal') {
           if (exitLights.includes(target)) {
             finishRound(0, 0, 0, target)
@@ -1016,12 +1011,7 @@ function CoinChallengePage() {
         return
       }
 
-      const delay = Math.round(
-        minimumStepDelayMs +
-          (spinWeights[completedSteps - 1] / spinWeightTotal) *
-            weightedDelayBudgetMs,
-      )
-      spinTimerRef.current = window.setTimeout(advance, delay)
+      spinTimerRef.current = window.setTimeout(advance, 16)
     }
 
     const finishRound = (
@@ -1207,7 +1197,9 @@ function CoinChallengePage() {
       spinTimerRef.current = window.setTimeout(advancePenalty, 100)
     }
 
-    spinTimerRef.current = window.setTimeout(advance, openingDelayMs)
+    spinClockRef.current?.stop()
+    spinClockRef.current = createSpinAudioClock(mainSpinAudioRef.current, mainSpinDurationMs)
+    spinTimerRef.current = window.setTimeout(advance, 16)
   }
 
   return (

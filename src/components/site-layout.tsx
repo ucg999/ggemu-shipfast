@@ -259,12 +259,14 @@ export function SiteLayout({
                 </span>
               </span>
             </Link>
-            <HomeCoinBag
-              balance={globalCoins.balance}
-              lang={locale}
-              onOpen={globalCoins.showBalance}
-            />
-            {brandAddon}
+            <div className="relative flex shrink-0 items-center">
+              <HomeCoinBag
+                balance={globalCoins.balance}
+                lang={locale}
+                onOpen={globalCoins.showBalance}
+              />
+              {brandAddon ? <div className="absolute left-full top-1/2 -translate-y-1/2">{brandAddon}</div> : null}
+            </div>
           </div>
 
           {topContent ? (
@@ -568,7 +570,7 @@ export function SiteLayout({
                     <ul className="sidebar-submenu">
                       <li>
                         <a
-                          href="https://www.kdocs.cn/etapps/query/q/TUxF4AQG"
+                          href="https://www.kdocs.cn/l/coH3Z1VLgop3"
                           onClick={(event) => handlePaidResourceClick(event, 'psp-library', 20)}
                           rel="noreferrer"
                           target="_blank"
@@ -579,7 +581,7 @@ export function SiteLayout({
                       </li>
                       <li>
                         <a
-                          href="https://www.kdocs.cn/etapps/query/q/RclPTyXd"
+                          href="https://www.kdocs.cn/l/cl536kMzB2WN"
                           onClick={(event) => handlePaidResourceClick(event, 'psv-library', 20)}
                           rel="noreferrer"
                           target="_blank"
@@ -590,7 +592,7 @@ export function SiteLayout({
                       </li>
                       <li>
                         <a
-                          href="https://www.kdocs.cn/etapps/query/q/detUdefK"
+                          href="https://www.kdocs.cn/l/cn1VaihcGuzA"
                           onClick={(event) => handlePaidResourceClick(event, 'switch-library', 20)}
                           rel="noreferrer"
                           target="_blank"

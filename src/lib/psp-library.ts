@@ -1,8 +1,9 @@
 import type { SwitchLibraryGame } from './switch-library'
 
-export const PSP_LIBRARY_GAMES: (SwitchLibraryGame & { boxCover?: string; cardLanguage?: string })[] = [{
+export const PSP_LIBRARY_GAMES: (SwitchLibraryGame & { boxCover?: string; detailCover?: string; cardLanguage?: string })[] = [{
   id: 'tales-of-phantasia-narikiri-dungeon-x',
   title: '幻想传说：换装迷宫X',
+  videoUrl: 'https://v.douyin.com/4IklCoDfZXs/',
   cover: '/psp-library/narikiri-dungeon-x/main.webp',
   boxCover: '/psp-library/narikiri-dungeon-x/box.webp',
   genre: '角色扮演、动作',
@@ -14,4 +15,27 @@ export const PSP_LIBRARY_GAMES: (SwitchLibraryGame & { boxCover?: string; cardLa
   downloadUrl: 'https://pan.baidu.com/s/1-wXLBASytlJmlRPI62r3xw?pwd=9999',
   description: '跟随双子主角展开幻想冒险，通过更换服装体验不同职业与战斗方式。搭配伙伴探索迷宫，在即时战斗中组合技能，体验《幻想传说》世界的故事。',
   screenshots: Array.from({ length: 8 }, (_, index) => `/psp-library/narikiri-dungeon-x/${String(index + 2).padStart(2, '0')}.webp`),
+}, {
+  id: 'ridge-racer',
+  title: '山脊赛车',
+  cover: '/psp-library/ridge-racer/card.jpg',
+  detailCover: '/psp-library/ridge-racer/001.jpg',
+  boxCover: '/psp-library/ridge-racer/box.png',
+  genre: 'RCG',
+  publisher: 'Namco',
+  releaseDate: '2004.12.12',
+  requiredSystem: '待确认',
+  language: '日、英、韩',
+  cardLanguage: '日文',
+  downloadUrl: 'https://pan.baidu.com/s/1pSdu1XeGRhPVNgMIrupP4w?pwd=9999',
+  videoUrl: 'https://v.douyin.com/_mbHcSmTHbs/',
+  description: '驾驶赛车挑战赛道，在弯道中体验漂移与竞速的乐趣。游戏画面见下方截图。',
+  screenshots: [
+    '/psp-library/ridge-racer/002.jpg',
+    '/psp-library/ridge-racer/OIP-C.webp',
+    '/psp-library/ridge-racer/OIP-C (1).webp',
+    '/psp-library/ridge-racer/ridgeracertillpsp_18705.jpg',
+    '/psp-library/ridge-racer/ridgeracertillpsp_18706.jpg',
+    '/psp-library/ridge-racer/ridgeracertillpsp_18709.jpg',
+  ],
 }]
