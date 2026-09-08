@@ -11,7 +11,8 @@
     "generate-routes": "tsr generate",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:audio": "node --test src/lib/spin-audio-clock.test.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.2",
