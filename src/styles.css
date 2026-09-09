@@ -26,6 +26,53 @@ body {
   height: 100dvh;
 }
 
+.game-play-screen-inline {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border-radius: 0.75rem;
+}
+
+.game-play-screen-inline .game-play-frame {
+  width: 100%;
+  height: 100%;
+}
+
+.game-player-reveal {
+  overflow: hidden;
+  animation: game-player-reveal 420ms ease-out both;
+}
+
+.game-loading-notice {
+  animation: game-loading-notice 10s ease both;
+}
+
+@keyframes game-loading-notice {
+  0%,
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes game-player-reveal {
+  from {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    max-height: 1000px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 932px), (hover: none) and (pointer: coarse) {
   html:has(.game-play-screen),
   body:has(.game-play-screen) {
@@ -33,6 +80,23 @@ body {
     height: 100%;
     overflow: hidden;
     background: #000;
+  }
+
+  .game-player-reveal:has(.game-play-screen-inline) {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    animation: none;
+  }
+
+  .game-play-screen-inline {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    aspect-ratio: auto;
+    border-radius: 0;
   }
 
   .game-play-exit {

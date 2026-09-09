@@ -195,7 +195,13 @@ export function DefaultHomeTemplate(
           streakDays={streakDays}
         />
         <HomeLatestGamesRow games={latestGames} lang={lang} />
-        <HomeLatestGamesRow games={rankingRows.weekly} lang={lang} title={t.weeklyPopularGames} />
+        <HomeLatestGamesRow
+          games={rankingRows.weekly}
+          lang={lang}
+          pinnedCoin
+          pinnedCoinPosition={1}
+          title={t.weeklyPopularGames}
+        />
         <HomeLatestGamesRow games={rankingRows.rising} lang={lang} title={t.fastestGrowingGames} />
       </div>
 
@@ -694,7 +700,7 @@ export function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) 
               </a>
             </li>
             <li>
-              <a href="https://www.kdocs.cn/l/cn1VaihcGuzA" onClick={paidLink('switch-library', 20)} rel="noreferrer" target="_blank">
+              <a href="https://www.kdocs.cn/l/cs8H4NUI4lC4" onClick={paidLink('switch-library', 20)} rel="noreferrer" target="_blank">
                 {t.switchLibrary} · 20
               </a>
             </li>

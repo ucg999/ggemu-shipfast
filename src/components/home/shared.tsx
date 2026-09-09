@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 
 import {
   GameCardPreviewVideo,
@@ -21,11 +21,13 @@ export function HomeLatestGamesRow({
   lang,
   title,
   pinnedCoin = false,
+  pinnedCoinPosition = 0,
 }: {
   games: Array<PublicGame>
   lang: Locale
   title?: string
   pinnedCoin?: boolean
+  pinnedCoinPosition?: number
 }) {
   const items = games.slice(0, 20)
   const t = getI18n(lang).home
@@ -36,11 +38,12 @@ export function HomeLatestGamesRow({
     <section className="bg-base-100 px-3 py-1 sm:px-4 lg:px-8">
       <h2 className="mb-1 text-left text-sm lg:text-lg font-semibold text-base-content">{title ?? t.latestGamesSection}</h2>
       <CardScrollRow lang={lang}>
-        {pinnedCoin ? <div className="w-[72px] shrink-0 sm:w-[88px] lg:w-48"><CoinFruitCard lang={lang} hideTitle /></div> : null}
+              {pinnedCoin && items.length === 0 ? <div className="w-[72px] shrink-0 sm:w-[88px] lg:w-48"><CoinFruitCard lang={lang} hideTitle /></div> : null}
               {items.map((game, index) => (
+                <Fragment key={game.url_slug || game._id}>
+                {pinnedCoin && index === pinnedCoinPosition ? <div className="w-[72px] shrink-0 sm:w-[88px] lg:w-48"><CoinFruitCard lang={lang} hideTitle /></div> : null}
                 <div
                   className="w-[72px] shrink-0 sm:w-[88px] lg:w-48"
-                  key={game.url_slug || game._id}
                 >
                   <GameCard
                     game={game}
@@ -49,6 +52,7 @@ export function HomeLatestGamesRow({
                     mobileCoverOnly
                   />
                 </div>
+                </Fragment>
               ))}
       </CardScrollRow>
     </section>
@@ -74,7 +78,7 @@ export function HomeMostPlayedGamesSection({
   onRandomGame: () => void | Promise<void>
   streakDays?: number
 }) {
-  const items = games.slice(0, mobile ? 4 : 5)
+  const items = games.slice(0, mobile ? 4 : 6)
   const t = getI18n(lang).home
 
   return (
@@ -150,7 +154,6 @@ export function HomeMostPlayedGamesSection({
               </Link>
             )
           })}
-          {!mobile ? <div className="aspect-[4/3] min-w-0"><div className="mx-auto w-3/4"><CoinFruitCard lang={lang} hideTitle /></div></div> : null}
         </div>
       </div>
     </section>

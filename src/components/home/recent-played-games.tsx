@@ -126,14 +126,15 @@ export function PopularGameCollections({ lang }: { lang: Locale }) {
   return (
     <div className="w-full">
       <h2 className="text-left text-lg font-semibold text-base-content">{t.popularCollections}</h2>
-      <div className="mt-1"><CardScrollRow lang={lang}>
+      <div className="mt-1"><CardScrollRow lang={lang} className="[&>*]:w-48 [&>*]:shrink-0 lg:[&>*]:w-52">
         {GAME_COLLECTIONS.map((collection) => (
           <Link
-            className="group relative aspect-[16/9] w-48 shrink-0 overflow-hidden rounded-lg bg-base-200"
+            className="group relative flex aspect-[16/9] flex-col overflow-hidden rounded-lg bg-base-200 lg:aspect-square lg:rounded-xl"
             key={collection.id}
             params={{ collectionId: collection.id, locale: lang }}
             to="/$locale/collections/$collectionId"
           >
+            <div className="h-full shrink-0 bg-base-300 lg:h-1/2">
               <img
                 alt={getCollectionTitle(collection.id, t)}
                 className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
@@ -141,9 +142,16 @@ export function PopularGameCollections({ lang }: { lang: Locale }) {
                 loading="lazy"
                 src={collection.cover}
               />
-              <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-3 pb-2 pt-8 text-sm font-bold text-white">
+            </div>
+            <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-3 pb-2 pt-8 text-sm font-bold text-white lg:hidden">
+              {getCollectionTitle(collection.id, t)}
+            </span>
+            <div className="hidden h-1/2 flex-col px-4 py-3 lg:flex">
+              <p className="text-[11px] text-base-content/50">{t.popularCollections}</p>
+              <h3 className="mt-1.5 line-clamp-2 text-sm font-semibold leading-snug text-base-content sm:text-base">
                 {getCollectionTitle(collection.id, t)}
-              </span>
+              </h3>
+            </div>
           </Link>
         ))}
       </CardScrollRow></div>

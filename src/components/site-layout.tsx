@@ -592,7 +592,7 @@ export function SiteLayout({
                       </li>
                       <li>
                         <a
-                          href="https://www.kdocs.cn/l/cn1VaihcGuzA"
+                          href="https://www.kdocs.cn/l/cs8H4NUI4lC4"
                           onClick={(event) => handlePaidResourceClick(event, 'switch-library', 20)}
                           rel="noreferrer"
                           target="_blank"

@@ -4,6 +4,7 @@ import {
   Outlet,
   createFileRoute,
   redirect,
+  useNavigate,
   useRouterState,
 } from '@tanstack/react-router'
 import QRCode from 'qrcode'
@@ -48,6 +49,7 @@ type InstallPromptWindow = Window & {
 }
 
 const defaultManifestHref = '/manifest.webmanifest'
+const SHOW_EXTENDED_GAME_DETAILS = false
 
 function getCoinGameCopy(locale: Locale) {
   if (locale === 'zh-TW') return { insufficient: '金幣不足，需要 20 枚金幣。金幣隨處可見，玩遊戲、看別人玩都可獲得。' }
@@ -80,13 +82,15 @@ export const Route = createFileRoute('/$locale/games/$gameId')({
       ...detail,
       chineseGuide,
       game: applyChineseGameGuide(detail.game, chineseGuide),
-      relatedGamesPromise: getRelatedGamePageData({
-        data: {
-          category: detail.game.categories?.[0],
-          currentId,
-          developer: detail.game.developer,
-        },
-      }),
+      relatedGamesPromise: SHOW_EXTENDED_GAME_DETAILS
+        ? getRelatedGamePageData({
+            data: {
+              category: detail.game.categories?.[0],
+              currentId,
+              developer: detail.game.developer,
+            },
+          })
+        : Promise.resolve({ relatedByCategory: [], relatedByDeveloper: [] }),
     }
   },
   head: ({ loaderData, params }) => {
@@ -110,6 +114,8 @@ export const Route = createFileRoute('/$locale/games/$gameId')({
 
     return {
       links: [
+        { rel: 'preconnect', href: 'https://ggemu.com' },
+        { rel: 'dns-prefetch', href: 'https://ggemu.com' },
         { rel: 'canonical', href: canonicalUrl },
         {
           rel: 'manifest',
@@ -292,7 +298,9 @@ function removeEmptySchemaValues<T extends Record<string, unknown>>(schema: T) {
 function LocalizedGameDetailPage() {
   const { canonicalUrl, chineseGuide, game, relatedGamesPromise } = Route.useLoaderData()
   const { gameId, locale } = Route.useParams()
+  const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const isInlinePlaying = pathname.endsWith('/play')
   const lang = normalizeLocale(locale)
   const t = getI18n(lang).detail
   const categories = game.categories ?? []
@@ -345,12 +353,25 @@ function LocalizedGameDetailPage() {
     setIsCoinGameLaunching(true)
     markGamePlayStarted(gameId)
     saveRecentPlayedGame(game, gameId)
-    window.setTimeout(() => window.location.assign(playPath), 760)
+    window.setTimeout(() => {
+      void navigate({
+        params: { gameId, locale: lang },
+        search: { autoplay: '1', inline: '1' },
+        to: '/$locale/games/$gameId/play',
+      })
+    }, 760)
   }
 
-  if (pathname.endsWith('/play')) {
-    return <Outlet />
-  }
+  useEffect(() => {
+    if (!isInlinePlaying) return
+
+    window.requestAnimationFrame(() => {
+      document.querySelector('[data-inline-game-player]')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+  }, [isInlinePlaying])
 
   return (
     <SiteLayout locale={lang}>
@@ -371,12 +392,20 @@ function LocalizedGameDetailPage() {
             </div>
           </section>
 
-          <section className="grid gap-4 lg:grid-cols-[minmax(320px,440px)_1fr] lg:gap-8">
-            <div
-              className="group relative aspect-[4/3] w-full self-start overflow-hidden rounded-box border border-base-300 bg-base-200 shadow-sm"
-              {...gameCardPreviewHandlers}
-            >
-              {game.game_cover ? (
+          <section className={`relative grid overflow-hidden rounded-box bg-base-200 ${isInlinePlaying ? 'p-0' : 'gap-4 p-4 lg:grid-cols-[minmax(320px,440px)_1fr] lg:gap-8 lg:p-6'}`}>
+            {!isInlinePlaying ? <>
+            <div className="relative aspect-[4/3] w-full self-start overflow-hidden rounded-box border border-base-300 bg-base-200 shadow-sm">
+              {game.game_video?.trim() ? (
+                <video
+                  autoPlay
+                  className="h-full w-full object-cover"
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+                  src={game.game_video}
+                />
+              ) : game.game_cover ? (
                 <img
                   alt={game.name ?? 'Game cover'}
                   className="h-full w-full object-cover"
@@ -387,71 +416,55 @@ function LocalizedGameDetailPage() {
                   Retro
                 </div>
               )}
-              <GameCardPreviewVideo src={game.game_video} />
             </div>
 
-            <div className="flex min-w-0 flex-col justify-center gap-3 sm:gap-6 lg:self-center">
-              <div>
-                <div className="mb-2 flex flex-wrap gap-2 sm:mb-3">
-                  <span className="badge badge-sm badge-success badge-outline gap-1 sm:badge-md">
-                    <i className="ri-global-line" />
-                    {t.browserReady}
-                  </span>
-                  <span className="badge badge-sm badge-primary badge-outline gap-1 sm:badge-md">
-                    <i className="ri-download-cloud-2-line" />
-                    {t.noDownload}
-                  </span>
-                  {game.platform ? (
-                    <span className="badge badge-sm badge-primary max-w-full gap-1 sm:badge-md">
-                      <i className="ri-gamepad-line" />
-                      <span className="truncate">
-                        {getPlatformLabel(game.platform, lang)}
+            <div className="flex min-w-0 flex-col justify-start gap-6 lg:self-start">
+              <h1 className="max-w-4xl text-3xl font-semibold leading-tight sm:text-5xl">
+                {game.name}
+              </h1>
+
+              <div className="relative flex items-start gap-3">
+                <div className="min-w-0 flex-1 lg:flex-none">
+                  <Link
+                    aria-disabled={isCoinGameLaunching}
+                    className="btn btn-primary btn-lg w-full px-3 text-primary-content hover:text-primary-content lg:w-auto lg:px-8"
+                    onClick={startGame}
+                    params={{ gameId, locale: lang }}
+                    ref={playButtonRef}
+                                       search={{ autoplay: '1', inline: '1' }}
+                    to="/$locale/games/$gameId/play"
+                  >
+                    <i className="ri-play-fill text-xl" />
+                    {t.play}
+                    {isCoinGame ? (
+                      <span className="ml-1 flex items-center gap-1 rounded-full bg-black/25 px-2 py-1 text-sm font-black">
+                        <img alt="" aria-hidden="true" className="h-5 w-5 object-contain" src="/images/coin-rewards/pixel-reward-coin.webp" />
+                        ×20
                       </span>
-                    </span>
-                  ) : null}
+                    ) : null}
+                  </Link>
+                  <div className="mt-3 text-sm text-base-content/60">
+                    {t.plays}：<span className="font-semibold text-base-content">{game.plays_count ?? 0}</span>
+                  </div>
                 </div>
-                <h1 className="max-w-4xl truncate text-2xl font-semibold leading-tight sm:text-4xl">
-                  {game.name}
-                </h1>
-                {game.description ? (
-                  <p className="mt-2 line-clamp-2 max-w-3xl text-sm leading-6 text-base-content/70 sm:mt-4 sm:line-clamp-none sm:text-lg sm:leading-7">
-                    {game.description}
-                  </p>
-                ) : null}
+                <PreGameTips />
               </div>
-
-              <div className="grid gap-3 sm:flex sm:flex-row">
-                <a
-                  aria-disabled={isCoinGameLaunching}
-                  className="btn btn-primary btn-lg px-8 text-primary-content hover:text-primary-content sm:w-auto"
-                  href={playPath}
-                  onClick={startGame}
-                  ref={playButtonRef}
-                >
-                  <i className="ri-play-fill text-xl" />
-                  {t.play}
-                  {isCoinGame ? (
-                    <span className="ml-1 flex items-center gap-1 rounded-full bg-black/25 px-2 py-1 text-sm font-black">
-                      <img alt="" aria-hidden="true" className="h-5 w-5 object-contain" src="/images/coin-rewards/pixel-reward-coin.webp" />
-                      ×20
-                    </span>
-                  ) : null}
-                </a>
-                <div className="grid grid-cols-2 gap-3 sm:contents">
+              {SHOW_EXTENDED_GAME_DETAILS ? (
+                <>
                   <GameInstallButton labels={t} manifestHref={manifestHref} />
-                  <GameShareActions
-                    canonicalUrl={canonicalUrl}
-                    game={game}
-                    labels={t}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 text-left sm:max-w-md sm:gap-6">
-                <Stat label={t.plays} value={game.plays_count ?? 0} />
-                <Stat label={t.views} value={game.views_count ?? 0} />
-              </div>
+                  <GameShareActions canonicalUrl={canonicalUrl} game={game} labels={t} />
+                  <Stat label={t.plays} value={game.plays_count ?? 0} />
+                  <Stat label={t.views} value={game.views_count ?? 0} />
+                </>
+              ) : null}
             </div>
+            </> : null}
+
+            {isInlinePlaying ? (
+              <div className="game-player-reveal min-w-0 bg-black" data-inline-game-player>
+                <Outlet />
+              </div>
+            ) : null}
           </section>
 
           {coinFlight ? (
@@ -471,47 +484,30 @@ function LocalizedGameDetailPage() {
             </div>
           ) : null}
 
-          <section className="grid gap-6 lg:grid-cols-[1fr_340px]">
-            <div className="flex flex-col gap-6">
-              <PreGameTips />
+          <GameInformationSections
+            categories={categories}
+            game={game}
+            keywords={keywords}
+            lang={lang}
+            languages={languages}
+            labels={t}
+          />
+          {SHOW_EXTENDED_GAME_DETAILS ? (
+            <section className="grid gap-6">
               {chineseGuide ? <ChineseGameGuideSection guide={chineseGuide} /> : null}
-              <div className="flex flex-col gap-4 lg:hidden">
-                <GameInformationSections
-                  categories={categories}
-                  game={game}
-                  keywords={keywords}
-                  lang={lang}
-                  languages={languages}
-                  labels={t}
-                />
-              </div>
               <ContentPanel title={t.howToPlay} value={game.how_to_play} />
               <FaqSection items={faqItems} title={t.faq} />
               <Await promise={relatedGamesPromise} fallback={<RelatedGamesFallback title={t.relatedGames} />}>
                 {(related) => (
                   <RelatedGameSection
-                    games={getRelatedGames(
-                      related.relatedByCategory,
-                      related.relatedByDeveloper,
-                    )}
+                    games={getRelatedGames(related.relatedByCategory, related.relatedByDeveloper)}
                     lang={lang}
                     title={t.relatedGames}
                   />
                 )}
               </Await>
-            </div>
-
-            <aside className="hidden flex-col gap-4 lg:flex">
-              <GameInformationSections
-                categories={categories}
-                game={game}
-                keywords={keywords}
-                lang={lang}
-                languages={languages}
-                labels={t}
-              />
-            </aside>
-          </section>
+            </section>
+          ) : null}
         </div>
       </div>
     </SiteLayout>
@@ -534,10 +530,9 @@ function GameInformationSections({
   labels: ReturnType<typeof getI18n>['detail']
 }) {
   return (
-    <>
-      <section className="rounded-box border border-base-300 bg-base-100 p-5 shadow-sm">
-        <h2 className="text-lg font-semibold">{labels.details}</h2>
-        <dl className="mt-4 grid gap-3 text-sm">
+      <section className="w-fit max-w-full rounded-box border border-base-300 bg-base-100 p-5 shadow-sm sm:p-6">
+        <h2 className="text-xl font-semibold">{labels.details}</h2>
+        <dl className="mt-4 grid max-w-full gap-0 text-sm lg:flex lg:flex-nowrap lg:overflow-visible">
           <Fact
             icon="ri-gamepad-line"
             label={labels.platform}
@@ -546,12 +541,11 @@ function GameInformationSections({
           <Fact icon="ri-building-2-line" label={labels.developer} value={game.developer} />
           <Fact icon="ri-calendar-line" label={labels.released} value={game.released_year} />
           <Fact icon="ri-user-line" label={labels.players} value={String(game.players ?? 1)} />
+          <Fact icon="ri-price-tag-3-line" label={labels.categories} value={categories.join('、')} />
+          <Fact icon="ri-translate-2" label={labels.languages} value={languages.join('、')} />
+          <Fact expandable icon="ri-key-2-line" label={labels.keywords} value={keywords.join('、')} />
         </dl>
       </section>
-      <TagSection emptyText={labels.noData} items={categories} title={labels.categories} />
-      <TagSection emptyText={labels.noData} items={languages} title={labels.languages} />
-      <TagSection emptyText={labels.noData} items={keywords} title={labels.keywords} />
-    </>
   )
 }
 
@@ -1283,12 +1277,13 @@ function ChineseGameGuideSection({ guide }: { guide: ChineseGameGuide }) {
 
 function PreGameTips() {
   return (
-    <section className="rounded-box border border-base-300 bg-base-100 p-5 shadow-sm sm:p-6">
-      <h2 className="flex items-center gap-2 text-xl font-semibold">
+    <details className="group min-w-0 flex-1 lg:max-w-2xl lg:flex-none">
+      <summary className="btn btn-outline btn-lg w-full list-none gap-1 px-2 text-[10px] lg:w-fit lg:gap-2 lg:px-4 lg:text-sm [&::-webkit-details-marker]:hidden">
         <i className="ri-lightbulb-line text-warning" />
-        游戏前的小提示
-      </h2>
-      <ol className="mt-3 space-y-2 text-sm leading-6 text-base-content/65">
+        <span className="whitespace-nowrap">游戏前的小提示</span>
+        <i className="ri-arrow-down-s-line transition-transform group-open:rotate-180" />
+      </summary>
+      <ol className="absolute inset-x-0 top-full z-30 mt-3 space-y-2 rounded-box border border-base-300 bg-base-100 p-5 text-sm leading-6 text-base-content/65 shadow-xl lg:relative lg:inset-auto lg:top-auto lg:w-[min(42rem,70vw)] lg:p-6">
         <li>
           <strong className="mr-1 text-base-content">1.</strong>
           游戏建议（电脑&gt;安卓&gt;苹果）尽量使用以下浏览器
@@ -1314,7 +1309,7 @@ function PreGameTips() {
           游戏内的功能，设置（重点是滤镜，个人建议打开，怀旧感拉满），可自由设置按键位，可聊天，可存档，还可录像发朋友圏。
         </li>
       </ol>
-    </section>
+    </details>
   )
 }
 
@@ -1441,51 +1436,38 @@ function RelatedGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
 }
 
 function Fact({
+  expandable = false,
   icon,
   label,
   value,
 }: {
+  expandable?: boolean
   icon: string
   label: string
   value?: string
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-base-300 pb-3 last:border-0 last:pb-0">
-      <dt className="flex items-center gap-2 text-base-content/55">
+    <div className="group relative flex min-w-0 items-start justify-between gap-4 border-b border-base-300 py-3 first:pt-0 last:border-0 last:pb-0 lg:min-w-32 lg:shrink-0 lg:flex-col lg:justify-start lg:gap-1 lg:border-b-0 lg:border-r lg:px-4 lg:py-0 lg:first:pl-0 lg:last:border-0 lg:last:pr-0">
+      <dt className="flex items-center gap-2 whitespace-nowrap text-base-content/55">
         <i className={icon} />
         {label}
       </dt>
-      <dd className="text-right font-medium">{value || '-'}</dd>
+      {expandable ? (
+        <dd className="min-w-0 max-w-[60%] text-right font-medium lg:hidden">
+          <details>
+            <summary className="block cursor-pointer truncate list-none [&::-webkit-details-marker]:hidden">
+              {value || '-'}
+            </summary>
+            <p className="mt-2 break-words text-right leading-6 text-base-content/75">{value || '-'}</p>
+          </details>
+        </dd>
+      ) : (
+        <dd className="max-w-[60%] break-words text-right font-medium lg:max-w-40 lg:truncate lg:text-left" title={value || '-'}>{value || '-'}</dd>
+      )}
+      {expandable ? <dd className="hidden max-w-40 truncate font-medium lg:block" title={value || '-'}>{value || '-'}</dd> : null}
+      <span className="pointer-events-none absolute left-2 top-full z-50 mt-2 hidden max-w-sm whitespace-normal rounded-md bg-neutral px-3 py-2 text-xs leading-5 text-neutral-content shadow-xl lg:group-hover:block">
+        {value || '-'}
+      </span>
     </div>
-  )
-}
-
-function TagSection({
-  emptyText,
-  items,
-  title,
-}: {
-  emptyText: string
-  items: Array<string>
-  title: string
-}) {
-  return (
-    <section className="rounded-box border border-base-300 bg-base-100 p-5 shadow-sm">
-      <h2 className="flex items-center gap-2 text-lg font-semibold">
-        <i className="ri-price-tag-3-line text-primary" />
-        {title}
-      </h2>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {items.length > 0 ? (
-          items.map((item) => (
-            <span className="badge badge-outline" key={item}>
-              {item}
-            </span>
-          ))
-        ) : (
-          <span className="text-sm text-base-content/50">{emptyText}</span>
-        )}
-      </div>
-    </section>
   )
 }

@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { getGameDetail, searchGames, type Locale, type PublicGame } from '#/lib/ggemu'
@@ -23,44 +24,26 @@ const noindexHeaders = {
   'X-Robots-Tag': 'noindex, nofollow',
 } as const
 
-const GAME_COIN_INTERVAL_MS = 2 * 60 * 1000
+const GAME_COIN_VALUE_INTERVAL_MS = 60 * 1000
+const GAME_COIN_SETTLEMENT_INTERVAL_MS = 5 * 60 * 1000
 const GAME_IDLE_TIMEOUT_MS = 2 * 60 * 1000
 const GAME_SESSION_COIN_CAP = 100
 const RANDOM_GAME_SESSION_COIN_CAP = 200
 
+type PlayGameSearch = {
+  autoplay?: '1'
+  inline?: '1'
+}
+
 export const Route = createFileRoute('/$locale/games/$gameId/play')({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): PlayGameSearch => ({
     autoplay: search.autoplay === '1' ? ('1' as const) : undefined,
+    inline: search.inline === '1' ? ('1' as const) : undefined,
   }),
   loader: async ({ params }) => {
-    const locale = normalizeLocale(params.locale)
     const game = await getGameDetail({ data: { id: params.gameId } })
-    const seriesQuery = getSeriesQuery(game.name)
-    const category = game.categories?.[0]
-    const [seriesResult, categoryResult] = await Promise.all([
-      seriesQuery
-        ? searchGames({
-            data: { limit: 18, locale, page: 1, query: seriesQuery },
-          })
-        : undefined,
-      category
-        ? searchGames({
-            data: { category, limit: 18, locale, page: 1, sort: 'popular' },
-          })
-        : undefined,
-    ])
-    const seriesGames = (seriesResult?.games ?? [])
-      .filter((candidate) => isSameSeries(game, candidate, seriesQuery))
-      .slice(0, 6)
-    const categoryGames = (categoryResult?.games ?? [])
-      .filter((candidate) => !isCurrentGame(game, candidate))
-      .slice(0, 6)
 
-    return {
-      game,
-      recommendations: seriesGames.length ? seriesGames : categoryGames,
-      recommendationType: seriesGames.length ? ('series' as const) : ('category' as const),
-    }
+    return { game }
   },
   headers: ({ loaderData }) => ({
     ...noindexHeaders,
@@ -70,9 +53,9 @@ export const Route = createFileRoute('/$locale/games/$gameId/play')({
 })
 
 function LocalizedPlayGamePage() {
-  const { game, recommendations, recommendationType } = Route.useLoaderData()
+  const { game } = Route.useLoaderData()
   const { gameId, locale } = Route.useParams()
-  const { autoplay } = Route.useSearch()
+  const { autoplay, inline } = Route.useSearch()
   const lang = normalizeLocale(locale)
   const embedId = encodeURIComponent(game._id || game.url_slug || gameId)
   const refcode = encodeURIComponent(siteConfig.GGEMU_REFCODE)
@@ -80,13 +63,17 @@ function LocalizedPlayGamePage() {
   const theme = useCurrentSiteTheme()
   const embedSrc = `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp, theme, autoplay === '1')}`
   const [showRecommendations, setShowRecommendations] = useState(false)
+  const [recommendations, setRecommendations] = useState<Array<PublicGame>>([])
+  const [recommendationType, setRecommendationType] = useState<'series' | 'category'>('category')
   const [settlement, setSettlement] = useState<GameSessionSettlement | null>(null)
+  const loadGameRecommendations = useServerFn(searchGames)
   const activePlayTimeRef = useRef(0)
   const awardedCoinsRef = useRef(0)
   const playStartedAtRef = useRef<number | null>(null)
   const lastActivityAtRef = useRef(Date.now())
   const sessionCoinsRef = useRef(0)
   const settlementTimerRef = useRef<number | null>(null)
+  const recommendationsRequestedRef = useRef(false)
   const labels = useMemo(() => getRecommendationLabels(lang), [lang])
   const coinMultiplier = useMemo(() => getDailyGameCoinMultiplier(gameId), [gameId])
 
@@ -98,7 +85,44 @@ function LocalizedPlayGamePage() {
     playStartedAtRef.current = consumeGamePlayStartedAt(gameId)
     lastActivityAtRef.current = Date.now()
     sessionCoinsRef.current = 0
+    recommendationsRequestedRef.current = false
+    setRecommendations([])
+    setRecommendationType('category')
   }, [gameId])
+
+  const loadRecommendations = useCallback(async () => {
+    if (recommendationsRequestedRef.current) return
+    recommendationsRequestedRef.current = true
+
+    const seriesQuery = getSeriesQuery(game.name)
+    const category = game.categories?.[0]
+
+    try {
+      const [seriesResult, categoryResult] = await Promise.all([
+        seriesQuery
+          ? loadGameRecommendations({
+              data: { limit: 18, locale: lang, page: 1, query: seriesQuery },
+            })
+          : undefined,
+        category
+          ? loadGameRecommendations({
+              data: { category, limit: 18, locale: lang, page: 1, sort: 'popular' },
+            })
+          : undefined,
+      ])
+      const seriesGames = (seriesResult?.games ?? [])
+        .filter((candidate) => isSameSeries(game, candidate, seriesQuery))
+        .slice(0, 6)
+      const categoryGames = (categoryResult?.games ?? [])
+        .filter((candidate) => !isCurrentGame(game, candidate))
+        .slice(0, 6)
+
+      setRecommendations(seriesGames.length ? seriesGames : categoryGames)
+      setRecommendationType(seriesGames.length ? 'series' : 'category')
+    } catch {
+      recommendationsRequestedRef.current = false
+    }
+  }, [game, lang, loadGameRecommendations])
 
   const collectDueSessionCoins = useCallback(() => {
     const activeTime = getCurrentActivePlayTime(
@@ -135,14 +159,10 @@ function LocalizedPlayGamePage() {
       playStartedAtRef.current = null
     }
 
-    let result = collectDueSessionCoins()
-    if (result.coins < 1) {
-      addStoredGameCoins(1)
-      sessionCoinsRef.current = 1
-      result = { ...result, coins: 1 }
-    }
+    const result = collectDueSessionCoins()
     setSettlement(result)
     setShowRecommendations(true)
+    void loadRecommendations()
 
     if (settlementTimerRef.current !== null) {
       window.clearTimeout(settlementTimerRef.current)
@@ -151,7 +171,7 @@ function LocalizedPlayGamePage() {
       setSettlement(null)
       settlementTimerRef.current = null
     }, 2_200)
-  }, [collectDueSessionCoins])
+  }, [collectDueSessionCoins, loadRecommendations])
 
   const continueGame = useCallback(() => {
     setSettlement(null)
@@ -234,16 +254,22 @@ function LocalizedPlayGamePage() {
   }, [embedSrc, isPsp, markGameActivity, settleAndShowRecommendations])
 
   return (
-    <main className="game-play-screen bg-black">
+    <main className={`game-play-screen bg-black ${inline === '1' ? 'game-play-screen-inline' : ''}`}>
       <button
         aria-label={labels.exitGame}
-        className="game-play-exit fixed left-2 top-2 z-30 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white backdrop-blur transition hover:bg-black/90 sm:left-3 sm:top-3 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
+        className={`game-play-exit ${inline === '1' ? 'absolute' : 'fixed'} left-2 top-2 z-30 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white backdrop-blur transition hover:bg-black/90 sm:left-3 sm:top-3 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm`}
         onClick={settleAndShowRecommendations}
         type="button"
       >
         <i className="ri-logout-box-r-line text-sm sm:text-lg" />
         {labels.exitGame}
       </button>
+      <p
+        aria-live="polite"
+        className="game-loading-notice pointer-events-none absolute left-1/2 top-12 z-20 w-[min(90%,42rem)] -translate-x-1/2 text-center text-sm font-medium text-white/85 drop-shadow-md sm:top-16 sm:text-base"
+      >
+        {labels.loadingNotice}
+      </p>
       <iframe
         allow={
           isPsp
@@ -260,6 +286,7 @@ function LocalizedPlayGamePage() {
       />
       {showRecommendations ? (
         <GameExitRecommendations
+          gameId={gameId}
           games={recommendations}
           labels={labels}
           lang={lang}
@@ -275,7 +302,13 @@ function LocalizedPlayGamePage() {
 }
 
 function getTimedGameCoinTotal(activeTime: number) {
-  return Math.floor(Math.max(0, activeTime) / GAME_COIN_INTERVAL_MS)
+  const completedSettlementWindows = Math.floor(
+    Math.max(0, activeTime) / GAME_COIN_SETTLEMENT_INTERVAL_MS,
+  )
+  const coinsPerSettlementWindow =
+    GAME_COIN_SETTLEMENT_INTERVAL_MS / GAME_COIN_VALUE_INTERVAL_MS
+
+  return completedSettlementWindows * coinsPerSettlementWindow
 }
 
 type GameSessionSettlement = {
@@ -317,12 +350,14 @@ function GameCoinSettlement({
 }
 
 function GameExitRecommendations({
+  gameId,
   games,
   labels,
   lang,
   onContinue,
   recommendationType,
 }: {
+  gameId: string
   games: Array<PublicGame>
   labels: ReturnType<typeof getRecommendationLabels>
   lang: Locale
@@ -403,11 +438,11 @@ function GameExitRecommendations({
             </button>
             <Link
               className="rounded-full bg-yellow-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-yellow-300"
-              params={{ locale: lang }}
+              params={{ gameId, locale: lang }}
               search={{}}
-              to="/$locale"
+              to="/$locale/games/$gameId"
             >
-              {labels.backToHome}
+              {labels.exitAndReturn}
             </Link>
           </div>
         </div>
@@ -521,7 +556,7 @@ function addStoredGameCoins(amount: number) {
 function getRecommendationLabels(locale: Locale) {
   if (locale === 'zh-CN') {
     return {
-      backToHome: '退出并返回首页',
+      exitAndReturn: '退出返回',
       categoryTitle: '再玩一款同类型游戏',
       coins: '金币',
       continueGame: '继续游戏',
@@ -529,6 +564,7 @@ function getRecommendationLabels(locale: Locale) {
       exitGame: '退出游戏',
       finished: '本局结束了吗？',
       game: '经典游戏',
+      loadingNotice: '游戏加载速度跟你的设备和网速有关，请耐心等待',
       playNow: '立即游玩',
       playedMinutes: '本局游玩 {minutes} 分钟',
       sessionSettlement: '本局金币结算',
@@ -538,7 +574,7 @@ function getRecommendationLabels(locale: Locale) {
 
   if (locale === 'zh-TW') {
     return {
-      backToHome: '退出並返回首頁',
+      exitAndReturn: '退出返回',
       categoryTitle: '再玩一款同類型遊戲',
       coins: '金幣',
       continueGame: '繼續遊戲',
@@ -546,6 +582,7 @@ function getRecommendationLabels(locale: Locale) {
       exitGame: '退出遊戲',
       finished: '本局結束了嗎？',
       game: '經典遊戲',
+      loadingNotice: '遊戲載入速度與您的裝置及網路速度有關，請耐心等候',
       playNow: '立即遊玩',
       playedMinutes: '本局遊玩 {minutes} 分鐘',
       sessionSettlement: '本局金幣結算',
@@ -555,7 +592,7 @@ function getRecommendationLabels(locale: Locale) {
 
   if (locale === 'ja') {
     return {
-      backToHome: '終了してホームへ戻る',
+      exitAndReturn: '終了して戻る',
       categoryTitle: '同じジャンルのゲーム',
       coins: 'コイン',
       continueGame: 'ゲームを続ける',
@@ -563,6 +600,7 @@ function getRecommendationLabels(locale: Locale) {
       exitGame: 'ゲームを終了',
       finished: 'プレイを終了しますか？',
       game: 'クラシックゲーム',
+      loadingNotice: 'ゲームの読み込み速度は端末と通信環境によって異なります。しばらくお待ちください',
       playNow: '今すぐプレイ',
       playedMinutes: '今回のプレイ：{minutes}分',
       sessionSettlement: 'コイン精算',
@@ -571,7 +609,7 @@ function getRecommendationLabels(locale: Locale) {
   }
 
   return {
-    backToHome: 'Exit to home',
+    exitAndReturn: 'Exit and return',
     categoryTitle: 'Play another game in this genre',
     coins: 'coins',
     continueGame: 'Continue playing',
@@ -579,6 +617,7 @@ function getRecommendationLabels(locale: Locale) {
     exitGame: 'Exit game',
     finished: 'Finished this round?',
     game: 'Classic game',
+    loadingNotice: 'Loading speed depends on your device and connection. Please wait patiently.',
     playNow: 'Play now',
     playedMinutes: 'Played {minutes} minutes this session',
     sessionSettlement: 'Session coin summary',
