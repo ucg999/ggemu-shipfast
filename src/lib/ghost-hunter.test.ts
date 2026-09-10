@@ -18,7 +18,7 @@ test('blue-border footprints reject overlap and edges but accept cutouts', () =>
   assert.equal(canPlace(0, placed[0]!, placed), true)
 })
 
-test('all three levels have a non-overlapping solution using all six modules', () => {
+test('all levels have a non-overlapping solution using all six modules', () => {
   for (const level of LEVELS) {
     const placed: (Placement | null)[] = Array(6).fill(null)
   function solve(id: number): boolean {

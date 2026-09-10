@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 
 import { SiteLayout } from '#/components/site-layout'
 import type { Locale, PublicGame } from '#/lib/ggemu'
-import { searchGames } from '#/lib/ggemu'
+import { getCoinModeGameCost, searchGames } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
@@ -202,6 +202,7 @@ function CoinChallengeGameCard({ lang }: { lang: Locale }) {
       className="group min-w-0"
       params={{ locale: lang }}
       to="/$locale/coin-challenge"
+      search={{}}
     >
       <article className="relative aspect-square overflow-hidden rounded-lg border border-base-300 bg-base-100 transition hover:-translate-y-0.5 hover:border-amber-400">
         <figure className="relative aspect-square overflow-hidden bg-black">
@@ -236,6 +237,7 @@ function getCoinChallengeModeLabel(locale: Locale) {
 
 function CoinModeGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
   const gameId = game.url_slug?.trim() || game._id?.trim() || ''
+  const coinCost = getCoinModeGameCost(game)
   const t = getI18n(lang).arcade
 
   return (
@@ -247,7 +249,7 @@ function CoinModeGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
           ) : null}
           <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/75 px-2 py-1 text-xs font-black text-yellow-300">
             <img alt="" aria-hidden="true" className="h-4 w-4 [image-rendering:pixelated]" src="/images/coin-rewards/pixel-reward-coin.webp" />
-            ×20
+            ×{coinCost}
           </span>
         </figure>
         <div className="p-2.5">

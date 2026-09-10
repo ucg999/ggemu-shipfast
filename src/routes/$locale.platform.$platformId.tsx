@@ -191,27 +191,27 @@ function loadPlatformPage(locale: Locale, platform: string, page: number) {
 
 function getCoinModeCopy(locale: Locale) {
   if (locale === 'zh-TW') return {
-    description: '只在金幣模式出現的專屬遊戲，每次遊玩需要 20 枚金幣。',
+    description: '只在金幣模式出現的專屬遊戲，每款遊戲會標示所需金幣。',
     seoTitle: '金幣模式｜專屬遊戲｜遊戲歷險記',
-    subtitle: '收集金幣，解鎖 WOW New Fantasia 與 Excelsior。點擊遊戲可查看詳情並開始遊玩。',
+    subtitle: '收集金幣，解鎖全民鬥地主、WOW New Fantasia 與 Excelsior。點擊遊戲可查看詳情並開始遊玩。',
     title: '金幣模式',
   }
   if (locale === 'en') return {
-    description: 'Exclusive coin-mode games. Each play costs 20 coins.',
+    description: 'Exclusive coin-mode games. Each game shows its coin cost.',
     seoTitle: 'Coin Mode | Exclusive Games | Game Adventure',
-    subtitle: 'Collect coins to unlock WOW New Fantasia and Excelsior.',
+    subtitle: 'Collect coins to unlock Dou Dizhu, WOW New Fantasia, and Excelsior.',
     title: 'Coin Mode',
   }
   if (locale === 'ja') return {
-    description: 'コインモード限定ゲームです。1回のプレイに20コインが必要です。',
+    description: 'コインモード限定ゲームです。必要なコイン数はゲームごとに表示されます。',
     seoTitle: 'コインモード｜限定ゲーム｜ゲームアドベンチャー',
-    subtitle: 'コインを集めて WOW New Fantasia と Excelsior をプレイしましょう。',
+    subtitle: 'コインを集めて全民斗地主、WOW New Fantasia、Excelsior をプレイしましょう。',
     title: 'コインモード',
   }
   return {
-    description: '只在金币模式出现的专属游戏，每次游玩需要 20 个金币。',
+    description: '只在金币模式出现的专属游戏，每款游戏会标示所需金币。',
     seoTitle: '金币模式｜金币专属游戏｜游戏历险记',
-    subtitle: '收集金币，解锁 WOW New Fantasia 和 Excelsior。点击游戏可查看详情并开始游玩。',
+    subtitle: '收集金币，解锁全民斗地主、WOW New Fantasia 和 Excelsior。点击游戏可查看详情并开始游玩。',
     title: '金币模式',
   }
 }

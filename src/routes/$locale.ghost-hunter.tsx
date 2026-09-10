@@ -40,6 +40,7 @@ const GHOST_SOUNDS = [
   '/ghost-hunter/audio/ghost-91.mp3',
   '/ghost-hunter/audio/ghost-35.mp3',
 ]
+const LEVEL_COMPLETE_SOUND = '/ghost-hunter/audio/level-complete.mp3'
 
 function ModuleImage({ id, rotation, highlighted = [] }: { id: number; rotation: number; highlighted?: boolean[] }) {
   const module = MODULES[id]
@@ -73,7 +74,9 @@ function GhostHunterPage() {
   const boardRef = useRef<HTMLDivElement>(null)
   const gameRef = useRef<HTMLElement>(null)
   const ghostAudioRef = useRef<HTMLAudioElement[]>([])
+  const completionAudioRef = useRef<HTMLAudioElement | null>(null)
   const previousFoundRef = useRef(new Set<string>())
+  const advancingRef = useRef(false)
   const [message, setMessage] = useState('把右侧模块拖进场景，点击模块旋转 90°。')
   const found = litGhosts(placed, level.ghosts)
   const foundKey = found.map(([x, y]) => `${x},${y}`).sort().join('|')
@@ -85,9 +88,13 @@ function GhostHunterPage() {
       audio.preload = 'auto'
       return audio
     })
+    completionAudioRef.current = new Audio(LEVEL_COMPLETE_SOUND)
+    completionAudioRef.current.preload = 'auto'
     return () => {
       ghostAudioRef.current.forEach(audio => audio.pause())
       ghostAudioRef.current = []
+      completionAudioRef.current?.pause()
+      completionAudioRef.current = null
     }
   }, [])
 
@@ -114,16 +121,32 @@ function GhostHunterPage() {
     setMessage(message)
   }
 
+  function advanceLevel() {
+    if (advancingRef.current) return
+    advancingRef.current = true
+    setLevelIndex(current => {
+      const offset = 1 + Math.floor(Math.random() * (LEVELS.length - 1))
+      return (current + offset) % LEVELS.length
+    })
+    resetBoard('新关卡开始！手电筒角度已随机打乱。', true)
+  }
+
+  useEffect(() => {
+    advancingRef.current = false
+  }, [levelIndex])
+
   useEffect(() => {
     if (!won) return
-    const timer = window.setTimeout(() => {
-      setLevelIndex(current => {
-        const offset = 1 + Math.floor(Math.random() * (LEVELS.length - 1))
-        return (current + offset) % LEVELS.length
-      })
-      resetBoard('新关卡开始！手电筒角度已随机打乱。', true)
-    }, 5000)
-    return () => window.clearTimeout(timer)
+    const audio = completionAudioRef.current
+    if (!audio) {
+      advanceLevel()
+      return
+    }
+    const handleEnded = () => advanceLevel()
+    audio.currentTime = 0
+    audio.addEventListener('ended', handleEnded, { once: true })
+    void audio.play().catch(advanceLevel)
+    return () => audio.removeEventListener('ended', handleEnded)
   }, [won])
 
   function candidate(d: Drag): Placement {
@@ -211,7 +234,7 @@ function GhostHunterPage() {
       </div> : null}
       {embed !== '1' ? <p className="shrink-0 text-xs text-base-content/70">拖动放置 · 点击旋转 90° · 拖出背景放回 · 光圈照到全部幽灵即可过关</p> : null}
       <div className="ghost-play-area"><div className="ghost-stage">
-        <div ref={boardRef} className={`ghost-board relative aspect-square select-none overflow-hidden rounded-xl bg-slate-950 shadow-xl ${won ? 'ghost-board-complete' : ''}`} style={{ touchAction: 'none' }}>
+        <div ref={boardRef} className={`ghost-board relative aspect-square select-none overflow-hidden rounded-xl bg-slate-950 shadow-xl ${won ? 'ghost-board-complete cursor-pointer' : ''}`} onClick={won ? advanceLevel : undefined} style={{ touchAction: 'none' }}>
           <img src={level.image} alt={`幽灵捕手关卡 ${level.id}`} draggable={false} className="pointer-events-none absolute inset-0 z-0 h-full w-full" />
           {placed.map((p, id) => {
             if (!p) return null
@@ -255,8 +278,8 @@ function GhostHunterPage() {
       </div>
       </div>
       {embed !== '1' ? <div role="status" aria-live="polite" className={`ghost-status shrink-0 rounded-xl border px-3 py-2 text-sm ${won ? 'border-amber-300 bg-amber-100 text-amber-950' : 'border-base-300 bg-base-200'}`}>
-        <strong>{won ? '🎉 过关！场景边缘闪烁5秒后进入下一关…' : `已放入 ${placed.filter(Boolean).length} / 6 个模块 · 已照亮 ${found.length} / ${level.ghosts.length} 只幽灵`}</strong>
-        <p className="text-xs">{won ? '下一关将从另外两个场景中随机出现。' : message}</p>
+        <strong>{won ? '🎉 过关！点击场景立即进入下一关…' : `已放入 ${placed.filter(Boolean).length} / 6 个模块 · 已照亮 ${found.length} / ${level.ghosts.length} 只幽灵`}</strong>
+        <p className="text-xs">{won ? '音乐播放完会自动切换，也可点击场景立即进入下一关。' : message}</p>
       </div> : null}
       {embed !== '1' ? <p className="ghost-beta-note shrink-0 text-center text-xs leading-5 text-white/65">
         游戏开发测试中，欢迎试玩，有任何建议和想法可以加入Q群62119057，一起修改完善

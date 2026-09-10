@@ -41,7 +41,7 @@ export const Route = createFileRoute('/$locale/games/$gameId/play')({
   loader: async ({ params }) => {
     const game = await getGameDetail({ data: { id: params.gameId } })
 
-    return { game }
+    return { game, trialGame: Math.random() < 0.5 ? ('ghost' as const) : ('coin' as const) }
   },
   headers: ({ loaderData }) => ({
     ...noindexHeaders,
@@ -51,7 +51,7 @@ export const Route = createFileRoute('/$locale/games/$gameId/play')({
 })
 
 function LocalizedPlayGamePage() {
-  const { game } = Route.useLoaderData()
+  const { game, trialGame } = Route.useLoaderData()
   const { gameId, locale } = Route.useParams()
   const { autoplay, inline } = Route.useSearch()
   const lang = normalizeLocale(locale)
@@ -251,7 +251,7 @@ function LocalizedPlayGamePage() {
       />
       {showLoadingTrial ? (
         <section
-          aria-label="等待游戏加载时试玩幽灵捕手"
+          aria-label={`等待游戏加载时试玩${trialGame === 'ghost' ? '幽灵捕手' : '金币娱乐'}`}
           className="fixed right-2 top-16 z-40 w-[min(92vw,520px)] overflow-visible rounded-xl border border-white/25 bg-black shadow-2xl"
           role="region"
           style={{
@@ -260,7 +260,7 @@ function LocalizedPlayGamePage() {
           }}
         >
           <button
-            aria-label="关闭幽灵捕手试玩"
+            aria-label="关闭等待试玩游戏"
             className="absolute -right-3 -top-3 z-10 grid size-8 place-items-center rounded-full border border-white/30 bg-zinc-900 text-white shadow-lg hover:bg-red-600"
             onClick={() => setShowLoadingTrial(false)}
             title="进入主游戏"
@@ -305,8 +305,10 @@ function LocalizedPlayGamePage() {
               doc.addEventListener('pointerup', stopDragging)
               doc.addEventListener('pointercancel', stopDragging)
             }}
-            src={`/${lang}/ghost-hunter?embed=1&trialLayout=3`}
-            title="幽灵捕手试玩"
+            src={trialGame === 'ghost'
+              ? `/${lang}/ghost-hunter?embed=1&trialLayout=3`
+              : `/${lang}/coin-challenge?embed=1`}
+            title={`${trialGame === 'ghost' ? '幽灵捕手' : '金币娱乐'}试玩`}
           />
         </section>
       ) : null}

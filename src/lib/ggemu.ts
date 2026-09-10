@@ -6,7 +6,12 @@ const API_BASE_URL = 'https://ggemu.com'
 const PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
 const NON_GCOIN_GAME = '0'
-const COIN_MODE_GAME_NAMES = ['wow new fantasia', 'excelsior'] as const
+const COIN_MODE_GAME_COSTS: Readonly<Record<string, number>> = {
+  'wow new fantasia': 20,
+  excelsior: 20,
+  '全民斗地主': 10,
+}
+const COIN_MODE_GAME_QUERIES = ['wow new fantasia', 'excelsior', '斗地主'] as const
 
 export type Locale = 'zh-CN' | 'zh-TW' | 'en' | 'ja'
 export type GameSearchSort =
@@ -532,7 +537,7 @@ export const searchGames = createServerFn({ method: 'GET' })
 export const searchCoinModeGames = createServerFn({ method: 'GET' })
   .handler(async () => {
     const results = await Promise.all(
-      COIN_MODE_GAME_NAMES.map((query) =>
+      COIN_MODE_GAME_QUERIES.map((query) =>
         fetchGames(new URLSearchParams({
           is_gcoin_game: NON_GCOIN_GAME,
           limit: '20',
@@ -553,9 +558,13 @@ export const searchCoinModeGames = createServerFn({ method: 'GET' })
   })
 
 export function isCoinModeGame(game: Pick<PublicGame, 'name'> | string | undefined) {
+  return getCoinModeGameCost(game) !== null
+}
+
+export function getCoinModeGameCost(game: Pick<PublicGame, 'name'> | string | undefined) {
   const name = typeof game === 'string' ? game : game?.name
   const normalized = name?.trim().toLocaleLowerCase() ?? ''
-  return COIN_MODE_GAME_NAMES.includes(normalized as (typeof COIN_MODE_GAME_NAMES)[number])
+  return COIN_MODE_GAME_COSTS[normalized] ?? null
 }
 
 function weeklyTrendScore(game: PublicGame) {

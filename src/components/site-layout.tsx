@@ -292,17 +292,6 @@ export function SiteLayout({
               </button>
             ) : null}
             {isHomePage ? <Link
-              aria-label={getOriginalGamesTitle(locale)}
-              className="btn h-6 min-h-6 shrink-0 gap-0.5 rounded-full border border-violet-200 bg-violet-100 px-1.5 text-[10px] font-semibold text-violet-950 shadow-sm hover:border-violet-300 hover:bg-violet-200 lg:h-9 lg:min-h-9 lg:gap-2 lg:px-4 lg:text-sm"
-              params={{ locale }}
-              to="/$locale/original-games"
-              title={getOriginalGamesTitle(locale)}
-            >
-              <i className="ri-gamepad-line" />
-              <span className="sm:hidden">原创游戏</span>
-              <span className="hidden sm:inline">{getOriginalGamesTitle(locale)}</span>
-            </Link> : null}
-            {isHomePage ? <Link
               aria-label={t.watchOthers}
               className="btn h-6 min-h-6 lg:h-9 lg:min-h-9 shrink-0 gap-0.5 rounded-full border border-rose-200 bg-rose-100 px-1.5 text-[10px] font-semibold text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 lg:gap-2 lg:px-4 lg:text-sm max-lg:[&_.live-watch-eye]:scale-75"
               params={{ locale }}

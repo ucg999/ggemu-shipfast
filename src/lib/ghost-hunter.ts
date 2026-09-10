@@ -4,6 +4,9 @@ export const LEVELS = [
   { id: 31, image: '/ghost-hunter/level-31.jpg', ghosts: [[0, 0], [1, 0], [2, 1], [0, 2], [2, 2], [3, 2]] },
   { id: 3, image: '/ghost-hunter/level-3.jpg', ghosts: [[0, 0], [1, 0], [0, 2], [1, 2], [1, 3], [3, 3]] },
   { id: 4, image: '/ghost-hunter/level-4.jpg', ghosts: [[0, 0], [2, 0], [3, 0], [0, 2], [1, 2], [2, 3]] },
+  { id: 26, image: '/ghost-hunter/level-26.jpg', ghosts: [[1, 0], [3, 0], [0, 1], [1, 1], [0, 2], [3, 3]] },
+  { id: 53, image: '/ghost-hunter/level-53.jpg', ghosts: [[0, 0], [2, 0], [1, 1], [2, 1], [2, 2], [3, 2]] },
+  { id: 54, image: '/ghost-hunter/level-54.jpg', ghosts: [[1, 0], [3, 0], [0, 1], [3, 1], [0, 2], [2, 2]] },
 ] as const satisfies ReadonlyArray<{ id: number; image: string; ghosts: ReadonlyArray<Cell> }>
 
 export const GHOSTS: ReadonlyArray<Cell> = LEVELS[0].ghosts
@@ -13,7 +16,7 @@ export const MODULES: { cells: Cell[]; lights: Cell[]; width: number; height: nu
   { cells: [[0, 0], [0, 1], [1, 1]], lights: [[0, 0]], width: 2, height: 2 },
   { cells: [[0, 0], [1, 0], [1, 1]], lights: [[0, 0], [1, 1]], width: 2, height: 2 },
   { cells: [[0, 0], [0, 1]], lights: [[0, 0]], width: 1, height: 2 },
-  { cells: [[0, 0], [0, 1]], lights: [], width: 1, height: 2 },
+  { cells: [[0, 0], [1, 0]], lights: [], width: 2, height: 1 },
 ]
 
 export function geometry(id: number, rotation: number) {

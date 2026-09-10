@@ -61,7 +61,14 @@ type CoinChallengeState = {
   credits: number
 }
 
+type CoinChallengeSearch = {
+  embed?: '1'
+}
+
 export const Route = createFileRoute('/$locale/coin-challenge')({
+  validateSearch: (search: Record<string, unknown>): CoinChallengeSearch => ({
+    embed: search.embed === '1' || search.embed === 1 ? ('1' as const) : undefined,
+  }),
   loader: () => getSeoOrigin(),
   head: ({ loaderData, params }) => {
     const locale = normalizeLocale(params.locale)
@@ -136,6 +143,7 @@ function ModeBackground({ active, src }: { active: boolean; src: string }) {
 
 function CoinChallengePage() {
   const { locale } = Route.useParams()
+  const { embed } = Route.useSearch()
   const lang = normalizeLocale(locale)
   const title = getCoinChallengeTitle(lang)
   const copy = getCoinChallengeCopy(lang)
@@ -1203,8 +1211,7 @@ function CoinChallengePage() {
     spinTimerRef.current = window.setTimeout(advance, 16)
   }
 
-  return (
-    <SiteLayout locale={lang} hideFooter>
+  const game = (
     <div className="fixed inset-0 z-[80] bg-black sm:static sm:z-auto sm:flex sm:h-[calc(100dvh-80px)] sm:items-center sm:justify-center sm:bg-base-100 sm:p-3">
     <section
       className="relative min-h-screen touch-manipulation overflow-hidden bg-black text-white sm:min-h-0 sm:w-full sm:max-w-[760px] sm:rounded-2xl sm:border sm:border-white/20 sm:shadow-2xl"
@@ -1219,7 +1226,7 @@ function CoinChallengePage() {
         if ((event.key === 'Enter' || event.key === ' ') && (event.target as Element).closest('button, a')) stopCelebrationAudio()
       }}
     >
-      <Link
+      {embed !== '1' ? <Link
         aria-label={getBackLabel(lang)}
         className="absolute left-3 top-3 z-10 grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-black/65 text-xl text-white backdrop-blur transition hover:bg-white hover:text-black"
         params={{ locale: lang }}
@@ -1227,7 +1234,7 @@ function CoinChallengePage() {
         to="/$locale"
       >
         <i className="ri-arrow-left-line" />
-      </Link>
+      </Link> : null}
       <div className="absolute right-3 top-3 z-20 rounded-xl bg-black/70 p-1 backdrop-blur">
         <HomeCoinBag
           balance={globalCoins.balance}
@@ -1237,7 +1244,7 @@ function CoinChallengePage() {
       </div>
 
       <h1 className="sr-only sm:not-sr-only sm:absolute sm:left-16 sm:top-5 sm:text-base sm:font-bold">{title}</h1>
-      <CoinMachineWelcome lang={lang} />
+      {embed !== '1' ? <CoinMachineWelcome lang={lang} /> : null}
       <div className="flex min-h-screen items-center justify-center bg-black p-0 sm:min-h-0 sm:px-4 sm:pb-4 sm:pt-16">
         <div className="relative aspect-[5/8] w-full max-w-[min(750px,62.5vh)] shrink-0 select-none sm:max-w-[min(520px,calc((100dvh-188px)*0.625))]">
         <img
@@ -1421,8 +1428,11 @@ function CoinChallengePage() {
       </div>
     </section>
     </div>
-    </SiteLayout>
   )
+
+  return embed === '1'
+    ? <main className="min-h-dvh bg-black">{game}</main>
+    : <SiteLayout locale={lang} hideFooter>{game}</SiteLayout>
 }
 
 function safelyRunAudio(action: () => unknown) {

@@ -23,9 +23,9 @@ import {
   type ChineseGameGuide,
 } from '#/lib/chinese-game-guides'
 import {
+  getCoinModeGameCost,
   getGameDetailPageData,
   getRelatedGamePageData,
-  isCoinModeGame,
   type Locale,
   type PublicGame,
 } from '#/lib/ggemu'
@@ -51,11 +51,11 @@ type InstallPromptWindow = Window & {
 const defaultManifestHref = '/manifest.webmanifest'
 const SHOW_EXTENDED_GAME_DETAILS = false
 
-function getCoinGameCopy(locale: Locale) {
-  if (locale === 'zh-TW') return { insufficient: '金幣不足，需要 20 枚金幣。金幣隨處可見，玩遊戲、看別人玩都可獲得。' }
-  if (locale === 'en') return { insufficient: 'You need 20 coins. Find coins around the site, play games, or watch others play to earn more.' }
-  if (locale === 'ja') return { insufficient: '20コイン必要です。サイト内のコイン、ゲームプレイ、配信視聴で獲得できます。' }
-  return { insufficient: '金币不足，需要 20 个金币。金币随处可见，玩游戏、看别人玩都可获得。' }
+function getCoinGameCopy(locale: Locale, cost: number) {
+  if (locale === 'zh-TW') return { insufficient: `金幣不足，需要 ${cost} 枚金幣。金幣隨處可見，玩遊戲、看別人玩都可獲得。` }
+  if (locale === 'en') return { insufficient: `You need ${cost} coins. Find coins around the site, play games, or watch others play to earn more.` }
+  if (locale === 'ja') return { insufficient: `${cost}コイン必要です。サイト内のコイン、ゲームプレイ、配信視聴で獲得できます。` }
+  return { insufficient: `金币不足，需要 ${cost} 个金币。金币随处可见，玩游戏、看别人玩都可获得。` }
 }
 
 export const Route = createFileRoute('/$locale/games/$gameId')({
@@ -322,10 +322,11 @@ function LocalizedGameDetailPage() {
     travelY: number
   } | null>(null)
   const [isCoinGameLaunching, setIsCoinGameLaunching] = useState(false)
-  const isCoinGame = isCoinModeGame(game)
+  const coinGameCost = getCoinModeGameCost(game)
+  const isCoinGame = coinGameCost !== null
 
   const startGame = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (!isCoinGame) {
+    if (coinGameCost === null) {
       markGamePlayStarted(gameId)
       saveRecentPlayedGame(game, gameId)
       return
@@ -333,8 +334,8 @@ function LocalizedGameDetailPage() {
 
     event.preventDefault()
     if (isCoinGameLaunching) return
-    if (!spendCoinBalance(20)) {
-      window.alert(getCoinGameCopy(lang).insufficient)
+    if (!spendCoinBalance(coinGameCost)) {
+      window.alert(getCoinGameCopy(lang, coinGameCost).insufficient)
       return
     }
 
@@ -439,7 +440,7 @@ function LocalizedGameDetailPage() {
                     {isCoinGame ? (
                       <span className="ml-1 flex items-center gap-1 rounded-full bg-black/25 px-2 py-1 text-sm font-black">
                         <img alt="" aria-hidden="true" className="h-5 w-5 object-contain" src="/images/coin-rewards/pixel-reward-coin.webp" />
-                        ×20
+                        ×{coinGameCost}
                       </span>
                     ) : null}
                   </Link>
@@ -480,7 +481,7 @@ function LocalizedGameDetailPage() {
               } as CSSProperties}
             >
               <img alt="" className="h-12 w-12 object-contain [image-rendering:pixelated]" src="/images/coin-rewards/pixel-reward-coin.webp" />
-              <span className="-ml-1 rounded bg-black/80 px-1.5 py-0.5 text-sm font-black text-yellow-300">×20</span>
+              <span className="-ml-1 rounded bg-black/80 px-1.5 py-0.5 text-sm font-black text-yellow-300">×{coinGameCost}</span>
             </div>
           ) : null}
 
