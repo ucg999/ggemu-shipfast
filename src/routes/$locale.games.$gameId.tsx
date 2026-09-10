@@ -1276,14 +1276,21 @@ function ChineseGameGuideSection({ guide }: { guide: ChineseGameGuide }) {
 }
 
 function PreGameTips() {
+  const [isOpen, setIsOpen] = useState(false)
+
   return (
-    <details className="group min-w-0 flex-1 lg:max-w-2xl lg:flex-none">
-      <summary className="btn btn-outline btn-lg w-full list-none gap-1 px-2 text-[10px] lg:w-fit lg:gap-2 lg:px-4 lg:text-sm [&::-webkit-details-marker]:hidden">
+    <div className="min-w-0 flex-1 lg:max-w-2xl lg:flex-none">
+      <button
+        aria-expanded={isOpen}
+        className="btn btn-outline btn-lg w-full gap-1 px-2 text-[10px] lg:w-fit lg:gap-2 lg:px-4 lg:text-sm"
+        onClick={() => setIsOpen(current => !current)}
+        type="button"
+      >
         <i className="ri-lightbulb-line text-warning" />
         <span className="whitespace-nowrap">游戏前的小提示</span>
-        <i className="ri-arrow-down-s-line transition-transform group-open:rotate-180" />
-      </summary>
-      <ol className="absolute inset-x-0 top-full z-30 mt-3 space-y-2 rounded-box border border-base-300 bg-base-100 p-5 text-sm leading-6 text-base-content/65 shadow-xl lg:relative lg:inset-auto lg:top-auto lg:w-[min(42rem,70vw)] lg:p-6">
+        <i className={`ri-arrow-down-s-line transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      {isOpen ? <ol className="absolute inset-x-0 top-full z-30 mt-3 space-y-2 rounded-box border border-base-300 bg-base-100 p-5 text-sm leading-6 text-base-content/65 shadow-xl lg:relative lg:inset-auto lg:top-auto lg:w-[min(42rem,70vw)] lg:p-6">
         <li>
           <strong className="mr-1 text-base-content">1.</strong>
           游戏建议（电脑&gt;安卓&gt;苹果）尽量使用以下浏览器
@@ -1308,8 +1315,8 @@ function PreGameTips() {
           <strong className="mr-1 text-base-content">6.</strong>
           游戏内的功能，设置（重点是滤镜，个人建议打开，怀旧感拉满），可自由设置按键位，可聊天，可存档，还可录像发朋友圏。
         </li>
-      </ol>
-    </details>
+      </ol> : null}
+    </div>
   )
 }
 

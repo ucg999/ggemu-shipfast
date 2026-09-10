@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react'
 
 import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
 import { CoinMachineWelcome } from '#/components/coin-machine-welcome'
+import { SiteLayout } from '#/components/site-layout'
 import type { Locale } from '#/lib/ggemu'
 import { addCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
 import { createSpinAudioClock } from '#/lib/spin-audio-clock'
@@ -1203,8 +1204,10 @@ function CoinChallengePage() {
   }
 
   return (
-    <main
-      className="relative min-h-screen touch-manipulation overflow-hidden bg-black text-white"
+    <SiteLayout locale={lang} hideFooter>
+    <div className="fixed inset-0 z-[80] bg-black sm:static sm:z-auto sm:flex sm:h-[calc(100dvh-80px)] sm:items-center sm:justify-center sm:bg-base-100 sm:p-3">
+    <section
+      className="relative min-h-screen touch-manipulation overflow-hidden bg-black text-white sm:min-h-0 sm:w-full sm:max-w-[760px] sm:rounded-2xl sm:border sm:border-white/20 sm:shadow-2xl"
       onDoubleClick={(event) => event.preventDefault()}
       onPointerDownCapture={(event) => {
         if ((event.target as Element).closest('button, a')) stopCelebrationAudio()
@@ -1233,10 +1236,10 @@ function CoinChallengePage() {
         />
       </div>
 
-      <h1 className="sr-only">{title}</h1>
+      <h1 className="sr-only sm:not-sr-only sm:absolute sm:left-16 sm:top-5 sm:text-base sm:font-bold">{title}</h1>
       <CoinMachineWelcome lang={lang} />
-      <div className="flex min-h-screen items-center justify-center bg-black p-0 sm:p-4">
-        <div className="relative aspect-[5/8] w-full max-w-[min(750px,62.5vh)] shrink-0 select-none">
+      <div className="flex min-h-screen items-center justify-center bg-black p-0 sm:min-h-0 sm:px-4 sm:pb-4 sm:pt-16">
+        <div className="relative aspect-[5/8] w-full max-w-[min(750px,62.5vh)] shrink-0 select-none sm:max-w-[min(520px,calc((100dvh-188px)*0.625))]">
         <img
           alt={title}
           className="pointer-events-none absolute inset-0 h-full w-full object-contain"
@@ -1416,7 +1419,9 @@ function CoinChallengePage() {
 
         </div>
       </div>
-    </main>
+    </section>
+    </div>
+    </SiteLayout>
   )
 }
 

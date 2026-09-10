@@ -5,6 +5,7 @@ import type { MouseEvent, ReactNode } from 'react'
 import type { GameFilterOptions, Locale } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
+import { getOriginalGamesTitle } from '#/lib/original-games'
 import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
 import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
 import { addCoinBalance } from '#/lib/coin-wallet'
@@ -40,6 +41,7 @@ export function SiteLayout({
   const homeT = getI18n(locale).home
   const location = useRouterState({ select: (state) => state.location })
   const isHomePage = location.pathname.replace(/\/+$/, '') === `/${locale}` || location.pathname === '/'
+  const isGameDetailPage = location.pathname.startsWith(`/${locale}/games/`)
   const siteThemes = getSiteThemes()
   const [theme, setTheme] = useState(() => normalizeSiteTheme(null))
   const [isLocaleMenuOpen, setIsLocaleMenuOpen] = useState(false)
@@ -273,6 +275,8 @@ export function SiteLayout({
             <div className="order-3 hidden w-full border-t border-white/20 pt-3 lg:order-none lg:block lg:min-w-0 lg:border-t-0 lg:pt-0">
               {topContent}
             </div>
+          ) : isGameDetailPage ? (
+            <GameDetailHeaderNavigation locale={locale} />
           ) : null}
 
           <div className="navbar-end ml-auto w-auto flex-none flex-nowrap gap-1 sm:gap-2">
@@ -287,6 +291,17 @@ export function SiteLayout({
                 <i className="ri-search-line text-base" />
               </button>
             ) : null}
+            {isHomePage ? <Link
+              aria-label={getOriginalGamesTitle(locale)}
+              className="btn h-6 min-h-6 shrink-0 gap-0.5 rounded-full border border-violet-200 bg-violet-100 px-1.5 text-[10px] font-semibold text-violet-950 shadow-sm hover:border-violet-300 hover:bg-violet-200 lg:h-9 lg:min-h-9 lg:gap-2 lg:px-4 lg:text-sm"
+              params={{ locale }}
+              to="/$locale/original-games"
+              title={getOriginalGamesTitle(locale)}
+            >
+              <i className="ri-gamepad-line" />
+              <span className="sm:hidden">原创游戏</span>
+              <span className="hidden sm:inline">{getOriginalGamesTitle(locale)}</span>
+            </Link> : null}
             {isHomePage ? <Link
               aria-label={t.watchOthers}
               className="btn h-6 min-h-6 lg:h-9 lg:min-h-9 shrink-0 gap-0.5 rounded-full border border-rose-200 bg-rose-100 px-1.5 text-[10px] font-semibold text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 lg:gap-2 lg:px-4 lg:text-sm max-lg:[&_.live-watch-eye]:scale-75"
@@ -385,6 +400,18 @@ export function SiteLayout({
                 </li>
               </ul>
             </details> : null}
+            {isGameDetailPage ? (
+              <Link
+                aria-label={t.searchGames}
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-white/90 transition hover:bg-white/15 hover:text-white"
+                params={{ locale }}
+                search={{ q: '' }}
+                title={t.searchGames}
+                to="/$locale/search"
+              >
+                <i className="ri-search-line text-xl" />
+              </Link>
+            ) : null}
           </div>
         </div>
       </header>
@@ -684,6 +711,22 @@ export function SiteLayout({
                     </ul>
                   </details>
                 </li>
+                <li>
+                  <Link
+                    className={`group flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition hover:bg-base-200 ${
+                      location.pathname === `/${locale}/original-games`
+                        ? 'bg-base-200 font-semibold text-primary'
+                        : ''
+                    }`}
+                    params={{ locale }}
+                    to="/$locale/original-games"
+                  >
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-violet-100 text-violet-700 group-hover:bg-violet-200">
+                      <i className="ri-gamepad-line text-base" />
+                    </span>
+                    <span className="sidebar-label min-w-0 flex-1">{getOriginalGamesTitle(locale)}</span>
+                  </Link>
+                </li>
               </ul>
             </nav>
           </aside>
@@ -721,6 +764,45 @@ export function SiteLayout({
       </div>
     </main>
   )
+}
+
+function GameDetailHeaderNavigation({
+  locale,
+}: {
+  locale: Locale
+}) {
+  const labels = getGameModeLabels(locale)
+  const linkClass = 'shrink-0 px-2 py-2 text-sm font-medium text-white/85 transition hover:text-white'
+
+  return (
+    <nav
+      aria-label={labels.navigation}
+      className="hidden min-w-0 items-center justify-start gap-1 overflow-x-auto lg:flex"
+    >
+      <Link className={linkClass} params={{ locale }} to="/$locale/arcade">
+        {labels.arcade}
+      </Link>
+      <Link className={linkClass} params={{ locale, platformId: 'famicom' }} to="/$locale/platform/$platformId">
+        {labels.famicom}
+      </Link>
+      <Link className={linkClass} params={{ locale, platformId: 'gba' }} to="/$locale/platform/$platformId">
+        {labels.gba}
+      </Link>
+      <Link className={linkClass} params={{ locale, platformId: 'flash' }} to="/$locale/platform/$platformId">
+        {labels.web}
+      </Link>
+      <Link className={linkClass} params={{ locale, platformId: 'coin' }} to="/$locale/platform/$platformId">
+        {labels.coin}
+      </Link>
+    </nav>
+  )
+}
+
+function getGameModeLabels(locale: Locale) {
+  if (locale === 'zh-TW') return { navigation: '遊戲模式', arcade: '街機模式', famicom: '小霸王模式', gba: 'GBA模式', web: '網頁模式', coin: '金幣模式' }
+  if (locale === 'en') return { navigation: 'Game modes', arcade: 'Arcade', famicom: 'Famicom', gba: 'GBA', web: 'Web games', coin: 'Coin mode' }
+  if (locale === 'ja') return { navigation: 'ゲームモード', arcade: 'アーケード', famicom: 'FC', gba: 'GBA', web: 'ウェブゲーム', coin: 'コインモード' }
+  return { navigation: '游戏模式', arcade: '街机模式', famicom: '小霸王模式', gba: 'GBA模式', web: '网页模式', coin: '金币模式' }
 }
 
 export function SiteFooter({ locale }: { locale: Locale }) {

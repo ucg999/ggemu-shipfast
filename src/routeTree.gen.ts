@@ -22,7 +22,9 @@ import { Route as LocaleArcadeRouteImport } from './routes/$locale.arcade'
 import { Route as LocaleBlogRouteImport } from './routes/$locale.blog'
 import { Route as LocaleCoinChallengeRouteImport } from './routes/$locale.coin-challenge'
 import { Route as LocaleDealsRouteImport } from './routes/$locale.deals'
+import { Route as LocaleGhostHunterRouteImport } from './routes/$locale.ghost-hunter'
 import { Route as LocaleLiveRouteImport } from './routes/$locale.live'
+import { Route as LocaleOriginalGamesRouteImport } from './routes/$locale.original-games'
 import { Route as LocalePlayMyRomRouteImport } from './routes/$locale.play-my-rom'
 import { Route as LocalePrivacyPolicyRouteImport } from './routes/$locale.privacy-policy'
 import { Route as LocaleRandomRouteImport } from './routes/$locale.random'
@@ -108,9 +110,19 @@ const LocaleDealsRoute = LocaleDealsRouteImport.update({
   path: '/deals',
   getParentRoute: () => LocaleRoute,
 } as any)
+const LocaleGhostHunterRoute = LocaleGhostHunterRouteImport.update({
+  id: '/ghost-hunter',
+  path: '/ghost-hunter',
+  getParentRoute: () => LocaleRoute,
+} as any)
 const LocaleLiveRoute = LocaleLiveRouteImport.update({
   id: '/live',
   path: '/live',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleOriginalGamesRoute = LocaleOriginalGamesRouteImport.update({
+  id: '/original-games',
+  path: '/original-games',
   getParentRoute: () => LocaleRoute,
 } as any)
 const LocalePlayMyRomRoute = LocalePlayMyRomRouteImport.update({
@@ -226,7 +238,9 @@ export interface FileRoutesByFullPath {
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
   '/$locale/coin-challenge': typeof LocaleCoinChallengeRoute
   '/$locale/deals': typeof LocaleDealsRoute
+  '/$locale/ghost-hunter': typeof LocaleGhostHunterRoute
   '/$locale/live': typeof LocaleLiveRoute
+  '/$locale/original-games': typeof LocaleOriginalGamesRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
   '/$locale/random': typeof LocaleRandomRoute
@@ -260,7 +274,9 @@ export interface FileRoutesByTo {
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
   '/$locale/coin-challenge': typeof LocaleCoinChallengeRoute
   '/$locale/deals': typeof LocaleDealsRoute
+  '/$locale/ghost-hunter': typeof LocaleGhostHunterRoute
   '/$locale/live': typeof LocaleLiveRoute
+  '/$locale/original-games': typeof LocaleOriginalGamesRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
   '/$locale/random': typeof LocaleRandomRoute
@@ -296,7 +312,9 @@ export interface FileRoutesById {
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
   '/$locale/coin-challenge': typeof LocaleCoinChallengeRoute
   '/$locale/deals': typeof LocaleDealsRoute
+  '/$locale/ghost-hunter': typeof LocaleGhostHunterRoute
   '/$locale/live': typeof LocaleLiveRoute
+  '/$locale/original-games': typeof LocaleOriginalGamesRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
   '/$locale/random': typeof LocaleRandomRoute
@@ -333,7 +351,9 @@ export interface FileRouteTypes {
     | '/$locale/blog'
     | '/$locale/coin-challenge'
     | '/$locale/deals'
+    | '/$locale/ghost-hunter'
     | '/$locale/live'
+    | '/$locale/original-games'
     | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
     | '/$locale/random'
@@ -367,7 +387,9 @@ export interface FileRouteTypes {
     | '/$locale/blog'
     | '/$locale/coin-challenge'
     | '/$locale/deals'
+    | '/$locale/ghost-hunter'
     | '/$locale/live'
+    | '/$locale/original-games'
     | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
     | '/$locale/random'
@@ -402,7 +424,9 @@ export interface FileRouteTypes {
     | '/$locale/blog'
     | '/$locale/coin-challenge'
     | '/$locale/deals'
+    | '/$locale/ghost-hunter'
     | '/$locale/live'
+    | '/$locale/original-games'
     | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
     | '/$locale/random'
@@ -532,11 +556,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleDealsRouteImport
       parentRoute: typeof LocaleRoute
     }
+    '/$locale/ghost-hunter': {
+      id: '/$locale/ghost-hunter'
+      path: '/ghost-hunter'
+      fullPath: '/$locale/ghost-hunter'
+      preLoaderRoute: typeof LocaleGhostHunterRouteImport
+      parentRoute: typeof LocaleRoute
+    }
     '/$locale/live': {
       id: '/$locale/live'
       path: '/live'
       fullPath: '/$locale/live'
       preLoaderRoute: typeof LocaleLiveRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/original-games': {
+      id: '/$locale/original-games'
+      path: '/original-games'
+      fullPath: '/$locale/original-games'
+      preLoaderRoute: typeof LocaleOriginalGamesRouteImport
       parentRoute: typeof LocaleRoute
     }
     '/$locale/play-my-rom': {
@@ -704,7 +742,9 @@ interface LocaleRouteChildren {
   LocaleBlogRoute: typeof LocaleBlogRouteWithChildren
   LocaleCoinChallengeRoute: typeof LocaleCoinChallengeRoute
   LocaleDealsRoute: typeof LocaleDealsRoute
+  LocaleGhostHunterRoute: typeof LocaleGhostHunterRoute
   LocaleLiveRoute: typeof LocaleLiveRoute
+  LocaleOriginalGamesRoute: typeof LocaleOriginalGamesRoute
   LocalePlayMyRomRoute: typeof LocalePlayMyRomRoute
   LocalePrivacyPolicyRoute: typeof LocalePrivacyPolicyRoute
   LocaleRandomRoute: typeof LocaleRandomRoute
@@ -726,7 +766,9 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleBlogRoute: LocaleBlogRouteWithChildren,
   LocaleCoinChallengeRoute: LocaleCoinChallengeRoute,
   LocaleDealsRoute: LocaleDealsRoute,
+  LocaleGhostHunterRoute: LocaleGhostHunterRoute,
   LocaleLiveRoute: LocaleLiveRoute,
+  LocaleOriginalGamesRoute: LocaleOriginalGamesRoute,
   LocalePlayMyRomRoute: LocalePlayMyRomRoute,
   LocalePrivacyPolicyRoute: LocalePrivacyPolicyRoute,
   LocaleRandomRoute: LocaleRandomRoute,

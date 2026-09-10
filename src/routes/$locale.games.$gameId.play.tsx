@@ -10,9 +10,9 @@ import { useCurrentSiteTheme } from '#/lib/use-site-theme'
 import {
   addCoinBalance,
   consumeGamePlayStartedAt,
-  getDailyGameCoinMultiplier,
-  markGamePlayStarted,
 } from '#/lib/coin-wallet'
+
+const trialDragDocuments = new WeakSet<Document>()
 
 const pspCrossOriginIsolationHeaders = {
   'Cross-Origin-Opener-Policy': 'same-origin',
@@ -26,9 +26,7 @@ const noindexHeaders = {
 
 const GAME_COIN_VALUE_INTERVAL_MS = 60 * 1000
 const GAME_COIN_SETTLEMENT_INTERVAL_MS = 5 * 60 * 1000
-const GAME_IDLE_TIMEOUT_MS = 2 * 60 * 1000
-const GAME_SESSION_COIN_CAP = 100
-const RANDOM_GAME_SESSION_COIN_CAP = 200
+const GAME_SESSION_COIN_CAP = 200
 
 type PlayGameSearch = {
   autoplay?: '1'
@@ -66,24 +64,26 @@ function LocalizedPlayGamePage() {
   const [recommendations, setRecommendations] = useState<Array<PublicGame>>([])
   const [recommendationType, setRecommendationType] = useState<'series' | 'category'>('category')
   const [settlement, setSettlement] = useState<GameSessionSettlement | null>(null)
+  const [showLoadingTrial, setShowLoadingTrial] = useState(true)
+  const [trialPosition, setTrialPosition] = useState<{ x: number; y: number } | null>(null)
   const loadGameRecommendations = useServerFn(searchGames)
   const activePlayTimeRef = useRef(0)
   const awardedCoinsRef = useRef(0)
   const playStartedAtRef = useRef<number | null>(null)
-  const lastActivityAtRef = useRef(Date.now())
   const sessionCoinsRef = useRef(0)
   const settlementTimerRef = useRef<number | null>(null)
   const recommendationsRequestedRef = useRef(false)
+  const trialDragRef = useRef<{ offsetX: number; offsetY: number; width: number; height: number } | null>(null)
   const labels = useMemo(() => getRecommendationLabels(lang), [lang])
-  const coinMultiplier = useMemo(() => getDailyGameCoinMultiplier(gameId), [gameId])
 
   useEffect(() => {
     setShowRecommendations(false)
     setSettlement(null)
+    setShowLoadingTrial(true)
+    setTrialPosition(null)
     activePlayTimeRef.current = 0
     awardedCoinsRef.current = 0
     playStartedAtRef.current = consumeGamePlayStartedAt(gameId)
-    lastActivityAtRef.current = Date.now()
     sessionCoinsRef.current = 0
     recommendationsRequestedRef.current = false
     setRecommendations([])
@@ -131,11 +131,8 @@ function LocalizedPlayGamePage() {
     )
     const earnedCoins = getTimedGameCoinTotal(activeTime)
     const newBaseCoins = Math.max(0, earnedCoins - awardedCoinsRef.current)
-    const sessionCoinCap = coinMultiplier > 1
-      ? RANDOM_GAME_SESSION_COIN_CAP
-      : GAME_SESSION_COIN_CAP
-    const remainingCoins = Math.max(0, sessionCoinCap - sessionCoinsRef.current)
-    const newCoins = Math.min(newBaseCoins * coinMultiplier, remainingCoins)
+    const remainingCoins = Math.max(0, GAME_SESSION_COIN_CAP - sessionCoinsRef.current)
+    const newCoins = Math.min(newBaseCoins, remainingCoins)
 
     awardedCoinsRef.current = earnedCoins
 
@@ -148,7 +145,7 @@ function LocalizedPlayGamePage() {
       coins: sessionCoinsRef.current,
       minutes: Math.max(1, Math.ceil(activeTime / 60_000)),
     }
-  }, [coinMultiplier])
+  }, [])
 
   const settleAndShowRecommendations = useCallback(() => {
     if (playStartedAtRef.current !== null) {
@@ -177,30 +174,12 @@ function LocalizedPlayGamePage() {
     setSettlement(null)
     setShowRecommendations(false)
     playStartedAtRef.current = Date.now()
-    lastActivityAtRef.current = Date.now()
   }, [])
-
-  const markGameActivity = useCallback(() => {
-    if (showRecommendations) return
-    const now = Date.now()
-    lastActivityAtRef.current = now
-    if (playStartedAtRef.current === null) {
-      playStartedAtRef.current = now
-    }
-  }, [showRecommendations])
 
   useEffect(() => {
     if (showRecommendations) return
 
     const timer = window.setInterval(() => {
-      if (
-        playStartedAtRef.current !== null &&
-        Date.now() - lastActivityAtRef.current >= GAME_IDLE_TIMEOUT_MS
-      ) {
-        const idleStartedAt = lastActivityAtRef.current + GAME_IDLE_TIMEOUT_MS
-        activePlayTimeRef.current += Math.max(0, idleStartedAt - playStartedAtRef.current)
-        playStartedAtRef.current = null
-      }
       collectDueSessionCoins()
     }, 1_000)
     return () => window.clearInterval(timer)
@@ -211,7 +190,6 @@ function LocalizedPlayGamePage() {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== embedOrigin) return
       if (isGameExitMessage(event.data)) settleAndShowRecommendations()
-      else markGameActivity()
     }
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -221,20 +199,10 @@ function LocalizedPlayGamePage() {
 
     window.addEventListener('message', handleMessage)
     window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('pointerdown', markGameActivity)
-    window.addEventListener('pointermove', markGameActivity)
-    window.addEventListener('touchstart', markGameActivity, { passive: true })
-    window.addEventListener('wheel', markGameActivity, { passive: true })
-    window.addEventListener('focus', markGameActivity)
 
     return () => {
       window.removeEventListener('message', handleMessage)
       window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('pointerdown', markGameActivity)
-      window.removeEventListener('pointermove', markGameActivity)
-      window.removeEventListener('touchstart', markGameActivity)
-      window.removeEventListener('wheel', markGameActivity)
-      window.removeEventListener('focus', markGameActivity)
 
       if (settlementTimerRef.current !== null) {
         window.clearTimeout(settlementTimerRef.current)
@@ -251,13 +219,13 @@ function LocalizedPlayGamePage() {
         window.location.href = url.toString()
       }, 0)
     }
-  }, [embedSrc, isPsp, markGameActivity, settleAndShowRecommendations])
+  }, [embedSrc, isPsp, settleAndShowRecommendations])
 
   return (
     <main className={`game-play-screen bg-black ${inline === '1' ? 'game-play-screen-inline' : ''}`}>
       <button
         aria-label={labels.exitGame}
-        className={`game-play-exit ${inline === '1' ? 'absolute' : 'fixed'} left-2 top-2 z-30 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white backdrop-blur transition hover:bg-black/90 sm:left-3 sm:top-3 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm`}
+        className={`game-play-exit ${inline === '1' ? 'absolute' : 'fixed'} left-2 top-2 z-30 inline-flex items-center gap-1 rounded-full bg-black/20 px-2 py-1 text-xs font-semibold text-white opacity-20 backdrop-blur-sm transition hover:bg-black/80 hover:opacity-100 focus-visible:bg-black/80 focus-visible:opacity-100 sm:left-3 sm:top-3 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm`}
         onClick={settleAndShowRecommendations}
         type="button"
       >
@@ -278,12 +246,70 @@ function LocalizedPlayGamePage() {
         }
         allowFullScreen
         className="game-play-frame border-0 bg-black"
-        onFocus={markGameActivity}
-        onLoad={markGameActivity}
-        onPointerEnter={markGameActivity}
         src={embedSrc}
         title={game.name ?? 'Retro game'}
       />
+      {showLoadingTrial ? (
+        <section
+          aria-label="等待游戏加载时试玩幽灵捕手"
+          className="fixed right-2 top-16 z-40 w-[min(92vw,520px)] overflow-visible rounded-xl border border-white/25 bg-black shadow-2xl"
+          role="region"
+          style={{
+            height: 'min(78dvh, calc(92vw + 164px), 684px)',
+            ...(trialPosition ? { left: trialPosition.x, top: trialPosition.y, right: 'auto' } : {}),
+          }}
+        >
+          <button
+            aria-label="关闭幽灵捕手试玩"
+            className="absolute -right-3 -top-3 z-10 grid size-8 place-items-center rounded-full border border-white/30 bg-zinc-900 text-white shadow-lg hover:bg-red-600"
+            onClick={() => setShowLoadingTrial(false)}
+            title="进入主游戏"
+            type="button"
+          ><i className="ri-close-line" /></button>
+          <iframe
+            className="h-full w-full rounded-xl border-0 bg-black"
+            onLoad={event => {
+              const frame = event.currentTarget
+              const doc = frame.contentDocument
+              if (!doc || trialDragDocuments.has(doc)) return
+              trialDragDocuments.add(doc)
+              const globalPoint = (pointer: globalThis.PointerEvent) => {
+                const rect = frame.getBoundingClientRect()
+                return { x: rect.left + pointer.clientX, y: rect.top + pointer.clientY }
+              }
+              doc.addEventListener('pointerdown', pointer => {
+                const target = pointer.target as HTMLElement | null
+                if (target?.closest('button, [role="button"]')) return
+                const windowRect = frame.parentElement?.getBoundingClientRect()
+                if (!windowRect) return
+                const point = globalPoint(pointer)
+                target?.setPointerCapture?.(pointer.pointerId)
+                trialDragRef.current = {
+                  offsetX: point.x - windowRect.left,
+                  offsetY: point.y - windowRect.top,
+                  width: windowRect.width,
+                  height: windowRect.height,
+                }
+                pointer.preventDefault()
+              })
+              doc.addEventListener('pointermove', pointer => {
+                const drag = trialDragRef.current
+                if (!drag) return
+                const point = globalPoint(pointer)
+                setTrialPosition({
+                  x: Math.max(0, Math.min(window.innerWidth - drag.width, point.x - drag.offsetX)),
+                  y: Math.max(0, Math.min(window.innerHeight - drag.height, point.y - drag.offsetY)),
+                })
+              })
+              const stopDragging = () => { trialDragRef.current = null }
+              doc.addEventListener('pointerup', stopDragging)
+              doc.addEventListener('pointercancel', stopDragging)
+            }}
+            src={`/${lang}/ghost-hunter?embed=1&trialLayout=3`}
+            title="幽灵捕手试玩"
+          />
+        </section>
+      ) : null}
       {showRecommendations ? (
         <GameExitRecommendations
           gameId={gameId}
@@ -399,10 +425,9 @@ function GameExitRecommendations({
                   <Link
                     className={`group min-w-0 ${index >= 4 ? 'hidden lg:block' : ''}`}
                     key={id}
-                    onClick={() => markGamePlayStarted(id)}
                     params={{ gameId: id, locale: lang }}
-                    search={{ autoplay: '1' }}
-                    to="/$locale/games/$gameId/play"
+                    search={{}}
+                    to="/$locale/games/$gameId"
                   >
                     <div className="aspect-square overflow-hidden rounded-lg bg-zinc-800">
                       {game.game_cover ? (

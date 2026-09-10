@@ -1,0 +1,145 @@
+.ghost-game {
+  background: #000;
+  color: #fff;
+  --color-base-100: #000;
+  --color-base-200: #151515;
+  --color-base-300: #333;
+  --color-base-content: #fff;
+  height: calc(100dvh - 80px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.ghost-game-embed {
+  height: 100dvh;
+  max-width: none;
+  gap: 0;
+  padding: 0;
+}
+
+.ghost-game-embed .ghost-stage {
+  width: 100%;
+  height: 100%;
+}
+
+.ghost-game-embed .ghost-beta-note {
+  padding-inline: 4px;
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.ghost-trial-note {
+  height: 20px;
+  font-size: 10px;
+  line-height: 20px;
+}
+
+.ghost-play-area {
+  flex: 1;
+  min-height: 0;
+  container-type: size;
+}
+
+.ghost-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px;
+  gap: 12px;
+  width: min(100cqw, calc(100cqh + 152px));
+  margin-inline: auto;
+  align-items: stretch;
+}
+
+.ghost-board { width: 100%; }
+.ghost-board-complete {
+  animation: ghost-board-victory 0.5s ease-in-out infinite;
+}
+
+@keyframes ghost-board-victory {
+  0%, 100% { box-shadow: inset 0 0 0 3px #fde047, 0 0 8px #fde047; }
+  50% { box-shadow: inset 0 0 0 7px #fff, 0 0 30px #facc15; }
+}
+.ghost-tray { height: 0; min-height: 100%; }
+.ghost-modules { grid-template: repeat(6, minmax(0, 1fr)) / minmax(0, 1fr); }
+
+.ghost-light-ring {
+  animation: ghost-light-flash 0.55s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes ghost-light-flash {
+  0%, 100% {
+    opacity: 0.4;
+    filter: drop-shadow(0 0 3px #ffe68a);
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 11px #fff4a3);
+  }
+}
+
+@media (max-width: 639px) {
+  .ghost-game {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    height: 100dvh;
+    max-width: none;
+    gap: 6px;
+    background: #000;
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  .ghost-game-embed { padding: 0; }
+  .ghost-game-embed .ghost-stage {
+    grid-template-rows: min(100cqw, calc(100cqh - 156px)) 150px;
+    gap: 4px;
+  }
+  .ghost-game-embed .ghost-board {
+    width: min(100cqw, calc(100cqh - 156px));
+  }
+  .ghost-game-embed .ghost-tray {
+    padding: 2px;
+  }
+  .ghost-game-embed .ghost-tray h2,
+  .ghost-game-embed .ghost-tray-tip {
+    display: none;
+  }
+  .ghost-stage {
+    width: 100%;
+    height: 100%;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: min(100cqw, calc(100cqh - 226px)) 220px;
+    align-content: start;
+    gap: 6px;
+  }
+  .ghost-board {
+    width: min(100cqw, calc(100cqh - 226px));
+    align-self: center;
+    justify-self: center;
+  }
+  .ghost-tray { height: 100%; min-height: 0; }
+  .ghost-modules { grid-template: repeat(2, minmax(0, 1fr)) / repeat(3, minmax(0, 1fr)); }
+  .ghost-tray-tip { display: none; }
+  .ghost-status { font-size: 12px; }
+
+  /* Keep trial overrides last so the iframe cannot inherit the full-page proportions. */
+  .ghost-game-embed {
+    gap: 0;
+    padding: 0;
+  }
+  .ghost-game-embed .ghost-stage {
+    width: min(100cqw, calc(100cqh - 144px));
+    grid-template-rows: min(100cqw, calc(100cqh - 144px)) 140px;
+    gap: 4px;
+  }
+  .ghost-game-embed .ghost-board {
+    width: 100%;
+  }
+  .ghost-game-embed .ghost-tray {
+    width: 100%;
+  }
+}
