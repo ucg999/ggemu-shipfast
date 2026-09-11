@@ -75,12 +75,80 @@ function GhostHunterPage() {
   const gameRef = useRef<HTMLElement>(null)
   const ghostAudioRef = useRef<HTMLAudioElement[]>([])
   const completionAudioRef = useRef<HTMLAudioElement | null>(null)
+  const countdownAudioRef = useRef<HTMLAudioElement[]>([])
+  const countdownCueRef = useRef<number | null>(null)
   const previousFoundRef = useRef(new Set<string>())
   const advancingRef = useRef(false)
+  const rewardedRef = useRef(false)
+  const elapsedRef = useRef(0)
+  const [remaining, setRemaining] = useState(120)
+  const [cleared, setCleared] = useState(0)
+  const [lightning, setLightning] = useState(1)
+  const [gameOver, setGameOver] = useState(false)
+  const [zap, setZap] = useState(0)
   const [message, setMessage] = useState('把右侧模块拖进场景，点击模块旋转 90°。')
   const found = litGhosts(placed, level.ghosts)
   const foundKey = found.map(([x, y]) => `${x},${y}`).sort().join('|')
   const won = isLevelComplete(placed, level.ghosts)
+
+  useEffect(() => {
+    if (won || gameOver) return
+    let previous = performance.now()
+    const timer = window.setInterval(() => {
+      const now = performance.now()
+      elapsedRef.current += (now - previous) / 1000 * (1 + cleared * 0.05)
+      previous = now
+      setRemaining(Math.max(0, 120 - elapsedRef.current))
+      if (elapsedRef.current >= 120) {
+        setGameOver(true)
+        dragRef.current = null
+        setDrag(null)
+      }
+    }, 50)
+    return () => window.clearInterval(timer)
+  }, [won, gameOver, levelIndex, cleared])
+
+  function resetTime() {
+    elapsedRef.current = 0
+    setRemaining(120)
+  }
+
+  function useLightning() {
+    if (lightning < 1 || won || gameOver) return
+    setLightning(value => value - 1)
+    resetTime()
+    setZap(value => value + 1)
+  }
+
+  useEffect(() => {
+    const sounds = countdownAudioRef.current
+    if (remaining > 10 || remaining <= 0 || won || gameOver) {
+      countdownCueRef.current = null
+      sounds.forEach(audio => audio.pause())
+      return
+    }
+    const now = performance.now()
+    const interval = remaining > 5 ? 1400 : 650
+    if (countdownCueRef.current !== null && now - countdownCueRef.current < interval) return
+    const audio = sounds[Math.floor(Math.random() * sounds.length)]
+    if (!audio) return
+    countdownCueRef.current = now
+    sounds.forEach(sound => sound.pause())
+    audio.currentTime = 0
+    audio.volume = remaining > 5 ? 0.7 : 0.9
+    void audio.play().catch(() => {})
+  }, [remaining, won, gameOver])
+
+  useEffect(() => {
+    if (!gameOver) return
+    const timer = window.setTimeout(() => {
+      setCleared(0)
+      setLightning(1)
+      setGameOver(false)
+      advanceLevel()
+    }, 2500)
+    return () => window.clearTimeout(timer)
+  }, [gameOver])
 
   useEffect(() => {
     ghostAudioRef.current = GHOST_SOUNDS.map(src => {
@@ -90,7 +158,14 @@ function GhostHunterPage() {
     })
     completionAudioRef.current = new Audio(LEVEL_COMPLETE_SOUND)
     completionAudioRef.current.preload = 'auto'
+    countdownAudioRef.current = GHOST_SOUNDS.map(src => {
+      const audio = new Audio(src)
+      audio.preload = 'auto'
+      return audio
+    })
     return () => {
+      countdownAudioRef.current.forEach(audio => audio.pause())
+      countdownAudioRef.current = []
       ghostAudioRef.current.forEach(audio => audio.pause())
       ghostAudioRef.current = []
       completionAudioRef.current?.pause()
@@ -114,6 +189,8 @@ function GhostHunterPage() {
   }, [foundKey])
 
   function resetBoard(message = '已重置关卡。', shuffleRotations = false) {
+    resetTime()
+    rewardedRef.current = false
     setPlaced(Array(6).fill(null))
     setRotations(shuffleRotations ? randomRotations() : Array(6).fill(0))
     setDrag(null)
@@ -136,7 +213,12 @@ function GhostHunterPage() {
   }, [levelIndex])
 
   useEffect(() => {
-    if (!won) return
+    if (!won || gameOver) return
+    if (!rewardedRef.current) {
+      rewardedRef.current = true
+      setCleared(value => value + 1)
+      setLightning(value => value + 1)
+    }
     const audio = completionAudioRef.current
     if (!audio) {
       advanceLevel()
@@ -156,6 +238,7 @@ function GhostHunterPage() {
   }
 
   function rotate(id: number) {
+    if (won || gameOver) return
     const rotation = (rotations[id] + 1) % 4
     const p = placed[id]
     if (p && !canPlace(id, { ...p, rotation }, placed)) {
@@ -168,7 +251,7 @@ function GhostHunterPage() {
   }
 
   function start(event: PointerEvent<HTMLElement>, id: number) {
-    if (won || event.button !== 0 || dragRef.current) return
+    if (won || gameOver || event.button !== 0 || dragRef.current) return
     const rect = event.currentTarget.getBoundingClientRect()
     const shape = geometry(id, rotations[id])
     const grabX = (event.clientX - rect.left) / rect.width * shape.width
@@ -229,18 +312,29 @@ function GhostHunterPage() {
             else setMessage('当前浏览器不支持系统全屏，游戏已铺满可用屏幕。')
           } catch { setMessage('未能进入系统全屏，游戏仍可正常操作。') }
         }}>全屏</button>
-        <button className="btn btn-sm" onClick={() => resetBoard()}>重新开始</button>
+        <button className="btn btn-sm" disabled={gameOver || won} onClick={() => { setCleared(0); setLightning(1); resetBoard() }}>重新开始</button>
         </div>
       </div> : null}
       {embed !== '1' ? <p className="shrink-0 text-xs text-base-content/70">拖动放置 · 点击旋转 90° · 拖出背景放回 · 光圈照到全部幽灵即可过关</p> : null}
+      <div className="ghost-timer-panel">
+        <button type="button" className="ghost-lightning" onClick={useLightning} disabled={lightning < 1 || won || gameOver} aria-label={`使用闪电重置倒计时，剩余 ${lightning} 道`} title="电击时间幽灵，恢复120秒">⚡ {lightning}</button>
+        <div className="ghost-time-track" role="progressbar" aria-label="剩余时间" aria-valuemin={0} aria-valuemax={120} aria-valuenow={Math.ceil(remaining)}>
+          <div className="ghost-time-fill" style={{ width: `${(120 - remaining) / 120 * 100}%` }} />
+          <span className="ghost-time-spirit" style={{ left: `${(120 - remaining) / 120 * 100}%` }}><span>👻</span></span>
+          <span className="ghost-time-label">{Math.ceil(remaining)}秒</span>
+          {zap > 0 && <span key={zap} className="ghost-time-zap" aria-hidden="true">⚡</span>}
+        </div>
+        <strong className="ghost-clear-count" aria-live="polite">过关 {cleared}</strong>
+      </div>
       <div className="ghost-play-area"><div className="ghost-stage">
         <div ref={boardRef} className={`ghost-board relative aspect-square select-none overflow-hidden rounded-xl bg-slate-950 shadow-xl ${won ? 'ghost-board-complete cursor-pointer' : ''}`} onClick={won ? advanceLevel : undefined} style={{ touchAction: 'none' }}>
           <img src={level.image} alt={`幽灵捕手关卡 ${level.id}`} draggable={false} className="pointer-events-none absolute inset-0 z-0 h-full w-full" />
+          {gameOver && <div className="ghost-game-over" role="alert"><strong>GAME OVER</strong><span>本次过关 {cleared} 关</span><span>即将切换新场景，重新开始…</span></div>}
           {placed.map((p, id) => {
             if (!p) return null
             const shape = geometry(id, p.rotation)
             return <div key={id} role="button" tabIndex={0} aria-label={`模块 ${id + 1}，点击旋转，Delete 放回`} {...handlers(id)}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); rotate(id) } if (e.key === 'Delete') setPlaced(current => current.map((v, i) => i === id ? null : v)) }}
+              onKeyDown={e => { if (won || gameOver) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); rotate(id) } if (e.key === 'Delete') setPlaced(current => current.map((v, i) => i === id ? null : v)) }}
               className="absolute z-10 cursor-grab outline-offset-2 focus-visible:outline-2 focus-visible:outline-white"
               style={{ left: `${p.x * 25}%`, top: `${p.y * 25}%`, width: `${shape.width * 25}%`, height: `${shape.height * 25}%`, opacity: drag?.id === id && drag.moved ? 0.25 : 1, pointerEvents: 'none' }}>
               <ModuleImage id={id} rotation={p.rotation} highlighted={shape.lights.map(([x, y]) => found.some(([gx, gy]) => gx === p.x + x && gy === p.y + y))} />
