@@ -68,6 +68,38 @@
 @keyframes ghost-time-float { 0%, 100% { transform: translateY(2px) rotate(-8deg); } 50% { transform: translateY(-3px) rotate(8deg); } }
 @keyframes ghost-zap { 0%, 40% { opacity: 1; background: #fff8; } 100% { opacity: 0; } }
 .ghost-board { width: 100%; }
+.ghost-module-outline path { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 0.035; }
+.ghost-module-outline-blue path { stroke: #16bffd; filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 3px #00aaf0); }
+.ghost-module-outline-yellow path { stroke: #fde047; stroke-width: 0.02; filter: drop-shadow(0 0 0.5px #fff) drop-shadow(0 0 2px #f59e0b); }
+.ghost-floating-module {
+  border: 0;
+  background: transparent;
+  opacity: 0.96;
+  touch-action: none;
+  transform-origin: center bottom;
+  filter: drop-shadow(0 14px 7px rgba(0, 0, 0, 0.7));
+  animation: ghost-module-hover 1.5s ease-in-out infinite;
+}
+.ghost-floating-module::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: -12%;
+  height: 10%;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  filter: blur(5px);
+  animation: ghost-module-shadow 1.5s ease-in-out infinite;
+}
+@keyframes ghost-module-hover {
+  0%, 100% { transform: translateY(-5%) scale(1.025); }
+  50% { transform: translateY(-9%) scale(1.04); }
+}
+@keyframes ghost-module-shadow {
+  0%, 100% { opacity: 0.7; transform: scaleX(1); }
+  50% { opacity: 0.42; transform: scaleX(0.82); }
+}
 .ghost-board-complete {
   animation: ghost-board-victory 0.5s ease-in-out infinite;
 }

@@ -1,12 +1,16 @@
 export type Cell = [number, number]
 export type Placement = { x: number; y: number; rotation: number }
 export const LEVELS = [
-  { id: 31, image: '/ghost-hunter/level-31.jpg', ghosts: [[0, 0], [1, 0], [2, 1], [0, 2], [2, 2], [3, 2]] },
-  { id: 3, image: '/ghost-hunter/level-3.jpg', ghosts: [[0, 0], [1, 0], [0, 2], [1, 2], [1, 3], [3, 3]] },
-  { id: 4, image: '/ghost-hunter/level-4.jpg', ghosts: [[0, 0], [2, 0], [3, 0], [0, 2], [1, 2], [2, 3]] },
-  { id: 26, image: '/ghost-hunter/level-26.jpg', ghosts: [[1, 0], [3, 0], [0, 1], [1, 1], [0, 2], [3, 3]] },
-  { id: 53, image: '/ghost-hunter/level-53.jpg', ghosts: [[0, 0], [2, 0], [1, 1], [2, 1], [2, 2], [3, 2]] },
-  { id: 54, image: '/ghost-hunter/level-54.jpg', ghosts: [[1, 0], [3, 0], [0, 1], [3, 1], [0, 2], [2, 2]] },
+  { id: 31, image: '/ghost-hunter/level-31.webp', ghosts: [[0, 0], [1, 0], [2, 1], [0, 2], [2, 2], [3, 2]] },
+  { id: 3, image: '/ghost-hunter/level-3.webp', ghosts: [[0, 0], [1, 0], [0, 2], [1, 2], [1, 3], [3, 3]] },
+  { id: 4, image: '/ghost-hunter/level-4.webp', ghosts: [[0, 0], [2, 0], [3, 0], [0, 2], [1, 2], [2, 3]] },
+  { id: 26, image: '/ghost-hunter/level-26.webp', ghosts: [[1, 0], [3, 0], [0, 1], [1, 1], [0, 2], [3, 3]] },
+  { id: 53, image: '/ghost-hunter/level-53.webp', ghosts: [[0, 0], [2, 0], [1, 1], [2, 1], [2, 2], [3, 2]] },
+  { id: 54, image: '/ghost-hunter/level-54.webp', ghosts: [[1, 0], [3, 0], [0, 1], [3, 1], [0, 2], [2, 2]] },
+  { id: 57, image: '/ghost-hunter/level-57.webp', ghosts: [[0, 0], [1, 0], [2, 1], [1, 2], [0, 3], [3, 3]] },
+  { id: 58, image: '/ghost-hunter/level-58.webp', ghosts: [[0, 0], [1, 0], [1, 1], [3, 1], [0, 2], [2, 2]] },
+  { id: 59, image: '/ghost-hunter/level-59.webp', ghosts: [[1, 0], [0, 1], [1, 2], [2, 2], [3, 2], [0, 3]] },
+  { id: 60, image: '/ghost-hunter/level-60.webp', ghosts: [[2, 0], [0, 1], [1, 1], [2, 2], [1, 3], [3, 3]] },
 ] as const satisfies ReadonlyArray<{ id: number; image: string; ghosts: ReadonlyArray<Cell> }>
 
 export const GHOSTS: ReadonlyArray<Cell> = LEVELS[0].ghosts

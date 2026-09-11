@@ -40,6 +40,13 @@ body {
   height: 100%;
 }
 
+.game-play-screen:fullscreen {
+  width: 100vw;
+  height: 100dvh;
+  aspect-ratio: auto;
+  border-radius: 0;
+}
+
 .game-player-reveal {
   overflow: hidden;
   animation: game-player-reveal 420ms ease-out both;

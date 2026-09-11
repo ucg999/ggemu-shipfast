@@ -75,6 +75,27 @@ function LocalizedPlayGamePage() {
   const recommendationsRequestedRef = useRef(false)
   const trialDragRef = useRef<{ offsetX: number; offsetY: number; width: number; height: number } | null>(null)
   const labels = useMemo(() => getRecommendationLabels(lang), [lang])
+  const playerRef = useRef<HTMLElement>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const fullscreenLabel = lang === 'en' ? (isFullscreen ? 'Exit fullscreen' : 'Fullscreen')
+    : lang === 'ja' ? (isFullscreen ? '全画面を終了' : '全画面')
+    : lang === 'zh-TW' ? (isFullscreen ? '退出全螢幕' : '全螢幕')
+    : (isFullscreen ? '退出全屏' : '全屏')
+
+  useEffect(() => {
+    const update = () => setIsFullscreen(document.fullscreenElement === playerRef.current)
+    document.addEventListener('fullscreenchange', update)
+    return () => document.removeEventListener('fullscreenchange', update)
+  }, [])
+
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen()
+      else await playerRef.current?.requestFullscreen()
+    } catch {
+      window.alert(lang === 'en' ? 'Fullscreen is unavailable in this browser.' : '当前浏览器暂不支持全屏，请使用浏览器的全屏功能。')
+    }
+  }
 
   useEffect(() => {
     setShowRecommendations(false)
@@ -192,7 +213,7 @@ function LocalizedPlayGamePage() {
       if (isGameExitMessage(event.data)) settleAndShowRecommendations()
     }
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !document.fullscreenElement) {
         settleAndShowRecommendations()
       }
     }
@@ -222,16 +243,22 @@ function LocalizedPlayGamePage() {
   }, [embedSrc, isPsp, settleAndShowRecommendations])
 
   return (
-    <main className={`game-play-screen bg-black ${inline === '1' ? 'game-play-screen-inline' : ''}`}>
+    <main ref={playerRef} className={`game-play-screen bg-black ${inline === '1' ? 'game-play-screen-inline' : ''}`}>
+      <div className="absolute left-2 top-2 z-30 flex items-center gap-2 sm:left-3 sm:top-3">
       <button
         aria-label={labels.exitGame}
-        className={`game-play-exit ${inline === '1' ? 'absolute' : 'fixed'} left-2 top-2 z-30 inline-flex items-center gap-1 rounded-full bg-black/20 px-2 py-1 text-xs font-semibold text-white opacity-20 backdrop-blur-sm transition hover:bg-black/80 hover:opacity-100 focus-visible:bg-black/80 focus-visible:opacity-100 sm:left-3 sm:top-3 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm`}
+        className="game-play-exit inline-flex items-center gap-1 rounded-full bg-black/20 px-2 py-1 text-xs font-semibold text-white opacity-20 backdrop-blur-sm transition hover:bg-black/80 hover:opacity-100 focus-visible:bg-black/80 focus-visible:opacity-100 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
         onClick={settleAndShowRecommendations}
         type="button"
       >
         <i className="ri-logout-box-r-line text-sm sm:text-lg" />
         {labels.exitGame}
       </button>
+      <button type="button" onClick={toggleFullscreen} aria-label={fullscreenLabel} title={fullscreenLabel} className="game-play-exit inline-flex items-center gap-1 rounded-full bg-black/20 px-2 py-1 text-xs font-semibold text-white opacity-20 backdrop-blur-sm transition hover:bg-black/80 hover:opacity-100 focus-visible:bg-black/80 focus-visible:opacity-100 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm">
+        <i className={`${isFullscreen ? 'ri-fullscreen-exit-line' : 'ri-fullscreen-line'} text-sm sm:text-lg`} />
+        {fullscreenLabel}
+      </button>
+      </div>
       <p
         aria-live="polite"
         className="game-loading-notice pointer-events-none absolute left-1/2 top-12 z-20 w-[min(90%,42rem)] -translate-x-1/2 text-center text-sm font-medium text-white/85 drop-shadow-md sm:top-16 sm:text-base"

@@ -459,7 +459,7 @@ export function SiteLayout({
                     </summary>
                     <ul className="sidebar-submenu">
                       <li>
-                        <a href={`/${locale}?view=all`}>
+                        <a href={`/${locale}/all-games`}>
                           {t.allGames}
                         </a>
                       </li>

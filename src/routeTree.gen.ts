@@ -18,6 +18,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as XRouteImport } from './routes/x'
 import { Route as LocaleIndexRouteImport } from './routes/$locale.index'
 import { Route as LocaleAboutRouteImport } from './routes/$locale.about'
+import { Route as LocaleAllGamesRouteImport } from './routes/$locale.all-games'
 import { Route as LocaleArcadeRouteImport } from './routes/$locale.arcade'
 import { Route as LocaleBlogRouteImport } from './routes/$locale.blog'
 import { Route as LocaleCoinChallengeRouteImport } from './routes/$locale.coin-challenge'
@@ -88,6 +89,11 @@ const LocaleIndexRoute = LocaleIndexRouteImport.update({
 const LocaleAboutRoute = LocaleAboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleAllGamesRoute = LocaleAllGamesRouteImport.update({
+  id: '/all-games',
+  path: '/all-games',
   getParentRoute: () => LocaleRoute,
 } as any)
 const LocaleArcadeRoute = LocaleArcadeRouteImport.update({
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/x': typeof XRoute
   '/$locale/about': typeof LocaleAboutRoute
+  '/$locale/all-games': typeof LocaleAllGamesRoute
   '/$locale/arcade': typeof LocaleArcadeRoute
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
   '/$locale/coin-challenge': typeof LocaleCoinChallengeRoute
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/x': typeof XRoute
   '/$locale/about': typeof LocaleAboutRoute
+  '/$locale/all-games': typeof LocaleAllGamesRoute
   '/$locale/arcade': typeof LocaleArcadeRoute
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
   '/$locale/coin-challenge': typeof LocaleCoinChallengeRoute
@@ -308,6 +316,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/x': typeof XRoute
   '/$locale/about': typeof LocaleAboutRoute
+  '/$locale/all-games': typeof LocaleAllGamesRoute
   '/$locale/arcade': typeof LocaleArcadeRoute
   '/$locale/blog': typeof LocaleBlogRouteWithChildren
   '/$locale/coin-challenge': typeof LocaleCoinChallengeRoute
@@ -347,6 +356,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/x'
     | '/$locale/about'
+    | '/$locale/all-games'
     | '/$locale/arcade'
     | '/$locale/blog'
     | '/$locale/coin-challenge'
@@ -383,6 +393,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/x'
     | '/$locale/about'
+    | '/$locale/all-games'
     | '/$locale/arcade'
     | '/$locale/blog'
     | '/$locale/coin-challenge'
@@ -420,6 +431,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/x'
     | '/$locale/about'
+    | '/$locale/all-games'
     | '/$locale/arcade'
     | '/$locale/blog'
     | '/$locale/coin-challenge'
@@ -526,6 +538,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/$locale/about'
       preLoaderRoute: typeof LocaleAboutRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/all-games': {
+      id: '/$locale/all-games'
+      path: '/all-games'
+      fullPath: '/$locale/all-games'
+      preLoaderRoute: typeof LocaleAllGamesRouteImport
       parentRoute: typeof LocaleRoute
     }
     '/$locale/arcade': {
@@ -738,6 +757,7 @@ const LocaleGamesGameIdRouteWithChildren =
 
 interface LocaleRouteChildren {
   LocaleAboutRoute: typeof LocaleAboutRoute
+  LocaleAllGamesRoute: typeof LocaleAllGamesRoute
   LocaleArcadeRoute: typeof LocaleArcadeRoute
   LocaleBlogRoute: typeof LocaleBlogRouteWithChildren
   LocaleCoinChallengeRoute: typeof LocaleCoinChallengeRoute
@@ -762,6 +782,7 @@ interface LocaleRouteChildren {
 
 const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleAboutRoute: LocaleAboutRoute,
+  LocaleAllGamesRoute: LocaleAllGamesRoute,
   LocaleArcadeRoute: LocaleArcadeRoute,
   LocaleBlogRoute: LocaleBlogRouteWithChildren,
   LocaleCoinChallengeRoute: LocaleCoinChallengeRoute,

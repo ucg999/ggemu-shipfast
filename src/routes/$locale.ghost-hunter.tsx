@@ -1,6 +1,8 @@
 import ghostHunterStyles from '#/components/ghost-hunter.css?url'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
+import { CoinRewardPopup } from '#/components/home/coin-rewards'
+import { addCoinBalance } from '#/lib/coin-wallet'
 import type { PointerEvent } from 'react'
 import { SiteLayout } from '#/components/site-layout'
 import { normalizeLocale } from '#/lib/i18n'
@@ -42,13 +44,15 @@ const GHOST_SOUNDS = [
 ]
 const LEVEL_COMPLETE_SOUND = '/ghost-hunter/audio/level-complete.mp3'
 
-function ModuleImage({ id, rotation, highlighted = [] }: { id: number; rotation: number; highlighted?: boolean[] }) {
+type ModuleOutline = 'blue' | 'yellow'
+
+const ModuleImage = memo(function ModuleImage({ id, rotation, highlighted = [], outline }: { id: number; rotation: number; highlighted?: boolean[]; outline?: ModuleOutline }) {
   const module = MODULES[id]
   const shape = geometry(id, rotation)
   const transform = [undefined, `translate(${module.height} 0) rotate(90)`,
     `translate(${module.width} ${module.height}) rotate(180)`, `translate(0 ${module.width}) rotate(270)`][rotation]
   return <svg viewBox={`0 0 ${shape.width} ${shape.height}`} width="100%" height="100%" style={{ overflow: 'visible', pointerEvents: 'none' }} aria-hidden="true">
-    <g transform={transform}><image href={`/ghost-hunter/torch-${id + 1}.png`} width={module.width} height={module.height} preserveAspectRatio="none" />
+    <g transform={transform}><image href={`/ghost-hunter/torch-${id + 1}.webp`} width={module.width} height={module.height} preserveAspectRatio="none" />
       <g transform={`scale(${module.width / (id < 4 ? 505 : 251)} ${module.height / (id === 2 || id === 3 ? 506 : 505)})`}>
         {LIGHT_OPENINGS[id].map((opening, index) => highlighted[index] ? <ellipse
           key={index} cx={opening.cx} cy={opening.cy} rx={opening.rx} ry={opening.ry}
@@ -58,8 +62,20 @@ function ModuleImage({ id, rotation, highlighted = [] }: { id: number; rotation:
         /> : null)}
       </g>
     </g>
+    {outline ? <g className={`ghost-module-outline ghost-module-outline-${outline}`}>
+      {shape.cells.map(([x, y]) => {
+        const hasCell = (cx: number, cy: number) => shape.cells.some(([px, py]) => px === cx && py === cy)
+        const path = [
+          !hasCell(x, y - 1) ? `M${x},${y}h1` : '',
+          !hasCell(x + 1, y) ? `M${x + 1},${y}v1` : '',
+          !hasCell(x, y + 1) ? `M${x + 1},${y + 1}h-1` : '',
+          !hasCell(x - 1, y) ? `M${x},${y + 1}v-1` : '',
+        ].join(' ')
+        return <path key={`${x},${y}`} d={path} />
+      })}
+    </g> : null}
   </svg>
-}
+}, (a, b) => a.id === b.id && a.rotation === b.rotation && a.outline === b.outline && (a.highlighted ?? []).join() === (b.highlighted ?? []).join())
 
 function GhostHunterPage() {
   const lang = normalizeLocale(Route.useParams().locale)
@@ -71,6 +87,8 @@ function GhostHunterPage() {
   const [rotations, setRotations] = useState<number[]>(initialGame.rotations)
   const [drag, setDrag] = useState<Drag | null>(null)
   const dragRef = useRef<Drag | null>(null)
+  const dragFrameRef = useRef<number | null>(null)
+  const [floating, setFloating] = useState<{ id: number; x: number; y: number } | null>(null)
   const boardRef = useRef<HTMLDivElement>(null)
   const gameRef = useRef<HTMLElement>(null)
   const ghostAudioRef = useRef<HTMLAudioElement[]>([])
@@ -104,7 +122,7 @@ function GhostHunterPage() {
         dragRef.current = null
         setDrag(null)
       }
-    }, 50)
+    }, 100)
     return () => window.clearInterval(timer)
   }, [won, gameOver, levelIndex, cleared])
 
@@ -112,6 +130,23 @@ function GhostHunterPage() {
     elapsedRef.current = 0
     setRemaining(120)
   }
+
+  useEffect(() => {
+    let cancelled = false
+    const preload = async () => {
+      for (const scene of LEVELS) {
+        if (cancelled) break
+        const image = new Image()
+        image.src = scene.image
+        await image.decode().catch(() => {})
+      }
+    }
+    void preload()
+    return () => {
+      cancelled = true
+      if (dragFrameRef.current !== null) cancelAnimationFrame(dragFrameRef.current)
+    }
+  }, [])
 
   function useLightning() {
     if (lightning < 1 || won || gameOver) return
@@ -189,6 +224,7 @@ function GhostHunterPage() {
   }, [foundKey])
 
   function resetBoard(message = '已重置关卡。', shuffleRotations = false) {
+    setFloating(null)
     resetTime()
     rewardedRef.current = false
     setPlaced(Array(6).fill(null))
@@ -216,6 +252,7 @@ function GhostHunterPage() {
     if (!won || gameOver) return
     if (!rewardedRef.current) {
       rewardedRef.current = true
+      addCoinBalance(10)
       setCleared(value => value + 1)
       setLightning(value => value + 1)
     }
@@ -240,13 +277,20 @@ function GhostHunterPage() {
   function rotate(id: number) {
     if (won || gameOver) return
     const rotation = (rotations[id] + 1) % 4
-    const p = placed[id]
+    const p = floating?.id === id ? { ...floating, rotation: rotations[id] } : placed[id]
     if (p && !canPlace(id, { ...p, rotation }, placed)) {
-      setMessage('旋转后会重叠或超出边界，请先移到空位或放回右侧。')
+      if (floating && floating.id !== id) return
+      setRotations(current => current.map((r, i) => i === id ? rotation : r))
+      setPlaced(current => current.map((value, i) => i === id ? null : value))
+      setFloating({ id, x: p.x, y: p.y })
+      setMessage('模块已悬浮，可以继续旋转或拖到空位。')
       return
     }
     setRotations(current => current.map((r, i) => i === id ? rotation : r))
-    if (p) setPlaced(current => current.map((value, i) => i === id ? { ...p, rotation } : value))
+    if (p) {
+      setPlaced(current => current.map((value, i) => i === id ? { x: p.x, y: p.y, rotation } : value))
+      if (floating?.id === id) setFloating(null)
+    }
     setMessage('已旋转 90°。')
   }
 
@@ -270,7 +314,10 @@ function GhostHunterPage() {
     if (!d) return
     const next = { ...d, x: event.clientX, y: event.clientY, moved: d.moved || Math.hypot(event.clientX - d.startX, event.clientY - d.startY) > 5 }
     dragRef.current = next
-    setDrag(next)
+    if (dragFrameRef.current === null) dragFrameRef.current = requestAnimationFrame(() => {
+      dragFrameRef.current = null
+      setDrag(dragRef.current)
+    })
   }
 
   function end(event: PointerEvent<HTMLElement>) {
@@ -282,15 +329,23 @@ function GhostHunterPage() {
     const final = { ...d, x: event.clientX, y: event.clientY }
     const rect = boardRef.current!.getBoundingClientRect()
     if (final.x < rect.left || final.x > rect.right || final.y < rect.top || final.y > rect.bottom) {
+      if (floating?.id === d.id) setFloating(null)
       setPlaced(current => current.map((p, i) => i === d.id ? null : p))
       setMessage('模块已放回右侧。')
       return
     }
     const p = candidate(final)
     if (canPlace(d.id, p, placed)) {
+      if (floating?.id === d.id) setFloating(null)
       setPlaced(current => current.map((value, i) => i === d.id ? p : value))
       setMessage('已吸附到格子。继续照亮其他幽灵！')
-    } else setMessage('这里放不下：模块不能重叠或超出背景。')
+    } else {
+      if (!floating || floating.id === d.id) {
+        setPlaced(current => current.map((value, i) => i === d.id ? null : value))
+        setFloating({ id: d.id, x: Math.max(0, Math.min(2, p.x)), y: Math.max(0, Math.min(2, p.y)) })
+      }
+      setMessage('模块悬浮中，继续旋转或拖到空位即可吸附。')
+    }
   }
 
   const preview = drag?.moved && boardRef.current ? candidate(drag) : null
@@ -329,6 +384,8 @@ function GhostHunterPage() {
       <div className="ghost-play-area"><div className="ghost-stage">
         <div ref={boardRef} className={`ghost-board relative aspect-square select-none overflow-hidden rounded-xl bg-slate-950 shadow-xl ${won ? 'ghost-board-complete cursor-pointer' : ''}`} onClick={won ? advanceLevel : undefined} style={{ touchAction: 'none' }}>
           <img src={level.image} alt={`幽灵捕手关卡 ${level.id}`} draggable={false} className="pointer-events-none absolute inset-0 z-0 h-full w-full" />
+          {won && !gameOver ? <CoinRewardPopup feedback={{ amount: 10, id: level.id * 100 + cleared, prefix: '+' }} /> : null}
+          {floating && <button type="button" {...handlers(floating.id)} onClick={e => { if (e.detail === 0) rotate(floating.id) }} aria-label="悬浮模块，点击旋转或拖动吸附" className="ghost-floating-module absolute z-30 cursor-grab" style={{ left: `${floating.x * 25}%`, top: `${floating.y * 25}%`, width: `${geometry(floating.id, rotations[floating.id]).width * 25}%`, height: `${geometry(floating.id, rotations[floating.id]).height * 25}%` }}><ModuleImage id={floating.id} rotation={rotations[floating.id]} outline="yellow" /></button>}
           {gameOver && <div className="ghost-game-over" role="alert"><strong>GAME OVER</strong><span>本次过关 {cleared} 关</span><span>即将切换新场景，重新开始…</span></div>}
           {placed.map((p, id) => {
             if (!p) return null
@@ -364,7 +421,7 @@ function GhostHunterPage() {
           {embed !== '1' ? <h2 className="mb-1 shrink-0 text-center text-xs font-bold">抓鬼手电筒</h2> : null}
           <div className="ghost-modules grid min-h-0 flex-1 gap-1">
             {MODULES.map((_, id) => <div key={id} className="flex min-h-0 items-center justify-center [container-type:size]">
-              {placed[id] ? (embed === '1' ? null : <span className="text-center text-xs text-slate-400">{id + 1} · 已放入</span>) : <button type="button" aria-label={`模块 ${id + 1}，点击旋转`} {...handlers(id)} onClick={e => { if (e.detail === 0) rotate(id) }} className="block cursor-grab touch-none bg-transparent" style={{ width: `calc(min(100cqw, 100cqh) * ${geometry(id, rotations[id]).width / 2})`, height: `calc(min(100cqw, 100cqh) * ${geometry(id, rotations[id]).height / 2})` }}><ModuleImage id={id} rotation={rotations[id]} /></button>}
+              {(placed[id] || floating?.id === id) ? (embed === '1' ? null : <span className="text-center text-xs text-slate-400">{id + 1} · 已放入</span>) : <button type="button" aria-label={`模块 ${id + 1}，点击旋转`} {...handlers(id)} onClick={e => { if (e.detail === 0) rotate(id) }} className="block cursor-grab touch-none bg-transparent" style={{ width: `calc(min(100cqw, 100cqh) * ${geometry(id, rotations[id]).width / 2})`, height: `calc(min(100cqw, 100cqh) * ${geometry(id, rotations[id]).height / 2})` }}><ModuleImage id={id} rotation={rotations[id]} outline="blue" /></button>}
             </div>)}
           </div>
           {embed !== '1' ? <p className="ghost-tray-tip mt-1 text-center text-xs text-base-content/60">点击旋转 90° · 拖动放置<br />6 号为空框模块</p> : null}
