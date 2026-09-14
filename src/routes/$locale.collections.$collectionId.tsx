@@ -5,6 +5,7 @@ import { searchGames, type PublicGame } from '#/lib/ggemu'
 import { getGameCollection, type GameCollection } from '#/lib/game-collections'
 import { normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
+import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 
 export const Route = createFileRoute('/$locale/collections/$collectionId')({
   loader: async ({ params }) => {
@@ -15,13 +16,14 @@ export const Route = createFileRoute('/$locale/collections/$collectionId')({
     }
 
     const locale = normalizeLocale(params.locale)
-    const games = await loadCollectionGames(collection, locale)
+    const [games, seoOrigin] = await Promise.all([loadCollectionGames(collection, locale), getSeoOrigin()])
 
-    return { collection: localizeCollection(collection, locale), games }
+    return { collection: localizeCollection(collection, locale), games, seoOrigin }
   },
-  head: ({ loaderData }) => ({
+  head: ({ loaderData, params }) => ({
+    links: loaderData?.seoOrigin ? getLocalizedSeoLinks({ locale: normalizeLocale(params.locale), origin: loaderData.seoOrigin, path: `/collections/${params.collectionId}` }) : undefined,
     meta: [
-      { title: `${loaderData?.collection.title ?? '游戏合集'} - 游戏历险记` },
+      { title: `${loaderData?.collection.title ?? '游戏合集'} | ${normalizeLocale(params.locale) === 'en' ? 'Retro Game Hall' : '怀旧游戏厅'}` },
       {
         content: loaderData?.collection.description,
         name: 'description',

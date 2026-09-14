@@ -22,7 +22,7 @@ export const jaMessages = {
     termsOfService: '利用規約',
     theme: 'テーマ',
     language: '言語',
-    copyright: 'Copyright © 2026 ゲームアドベンチャー',
+    copyright: 'Copyright © 2026 レトロゲームセンター',
     get disclaimer() {
       return `すべてのゲーム ROM / プログラムはユーザーから投稿されたもの、またはインターネット上で収集されたものです。著作権はそれぞれの権利所有者に帰属します。問題がある場合は ${siteConfig.SITE_EMAIL} までメールでご連絡ください。該当するコンテンツを削除します。`
     },
@@ -58,7 +58,7 @@ export const jaMessages = {
     nostalgiaSubtitle: '小霸王、楽しさは無限大。アーケード、小霸王、GBA、PSP、Switchのゲームをオンラインで楽しもう。',
     subtitle:
       'GBA、NES、SNES、PS1、N64、Sega Genesis、アーケードなどの名作をブラウザーでそのまま遊べます。ダウンロード不要。',
-    searchPlaceholder: '10万本のゲームを検索',
+    searchPlaceholder: '全{total}本のゲームを検索',
     search: '検索',
     reset: 'リセット',
     allPlatforms: 'すべての機種',
@@ -111,14 +111,14 @@ export const jaMessages = {
     mahjongSlots: 'アーケード麻雀',
     findFriends: '仲間を探す',
     wechat: 'WeChat',
-    wechatQrAlt: 'ゲームアドベンチャー WeChat QRコード',
-    qqQrAlt: 'ゲームアドベンチャー QQ QRコード',
+    wechatQrAlt: 'レトロゲームセンター WeChat QRコード',
+    qqQrAlt: 'レトロゲームセンター QQ QRコード',
     kofCollection: 'ザ・キング・オブ・ファイターズ',
     streetFighterCollection: 'ストリートファイター',
     retro8090Collection: '1988〜1994 アーケード名作',
   },
   homeSeo: {
-    title: 'レトロゲームをオンラインでプレイ | ダウンロード不要',
+    title: 'レトロゲームセンター｜アーケード・ファミコン・GBAをオンラインでプレイ',
     description:
       'GBA、NES、SNES、PS1、N64、Sega Genesis、アーケードなどの名作レトロゲームをブラウザーでそのまま遊べます。',
     keywords:
@@ -127,13 +127,13 @@ export const jaMessages = {
   arcade: {
     mode: 'アーケードモード',
     tooltip: 'クラシックアーケードゲームをオンラインでプレイ',
-    seoTitle: 'アーケードゲームをオンラインでプレイ｜名作ゲーム一覧｜ゲームアドベンチャー',
+    seoTitle: 'アーケードゲームをオンラインでプレイ｜名作ゲーム一覧｜レトロゲームセンター',
     title: 'アーケードゲーム',
     description: '名作アーケードゲームを無料でオンラインプレイ。人気順や A-Z から探して、ダウンロード不要ですぐに遊べます。',
     subtitle: 'アーケードゲームは、ゲームセンターなどに設置され、硬貨を投入して遊ぶ業務用ゲーム機です。1970年代に誕生し、ビデオゲーム発展史の中心的な存在となりました。',
     famicomMode: 'ファミコンモード',
     famicomTooltip: 'クラシックファミコンゲームをオンラインでプレイ',
-    famicomSeoTitle: 'ファミコンゲームをオンラインでプレイ｜ゲームアドベンチャー',
+    famicomSeoTitle: 'ファミコンゲームをオンラインでプレイ｜レトロゲームセンター',
     famicomTitle: 'ファミコンゲーム',
     famicomDescription: 'アクション、シューティング、協力プレイなど、名作ファミコンゲームをブラウザーですぐに遊べます。',
     famicomSubtitle: 'タイトルから名作ファミコンゲームを探して、すぐにオンラインで遊べます。',
@@ -200,7 +200,7 @@ export const jaMessages = {
   },
   about: {
     title: '概要',
-    description: 'ブラウザーで遊べるレトロゲームサイト「ゲームアドベンチャー」について。',
+    description: 'ブラウザーで遊べる「レトロゲームセンター」について。',
   },
   blog: {
     title: 'ブログ',

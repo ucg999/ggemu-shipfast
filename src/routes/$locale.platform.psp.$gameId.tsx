@@ -4,12 +4,27 @@ import { GameFavoriteButton } from '#/components/game-favorite-button'
 import { SwitchLibraryImage } from '#/components/switch-library-image'
 import { normalizeLocale } from '#/lib/i18n'
 import { PSP_LIBRARY_GAMES } from '#/lib/psp-library'
+import { getLocalizedSeoLinks } from '#/lib/seo'
+import { SITE_ORIGIN } from '#/lib/site-url'
 
 export const Route = createFileRoute('/$locale/platform/psp/$gameId')({
   loader: ({ params }) => {
     const game = PSP_LIBRARY_GAMES.find((item) => item.id === params.gameId)
     if (!game) throw notFound()
     return game
+  },
+  head: ({ loaderData, params }) => {
+    if (!loaderData) return {}
+    const locale = normalizeLocale(params.locale)
+    const english = locale === 'en'
+    const title = english ? `${loaderData.title} | PSP Game Information | Retro Game Hall` : `${loaderData.title}｜PSP游戏资料与截图｜怀旧游戏厅`
+    const description = english
+      ? `View ${loaderData.title} for PSP, including screenshots, publisher, release date, language and version information.`
+      : `查看《${loaderData.title}》PSP游戏资料，包括游戏截图、厂商、发行日期、语言与版本信息。`
+    return {
+      links: getLocalizedSeoLinks({ locale, origin: SITE_ORIGIN, path: `/platform/psp/${params.gameId}` }),
+      meta: [{ title }, { name: 'description', content: description }, { property: 'og:title', content: title }, { property: 'og:description', content: description }, { property: 'og:type', content: 'article' }, { property: 'og:image', content: loaderData.cover }],
+    }
   },
   component: PspGameDetailPage,
 })

@@ -63,7 +63,7 @@ export const Route = createRootRoute({
           content: 'black-translucent',
         },
         {
-          title: `${siteConfig.SITE_SLOGAN} | No Downloads Required`,
+          title: 'Retro Game Hall | Play Classic Games Online',
         },
         {
           name: 'description',
@@ -77,11 +77,11 @@ export const Route = createRootRoute({
         },
         {
           property: 'og:title',
-          content: siteConfig.SITE_SLOGAN,
+          content: 'Retro Game Hall | Play Classic Games Online',
         },
         {
           property: 'og:site_name',
-          content: siteConfig.SITE_NAME,
+          content: 'Retro Game Hall',
         },
         {
           property: 'og:description',
@@ -110,7 +110,7 @@ export const Route = createRootRoute({
         },
         {
           property: 'og:image:alt',
-          content: siteConfig.SITE_SLOGAN,
+          content: 'Retro Game Hall | Play Classic Games Online',
         },
         {
           name: 'twitter:card',
@@ -118,7 +118,7 @@ export const Route = createRootRoute({
         },
         {
           name: 'twitter:title',
-          content: siteConfig.SITE_SLOGAN,
+          content: 'Retro Game Hall | Play Classic Games Online',
         },
         {
           name: 'twitter:description',
@@ -131,7 +131,7 @@ export const Route = createRootRoute({
         },
         {
           name: 'twitter:image:alt',
-          content: siteConfig.SITE_SLOGAN,
+          content: 'Retro Game Hall',
         },
       ],
       links: [

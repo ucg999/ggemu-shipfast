@@ -61,7 +61,7 @@ export const Route = createFileRoute('/$locale/blog')({
           })
         : undefined,
       meta: [
-        { title: t.title },
+        { title: `${t.title} | ${locale === 'en' ? 'Retro Game Hall' : locale === 'ja' ? 'レトロゲームセンター' : locale === 'zh-TW' ? '懷舊遊戲廳' : '怀旧游戏厅'}` },
         { name: 'description', content: t.description },
       ],
     }

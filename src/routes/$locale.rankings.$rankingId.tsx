@@ -114,25 +114,25 @@ function getRankingCopy(locale: Locale, rankingId: RankingId) {
   const labels = getI18n(locale).layout
   const copy = {
     'zh-CN': {
-      latest: ['最新游戏', '查看最近加入游戏历险记、可以直接在线游玩的经典游戏。'],
+      latest: ['最新游戏', '查看最近加入怀旧游戏厅、可以直接在线游玩的经典游戏。'],
       popular: ['最火游戏', '按照累计游玩热度排列，快速发现最受玩家欢迎的经典游戏。'],
       weekly: ['本周热门', '结合本周互动变化与玩家热度，每周更新值得关注的游戏。'],
       rising: ['增长最快', '根据近期游玩转化与互动增长表现，发现正在快速升温的游戏。'],
     },
     'zh-TW': {
-      latest: ['最新遊戲', '查看最近加入遊戲歷險記、可以直接線上遊玩的經典遊戲。'],
+      latest: ['最新遊戲', '查看最近加入懷舊遊戲廳、可以直接線上遊玩的經典遊戲。'],
       popular: ['最熱門遊戲', '依累計遊玩熱度排列，快速發現最受玩家歡迎的經典遊戲。'],
       weekly: ['本週熱門', '結合本週互動變化與玩家熱度，每週更新值得關注的遊戲。'],
       rising: ['成長最快', '依近期遊玩轉換與互動成長表現，發現正在快速升溫的遊戲。'],
     },
     en: {
-      latest: ['Latest Games', 'Explore the newest playable classic games added to Game Adventure.'],
+      latest: ['Latest Games', 'Explore the newest playable classic games added to Retro Game Hall.'],
       popular: ['Popular Games', 'Discover the classic games with the highest all-time player activity.'],
       weekly: ['Popular This Week', 'A weekly view combining fresh interaction signals and current player interest.'],
       rising: ['Fastest Rising', 'Find games gaining momentum through strong play conversion and engagement.'],
     },
     ja: {
-      latest: ['最新ゲーム', 'ゲームアドベンチャーに最近追加された、オンラインで遊べる名作ゲームです。'],
+      latest: ['最新ゲーム', 'レトロゲームセンターに最近追加された、オンラインで遊べる名作ゲームです。'],
       popular: ['人気ゲーム', '累計プレイ人気順で、最も遊ばれている名作ゲームを探せます。'],
       weekly: ['今週の人気', '今週の反応とプレイヤー人気を組み合わせ、注目ゲームを毎週更新します。'],
       rising: ['急上昇', 'プレイ率と反応の伸びから、人気が急上昇しているゲームを紹介します。'],

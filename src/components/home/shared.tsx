@@ -501,8 +501,8 @@ export function FilterSelects({
   )
 }
 
-export function getSearchPlaceholder(t: HomeCopy, _total: number) {
-  return t.searchPlaceholder
+export function getSearchPlaceholder(t: HomeCopy, total: number) {
+  return t.searchPlaceholder.replace('{total}', new Intl.NumberFormat().format(Math.max(0, total)))
 }
 
 export function GamesSection({

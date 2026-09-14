@@ -6,7 +6,7 @@ import type { FilterOption, GameSearchResult, PublicGame } from '#/lib/ggemu'
 import { normalizeLocale } from '#/lib/i18n'
 import { getI18n } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
-import { getThemeAsset, themeModeLabel, themePlatformLabel } from '#/lib/k-team'
+import { getThemeAsset, themePlatformLabel } from '#/lib/k-team'
 import { SWITCH_LIBRARY_GAMES } from '#/lib/switch-library'
 import { PSP_LIBRARY_GAMES } from '#/lib/psp-library'
 import {
@@ -17,6 +17,8 @@ import {
   useHomeCoinRewards,
 } from '#/components/home/coin-rewards'
 import { getOriginalGamesTitle } from '#/lib/original-games'
+import { getLocalizedSeoLinks } from '#/lib/seo'
+import { SITE_ORIGIN } from '#/lib/site-url'
 import '#/styles/theme-mode.css'
 
 export const Route = createFileRoute('/$locale/PRO')({
@@ -27,7 +29,25 @@ export const Route = createFileRoute('/$locale/PRO')({
     }
   },
   loader: () => getGameFilterOptions(),
-  head: ({ params }) => ({ meta: [{ title: `${themeModeLabel(normalizeLocale(params.locale))} · UCG999` }] }),
+  head: ({ params }) => {
+    const locale = normalizeLocale(params.locale)
+    const seo = getI18n(locale).homeSeo
+    return {
+      links: getLocalizedSeoLinks({ locale, origin: SITE_ORIGIN, path: '/' }),
+      meta: [
+        { title: seo.title },
+        { name: 'description', content: seo.description },
+        { name: 'keywords', content: seo.keywords },
+        { property: 'og:title', content: seo.title },
+        { property: 'og:description', content: seo.description },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: `${SITE_ORIGIN}/${locale}` },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: seo.title },
+        { name: 'twitter:description', content: seo.description },
+      ],
+    }
+  },
   component: ThemeMode,
 })
 
@@ -89,6 +109,9 @@ function ThemeMode() {
   const root = useRef<HTMLDivElement>(null)
   const lastWheel = useRef(0)
   const touchY = useRef(0)
+  const navigationAudio = useRef<HTMLAudioElement | null>(null)
+  const platformGamesCache = useRef(new Map<string, Array<PublicGame>>())
+  const showcaseQueue = useRef<Array<number>>([])
   const platform = platforms[selected]
   const allGames = platform?.name === 'all-games'
   const favoritesPlatform = platform?.name === 'theme-favorites'
@@ -109,17 +132,22 @@ function ThemeMode() {
   const platformLabel = themePlatformLabel(platform, lang) || getPlatformLabel(platform.name, lang)
 
   const advanceShowcase = useCallback(() => {
-    const length = result?.games.length || 0
-    if (length < 2) return
+    const games = result?.games || []
+    if (games.length < 2) return
     setShowcaseIndex(current => {
-      const next = Math.floor(Math.random() * (length - 1))
-      return next >= current ? next + 1 : next
+      if (showcaseQueue.current.length === 0) {
+        showcaseQueue.current = createShowcaseQueue(games, current)
+      }
+      return showcaseQueue.current.shift() ?? current
     })
-  }, [result?.games.length])
+  }, [result?.games])
 
   useEffect(() => {
-    const firstVideoIndex = result?.games.findIndex(game => Boolean(game.game_video && /\.(mp4|webm)(\?|$)/i.test(game.game_video))) ?? -1
-    setShowcaseIndex(firstVideoIndex >= 0 ? firstVideoIndex : 0)
+    const games = result?.games || []
+    const queue = createShowcaseQueue(games)
+    const first = queue.shift() ?? 0
+    showcaseQueue.current = queue
+    setShowcaseIndex(first)
   }, [platform?.name, result])
 
   useEffect(() => {
@@ -137,7 +165,7 @@ function ThemeMode() {
     if (inLibrary || !activeGame || !pageVisible) return
     const hasVideo = Boolean(!showcaseVideoFailed && activeGame.game_video && /\.(mp4|webm)(\?|$)/i.test(activeGame.game_video))
     if (hasVideo) return
-    const timer = window.setTimeout(advanceShowcase, 30000)
+    const timer = window.setTimeout(advanceShowcase, 10000)
     return () => window.clearTimeout(timer)
   }, [activeGame, advanceShowcase, inLibrary, pageVisible, showcaseVideoFailed])
 
@@ -174,11 +202,29 @@ function ThemeMode() {
     }
   }, [allGames, favoriteGames, lang, platform?.name, platform?.slug])
 
+  const playNavigationSound = useCallback(() => {
+    try {
+      const audio = navigationAudio.current ?? new Audio('/themes/es-k-team/scroll.wav')
+      navigationAudio.current = audio
+      audio.volume = 0.7
+      audio.currentTime = 0
+      void audio.play().catch(() => {})
+    } catch {
+      // Sound support must never interrupt platform navigation.
+    }
+  }, [])
+
   const move = useCallback((delta: number) => {
     if (!platforms.length) return
+    playNavigationSound()
     setSelected(value => (value + delta + platforms.length) % platforms.length)
     setPage(1); setQuery(''); setGameIndex(0); setResult(null)
-  }, [platforms.length])
+  }, [platforms.length, playNavigationSound])
+
+  useEffect(() => () => {
+    navigationAudio.current?.pause()
+    navigationAudio.current = null
+  }, [])
 
   useEffect(() => {
     if (!platform) return
@@ -189,10 +235,10 @@ function ThemeMode() {
       const normalizedQuery = query.trim().toLowerCase()
       const filtered = normalizedQuery ? games.filter(game => game.name?.toLowerCase().includes(normalizedQuery)) : games
       const start = (page - 1) * 24
-      setResult({
+      setResult(prioritizeFirstPageVideos({
         games: filtered.slice(start, start + 24),
         pagination: { total: filtered.length, page, limit: 24, pages: Math.max(1, Math.ceil(filtered.length / 24)) },
-      })
+      }, page))
       setLoading(false)
       return
     }
@@ -232,17 +278,17 @@ function ThemeMode() {
         : platform.slug === 'theme-merged-flash'
           ? sourcePlatforms.filter(item => ['flash', 'html5'].includes(item.name.toLowerCase())).map(item => item.name)
           : []
-      const request = mergedNames.length > 1
-        ? Promise.all(mergedNames.map(name => searchGames({ data: { platform: name, locale: lang, page, limit: 12, query, sort: 'name_asc' } }))).then(values => ({
-            games: values.flatMap(value => value.games).slice(0, 24),
-            pagination: {
-              total: values.reduce((sum, value) => sum + value.pagination.total, 0),
-              page,
-              limit: 24,
-              pages: Math.max(...values.map(value => value.pagination.pages)),
-            },
-          }))
-        : searchGames({ data: { platform: allGames ? undefined : platform.name, locale: lang, page, limit: 24, query, sort: 'name_asc' } })
+      const platformNames: Array<string | undefined> = allGames
+        ? [undefined]
+        : mergedNames.length > 0 ? mergedNames : [platform.name]
+      const cacheKey = `${lang}:${platformNames.map(name => name || 'all-games').join('|').toLocaleLowerCase()}`
+      const completeGamesRequest = loadCompleteThemePlatform(platformNames, lang, platformGamesCache.current, cacheKey)
+      const request = allGames
+        ? Promise.all([
+            completeGamesRequest,
+            searchGames({ data: { platform: undefined, locale: lang, page: 1, limit: 24, query: '', sort: 'newest' } }),
+          ]).then(([games, latest]) => paginateThemePlatformGames(games, query, page, 18, latest.games))
+        : completeGamesRequest.then(games => paginateThemePlatformGames(games, query, page, 24))
       request
         .then(value => { if (!cancelled) setResult(value) })
         .catch(() => { if (!cancelled) setError(true) })
@@ -416,7 +462,7 @@ function ThemeMode() {
                   target="_blank"
                 >
                   <span className="kt-game-number">{String((page - 1) * 24 + index + 1).padStart(3, '0')}</span>
-                  <span className="kt-game-cover">{game.game_cover ? <img alt="" decoding="async" loading="lazy" src={game.game_cover} /> : <span>UCG999</span>}</span>
+                  <ThemeGameCardPreview game={game} />
                   <strong>{game.name}</strong>
                 </a>
                 {allGames && <button className={`kt-favorite ${favorite ? 'is-favorite' : ''}`} aria-label={favorite ? '取消收藏' : '收藏游戏'} aria-pressed={favorite} onClick={() => toggleFavorite(game)}>{favorite ? '♥' : '♡'}</button>}
@@ -506,6 +552,105 @@ function hashThemeLibraryId(value: string) {
   return hash
 }
 
+function prioritizeFirstPageVideos(result: GameSearchResult, page: number) {
+  if (page !== 1 || result.games.length < 2) return result
+
+  return {
+    ...result,
+    games: result.games
+      .map((game, index) => ({ game, index }))
+      .sort((left, right) => {
+        const leftHasVideo = Boolean(left.game.game_video && /\.(mp4|webm)(\?|$)/i.test(left.game.game_video))
+        const rightHasVideo = Boolean(right.game.game_video && /\.(mp4|webm)(\?|$)/i.test(right.game.game_video))
+        return Number(rightHasVideo) - Number(leftHasVideo) || left.index - right.index
+      })
+      .map(item => item.game),
+  }
+}
+
+async function loadCompleteThemePlatform(
+  platformNames: Array<string | undefined>,
+  locale: ReturnType<typeof normalizeLocale>,
+  cache: Map<string, Array<PublicGame>>,
+  cacheKey: string,
+) {
+  const cached = cache.get(cacheKey)
+  if (cached) return cached
+
+  const groups = await Promise.all(platformNames.map(async platform => {
+    const first = await searchGames({ data: { platform, locale, page: 1, limit: 100, query: '', sort: 'name_asc' } })
+    const remaining = []
+    const pages = Array.from({ length: Math.max(0, first.pagination.pages - 1) }, (_, index) => index + 2)
+    for (let offset = 0; offset < pages.length; offset += 4) {
+      remaining.push(...await Promise.all(pages.slice(offset, offset + 4).map(page =>
+        searchGames({ data: { platform, locale, page, limit: 100, query: '', sort: 'name_asc' } }),
+      )))
+    }
+    return [first.games, ...remaining.map(result => result.games)].flat()
+  }))
+
+  const seen = new Set<string>()
+  const games = groups.flat().filter(game => {
+    const id = game.url_slug || game._id || game.name
+    if (!id || seen.has(id)) return false
+    seen.add(id)
+    return true
+  })
+  cache.set(cacheKey, games)
+  return games
+}
+
+function paginateThemePlatformGames(
+  games: Array<PublicGame>,
+  query: string,
+  page: number,
+  firstPageVideoLimit: number,
+  newestGames: Array<PublicGame> = [],
+): GameSearchResult {
+  const normalizedQuery = query.trim().toLocaleLowerCase()
+  const filtered = normalizedQuery
+    ? games.filter(game => [game.name, game.keywords, game.description, game.developer, game.platform, ...(game.categories || [])]
+        .filter(Boolean)
+        .join(' ')
+        .toLocaleLowerCase()
+        .includes(normalizedQuery))
+    : games
+  const limit = 24
+  const videos = filtered.filter(game => Boolean(game.game_video && /\.(mp4|webm)(\?|$)/i.test(game.game_video)))
+  const images = filtered.filter(game => !game.game_video || !/\.(mp4|webm)(\?|$)/i.test(game.game_video))
+  const filteredIds = new Set(filtered.map(game => game.url_slug || game._id || game.name))
+  const latestLimit = newestGames.length > 0 ? Math.max(0, limit - firstPageVideoLimit) : 0
+  const latestFill = newestGames
+    .filter(game => {
+      const id = game.url_slug || game._id || game.name
+      return Boolean(id && filteredIds.has(id))
+    })
+    .slice(0, latestLimit)
+  const latestIds = new Set(latestFill.map(game => game.url_slug || game._id || game.name))
+  const promotedVideos = videos
+    .filter(game => !latestIds.has(game.url_slug || game._id || game.name))
+    .slice(0, firstPageVideoLimit)
+  const firstPageIds = new Set([...promotedVideos, ...latestFill].map(game => game.url_slug || game._id || game.name))
+  const fallbackFill = [...videos, ...images]
+    .filter(game => !firstPageIds.has(game.url_slug || game._id || game.name))
+    .slice(0, Math.max(0, limit - firstPageIds.size))
+  const firstPage = [...latestFill, ...promotedVideos, ...fallbackFill]
+  const completeFirstPageIds = new Set(firstPage.map(game => game.url_slug || game._id || game.name))
+  const ordered = [
+    ...firstPage,
+    ...videos.filter(game => !completeFirstPageIds.has(game.url_slug || game._id || game.name)),
+    ...images.filter(game => !completeFirstPageIds.has(game.url_slug || game._id || game.name)),
+  ]
+  const pages = Math.max(1, Math.ceil(ordered.length / limit))
+  const safePage = Math.min(page, pages)
+  const start = (safePage - 1) * limit
+
+  return {
+    games: ordered.slice(start, start + limit),
+    pagination: { total: ordered.length, page: safePage, limit, pages },
+  }
+}
+
 function isSwitchThemePlatform(platform?: FilterOption) {
   return Boolean(platform && `${platform.name} ${platform.slug || ''}`.toLowerCase().replace(/[^a-z]/g, '').includes('switch'))
 }
@@ -541,9 +686,48 @@ function readRecentGamesForTheme() {
   }
 }
 
+function createShowcaseQueue(games: Array<PublicGame>, avoidFirst = -1) {
+  const shuffle = (indices: Array<number>) => {
+    const next = [...indices]
+    for (let index = next.length - 1; index > 0; index -= 1) {
+      const target = Math.floor(Math.random() * (index + 1))
+      ;[next[index], next[target]] = [next[target], next[index]]
+    }
+    return next
+  }
+  const videos: Array<number> = []
+  const images: Array<number> = []
+  games.forEach((game, index) => {
+    const target = game.game_video && /\.(mp4|webm)(\?|$)/i.test(game.game_video) ? videos : images
+    target.push(index)
+  })
+  const queue = [...shuffle(videos), ...shuffle(images)]
+  if (queue.length > 1 && queue[0] === avoidFirst) {
+    const replacement = queue.findIndex(index => index !== avoidFirst)
+    if (replacement > 0) [queue[0], queue[replacement]] = [queue[replacement], queue[0]]
+  }
+  return queue
+}
+
 function GamePreview({ game, onEnded, onVideoError, playing = true }: { game?: PublicGame; onEnded?: () => void; onVideoError?: () => void; playing?: boolean }) {
   const [failed, setFailed] = useState(false)
   useEffect(() => setFailed(false), [game?.game_video])
   if (game?.game_video && /\.(mp4|webm)(\?|$)/i.test(game.game_video) && !failed) return <video src={game.game_video} poster={game.game_cover} autoPlay={playing} preload="metadata" loop={!onEnded} muted playsInline onEnded={onEnded} onError={() => { setFailed(true); onVideoError?.() }} />
   return game?.game_cover ? <img src={game.game_cover} alt={game.name || ''} decoding="async" /> : <div className="kt-preview-placeholder">UCG999<span>SELECT YOUR GAME</span></div>
+}
+
+function ThemeGameCardPreview({ game }: { game: PublicGame }) {
+  const [hovered, setHovered] = useState(false)
+  const [videoFailed, setVideoFailed] = useState(false)
+  const playableVideo = Boolean(game.game_video && /\.(mp4|webm)(\?|$)/i.test(game.game_video))
+
+  return (
+    <span className="kt-game-cover" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      {hovered && playableVideo && !videoFailed
+        ? <video autoPlay loop muted playsInline poster={game.game_cover} preload="none" src={game.game_video} onError={() => setVideoFailed(true)} />
+        : game.game_cover
+          ? <img alt="" decoding="async" loading="lazy" src={game.game_cover} />
+          : <span>UCG999</span>}
+    </span>
+  )
 }

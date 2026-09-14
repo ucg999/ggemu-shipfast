@@ -165,6 +165,7 @@ export function buildGameDetailSeo(game: PublicGame, locale: Locale) {
       keywords: [
         `${name} 在线玩`,
         `${name} online`,
+        game.keywords?.trim() || '',
         platform ? `${platform} 游戏在线玩` : '',
         categoryText,
         '复古游戏',
@@ -189,6 +190,7 @@ export function buildGameDetailSeo(game: PublicGame, locale: Locale) {
       keywords: [
         `${name} オンライン`,
         `${name} play online`,
+        game.keywords?.trim() || '',
         platform ? `${platform} ゲーム` : '',
         categoryText,
         'レトロゲーム',
@@ -212,6 +214,7 @@ export function buildGameDetailSeo(game: PublicGame, locale: Locale) {
     keywords: [
       `play ${name} online`,
       `${name} browser game`,
+      game.keywords?.trim() || '',
       platform ? `${platform} games online` : '',
       categoryText,
       'retro games online',

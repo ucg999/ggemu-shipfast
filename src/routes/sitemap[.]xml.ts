@@ -3,6 +3,10 @@ import { createFileRoute } from '@tanstack/react-router'
 import { fetchGameDeals } from '#/lib/game-deals.server'
 import { DEFAULT_DEAL_REGION } from '#/lib/game-deals-region'
 import type { BlogPost, Locale, PublicGame } from '#/lib/ggemu'
+import { GAME_COLLECTIONS } from '#/lib/game-collections'
+import { getLocalBlogPosts } from '#/lib/local-blog-posts'
+import { PSP_LIBRARY_GAMES } from '#/lib/psp-library'
+import { SWITCH_LIBRARY_GAMES } from '#/lib/switch-library'
 
 const GGEMU_API_BASE_URL = 'https://ggemu.com'
 const SITEMAP_PAGE_SIZE = 100
@@ -196,6 +200,9 @@ function buildSitemapEntries(
   const entries: Array<SitemapEntry> = []
 
   for (const locale of locales) {
+    for (const path of ['/arcade', '/platform/famicom', '/platform/gba', '/platform/flash', '/platform/coin', '/platform/psp', '/platform/switch', '/rankings/latest', '/rankings/popular', '/rankings/weekly', '/rankings/rising']) {
+      entries.push({ locale, loc: toAbsoluteLocalizedUrl(origin, locale, path), path, changefreq: 'daily', priority: 0.8 })
+    }
     entries.push({
       locale,
       loc: toAbsoluteLocalizedUrl(origin, locale, '/deals'),
@@ -252,7 +259,22 @@ function buildSitemapEntries(
       })
     }
 
-    for (const blogPost of blogPosts) {
+    for (const collection of GAME_COLLECTIONS) {
+      const path = `/collections/${encodeURIComponent(collection.id)}`
+      entries.push({ locale, loc: toAbsoluteLocalizedUrl(origin, locale, path), path, changefreq: 'weekly', priority: 0.7 })
+    }
+
+    for (const game of SWITCH_LIBRARY_GAMES) {
+      const path = `/platform/switch/${encodeURIComponent(game.id)}`
+      entries.push({ locale, loc: toAbsoluteLocalizedUrl(origin, locale, path), path, changefreq: 'weekly', priority: 0.7 })
+    }
+
+    for (const game of PSP_LIBRARY_GAMES) {
+      const path = `/platform/psp/${encodeURIComponent(game.id)}`
+      entries.push({ locale, loc: toAbsoluteLocalizedUrl(origin, locale, path), path, changefreq: 'weekly', priority: 0.7 })
+    }
+
+    for (const blogPost of dedupeBlogPosts([...getLocalBlogPosts(locale), ...blogPosts])) {
       const blogPostId = encodeURIComponent(getBlogPostRouteId(blogPost))
       const path = `/blog/${blogPostId}`
 
