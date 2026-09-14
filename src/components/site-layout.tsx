@@ -215,6 +215,28 @@ export function SiteLayout({
     window.alert(getResourceCoinCopy(locale).insufficient)
   }
 
+  const isProStandalone = location.hash === 'PRO' || location.hash === '#PRO'
+
+  if (isProStandalone) {
+    return (
+      <main className="min-h-screen w-full max-w-full overflow-x-clip bg-base-100 text-base-content">
+        <button
+          className="fixed right-4 top-3 z-[100] border-b border-base-content/30 bg-transparent px-1 py-1 text-sm font-medium text-base-content/70 transition hover:border-base-content/70 hover:text-base-content"
+          onClick={() => {
+            window.close()
+            window.setTimeout(() => {
+              if (!window.closed) window.location.assign(`/${locale}/PRO`)
+            }, 120)
+          }}
+          type="button"
+        >
+          ← {locale === 'zh-TW' ? '返回主題模式' : locale === 'en' ? 'Back to Theme Mode' : locale === 'ja' ? 'テーマモードに戻る' : '返回主题模式'}
+        </button>
+        {children}
+      </main>
+    )
+  }
+
   return (
     <main className="min-h-screen w-full max-w-full overflow-x-clip bg-base-100 text-base-content">
       <header className="sticky top-0 z-40 border-b border-red-700 bg-red-600 text-white shadow-sm">
@@ -771,6 +793,9 @@ function GameDetailHeaderNavigation({
       <Link className={linkClass} params={{ locale }} to="/$locale/arcade">
         {labels.arcade}
       </Link>
+      {(locale === 'zh-CN' || locale === 'zh-TW') ? <Link className={linkClass} params={{ locale }} to="/$locale/PRO">
+        {locale === 'zh-TW' ? '主題模式' : '主题模式'}
+      </Link> : null}
       <Link className={linkClass} params={{ locale, platformId: 'famicom' }} to="/$locale/platform/$platformId">
         {labels.famicom}
       </Link>

@@ -154,7 +154,7 @@ function LocaleLayout() {
   const innerRewardTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
-    if (pathname === `/${locale}` || lastRewardPathRef.current === pathname) return
+    if (pathname === `/${locale}` || pathname === `/${locale}/PRO` || pathname === `/${locale}/theme-mode` || lastRewardPathRef.current === pathname) return
     lastRewardPathRef.current = pathname
     setInnerPageCoin(null)
     setInnerPageCoinFlight(null)
@@ -208,7 +208,7 @@ function LocaleLayout() {
   }
 
 
-  if (pathname.replace(/\/$/, '') === `/${locale}`) return <Outlet />
+  if (pathname.replace(/\/$/, '') === `/${locale}` || pathname.replace(/\/$/, '') === `/${locale}/PRO` || pathname.replace(/\/$/, '') === `/${locale}/theme-mode`) return <Outlet />
     return (
       <>
         <Outlet />

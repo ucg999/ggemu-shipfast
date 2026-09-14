@@ -125,10 +125,7 @@ export function DefaultHomeTemplate(
   const orderedPlatforms = orderHomePlatforms(filterOptions.platforms)
   const mobileModeLabels = getMobileModeLabels(lang)
   const mobileModes = [
-    { label: mobileModeLabels.arcade, to: '/$locale/arcade' as const },
-    { label: mobileModeLabels.famicom, platformId: 'famicom' },
-    { label: mobileModeLabels.gba, platformId: 'gba' },
-    { label: mobileModeLabels.web, platformId: 'flash' },
+    ...(lang === 'zh-CN' || lang === 'zh-TW' ? [{ label: lang === 'zh-TW' ? '主題模式' : '主题模式', to: '/$locale/PRO' as const }] : []),
     { label: mobileModeLabels.coin, platformId: 'coin' },
   ]
   return (

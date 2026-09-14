@@ -17,6 +17,7 @@ import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as XRouteImport } from './routes/x'
 import { Route as LocaleIndexRouteImport } from './routes/$locale.index'
+import { Route as LocalePRORouteImport } from './routes/$locale.PRO'
 import { Route as LocaleAboutRouteImport } from './routes/$locale.about'
 import { Route as LocaleAllGamesRouteImport } from './routes/$locale.all-games'
 import { Route as LocaleArcadeRouteImport } from './routes/$locale.arcade'
@@ -31,6 +32,7 @@ import { Route as LocalePrivacyPolicyRouteImport } from './routes/$locale.privac
 import { Route as LocaleRandomRouteImport } from './routes/$locale.random'
 import { Route as LocaleSearchRouteImport } from './routes/$locale.search'
 import { Route as LocaleTermsOfServiceRouteImport } from './routes/$locale.terms-of-service'
+import { Route as LocaleThemeModeRouteImport } from './routes/$locale.theme-mode'
 import { Route as ApiShareImageRouteImport } from './routes/api/share-image'
 import { Route as GamesGameIdRouteImport } from './routes/games/$gameId'
 import { Route as LocaleBlogBlogIdRouteImport } from './routes/$locale.blog.$blogId'
@@ -84,6 +86,11 @@ const XRoute = XRouteImport.update({
 const LocaleIndexRoute = LocaleIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocalePRORoute = LocalePRORouteImport.update({
+  id: '/PRO',
+  path: '/PRO',
   getParentRoute: () => LocaleRoute,
 } as any)
 const LocaleAboutRoute = LocaleAboutRouteImport.update({
@@ -154,6 +161,11 @@ const LocaleSearchRoute = LocaleSearchRouteImport.update({
 const LocaleTermsOfServiceRoute = LocaleTermsOfServiceRouteImport.update({
   id: '/terms-of-service',
   path: '/terms-of-service',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleThemeModeRoute = LocaleThemeModeRouteImport.update({
+  id: '/theme-mode',
+  path: '/theme-mode',
   getParentRoute: () => LocaleRoute,
 } as any)
 const ApiShareImageRoute = ApiShareImageRouteImport.update({
@@ -239,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/x': typeof XRoute
+  '/$locale/PRO': typeof LocalePRORoute
   '/$locale/about': typeof LocaleAboutRoute
   '/$locale/all-games': typeof LocaleAllGamesRoute
   '/$locale/arcade': typeof LocaleArcadeRoute
@@ -253,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/$locale/random': typeof LocaleRandomRoute
   '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
+  '/$locale/theme-mode': typeof LocaleThemeModeRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale/': typeof LocaleIndexRoute
@@ -276,6 +290,7 @@ export interface FileRoutesByTo {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/x': typeof XRoute
+  '/$locale/PRO': typeof LocalePRORoute
   '/$locale/about': typeof LocaleAboutRoute
   '/$locale/all-games': typeof LocaleAllGamesRoute
   '/$locale/arcade': typeof LocaleArcadeRoute
@@ -290,6 +305,7 @@ export interface FileRoutesByTo {
   '/$locale/random': typeof LocaleRandomRoute
   '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
+  '/$locale/theme-mode': typeof LocaleThemeModeRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale': typeof LocaleIndexRoute
@@ -315,6 +331,7 @@ export interface FileRoutesById {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/x': typeof XRoute
+  '/$locale/PRO': typeof LocalePRORoute
   '/$locale/about': typeof LocaleAboutRoute
   '/$locale/all-games': typeof LocaleAllGamesRoute
   '/$locale/arcade': typeof LocaleArcadeRoute
@@ -329,6 +346,7 @@ export interface FileRoutesById {
   '/$locale/random': typeof LocaleRandomRoute
   '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
+  '/$locale/theme-mode': typeof LocaleThemeModeRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale/': typeof LocaleIndexRoute
@@ -355,6 +373,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/x'
+    | '/$locale/PRO'
     | '/$locale/about'
     | '/$locale/all-games'
     | '/$locale/arcade'
@@ -369,6 +388,7 @@ export interface FileRouteTypes {
     | '/$locale/random'
     | '/$locale/search'
     | '/$locale/terms-of-service'
+    | '/$locale/theme-mode'
     | '/api/share-image'
     | '/games/$gameId'
     | '/$locale/'
@@ -392,6 +412,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/x'
+    | '/$locale/PRO'
     | '/$locale/about'
     | '/$locale/all-games'
     | '/$locale/arcade'
@@ -406,6 +427,7 @@ export interface FileRouteTypes {
     | '/$locale/random'
     | '/$locale/search'
     | '/$locale/terms-of-service'
+    | '/$locale/theme-mode'
     | '/api/share-image'
     | '/games/$gameId'
     | '/$locale'
@@ -430,6 +452,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/x'
+    | '/$locale/PRO'
     | '/$locale/about'
     | '/$locale/all-games'
     | '/$locale/arcade'
@@ -444,6 +467,7 @@ export interface FileRouteTypes {
     | '/$locale/random'
     | '/$locale/search'
     | '/$locale/terms-of-service'
+    | '/$locale/theme-mode'
     | '/api/share-image'
     | '/games/$gameId'
     | '/$locale/'
@@ -531,6 +555,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/$locale/'
       preLoaderRoute: typeof LocaleIndexRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/PRO': {
+      id: '/$locale/PRO'
+      path: '/PRO'
+      fullPath: '/$locale/PRO'
+      preLoaderRoute: typeof LocalePRORouteImport
       parentRoute: typeof LocaleRoute
     }
     '/$locale/about': {
@@ -629,6 +660,13 @@ declare module '@tanstack/react-router' {
       path: '/terms-of-service'
       fullPath: '/$locale/terms-of-service'
       preLoaderRoute: typeof LocaleTermsOfServiceRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/theme-mode': {
+      id: '/$locale/theme-mode'
+      path: '/theme-mode'
+      fullPath: '/$locale/theme-mode'
+      preLoaderRoute: typeof LocaleThemeModeRouteImport
       parentRoute: typeof LocaleRoute
     }
     '/api/share-image': {
@@ -756,6 +794,7 @@ const LocaleGamesGameIdRouteWithChildren =
   LocaleGamesGameIdRoute._addFileChildren(LocaleGamesGameIdRouteChildren)
 
 interface LocaleRouteChildren {
+  LocalePRORoute: typeof LocalePRORoute
   LocaleAboutRoute: typeof LocaleAboutRoute
   LocaleAllGamesRoute: typeof LocaleAllGamesRoute
   LocaleArcadeRoute: typeof LocaleArcadeRoute
@@ -770,6 +809,7 @@ interface LocaleRouteChildren {
   LocaleRandomRoute: typeof LocaleRandomRoute
   LocaleSearchRoute: typeof LocaleSearchRoute
   LocaleTermsOfServiceRoute: typeof LocaleTermsOfServiceRoute
+  LocaleThemeModeRoute: typeof LocaleThemeModeRoute
   LocaleIndexRoute: typeof LocaleIndexRoute
   LocaleCollectionsCollectionIdRoute: typeof LocaleCollectionsCollectionIdRoute
   LocaleGamesGameIdRoute: typeof LocaleGamesGameIdRouteWithChildren
@@ -781,6 +821,7 @@ interface LocaleRouteChildren {
 }
 
 const LocaleRouteChildren: LocaleRouteChildren = {
+  LocalePRORoute: LocalePRORoute,
   LocaleAboutRoute: LocaleAboutRoute,
   LocaleAllGamesRoute: LocaleAllGamesRoute,
   LocaleArcadeRoute: LocaleArcadeRoute,
@@ -795,6 +836,7 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleRandomRoute: LocaleRandomRoute,
   LocaleSearchRoute: LocaleSearchRoute,
   LocaleTermsOfServiceRoute: LocaleTermsOfServiceRoute,
+  LocaleThemeModeRoute: LocaleThemeModeRoute,
   LocaleIndexRoute: LocaleIndexRoute,
   LocaleCollectionsCollectionIdRoute: LocaleCollectionsCollectionIdRoute,
   LocaleGamesGameIdRoute: LocaleGamesGameIdRouteWithChildren,

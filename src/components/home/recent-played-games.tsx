@@ -15,6 +15,9 @@ export type RecentPlayedGame = {
   cover?: string
   id: string
   name: string
+  platform?: string
+  playCount?: number
+  playedAt?: number
 }
 
 export function saveRecentPlayedGame(game: PublicGame, fallbackId: string) {
@@ -25,6 +28,8 @@ export function saveRecentPlayedGame(game: PublicGame, fallbackId: string) {
   }
 
   const currentGames = readRecentPlayedGames()
+  const previousGame = currentGames.find((currentGame) => currentGame.id === nextGame.id)
+  nextGame.playCount = Math.max(1, (previousGame?.playCount || 0) + 1)
   const nextGames = [
     nextGame,
     ...currentGames.filter((currentGame) => currentGame.id !== nextGame.id),
@@ -227,6 +232,8 @@ function getRecentPlayedGame(game: PublicGame, fallbackId: string) {
     cover: game.game_cover?.trim() || undefined,
     id,
     name,
+    platform: game.platform?.trim() || undefined,
+    playedAt: Date.now(),
   } satisfies RecentPlayedGame
 }
 

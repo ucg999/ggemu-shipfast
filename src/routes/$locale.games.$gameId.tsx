@@ -16,6 +16,7 @@ import {
   gameCardPreviewHandlers,
 } from '#/components/game-card-preview'
 import { SiteLayout } from '#/components/site-layout'
+import { GameFavoriteButton } from '#/components/game-favorite-button'
 import { saveRecentPlayedGame } from '#/components/home/recent-played-games'
 import {
   applyChineseGameGuide,
@@ -300,6 +301,8 @@ function LocalizedGameDetailPage() {
   const { gameId, locale } = Route.useParams()
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const locationHash = useRouterState({ select: (state) => state.location.hash })
+  const isProStandalone = locationHash === 'PRO' || locationHash === '#PRO'
   const isInlinePlaying = pathname.endsWith('/play')
   const lang = normalizeLocale(locale)
   const t = getI18n(lang).detail
@@ -356,6 +359,7 @@ function LocalizedGameDetailPage() {
     saveRecentPlayedGame(game, gameId)
     window.setTimeout(() => {
       void navigate({
+        hash: isProStandalone ? 'PRO' : undefined,
         params: { gameId, locale: lang },
         search: { autoplay: '1', inline: '1' },
         to: '/$locale/games/$gameId/play',
@@ -382,9 +386,7 @@ function LocalizedGameDetailPage() {
             <div className="breadcrumbs text-sm">
               <ul className="min-w-0">
                 <li>
-                  <Link params={{ locale: lang }} search={{}} to="/$locale">
-                    {t.home}
-                  </Link>
+                  {isProStandalone ? <a href={`/${lang}/PRO`}>{lang === 'zh-TW' ? '主題模式' : '主题模式'}</a> : <Link params={{ locale: lang }} search={{}} to="/$locale">{t.home}</Link>}
                 </li>
                 <li className="min-w-0">
                   <span className="block max-w-[min(70vw,32rem)] truncate">{game.name}</span>
@@ -419,7 +421,7 @@ function LocalizedGameDetailPage() {
               )}
             </div>
 
-            <div className="flex min-w-0 flex-col justify-start gap-6 lg:self-start">
+            <div className="flex min-w-0 flex-col justify-start gap-6 lg:self-stretch">
               <h1 className="max-w-4xl text-3xl font-semibold leading-tight sm:text-5xl">
                 {game.name}
               </h1>
@@ -432,7 +434,8 @@ function LocalizedGameDetailPage() {
                     onClick={startGame}
                     params={{ gameId, locale: lang }}
                     ref={playButtonRef}
-                                       search={{ autoplay: '1', inline: '1' }}
+                    hash={isProStandalone ? 'PRO' : undefined}
+                    search={{ autoplay: '1', inline: '1' }}
                     to="/$locale/games/$gameId/play"
                   >
                     <i className="ri-play-fill text-xl" />
@@ -458,6 +461,7 @@ function LocalizedGameDetailPage() {
                   <Stat label={t.views} value={game.views_count ?? 0} />
                 </>
               ) : null}
+              <GameFavoriteButton gameId={gameId} locale={lang} name={game.name} cover={game.game_cover} platform={game.platform} className="mt-auto w-fit" />
             </div>
             </> : null}
 

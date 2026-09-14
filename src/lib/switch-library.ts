@@ -24,6 +24,7 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
   {
     id: 'warriors-abyss',
     title: '无双深渊',
+    popularity: 96,
     cover: '/switch-library/musou-abyss/Abyss01.webp',
     genre: '动作、角色扮演',
     publisher: 'KOEI TECMO GAMES',
@@ -43,6 +44,7 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
   {
     id: 'dave-the-diver',
     title: '潜水员戴夫',
+    popularity: 100,
     cover: '/switch-library/dave-the-diver/cover.webp',
     genre: '冒险、角色扮演、经营',
     publisher: 'MINTROCKET',
@@ -64,6 +66,7 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
   {
     "id": "tmnt-splintered-fate",
     "title": "忍者神龟：斯普特林的命运",
+    "popularity": 88,
     "cover": "/switch-library/tmnt-splintered-fate/cover.webp",
     "genre": "待补充",
     "publisher": "待确认",
@@ -85,6 +88,7 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
   {
     "id": "hello-kitty-island-adventure",
     "title": "凯蒂猫岛屿冒险",
+    "popularity": 82,
     "cover": "/switch-library/hello-kitty-island-adventure/cover.webp",
     "genre": "待补充",
     "publisher": "待确认",
@@ -111,6 +115,7 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
   {
     "id": "nin-nin-days-2",
     "title": "女忍者恋爱二部曲",
+    "popularity": 76,
     "cover": "/switch-library/nin-nin-days-2/cover.webp",
     "genre": "文字冒险",
     "publisher": "qureate",
@@ -136,6 +141,7 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
   {
     "id": "final-fantasy-resonance-demo",
     "title": "最终幻想 共鸣 试玩版",
+    "popularity": 84,
     "cover": "/switch-library/final-fantasy-resonance-demo/cover.webp",
     "genre": "回合制、角色扮演",
     "publisher": "Square Enix",
@@ -160,6 +166,7 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
   {
     "id": "gta5-switch-port",
     "title": "GTA5 Switch移植版",
+    "popularity": 92,
     "cover": "/switch-library/gta5-switch-port/cover.webp",
     "genre": "动作",
     "publisher": "玩家自制",

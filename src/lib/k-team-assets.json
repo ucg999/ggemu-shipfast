@@ -1,0 +1,691 @@
+{
+  "allgames": {
+    "logo": "/themes/es-k-team/allgames-logo.png",
+    "background": "/themes/es-k-team/allgames-background.jpeg",
+    "console": "/themes/es-k-team/allgames-console.png",
+    "pointer": "/themes/es-k-team/allgames-pointer.png",
+    "description": "这里是一个按字母顺序排列的游戏列表，包含所有可用平台上的全部游戏。进入后可以搜索您喜欢的游戏。",
+    "consolePosition": [
+      0.182345,
+      0.68985
+    ],
+    "consoleSize": [
+      0.50356,
+      0.50356
+    ],
+    "videoPosition": [
+      0.18215,
+      0.6793
+    ],
+    "videoSize": [
+      0.250497,
+      0.34520297
+    ]
+  },
+  "favorites": {
+    "logo": "/themes/es-k-team/favorites-logo.png",
+    "background": "/themes/es-k-team/favorites-background.jpeg",
+    "console": "/themes/es-k-team/favorites-console.png",
+    "pointer": "/themes/es-k-team/favorites-pointer.png",
+    "description": "在游戏库中收藏您最喜欢的游戏，以后可以在这里快速找到它们。",
+    "consolePosition": [0.182345, 0.68985],
+    "consoleSize": [0.50356, 0.50356],
+    "videoPosition": [0.18215, 0.6793],
+    "videoSize": [0.250497, 0.34520297]
+  },
+  "lastplayed": {
+    "logo": "/themes/es-k-team/lastplayed-logo.png",
+    "background": "/themes/es-k-team/lastplayed-background.jpeg",
+    "console": "/themes/es-k-team/lastplayed-console.png",
+    "pointer": "/themes/es-k-team/lastplayed-pointer.png",
+    "description": "显示当前浏览器最近玩过的游戏，按最后游玩顺序排列。",
+    "consolePosition": [0.182345, 0.68985],
+    "consoleSize": [0.50356, 0.50356],
+    "videoPosition": [0.18215, 0.6793],
+    "videoSize": [0.250497, 0.34520297]
+  },
+  "arcade": {
+    "logo": "/themes/es-k-team/arcade-logo.png",
+    "background": "/themes/es-k-team/arcade-background.jpeg",
+    "console": "/themes/es-k-team/arcade-console.png",
+    "pointer": "/themes/es-k-team/arcade-pointer.png",
+    "description": "1971年，世界第一台街机在美国的电脑试验室中诞生。街机，是一种放在公共娱乐场所的经营性的专用游戏机，起源于美国的酒吧。一般常见的街机，基本的形式即由两个部分组成：框体与机版。在街机上运行的游戏叫街机游戏。",
+    "consolePosition": [
+      0.150855,
+      0.5915
+    ],
+    "consoleSize": [
+      0.8165,
+      0.8165
+    ],
+    "videoPosition": [
+      0.055,
+      0.49799
+    ],
+    "videoSize": [
+      0.1997,
+      0.2677
+    ]
+  },
+  "mame": {
+    "logo": "/themes/es-k-team/mame-logo.png",
+    "background": "/themes/es-k-team/mame-background.jpeg",
+    "console": "/themes/es-k-team/mame-console.png",
+    "pointer": "/themes/es-k-team/mame-pointer.png",
+    "description": "MAME是模拟器历史上最优秀的多机种街机模拟器之一，同时也是生命力最旺盛的街机模拟器。从1997年2月5日发布第一个版本起，MAME已经历了数年的开发，同时也经历了各种版本及多个开发者的变迁。",
+    "consolePosition": [
+      0.1455,
+      0.5915
+    ],
+    "consoleSize": [
+      0.8165,
+      0.8165
+    ],
+    "videoPosition": [
+      0.0455,
+      0.49799
+    ],
+    "videoSize": [
+      0.1997,
+      0.2677
+    ]
+  },
+  "nes": {
+    "logo": "/themes/es-k-team/nes-logo.png",
+    "background": "/themes/es-k-team/nes-background.jpeg",
+    "console": "/themes/es-k-team/nes-console.png",
+    "pointer": "/themes/es-k-team/nes-pointer.png",
+    "description": "FC游戏机，是任天堂生产、发行和销售的8位第三世代家用游戏机，日本版官方名称为家庭电脑（日版名：ファミリーコンピュータ，FamilyComputer，Famicom，俗称“红白机”，1983年7月15日在日本推出。",
+    "consolePosition": [
+      0.1799,
+      0.715
+    ],
+    "consoleSize": [
+      0.45765,
+      0.45765
+    ],
+    "videoPosition": [
+      0.04015,
+      0.5305
+    ],
+    "videoSize": [
+      0.215997,
+      0.28777
+    ]
+  },
+  "gba": {
+    "logo": "/themes/es-k-team/gba-logo.png",
+    "background": "/themes/es-k-team/gba-background.jpeg",
+    "console": "/themes/es-k-team/gba-console.png",
+    "pointer": "/themes/es-k-team/gba-pointer.png",
+    "description": "GAMEBOYADVANCE，简称GBA。是任天堂公司于2001年3月21日发售的第二代便携式游戏机，最大特点是采用了彩色的TFT液晶屏幕。售价9800日元，可向下兼容上一代的的GameBoy的游戏。GBA有两个改版机型，分别是2003年上市的GBASP，和2005年上市的GBM。任天堂的下一代掌机为任天堂DS。",
+    "consolePosition": [
+      0.257597,
+      0.69715
+    ],
+    "consoleSize": [
+      0.48765,
+      0.48765
+    ],
+    "videoPosition": [
+      0.1499,
+      0.5415
+    ],
+    "videoSize": [
+      0.2249,
+      0.259877
+    ]
+  },
+  "dos": {
+    "logo": "/themes/es-k-team/dos-logo.png",
+    "background": "/themes/es-k-team/dos-background.jpeg",
+    "console": "/themes/es-k-team/dos-console.png",
+    "pointer": "/themes/es-k-team/dos-pointer.png",
+    "description": "DOS是磁盘操作系统的首字母缩写，是1981年至1995年间主导IBM兼容PC市场的几个密切相关的操作系统的首字母缩写。",
+    "consolePosition": [
+      0.18799,
+      0.6685
+    ],
+    "consoleSize": [
+      0.55,
+      0.55
+    ],
+    "videoPosition": [
+      0.0675,
+      0.43015
+    ],
+    "videoSize": [
+      0.1795,
+      0.2385
+    ]
+  },
+  "flash": {
+    "logo": "/themes/es-k-team/flash-logo.png",
+    "background": "/themes/es-k-team/flash-background.jpeg",
+    "console": "/themes/es-k-team/flash-console.png",
+    "pointer": "/themes/es-k-team/flash-pointer.png",
+    "description": "Flash游戏是一种基于Flash平台开发的小型游戏，通常可以在网页上直接运行。Flash游戏因为其简单、易玩、休闲的特点，广受玩家们的喜爱。Flash游戏通常采用矢量图技术，使得游戏在网页上运行更加流畅，而且体积小、传播速度快，玩家不需要下载即可直接在网页上玩。此外，Flash游戏还具有画面美观、操作简单、易于上手等特点，使得它们在玩家中广受欢迎。让玩家可以在繁忙的生活中放松心情，享受游戏的乐趣。",
+    "consolePosition": [
+      0.21799,
+      0.6885
+    ],
+    "consoleSize": [
+      0.85765,
+      0.85765
+    ],
+    "videoPosition": [
+      0.06765,
+      0.46135
+    ],
+    "videoSize": [
+      0.2997,
+      0.29977
+    ]
+  },
+  "gb": {
+    "logo": "/themes/es-k-team/gb-logo.png",
+    "background": "/themes/es-k-team/gb-background.jpeg",
+    "console": "/themes/es-k-team/gb-console.png",
+    "pointer": "/themes/es-k-team/gb-pointer.png",
+    "description": "GameBoy（简称GB，日语：ゲームボーイ）是任天堂公司在1989年发售的第一代便携式游戏机。GameBoy是任天堂Game&Watch的后续商品。GB拥有三个改版机型，分别是小尺寸的GBP，加入背光功能的GBL，及彩色的GBC。",
+    "consolePosition": [
+      0.1499,
+      0.5735
+    ],
+    "consoleSize": [
+      0.85,
+      0.85
+    ],
+    "videoPosition": [
+      0.0785,
+      0.269855
+    ],
+    "videoSize": [
+      0.14997,
+      0.238777
+    ]
+  },
+  "gbc": {
+    "logo": "/themes/es-k-team/gbc-logo.png",
+    "background": "/themes/es-k-team/gbc-background.jpeg",
+    "console": "/themes/es-k-team/gbc-console.png",
+    "pointer": "/themes/es-k-team/gbc-pointer.png",
+    "description": "GBC是日本任天堂公司开发的一种彩色屏幕携带式电子游戏机（简称掌上型游戏机）。原型任天堂GameBoy改进版。于1998年10月21日正式发售，售价6800日元，最后一款游戏于2001年5月11日发售。机体代码CGB-001，可以使用任天堂GameBoy游戏卡带及GameBoyColor专用彩色游戏卡带。",
+    "consolePosition": [
+      0.1455799,
+      0.575
+    ],
+    "consoleSize": [
+      0.85,
+      0.85
+    ],
+    "videoPosition": [
+      0.0616985,
+      0.2255
+    ],
+    "videoSize": [
+      0.16997,
+      0.2527
+    ]
+  },
+  "gamegear": {
+    "logo": "/themes/es-k-team/gamegear-logo.png",
+    "background": "/themes/es-k-team/gamegear-background.jpeg",
+    "console": "/themes/es-k-team/gamegear-console.png",
+    "pointer": "/themes/es-k-team/gamegear-pointer.png",
+    "description": "",
+    "consolePosition": [
+      0.18,
+      0.715
+    ],
+    "consoleSize": [
+      0.45,
+      0.45
+    ],
+    "videoPosition": [
+      0.04,
+      0.53
+    ],
+    "videoSize": [
+      0.216,
+      0.288
+    ]
+  },
+  "megadrive": {
+    "logo": "/themes/es-k-team/megadrive-logo.png",
+    "background": "/themes/es-k-team/megadrive-background.jpeg",
+    "console": "/themes/es-k-team/megadrive-console.png",
+    "pointer": "/themes/es-k-team/megadrive-pointer.png",
+    "description": "2D游戏最后的王朝世嘉5代也许是真正培养了一代中国电玩的玩家，采用了摩托罗拉68000和Z80处理器它的性能在当时非常出众。而且世嘉公司的敬业精神让MD上好作不断，虽然败在了超任手里，但在老一辈的玩家眼里它是一款经典的游戏机。",
+    "consolePosition": [
+      0.1799,
+      0.715
+    ],
+    "consoleSize": [
+      0.45765,
+      0.45765
+    ],
+    "videoPosition": [
+      0.06356825,
+      0.521305
+    ],
+    "videoSize": [
+      0.216997,
+      0.28777
+    ]
+  },
+  "html5": {
+    "logo": null,
+    "background": "/themes/es-k-team/default-background.jpeg",
+    "console": null,
+    "pointer": "/themes/es-k-team/pointer.png",
+    "description": "",
+    "consolePosition": [
+      0.18,
+      0.715
+    ],
+    "consoleSize": [
+      0.45,
+      0.45
+    ],
+    "videoPosition": [
+      0.04,
+      0.53
+    ],
+    "videoSize": [
+      0.216,
+      0.288
+    ]
+  },
+  "j2me": {
+    "logo": "/themes/es-k-team/j2me-logo.png",
+    "background": "/themes/es-k-team/j2me-background.jpeg",
+    "console": "/themes/es-k-team/j2me-console.png",
+    "pointer": "/themes/es-k-team/pointer.png",
+    "description": "java手机游戏在智能机出现之前可谓红极一时，只要是支持java程序的手机都可以安装，众多手机小游戏都由java开发。由于java手机游戏的通用性太强，在智能机普及之前，是否支持java成为顾客选择手机的一个重要因素。java手机游戏开发一次便可适用绝大部分机型，直到今天手机网游还一直用java进行开发。",
+    "consolePosition": [
+      0.0875,
+      0.55
+    ],
+    "consoleSize": [
+      0.865,
+      0.865
+    ],
+    "videoPosition": [
+      0.0878,
+      0.3765
+    ],
+    "videoSize": [
+      0.15,
+      0.35135
+    ]
+  },
+  "mastersystem": {
+    "logo": "/themes/es-k-team/mastersystem-logo.svg",
+    "background": "/themes/es-k-team/mastersystem-background.jpeg",
+    "console": "/themes/es-k-team/mastersystem-console.png",
+    "pointer": "/themes/es-k-team/mastersystem-pointer.png",
+    "description": "",
+    "consolePosition": [
+      0.18,
+      0.715
+    ],
+    "consoleSize": [
+      0.45,
+      0.45
+    ],
+    "videoPosition": [
+      0.04,
+      0.53
+    ],
+    "videoSize": [
+      0.216,
+      0.288
+    ]
+  },
+  "ngpc": {
+    "logo": "/themes/es-k-team/ngpc-logo.png",
+    "background": "/themes/es-k-team/ngpc-background.jpeg",
+    "console": "/themes/es-k-team/ngpc-console.png",
+    "pointer": "/themes/es-k-team/ngpc-pointer.png",
+    "description": "NeoGeoPocketColor（简称NGPC）是SNK于1999年推出的掌上游戏机，是NeoGeoPocket的升级版。它采用彩色LCD屏幕，支持16位彩色，并且能够播放与NeoGeo系统兼容的游戏。NGPC具有强大的处理能力和丰富的游戏库，其中包括经典游戏《铁拳》、《拳皇》、《合金弹头》等。此外，NGPC还具有多人游戏功能，玩家可以通过NeoGeoPocketLinkCable将两台机器连接起来进行对战或合作游戏。",
+    "consolePosition": [
+      0.21785,
+      0.71675
+    ],
+    "consoleSize": [
+      0.455,
+      0.455
+    ],
+    "videoPosition": [
+      0.1306995,
+      0.54399
+    ],
+    "videoSize": [
+      0.17,
+      0.2815
+    ]
+  },
+  "n64": {
+    "logo": "/themes/es-k-team/n64-logo.png",
+    "background": "/themes/es-k-team/n64-background.jpeg",
+    "console": "/themes/es-k-team/n64-console.png",
+    "pointer": "/themes/es-k-team/n64-pointer.png",
+    "description": "N64，全名为任天堂64（Nintendo64），是任天堂公司推出的第三代家用游戏机。它是SFC的后续机种，是消费电子64位计算的先驱者。该游戏机于1996年6月23日在日本面世，北美于1996年9月29日、欧洲和澳洲于1997年3月1日、法国于1997年公开发售。N64手柄堪称游戏史上最重要的输入设备，它有3个堪称划时代的设计：类比摇杆，扳机按键，震动包。N64上诞生了《塞尔达传说：时之笛》和《超级马力欧64》等超级大作。N64下一代产品为任天堂NGC。",
+    "consolePosition": [
+      0.217799,
+      0.69715
+    ],
+    "consoleSize": [
+      0.48765,
+      0.48765
+    ],
+    "videoPosition": [
+      0.1504865,
+      0.4905
+    ],
+    "videoSize": [
+      0.232997,
+      0.3299777
+    ]
+  },
+  "nds": {
+    "logo": "/themes/es-k-team/nds-logo.png",
+    "background": "/themes/es-k-team/nds-background.jpeg",
+    "console": "/themes/es-k-team/nds-console.png",
+    "pointer": "/themes/es-k-team/nds-pointer.png",
+    "description": "NDS，全名为任天堂DS（NintendoDS），是任天堂公司推出的第二代便携式游戏机。它于2004年12月2日在日本面世，北美于2004年11月21日、欧洲于2005年2月1日公开发售。NDS有两个屏幕，下屏幕是触摸屏，上屏幕可以显示图像。它还具有麦克风和无线通信功能，玩家可以与朋友进行无线对战。NDS有许多受欢迎的游戏，如《口袋妖怪》和《马里奥卡丁车DS》。",
+    "consolePosition": [
+      0.182797,
+      0.6915
+    ],
+    "consoleSize": [
+      0.58765,
+      0.58765
+    ],
+    "videoPosition": [
+      0.06919,
+      0.4601259
+    ],
+    "videoSize": [
+      0.219,
+      0.42756
+    ]
+  },
+  "switch": {
+    "logo": "/themes/es-k-team/switch-logo.png",
+    "background": "/themes/es-k-team/switch-background.jpeg",
+    "console": "/themes/es-k-team/switch-console.png",
+    "pointer": "/themes/es-k-team/switch-pointer.png",
+    "description": "任天堂Switch（NintendoSwitch，开发代号NX）是任天堂计划于2017年3月首发的旗舰产品，主机采用家用机、掌机一体化设计理念。新机采用不锁区（Region-Free）机制，支持1080p电视输出和720P掌上输出。这是前社长岩田聪最后一部参与开发的硬件产品，该产品将成为未来任天堂娱乐事业蓝图（包含移动游戏、主题乐园和周边商品）的中心。",
+    "consolePosition": [
+      0.2299,
+      0.765
+    ],
+    "consoleSize": [
+      0.47765,
+      0.47765
+    ],
+    "videoPosition": [
+      0.0900128616,
+      0.618253
+    ],
+    "videoSize": [
+      0.281,
+      0.2877
+    ]
+  },
+  "pcengine": {
+    "logo": "/themes/es-k-team/pcengine-logo.png",
+    "background": "/themes/es-k-team/pcengine-background.jpeg",
+    "console": "/themes/es-k-team/pcengine-console.png",
+    "pointer": "/themes/es-k-team/pcengine-pointer.png",
+    "description": "PCEngine是一款由HudsonSoft和NEC合作开发的游戏机，于1987年在日本市场首次亮相。PCEngine采用高效率的三芯片架构和HuCard，一种信用卡大小的资料卡带，以实现小体积的设计。它使用了一颗增强版的MOSTechnology65C02处理器，一颗专属设计的16位元图像处理器，以及一颗专属设计的影片编码芯片。PCEngine具有强大的图像处理能力，可以在不同的解像度下同时发出512种颜色，并具有非常健全的图像镶嵌处理能力。",
+    "consolePosition": [
+      0.1799,
+      0.715
+    ],
+    "consoleSize": [
+      0.45765,
+      0.45765
+    ],
+    "videoPosition": [
+      0.0456615,
+      0.535
+    ],
+    "videoSize": [
+      0.215997,
+      0.28777
+    ]
+  },
+  "psx": {
+    "logo": "/themes/es-k-team/psx-logo.png",
+    "background": "/themes/es-k-team/psx-background.jpeg",
+    "console": "/themes/es-k-team/psx-console.png",
+    "pointer": "/themes/es-k-team/psx-pointer.png",
+    "description": "PlayStation（缩写为“PS”，又简称PSX、PS1）是索尼互动娱乐有限公司研发和发售的家用游戏机，于1994年12月3日在日本首发。2006年3月23日PS停产，全球总销量为1亿249万台。该主机是PlayStation系列家用机的第一款。作为第五世代游戏机，与任天堂的N64和世嘉的土星等其他第五世代游戏机竞争 。",
+    "consolePosition": [
+      0.1815,
+      0.675
+    ],
+    "consoleSize": [
+      0.49515,
+      0.49515
+    ],
+    "videoPosition": [
+      0.05596115,
+      0.462799
+    ],
+    "videoSize": [
+      0.257,
+      0.32985
+    ]
+  },
+  "psp": {
+    "logo": "/themes/es-k-team/psp-logo.png",
+    "background": "/themes/es-k-team/psp-background.jpeg",
+    "console": "/themes/es-k-team/psp-console.png",
+    "pointer": "/themes/es-k-team/psp-pointer.png",
+    "description": "PSP，即PlayStationPortable是由索尼电脑娱乐公司推出的一款掌上游戏机，同时也是PlayStation系列中的第一款便携式设备，于2004年12月12日在日本地区发售，2005年3月24日在北美地区发售，2005年9月1日在PAL制式地区发售。",
+    "consolePosition": [
+      0.25175599,
+      0.765
+    ],
+    "consoleSize": [
+      0.47765,
+      0.47765
+    ],
+    "videoPosition": [
+      0.11616,
+      0.61053
+    ],
+    "videoSize": [
+      0.281,
+      0.2877
+    ]
+  },
+  "sega32x": {
+    "logo": "/themes/es-k-team/sega32x-logo.png",
+    "background": "/themes/es-k-team/sega32x-background.jpeg",
+    "console": "/themes/es-k-team/sega32x-console.png",
+    "pointer": "/themes/es-k-team/sega32x-pointer.png",
+    "description": "",
+    "consolePosition": [
+      0.18,
+      0.715
+    ],
+    "consoleSize": [
+      0.45,
+      0.45
+    ],
+    "videoPosition": [
+      0.178,
+      0.666
+    ],
+    "videoSize": [
+      0.216,
+      0.288
+    ]
+  },
+  "segacd": {
+    "logo": "/themes/es-k-team/segacd-logo.png",
+    "background": "/themes/es-k-team/segacd-background.jpeg",
+    "console": "/themes/es-k-team/segacd-console.png",
+    "pointer": "/themes/es-k-team/segacd-pointer.png",
+    "description": "SegaCD是世嘉在1991年推出的一个CD-ROM扩展设备，它可连接到SegaGenesis游戏主机上，以提供更大的存储容量和更好的音频和视频效果。虽然SegaCD在技术上比NES更先进，但是它的市场份额不高。主要原因是它的游戏库较少，而且大多数游戏都只是简单的FMV游戏以录像形式播放的游戏）。",
+    "consolePosition": [
+      0.1799,
+      0.715
+    ],
+    "consoleSize": [
+      0.45765,
+      0.45765
+    ],
+    "videoPosition": [
+      0.0635,
+      0.5225
+    ],
+    "videoSize": [
+      0.22997,
+      0.29088
+    ]
+  },
+  "saturn": {
+    "logo": "/themes/es-k-team/saturn-logo.png",
+    "background": "/themes/es-k-team/saturn-background.jpeg",
+    "console": "/themes/es-k-team/saturn-console.png",
+    "pointer": "/themes/es-k-team/saturn-pointer.png",
+    "description": "SEGASaturn(世嘉土星，简称SS)是日本世嘉(SEGA)公司开发的第六代32位元家用游戏机。因为这部主机是SEGA公司的第六部主机，因此取名为对应的太阳系的第六颗行星土星(SATURN)。1994年11月22日SEGASaturn开始在日本发售，定价为44800日元。首日售卖了十七万部。全球总销量为876万部，其中580万部在日本本土，296万部在国外。在和SONY的PS的较量中，由于主机硬体使用双CPU架构，导致游戏开发不易，逐渐失去第三方软件商的支持而失利。",
+    "consolePosition": [
+      0.1799,
+      0.715
+    ],
+    "consoleSize": [
+      0.45765,
+      0.45765
+    ],
+    "videoPosition": [
+      0.06835,
+      0.52425
+    ],
+    "videoSize": [
+      0.216997,
+      0.288
+    ]
+  },
+  "snes": {
+    "logo": "/themes/es-k-team/snes-logo.png",
+    "background": "/themes/es-k-team/snes-background.jpeg",
+    "console": "/themes/es-k-team/snes-console.png",
+    "pointer": "/themes/es-k-team/snes-pointer.png",
+    "description": "超级任天堂，简称超任，是任天堂公司开发的家用游戏机。英文名称SuperFamicom，简写SFC；在欧美洲销售的产品名为SuperNintendoEntertainmentSystem，简写SNES。超级任天堂是任天堂红白机的后继机种。",
+    "consolePosition": [
+      0.2177199,
+      0.69715
+    ],
+    "consoleSize": [
+      0.48765,
+      0.48765
+    ],
+    "videoPosition": [
+      0.1524875,
+      0.490153
+    ],
+    "videoSize": [
+      0.2302997,
+      0.311099777
+    ]
+  },
+  "virtualboy": {
+    "logo": "/themes/es-k-team/virtualboy-logo.png",
+    "background": "/themes/es-k-team/virtualboy-background.jpeg",
+    "console": "/themes/es-k-team/virtualboy-console.png",
+    "pointer": "/themes/es-k-team/virtualboy-pointer.png",
+    "description": "",
+    "consolePosition": [
+      0.18,
+      0.715
+    ],
+    "consoleSize": [
+      0.45,
+      0.45
+    ],
+    "videoPosition": [
+      0.178,
+      0.701
+    ],
+    "videoSize": [
+      0.216,
+      0.288
+    ]
+  },
+  "wonderswan": {
+    "logo": "/themes/es-k-team/wonderswan-logo.svg",
+    "background": "/themes/es-k-team/wonderswan-background.jpeg",
+    "console": "/themes/es-k-team/wonderswan-console.png",
+    "pointer": "/themes/es-k-team/wonderswan-pointer.png",
+    "description": "",
+    "consolePosition": [
+      0.18,
+      0.715
+    ],
+    "consoleSize": [
+      0.45,
+      0.45
+    ],
+    "videoPosition": [
+      0.201,
+      0.693
+    ],
+    "videoSize": [
+      0.216,
+      0.288
+    ]
+  },
+  "wonderswancolor": {
+    "logo": "/themes/es-k-team/wonderswancolor-logo.svg",
+    "background": "/themes/es-k-team/wonderswancolor-background.jpeg",
+    "console": "/themes/es-k-team/wonderswancolor-console.png",
+    "pointer": "/themes/es-k-team/wonderswancolor-pointer.png",
+    "description": "",
+    "consolePosition": [
+      0.18,
+      0.715
+    ],
+    "consoleSize": [
+      0.45,
+      0.45
+    ],
+    "videoPosition": [
+      0.193,
+      0.701
+    ],
+    "videoSize": [
+      0.216,
+      0.288
+    ]
+  },
+  "atarijaguar": {
+    "logo": "/themes/es-k-team/atarijaguar-logo.svg",
+    "background": "/themes/es-k-team/atarijaguar-background.jpeg",
+    "console": "/themes/es-k-team/atarijaguar-console.png",
+    "pointer": "/themes/es-k-team/atarijaguar-pointer.png",
+    "description": "",
+    "consolePosition": [
+      0.18,
+      0.715
+    ],
+    "consoleSize": [
+      0.45,
+      0.45
+    ],
+    "videoPosition": [
+      0.181,
+      0.669
+    ],
+    "videoSize": [
+      0.216,
+      0.288
+    ]
+  }
+}

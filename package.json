@@ -11,7 +11,7 @@
     "generate-routes": "tsr generate",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "node --test src/lib/*.test.ts",
     "test:audio": "node --test src/lib/spin-audio-clock.test.ts"
   },
   "dependencies": {

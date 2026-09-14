@@ -1,5 +1,6 @@
-import { Link, createFileRoute, notFound } from '@tanstack/react-router'
+import { Link, createFileRoute, notFound, useRouterState } from '@tanstack/react-router'
 import { SiteLayout } from '#/components/site-layout'
+import { GameFavoriteButton } from '#/components/game-favorite-button'
 import { SwitchLibraryImage } from '#/components/switch-library-image'
 import { normalizeLocale } from '#/lib/i18n'
 import { SWITCH_LIBRARY_GAMES } from '#/lib/switch-library'
@@ -17,11 +18,12 @@ function SwitchGameDetailPage() {
   const game = Route.useLoaderData()
   const lang = normalizeLocale(Route.useParams().locale)
   const copy = getCopy(lang)
+  const isProStandalone = useRouterState({ select: state => state.location.hash === 'PRO' || state.location.hash === '#PRO' })
   return (
     <SiteLayout locale={lang} hideFooter>
       <main className="min-h-screen bg-base-200 px-3 py-5 sm:px-6 lg:px-8">
         <article className="mx-auto max-w-6xl">
-          <Link className="mb-4 inline-flex items-center gap-1 text-sm text-base-content/65" params={{ locale: lang, platformId: 'switch' }} to="/$locale/platform/$platformId">← {copy.back}</Link>
+          {!isProStandalone ? <Link className="mb-4 inline-flex items-center gap-1 text-sm text-base-content/65" params={{ locale: lang, platformId: 'switch' }} to="/$locale/platform/$platformId">← {copy.back}</Link> : null}
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
             <section className="min-w-0">
               <header className="mb-7 w-full max-w-2xl text-center">
@@ -60,6 +62,7 @@ function SwitchGameDetailPage() {
                 <div className="flex justify-between gap-4 py-3"><dt className="text-base-content/50">{copy.requiredSystem}</dt><dd className="text-right">{game.requiredSystem}</dd></div>
                 <div className="flex justify-between gap-4 py-3"><dt className="text-base-content/50">{copy.language}</dt><dd>{game.language}</dd></div>
               </dl>
+              <GameFavoriteButton className="mt-4 w-full" cover={game.cover} gameId={game.id} locale={lang} name={game.title} platform="Nintendo Switch" />
             </aside>
             <div className="mt-4 flex flex-col gap-3">
               {game.videoUrl ? <a className="btn btn-outline" href={game.videoUrl} target="_blank" rel="noopener noreferrer">{copy.videoButton}</a> : <button className="btn btn-outline" disabled type="button">{copy.videoPending}</button>}

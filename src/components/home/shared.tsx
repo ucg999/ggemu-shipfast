@@ -370,6 +370,9 @@ export function SearchForm({
           </button>
         </label>
 
+        {(lang === 'zh-CN' || lang === 'zh-TW') ? <Link className="flex h-9 items-center gap-1 whitespace-nowrap rounded-full border border-cyan-300/50 bg-cyan-400/15 px-3 text-sm text-white" params={{ locale: lang }} to="/$locale/PRO">
+          <i className="ri-gamepad-line" />{lang === 'zh-TW' ? '主題模式' : '主题模式'}
+        </Link> : null}
         <div className="tooltip tooltip-bottom" data-tip={getI18n(lang).arcade.tooltip}>
           <Link
             className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white"

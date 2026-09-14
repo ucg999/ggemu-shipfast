@@ -7,11 +7,20 @@ const PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
 const NON_GCOIN_GAME = '0'
 const COIN_MODE_GAME_COSTS: Readonly<Record<string, number>> = {
+  'wiggie waggie': 20,
   'wow new fantasia': 20,
   excelsior: 20,
+  '美女弹珠打砖块': 20,
+  '美女天蚕变': 20,
+  '美女打钻': 20,
   '全民斗地主': 10,
 }
-const COIN_MODE_GAME_QUERIES = ['wow new fantasia', 'excelsior', '斗地主'] as const
+const COIN_MODE_GAME_QUERIES = ['wiggie waggie', 'wow new fantasia', 'excelsior', '斗地主'] as const
+const COIN_MODE_CHINESE_NAMES: Readonly<Record<string, string>> = {
+  'wiggie waggie': '美女弹珠打砖块',
+  'wow new fantasia': '美女天蚕变',
+  excelsior: '美女打钻',
+}
 
 export type Locale = 'zh-CN' | 'zh-TW' | 'en' | 'ja'
 export type GameSearchSort =
@@ -514,7 +523,7 @@ export const searchGames = createServerFn({ method: 'GET' })
       play_online: '1',
     })
 
-    addOptionalParam(params, 'query', data.query)
+    addOptionalParam(params, 'query', resolveCoinModeSearchQuery(data.query))
     addOptionalParam(params, 'platform', data.platform)
     addOptionalParam(params, 'category', data.category)
     addOptionalParam(
@@ -531,11 +540,17 @@ export const searchGames = createServerFn({ method: 'GET' })
       result.games.sort((left, right) => risingScore(right) - risingScore(left))
     }
 
-    return result
+    return {
+      ...result,
+      games: result.games.map(game => localizeCoinModeGame(game, data.locale)),
+    }
   })
 
 export const searchCoinModeGames = createServerFn({ method: 'GET' })
-  .handler(async () => {
+  .validator((payload: { locale?: Locale }) => ({
+    locale: normalizeLocale(payload.locale),
+  }))
+  .handler(async ({ data }) => {
     const results = await Promise.all(
       COIN_MODE_GAME_QUERIES.map((query) =>
         fetchGames(new URLSearchParams({
@@ -550,6 +565,7 @@ export const searchCoinModeGames = createServerFn({ method: 'GET' })
     )
     const games = dedupeGames(results.flatMap((result) => result.games))
       .filter((game) => isCoinModeGame(game))
+      .map(game => localizeCoinModeGame(game, data.locale))
 
     return {
       games,
@@ -565,6 +581,29 @@ export function getCoinModeGameCost(game: Pick<PublicGame, 'name'> | string | un
   const name = typeof game === 'string' ? game : game?.name
   const normalized = name?.trim().toLocaleLowerCase() ?? ''
   return COIN_MODE_GAME_COSTS[normalized] ?? null
+}
+
+function resolveCoinModeSearchQuery(query: string) {
+  const normalized = query.trim().toLocaleLowerCase()
+  const matched = Object.entries(COIN_MODE_CHINESE_NAMES)
+    .find(([, chineseName]) => normalized.includes(chineseName.toLocaleLowerCase()))
+  return matched ? matched[0] : query
+}
+
+function localizeCoinModeGame(game: PublicGame, locale: Locale) {
+  const originalName = game.name?.trim() || ''
+  const chineseName = COIN_MODE_CHINESE_NAMES[originalName.toLocaleLowerCase()]
+  if (!chineseName) return game
+
+  const searchAliases = [game.keywords, originalName, chineseName]
+    .filter(Boolean)
+    .join(', ')
+
+  return {
+    ...game,
+    keywords: searchAliases,
+    name: locale === 'zh-CN' || locale === 'zh-TW' ? chineseName : originalName,
+  }
 }
 
 function weeklyTrendScore(game: PublicGame) {
@@ -653,7 +692,7 @@ export const getGameDetailPageData = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const params = new URLSearchParams({ id: data.id })
     const result = await fetchJson<GameDetailResponse>('/api/game/detail', params)
-    const game = result.data
+    const game = localizeCoinModeGame(result.data, data.locale)
     return {
       canonicalUrl: getAbsoluteGameUrl(SITE_ORIGIN, data.locale, game, data.id),
       game,

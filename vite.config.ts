@@ -27,16 +27,16 @@ function cloudflareWorkersClientShim(): Plugin {
   }
 }
 
-const config = defineConfig({
+const config = defineConfig(({ mode }) => ({
   resolve: { tsconfigPaths: true },
   plugins: [
     libraryUpdatesPlugin(),
     cloudflareWorkersClientShim(),
-    cloudflare({ viteEnvironment: { name: 'ssr' } }),
+    ...(mode === 'test' ? [] : [cloudflare({ viteEnvironment: { name: 'ssr' } })]),
     tanstackStart(),
     tailwindcss(),
     viteReact(),
   ],
-})
+}))
 
 export default config
