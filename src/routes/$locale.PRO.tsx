@@ -327,10 +327,20 @@ function ThemeMode() {
 
   useEffect(() => {
     if (!inLibrary) {
-      for (const delta of [-1, 1]) {
-        const neighbor = platforms[(selected + delta + platforms.length) % platforms.length]
-        if (neighbor) { const image = new Image(); image.src = getThemeAsset(neighbor).background }
+      const neighbor = platforms[(selected + 1) % platforms.length]
+      if (!neighbor) return
+      const preloadNextBackground = () => {
+        const image = new Image()
+        image.decoding = 'async'
+        image.src = getOptimizedThemeBackground(getThemeAsset(neighbor).background)
       }
+      const idleWindow = window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void }
+      if (idleWindow.requestIdleCallback) {
+        const id = idleWindow.requestIdleCallback(preloadNextBackground, { timeout: 1800 })
+        return () => idleWindow.cancelIdleCallback?.(id)
+      }
+      const timer = window.setTimeout(preloadNextBackground, 900)
+      return () => window.clearTimeout(timer)
     }
   }, [inLibrary, selected, platforms])
 
@@ -382,7 +392,10 @@ function ThemeMode() {
         <small>{english ? 'Theme mode is available in landscape.' : lang === 'ja' ? 'テーマモードは横画面で利用できます。' : lang === 'zh-TW' ? '主題模式僅支援橫屏操作' : '主题模式仅支持横屏操作'}</small>
       </div>
       <div className="kt-stage">
-        <img className="kt-background" key={asset.background} src={asset.background} alt="" />
+        <picture>
+          <source media="(max-width: 1920px)" srcSet={getOptimizedThemeBackground(asset.background)} />
+          <img alt="" className="kt-background" decoding="async" fetchPriority="high" key={asset.background} src={asset.background} />
+        </picture>
         <div className="kt-shade" />
         <header className="kt-header">
           <button onClick={toggleFullscreen}>{fullscreen ? (english ? 'Exit fullscreen' : '退出全屏') : (english ? 'Fullscreen' : '全屏显示')} ⛶</button>
@@ -428,7 +441,7 @@ function ThemeMode() {
               return <button key={item.name} className={`kt-wheel-item ${offset === 0 ? 'is-selected' : ''}`} aria-current={offset === 0 ? 'true' : undefined}
                 aria-label={themePlatformLabel(item, lang) || getPlatformLabel(item.name, lang)} style={{ '--offset': offset, '--curve': Math.abs(offset) ** 2 } as CSSProperties}
                 onClick={() => offset === 0 ? enter() : move(offset)}>
-                {itemAsset.logo ? <img src={itemAsset.logo} alt={themePlatformLabel(item, lang) || getPlatformLabel(item.name, lang)} draggable={false} /> : <span>{themePlatformLabel(item, lang) || getPlatformLabel(item.name, lang)}</span>}
+                {itemAsset.logo ? <img src={getOptimizedThemeLogo(itemAsset.logo)} alt={themePlatformLabel(item, lang) || getPlatformLabel(item.name, lang)} decoding="async" draggable={false} /> : <span>{themePlatformLabel(item, lang) || getPlatformLabel(item.name, lang)}</span>}
               </button>
             })}
           </nav>
@@ -712,6 +725,14 @@ function createShowcaseQueue(games: Array<PublicGame>, avoidFirst = -1) {
     if (replacement > 0) [queue[0], queue[replacement]] = [queue[replacement], queue[0]]
   }
   return queue
+}
+
+function getOptimizedThemeBackground(background: string) {
+  return background.replace(/\.jpe?g$/i, '-1920.jpeg')
+}
+
+function getOptimizedThemeLogo(logo: string) {
+  return logo.replace(/\.png$/i, '-800.png')
 }
 
 function GamePreview({ game, onEnded, onVideoError, playing = true }: { game?: PublicGame; onEnded?: () => void; onVideoError?: () => void; playing?: boolean }) {
