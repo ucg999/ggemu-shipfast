@@ -52,6 +52,7 @@ export function spendCoinBalance(amount: number) {
 
 export function setDailyGameCoinMultiplier(gameId: string, multiplier: number) {
   if (!gameId || multiplier < 2) return
+  const safeMultiplier = Math.max(2, Math.min(20, Math.floor(multiplier)))
   const today = getLocalDateKey(new Date())
   const current = readDailyGameMultipliers()
   const games = current.date === today ? current.games : {}
@@ -59,7 +60,7 @@ export function setDailyGameCoinMultiplier(gameId: string, multiplier: number) {
   try {
     window.localStorage.setItem(
       DAILY_GAME_MULTIPLIER_STORAGE_KEY,
-      JSON.stringify({ date: today, games: { ...games, [gameId]: multiplier } }),
+      JSON.stringify({ date: today, games: { ...games, [gameId]: safeMultiplier } }),
     )
   } catch {
     // The game remains playable when storage is unavailable.
@@ -69,7 +70,7 @@ export function setDailyGameCoinMultiplier(gameId: string, multiplier: number) {
 export function getDailyGameCoinMultiplier(gameId: string) {
   const current = readDailyGameMultipliers()
   if (current.date !== getLocalDateKey(new Date())) return 1
-  return Math.max(1, Math.min(10, Number(current.games[gameId]) || 1))
+  return Math.max(1, Math.min(20, Math.floor(Number(current.games[gameId])) || 1))
 }
 
 export function markGamePlayStarted(gameId: string) {

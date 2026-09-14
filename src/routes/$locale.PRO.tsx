@@ -156,9 +156,16 @@ function ThemeMode() {
 
   useEffect(() => {
     const updateVisibility = () => setPageVisible(document.visibilityState === 'visible')
+    const restoreVisiblePage = () => setPageVisible(true)
     updateVisibility()
     document.addEventListener('visibilitychange', updateVisibility)
-    return () => document.removeEventListener('visibilitychange', updateVisibility)
+    window.addEventListener('focus', restoreVisiblePage)
+    window.addEventListener('pageshow', restoreVisiblePage)
+    return () => {
+      document.removeEventListener('visibilitychange', updateVisibility)
+      window.removeEventListener('focus', restoreVisiblePage)
+      window.removeEventListener('pageshow', restoreVisiblePage)
+    }
   }, [])
 
   useEffect(() => {
@@ -458,8 +465,6 @@ function ThemeMode() {
                   data-start-game
                   href={switchPlatform ? `/${lang}/platform/switch/${id}#PRO` : pspPlatform ? `/${lang}/platform/psp/${id}#PRO` : `/${lang}/games/${id}#PRO`}
                   onFocus={() => setGameIndex(index)}
-                  rel="noopener noreferrer"
-                  target="_blank"
                 >
                   <span className="kt-game-number">{String((page - 1) * 24 + index + 1).padStart(3, '0')}</span>
                   <ThemeGameCardPreview game={game} />
@@ -711,8 +716,18 @@ function createShowcaseQueue(games: Array<PublicGame>, avoidFirst = -1) {
 
 function GamePreview({ game, onEnded, onVideoError, playing = true }: { game?: PublicGame; onEnded?: () => void; onVideoError?: () => void; playing?: boolean }) {
   const [failed, setFailed] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
   useEffect(() => setFailed(false), [game?.game_video])
-  if (game?.game_video && /\.(mp4|webm)(\?|$)/i.test(game.game_video) && !failed) return <video src={game.game_video} poster={game.game_cover} autoPlay={playing} preload="metadata" loop={!onEnded} muted playsInline onEnded={onEnded} onError={() => { setFailed(true); onVideoError?.() }} />
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    if (!playing) {
+      video.pause()
+      return
+    }
+    void video.play().catch(() => {})
+  }, [game?.game_video, playing])
+  if (game?.game_video && /\.(mp4|webm)(\?|$)/i.test(game.game_video) && !failed) return <video ref={videoRef} src={game.game_video} poster={game.game_cover} autoPlay={playing} preload="metadata" loop={!onEnded} muted playsInline onCanPlay={() => { if (playing) void videoRef.current?.play().catch(() => {}) }} onEnded={onEnded} onError={() => { setFailed(true); onVideoError?.() }} />
   return game?.game_cover ? <img src={game.game_cover} alt={game.name || ''} decoding="async" /> : <div className="kt-preview-placeholder">UCG999<span>SELECT YOUR GAME</span></div>
 }
 
