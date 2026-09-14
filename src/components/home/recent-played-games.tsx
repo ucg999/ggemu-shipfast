@@ -220,7 +220,7 @@ export function RecentPlayedGameCard({
   )
 }
 
-function getRecentPlayedGame(game: PublicGame, fallbackId: string) {
+function getRecentPlayedGame(game: PublicGame, fallbackId: string): RecentPlayedGame | null {
   const id = game.url_slug?.trim() || game._id?.trim() || fallbackId.trim()
   const name = game.name?.trim()
 

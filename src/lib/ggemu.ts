@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 
 import { SITE_ORIGIN } from './site-url'
+import { createThemeGameCache } from './theme-game-cache'
 
 const API_BASE_URL = 'https://ggemu.com'
 const PAGE_SIZE = 20
@@ -640,6 +641,17 @@ export const searchLiveRooms = createServerFn({ method: 'GET' })
       rooms: result.items,
       pagination: result.pagination,
     } satisfies LiveRoomSearchResult
+  })
+
+const themePlatformsCache = createThemeGameCache<Array<FilterOption>>()
+
+export const getThemePlatforms = createServerFn({ method: 'GET' })
+  .handler(async () => {
+    const platforms = await themePlatformsCache.load('platforms', async () => {
+      const result = await fetchJson<FilterOptionResponse>('/api/games/platforms', new URLSearchParams())
+      return normalizeFilterOptions(result.data)
+    })
+    return { platforms }
   })
 
 export const getGameFilterOptions = createServerFn({ method: 'GET' })

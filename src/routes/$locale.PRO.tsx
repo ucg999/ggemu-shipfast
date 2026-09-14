@@ -1,7 +1,7 @@
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { getGameFilterOptions, searchGames } from '#/lib/ggemu'
+import { getThemePlatforms, searchGames } from '#/lib/ggemu'
 import type { FilterOption, GameSearchResult, PublicGame } from '#/lib/ggemu'
 import { normalizeLocale } from '#/lib/i18n'
 import { getI18n } from '#/lib/i18n'
@@ -20,6 +20,11 @@ import { getOriginalGamesTitle } from '#/lib/original-games'
 import { getLocalizedSeoLinks } from '#/lib/seo'
 import { SITE_ORIGIN } from '#/lib/site-url'
 import '#/styles/theme-mode.css'
+import { createThemeGameCache } from '#/lib/theme-game-cache'
+import themeImageFormats from '#/lib/theme-image-formats.json'
+
+const themeGamesCache = createThemeGameCache<Array<PublicGame>>()
+const themeFirstPagesCache = createThemeGameCache<Array<GameSearchResult>>()
 
 export const Route = createFileRoute('/$locale/PRO')({
   beforeLoad: ({ params }) => {
@@ -28,7 +33,9 @@ export const Route = createFileRoute('/$locale/PRO')({
       throw redirect({ params: { locale }, replace: true, to: '/$locale' })
     }
   },
-  loader: () => getGameFilterOptions(),
+  loader: () => getThemePlatforms(),
+  staleTime: 5 * 60 * 1000,
+  preloadStaleTime: 5 * 60 * 1000,
   head: ({ params }) => {
     const locale = normalizeLocale(params.locale)
     const seo = getI18n(locale).homeSeo
@@ -110,7 +117,6 @@ function ThemeMode() {
   const lastWheel = useRef(0)
   const touchY = useRef(0)
   const navigationAudio = useRef<HTMLAudioElement | null>(null)
-  const platformGamesCache = useRef(new Map<string, Array<PublicGame>>())
   const showcaseQueue = useRef<Array<number>>([])
   const platform = platforms[selected]
   const allGames = platform?.name === 'all-games'
@@ -196,7 +202,7 @@ function ThemeMode() {
         : platform?.slug === 'theme-merged-flash'
           ? ['flash', 'html5']
           : [platform?.name.toLowerCase()]
-      const relevant = allGames ? games : games.filter(game => platformNames.includes(game.platform?.toLowerCase()))
+      const relevant = allGames ? games : games.filter(game => Boolean(game.platform && platformNames.includes(game.platform.toLowerCase())))
       const latest = relevant.reduce<(typeof relevant)[number] | undefined>((current, game) => !current || (game.playedAt || 0) > (current.playedAt || 0) ? game : current, undefined)
       setBrowserStats({
         favorites: favoriteGames.filter(game => allGames || !game.platform || game.platform.toLowerCase() === platform?.name.toLowerCase()).length,
@@ -236,6 +242,7 @@ function ThemeMode() {
   useEffect(() => {
     if (!platform) return
     let cancelled = false
+    let hasFirstPage = false
     setLoading(true); setError(false); setGameIndex(0); setResult(null)
     if (favoritesPlatform || lastPlayedPlatform) {
       const games = favoritesPlatform ? favoriteGames : readRecentGamesForTheme()
@@ -289,18 +296,30 @@ function ThemeMode() {
         ? [undefined]
         : mergedNames.length > 0 ? mergedNames : [platform.name]
       const cacheKey = `${lang}:${platformNames.map(name => name || 'all-games').join('|').toLocaleLowerCase()}`
-      const completeGamesRequest = loadCompleteThemePlatform(platformNames, lang, platformGamesCache.current, cacheKey)
+      const cachedGames = themeGamesCache.get(cacheKey)
+      const completeGamesRequest = cachedGames ? Promise.resolve(cachedGames) : themeFirstPagesCache.load(`${cacheKey}:first`, () =>
+        Promise.all(platformNames.map(platform => searchGames({ data: { platform, locale: lang, page: 1, limit: 100, query: '', sort: 'name_asc' } }))),
+      ).then(firstPages => {
+        if (!cancelled && !query && page === 1) {
+          const total = firstPages.reduce((sum, first) => sum + first.pagination.total, 0)
+          const initial = paginateThemePlatformGames(firstPages.flatMap(first => first.games), '', 1, allGames ? 18 : 24)
+          setResult({ ...initial, pagination: { total, page: 1, limit: 24, pages: Math.max(1, Math.ceil(total / 24)) } })
+          hasFirstPage = true
+          setLoading(false)
+        }
+        return themeGamesCache.load(cacheKey, () => loadCompleteThemePlatform(platformNames, lang, firstPages))
+      })
       const request = allGames
         ? Promise.all([
             completeGamesRequest,
-            searchGames({ data: { platform: undefined, locale: lang, page: 1, limit: 24, query: '', sort: 'newest' } }),
-          ]).then(([games, latest]) => paginateThemePlatformGames(games, query, page, 18, latest.games))
+            themeGamesCache.load(`${lang}:latest`, () => searchGames({ data: { platform: undefined, locale: lang, page: 1, limit: 24, query: '', sort: 'newest' } }).then(value => value.games)),
+          ]).then(([games, latest]) => paginateThemePlatformGames(games, query, page, 18, latest))
         : completeGamesRequest.then(games => paginateThemePlatformGames(games, query, page, 24))
       request
         .then(value => { if (!cancelled) setResult(value) })
-        .catch(() => { if (!cancelled) setError(true) })
+        .catch(() => { if (!cancelled && !hasFirstPage) setError(true) })
         .finally(() => { if (!cancelled) setLoading(false) })
-    }, 220)
+    }, query ? 220 : 0)
     return () => { cancelled = true; window.clearTimeout(timer) }
   }, [platform, allGames, favoritesPlatform, lastPlayedPlatform, favoriteGames, switchPlatform, pspPlatform, lang, page, query, retry, sourcePlatforms, librarySearchField, librarySort, libraryRandomSeed])
 
@@ -327,19 +346,28 @@ function ThemeMode() {
 
   useEffect(() => {
     if (!inLibrary) {
-      const neighbor = platforms[(selected + 1) % platforms.length]
-      if (!neighbor) return
-      const preloadNextBackground = () => {
-        const image = new Image()
-        image.decoding = 'async'
-        image.src = getOptimizedThemeBackground(getThemeAsset(neighbor).background)
+      if (!platforms.length) return
+      const preloadNeighbors = () => {
+        const sources = new Set<string>()
+        for (const offset of [-1, 1]) {
+          const neighbor = getThemeAsset(platforms[(selected + offset + platforms.length) % platforms.length])
+          sources.add(window.innerWidth > 1920 ? neighbor.background : getOptimizedThemeBackground(neighbor.background))
+          if (neighbor.console) sources.add(getLosslessThemeImage(neighbor.console))
+        }
+        for (const source of sources) {
+          const image = new Image()
+          image.decoding = 'async'
+          image.fetchPriority = 'low'
+          image.src = source
+          void image.decode().catch(() => {})
+        }
       }
       const idleWindow = window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void }
       if (idleWindow.requestIdleCallback) {
-        const id = idleWindow.requestIdleCallback(preloadNextBackground, { timeout: 1800 })
+        const id = idleWindow.requestIdleCallback(preloadNeighbors, { timeout: 1800 })
         return () => idleWindow.cancelIdleCallback?.(id)
       }
-      const timer = window.setTimeout(preloadNextBackground, 900)
+      const timer = window.setTimeout(preloadNeighbors, 300)
       return () => window.clearTimeout(timer)
     }
   }, [inLibrary, selected, platforms])
@@ -352,6 +380,8 @@ function ThemeMode() {
     const row = item.getBoundingClientRect()
     if (row.top < container.top) list.scrollTop += row.top - container.top
     else if (row.bottom > container.bottom) list.scrollTop += row.bottom - container.bottom
+    if (row.left < container.left) list.scrollLeft += row.left - container.left
+    else if (row.right > container.right) list.scrollLeft += row.right - container.right
   }, [gameIndex])
 
   async function toggleFullscreen() {
@@ -416,7 +446,7 @@ function ThemeMode() {
           <div className="kt-scene" key={platform.name}>
             {asset.console ? <>
               <div className={`kt-machine-video ${centeredCollectionPreview ? 'is-centered' : ''} ${!preciselyCenteredPlatform && centeredCollectionPreview ? 'is-nudged-left' : ''} ${atariPlatform ? 'is-atari' : ''} ${gbaPlatform ? 'is-gba' : ''} ${sega32xPlatform ? 'is-sega32x' : ''}`} style={{ ...box(asset.videoPosition, asset.videoSize), ...(gbaPlatform ? { height: `calc(${asset.videoSize[1] * 100}% + 3px)` } : {}), ...(sega32xPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 5px)` } : {}), ...(virtualBoyPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 40px)` } : {}) }}><GamePreview game={activeGame} onEnded={advanceShowcase} onVideoError={() => setShowcaseVideoFailed(true)} playing={pageVisible} /></div>
-              <img className="kt-console" src={asset.console} alt="" style={box(asset.consolePosition, asset.consoleSize)} />
+              <img className="kt-console" src={getLosslessThemeImage(asset.console)} decoding="async" fetchPriority="high" alt="" style={box(asset.consolePosition, asset.consoleSize)} />
             </> : <div className="kt-fallback-preview"><GamePreview game={activeGame} onEnded={advanceShowcase} onVideoError={() => setShowcaseVideoFailed(true)} playing={pageVisible} /></div>}
           </div>
           <div className="kt-platform-info">
@@ -428,7 +458,7 @@ function ThemeMode() {
               <div><dt>{english ? 'Last game' : lang === 'ja' ? '最後のゲーム' : lang === 'zh-TW' ? '最後遊戲' : '最后游戏'}：</dt><dd>{browserStats.lastDate || (english ? 'No record' : '暂无记录')}</dd></div>
             </dl>
           </div>
-          <img src="/themes/es-k-team/wheel.png" className="kt-wheel-art" alt="" />
+          <img src={getLosslessThemeImage('/themes/es-k-team/wheel.png')} decoding="async" className="kt-wheel-art" alt="" />
           <nav className="kt-wheel" aria-label={english ? 'Select platform' : '选择游戏平台'}
             onWheel={event => { if (Math.abs(event.deltaY) > 8 && Date.now() - lastWheel.current > 180) { lastWheel.current = Date.now(); move(event.deltaY > 0 ? 1 : -1) } }}
             onTouchStart={event => { touchY.current = event.touches[0].clientY }}
@@ -445,7 +475,7 @@ function ThemeMode() {
               </button>
             })}
           </nav>
-          <img className="kt-pointer" src={asset.pointer} alt="" />
+          <img className="kt-pointer" src={getLosslessThemeImage(asset.pointer)} decoding="async" alt="" />
         </> : <section className="kt-library">
           <div className="kt-library-top">
             <button onClick={back}>← {english ? 'Platforms' : '平台选择'}</button><h1>{platformLabel}</h1>
@@ -480,7 +510,7 @@ function ThemeMode() {
                   onFocus={() => setGameIndex(index)}
                 >
                   <span className="kt-game-number">{String((page - 1) * 24 + index + 1).padStart(3, '0')}</span>
-                  <ThemeGameCardPreview game={game} />
+                  <ThemeGameCardPreview game={game} eager={index < 6} />
                   <strong>{game.name}</strong>
                 </a>
                 {allGames && <button className={`kt-favorite ${favorite ? 'is-favorite' : ''}`} aria-label={favorite ? '取消收藏' : '收藏游戏'} aria-pressed={favorite} onClick={() => toggleFavorite(game)}>{favorite ? '♥' : '♡'}</button>}
@@ -493,15 +523,16 @@ function ThemeMode() {
           <div className="kt-footer-brand">
             <a href={`/${lang}#classic`} aria-label={layoutCopy.siteName}><img src="/logo.png" alt="" /><span className="kt-footer-title"><strong>{layoutCopy.siteName}</strong><small>{layoutCopy.siteSlogan}</small></span></a>
             <HomeCoinBag balance={coinRewards.balance} lang={lang} onOpen={() => {}} />
-            <a className="kt-footer-shortcut" target="_blank" rel="noopener noreferrer" href={`/${lang}/platform/coin#PRO`}>{getThemeFooterCopy(lang).coinMode}</a>
-            <a className="kt-footer-shortcut" target="_blank" rel="noopener noreferrer" href={`/${lang}/original-games#PRO`}>{getOriginalGamesTitle(lang)}</a>
+            <Link className="kt-footer-shortcut" to="/$locale/platform/$platformId" params={{ locale: lang, platformId: 'coin' }} hash="PRO">{getThemeFooterCopy(lang).coinMode}</Link>
+            <Link className="kt-footer-shortcut" to="/$locale/original-games" params={{ locale: lang }} hash="PRO">{getOriginalGamesTitle(lang)}</Link>
           </div>
           <span className="kt-footer-help">{english ? '↑ ↓ Select   ·   Enter Confirm   ·   Esc Back' : '↑ ↓ 选择　·　Enter 确认　·　Esc 返回'}</span>
           <div className="kt-footer-actions">
-            <a target="_blank" rel="noopener noreferrer" href={`/${lang}/live#PRO`} className="kt-watch"><span aria-hidden="true" className="live-watch-eye"><span className="live-watch-pupil" /></span><span>{getThemeFooterCopy(lang).watching}</span></a>
+            <Link to="/$locale/live" params={{ locale: lang }} hash="PRO" className="kt-watch"><span aria-hidden="true" className="live-watch-eye"><span className="live-watch-pupil" /></span><span>{getThemeFooterCopy(lang).watching}</span></Link>
             <details className="kt-language"><summary>{lang === 'zh-CN' ? '简' : lang === 'zh-TW' ? '繁' : lang === 'en' ? '英' : '日'} ▴</summary><div>
               {(['zh-CN', 'zh-TW'] as const).map(locale => <Link key={locale} to="/$locale/PRO" params={{ locale }}>{locale === 'zh-CN' ? '简' : '繁'}</Link>)}
             </div></details>
+            <span className="kt-version">v1.0</span>
           </div>
         </footer>
         {notice && <button className="kt-notice" onClick={() => setNotice('')}>{notice} ×</button>}
@@ -589,14 +620,10 @@ function prioritizeFirstPageVideos(result: GameSearchResult, page: number) {
 async function loadCompleteThemePlatform(
   platformNames: Array<string | undefined>,
   locale: ReturnType<typeof normalizeLocale>,
-  cache: Map<string, Array<PublicGame>>,
-  cacheKey: string,
+  firstPages: Array<GameSearchResult>,
 ) {
-  const cached = cache.get(cacheKey)
-  if (cached) return cached
-
-  const groups = await Promise.all(platformNames.map(async platform => {
-    const first = await searchGames({ data: { platform, locale, page: 1, limit: 100, query: '', sort: 'name_asc' } })
+  const groups = await Promise.all(platformNames.map(async (platform, index) => {
+    const first = firstPages[index]
     const remaining = []
     const pages = Array.from({ length: Math.max(0, first.pagination.pages - 1) }, (_, index) => index + 2)
     for (let offset = 0; offset < pages.length; offset += 4) {
@@ -614,7 +641,6 @@ async function loadCompleteThemePlatform(
     seen.add(id)
     return true
   })
-  cache.set(cacheKey, games)
   return games
 }
 
@@ -732,7 +758,11 @@ function getOptimizedThemeBackground(background: string) {
 }
 
 function getOptimizedThemeLogo(logo: string) {
-  return logo.replace(/\.png$/i, '-800.png')
+  return getLosslessThemeImage(logo.replace(/\.png$/i, '-800.png'))
+}
+
+function getLosslessThemeImage(source: string) {
+  return (themeImageFormats as Record<string, string>)[source] || source
 }
 
 function GamePreview({ game, onEnded, onVideoError, playing = true }: { game?: PublicGame; onEnded?: () => void; onVideoError?: () => void; playing?: boolean }) {
@@ -752,7 +782,7 @@ function GamePreview({ game, onEnded, onVideoError, playing = true }: { game?: P
   return game?.game_cover ? <img src={game.game_cover} alt={game.name || ''} decoding="async" /> : <div className="kt-preview-placeholder">UCG999<span>SELECT YOUR GAME</span></div>
 }
 
-function ThemeGameCardPreview({ game }: { game: PublicGame }) {
+function ThemeGameCardPreview({ game, eager = false }: { game: PublicGame; eager?: boolean }) {
   const [hovered, setHovered] = useState(false)
   const [videoFailed, setVideoFailed] = useState(false)
   const playableVideo = Boolean(game.game_video && /\.(mp4|webm)(\?|$)/i.test(game.game_video))
@@ -762,7 +792,7 @@ function ThemeGameCardPreview({ game }: { game: PublicGame }) {
       {hovered && playableVideo && !videoFailed
         ? <video autoPlay loop muted playsInline poster={game.game_cover} preload="none" src={game.game_video} onError={() => setVideoFailed(true)} />
         : game.game_cover
-          ? <img alt="" decoding="async" loading="lazy" src={game.game_cover} />
+          ? <img alt="" decoding="async" loading={eager ? 'eager' : 'lazy'} src={game.game_cover} />
           : <span>UCG999</span>}
     </span>
   )

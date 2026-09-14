@@ -1,4 +1,4 @@
-import { Link, useRouterState } from '@tanstack/react-router'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
 
@@ -40,6 +40,7 @@ export function SiteLayout({
   const t = getI18n(locale).layout
   const homeT = getI18n(locale).home
   const location = useRouterState({ select: (state) => state.location })
+  const navigate = useNavigate()
   const isHomePage = location.pathname.replace(/\/+$/, '') === `/${locale}` || location.pathname === '/'
   const isGameDetailPage = location.pathname.startsWith(`/${locale}/games/`)
   const siteThemes = getSiteThemes()
@@ -222,7 +223,13 @@ export function SiteLayout({
       <main className="min-h-screen w-full max-w-full overflow-x-clip bg-base-100 text-base-content">
         <button
           className="fixed right-4 top-3 z-[100] border-b border-base-content/30 bg-transparent px-1 py-1 text-sm font-medium text-base-content/70 transition hover:border-base-content/70 hover:text-base-content"
-          onClick={() => window.location.assign(`/${locale}/PRO`)}
+            onClick={() => {
+              if (location.pathname.endsWith('/play')) {
+                window.dispatchEvent(new Event('ggemu-request-game-exit'))
+              } else {
+                void navigate({ to: '/$locale/PRO', params: { locale } })
+              }
+            }}
           type="button"
         >
           ← {locale === 'zh-TW' ? '返回主題模式' : locale === 'en' ? 'Back to Theme Mode' : locale === 'ja' ? 'テーマモードに戻る' : '返回主题模式'}

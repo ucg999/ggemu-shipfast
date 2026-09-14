@@ -16,6 +16,14 @@ Before substantial work:
 - Keep module boundaries clear and use design patterns only when they reduce real complexity.
 - Minimize changes and avoid touching unrelated modules.
 
+## PRO 加载方式保留约定
+
+- 当前用户确认的版本基线为 v1.0（package 版本 1.0.0），功能记录见 `CHANGELOG.md`。
+
+- 用户已确认保留当前加载方式。修改其他功能、样式或平台内容时，必须保留这些加载优化；如需重构，须保持等效行为。
+- 具体基线及回归检查见 `docs/pro-loading-baseline.md`，涉及 PRO、游戏返回流程、主题资源或数据缓存时先阅读。
+- 不得重新引入“进入游戏库就清空列表并等待整个游戏库下载完”的行为。
+
 ## Project context
 
 - Scaffold command used: `npx @tanstack/cli@latest create my-tanstack-app --agent`.

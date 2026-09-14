@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useRouterState } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate, useRouter, useRouterState } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -7,6 +7,7 @@ import { normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { siteConfig } from '#/lib/site-config'
 import { useCurrentSiteTheme } from '#/lib/use-site-theme'
+import { calculateGameCoinAward } from '#/lib/game-session-coins'
 import {
   addCoinBalance,
   consumeGamePlayStartedAt,
@@ -25,10 +26,6 @@ const noindexHeaders = {
   'X-Robots-Tag': 'noindex, nofollow',
 } as const
 
-const GAME_COIN_VALUE_INTERVAL_MS = 60 * 1000
-const GAME_COIN_SETTLEMENT_INTERVAL_MS = 5 * 60 * 1000
-const GAME_SESSION_COIN_CAP = 100
-const MULTIPLIER_GAME_SESSION_COIN_CAP = 200
 
 type PlayGameSearch = {
   autoplay?: '1'
@@ -53,6 +50,8 @@ export const Route = createFileRoute('/$locale/games/$gameId/play')({
 })
 
 function LocalizedPlayGamePage() {
+  const navigate = useNavigate()
+  const router = useRouter()
   const { game, trialGame } = Route.useLoaderData()
   const { gameId, locale } = Route.useParams()
   const { autoplay, inline } = Route.useSearch()
@@ -77,6 +76,8 @@ function LocalizedPlayGamePage() {
   const sessionCoinsRef = useRef(0)
   const coinMultiplierRef = useRef(1)
   const settlementTimerRef = useRef<number | null>(null)
+  const exitingRef = useRef(false)
+  const [returnPending, setReturnPending] = useState(false)
   const recommendationsRequestedRef = useRef(false)
   const trialDragRef = useRef<{ offsetX: number; offsetY: number; width: number; height: number } | null>(null)
   const labels = useMemo(() => getRecommendationLabels(lang), [lang])
@@ -105,6 +106,8 @@ function LocalizedPlayGamePage() {
   useEffect(() => {
     setShowRecommendations(false)
     setSettlement(null)
+    exitingRef.current = false
+    setReturnPending(false)
     setShowLoadingTrial(true)
     setTrialPosition(null)
     activePlayTimeRef.current = 0
@@ -116,6 +119,12 @@ function LocalizedPlayGamePage() {
     setRecommendations([])
     setRecommendationType('category')
   }, [gameId])
+
+  useEffect(() => {
+    if (!isProGame) return
+    // Warm the return route while the player is already open.
+    void router.preloadRoute({ to: '/$locale/PRO', params: { locale: lang } }).catch(() => {})
+  }, [isProGame, lang, router])
 
   const loadRecommendations = useCallback(async () => {
     if (recommendationsRequestedRef.current) return
@@ -157,11 +166,9 @@ function LocalizedPlayGamePage() {
       playStartedAtRef.current,
     )
     const multiplier = coinMultiplierRef.current
-    const earnedCoins = getTimedGameCoinTotal(activeTime) * multiplier
-    const newBaseCoins = Math.max(0, earnedCoins - awardedCoinsRef.current)
-    const sessionCap = multiplier > 1 ? MULTIPLIER_GAME_SESSION_COIN_CAP : GAME_SESSION_COIN_CAP
-    const remainingCoins = Math.max(0, sessionCap - sessionCoinsRef.current)
-    const newCoins = Math.min(newBaseCoins, remainingCoins)
+    const { earned: earnedCoins, additional: newCoins } = calculateGameCoinAward(
+      activeTime, multiplier, awardedCoinsRef.current, sessionCoinsRef.current,
+    )
 
     awardedCoinsRef.current = earnedCoins
 
@@ -207,31 +214,41 @@ function LocalizedPlayGamePage() {
   }, [])
 
   const exitGame = useCallback(() => {
+    if (exitingRef.current) return
     if (!isProGame) {
       settleAndShowRecommendations()
       return
     }
+    exitingRef.current = true
     if (playStartedAtRef.current !== null) {
       activePlayTimeRef.current = getCurrentActivePlayTime(activePlayTimeRef.current, playStartedAtRef.current)
       playStartedAtRef.current = null
     }
-    collectDueSessionCoins()
-    window.location.assign(`/${lang}/PRO`)
-  }, [collectDueSessionCoins, isProGame, lang, settleAndShowRecommendations])
+    const summary = collectDueSessionCoins()
+    setShowLoadingTrial(false)
+    setReturnPending(true)
+    setSettlement(summary)
+    settlementTimerRef.current = window.setTimeout(() => {
+      settlementTimerRef.current = null
+      // Isolated PSP documents must leave their isolation boundary with a full navigation.
+      if (window.crossOriginIsolated) window.location.assign(`/${lang}/PRO`)
+      else void navigate({ to: '/$locale/PRO', params: { locale: lang } }).catch(() => window.location.assign(`/${lang}/PRO`))
+    }, 2_200)
+  }, [collectDueSessionCoins, isProGame, lang, navigate, settleAndShowRecommendations])
 
   useEffect(() => {
-    if (showRecommendations) return
+    if (showRecommendations || returnPending) return
 
     const timer = window.setInterval(() => {
       collectDueSessionCoins()
     }, 1_000)
     return () => window.clearInterval(timer)
-  }, [collectDueSessionCoins, showRecommendations])
+  }, [collectDueSessionCoins, showRecommendations, returnPending])
 
   useEffect(() => {
     const embedOrigin = new URL(embedSrc).origin
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== embedOrigin) return
+      if (event.origin !== embedOrigin || event.source !== playerRef.current?.querySelector<HTMLIFrameElement>('iframe.game-play-frame')?.contentWindow) return
       if (isGameExitMessage(event.data)) exitGame()
     }
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -241,17 +258,19 @@ function LocalizedPlayGamePage() {
     }
 
     window.addEventListener('message', handleMessage)
+    window.addEventListener('ggemu-request-game-exit', exitGame)
     window.addEventListener('keydown', handleKeyDown)
 
     return () => {
       window.removeEventListener('message', handleMessage)
+      window.removeEventListener('ggemu-request-game-exit', exitGame)
       window.removeEventListener('keydown', handleKeyDown)
 
       if (settlementTimerRef.current !== null) {
         window.clearTimeout(settlementTimerRef.current)
       }
 
-      if (!isPsp || !window.crossOriginIsolated) {
+      if (exitingRef.current || !isPsp || !window.crossOriginIsolated) {
         return
       }
 
@@ -374,18 +393,9 @@ function LocalizedPlayGamePage() {
       {settlement ? (
         <GameCoinSettlement labels={labels} settlement={settlement} />
       ) : null}
+      {returnPending ? <div className="fixed inset-0 z-40 bg-black/70" role="status"><p className="absolute inset-x-0 bottom-12 text-center text-sm text-white">{lang === 'en' ? 'Settlement complete. Returning…' : '金币已结算，正在返回 PRO 主页…'}</p></div> : null}
     </main>
   )
-}
-
-function getTimedGameCoinTotal(activeTime: number) {
-  const completedSettlementWindows = Math.floor(
-    Math.max(0, activeTime) / GAME_COIN_SETTLEMENT_INTERVAL_MS,
-  )
-  const coinsPerSettlementWindow =
-    GAME_COIN_SETTLEMENT_INTERVAL_MS / GAME_COIN_VALUE_INTERVAL_MS
-
-  return completedSettlementWindows * coinsPerSettlementWindow
 }
 
 type GameSessionSettlement = {

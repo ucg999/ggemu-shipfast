@@ -461,7 +461,7 @@ function LocalizedGameDetailPage() {
                   <Stat label={t.views} value={game.views_count ?? 0} />
                 </>
               ) : null}
-              <GameFavoriteButton gameId={gameId} locale={lang} name={game.name} cover={game.game_cover} platform={game.platform} className="mt-auto w-fit" />
+              <GameFavoriteButton gameId={gameId} locale={lang} name={game.name || gameId} cover={game.game_cover} platform={game.platform} className="mt-auto w-fit" />
             </div>
             </> : null}
 
