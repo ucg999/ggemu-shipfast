@@ -41,6 +41,9 @@ const GHOST_SOUNDS = [
   '/ghost-hunter/audio/ghost-90.mp3',
   '/ghost-hunter/audio/ghost-91.mp3',
   '/ghost-hunter/audio/ghost-35.mp3',
+  '/ghost-hunter/audio/ghost-100.mp3',
+  '/ghost-hunter/audio/ghost-74.mp3',
+  '/ghost-hunter/audio/ghost-54.mp3',
 ]
 const LEVEL_COMPLETE_SOUND = '/ghost-hunter/audio/level-complete.mp3'
 
@@ -253,7 +256,8 @@ function GhostHunterPage() {
     if (!won || gameOver) return
     if (!rewardedRef.current) {
       rewardedRef.current = true
-      setCoinReward(addCoinReward(10).awarded)
+      const consecutiveClearReward = (cleared + 1) * 10
+      setCoinReward(addCoinReward(consecutiveClearReward).awarded)
       setCleared(value => value + 1)
       setLightning(value => value + 1)
     }

@@ -6,7 +6,7 @@ import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-reward
 import { CoinMachineWelcome } from '#/components/coin-machine-welcome'
 import { SiteLayout } from '#/components/site-layout'
 import type { Locale } from '#/lib/ggemu'
-import { addCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
+import { addCoinBalance, getCoinRank, readCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
 import { createSpinAudioClock } from '#/lib/spin-audio-clock'
 import { normalizeLocale } from '#/lib/i18n'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
@@ -20,6 +20,7 @@ const PENALTY_LIGHT_INDEX = 9
 const LUCKY_LIGHT_INDEX = 21
 const CHALLENGE_OPTION_COUNT = 8
 const MAIN_SPIN_DURATION_MS = 5000
+const MAX_MACHINE_CREDITS = 99_999
 const BOTTOM_OPTION_ORDER = [7, 6, 5, 4, 3, 2, 1, 0] as const
 const MOBILE_BET_SHIFT_CLASSES = [
   '-translate-x-[30%]', '-translate-x-[20%]', '-translate-x-[12%]', '-translate-x-[6%]',
@@ -33,16 +34,16 @@ const OPTION_PAYOUT_MULTIPLIERS = [5, 10, 10, 10, 20, 20, 20, 100] as const
 
 // Weights belong to outcome categories, not individual symbols or bet patterns.
 const LANDING_GROUPS = [
-  { name: 'x2', weight: 16.25, cells: [11, 17, 23] },
-  { name: 'x3', weight: 16.25, cells: [8, 14, 20] },
-  { name: 'five', weight: 20, cells: [5, 10, 16, 22] },
-  { name: 'ten', weight: 15, cells: [0, 1, 6, 12, 13, 18] },
+  { name: 'x2', weight: 14, cells: [11, 17, 23] },
+  { name: 'x3', weight: 14, cells: [8, 14, 20] },
+  { name: 'five', weight: 22.25, cells: [5, 10, 16, 22] },
+  { name: 'ten', weight: 17.25, cells: [0, 1, 6, 12, 13, 18] },
   { name: 'bomb', weight: 5, cells: [PENALTY_LIGHT_INDEX] },
-  { name: 'ghost', weight: 9, cells: [BAR_25_LIGHT_INDEX] },
-  { name: 'twenty', weight: 8, cells: [7, 15, 19] },
-  { name: 'gold', weight: 6, cells: [BAR_50_LIGHT_INDEX] },
+  { name: 'ghost', weight: 8.75, cells: [BAR_25_LIGHT_INDEX] },
+  { name: 'twenty', weight: 8.75, cells: [7, 15, 19] },
+  { name: 'gold', weight: 5.75, cells: [BAR_50_LIGHT_INDEX] },
   { name: 'lucky', weight: 2.5, cells: [LUCKY_LIGHT_INDEX] },
-  { name: 'hundred', weight: 2, cells: [BAR_100_LIGHT_INDEX] },
+  { name: 'hundred', weight: 1.75, cells: [BAR_100_LIGHT_INDEX] },
 ] as const
 
 const TRACK_LIGHTS = createTrackLights()
@@ -180,8 +181,9 @@ function CoinChallengePage() {
   const betHoldTimeoutRef = useRef<number | null>(null)
   const betHoldIntervalRef = useRef<number | null>(null)
   const shouldResetAllBetsRef = useRef(shouldResetAllBets)
-  const walletEmptyAlertShownRef = useRef(false)
-  const creditEmptyAlertShownRef = useRef(false)
+  const rankCreditUnitRef = useRef(20)
+  const autoRankRefillEnabledRef = useRef(true)
+  const autoRankRefillInProgressRef = useRef(false)
   const betNoteIndexRef = useRef(0)
   const audioContextRef = useRef<AudioContext | null>(null)
   const coinDropAudioRef = useRef<HTMLAudioElement | null>(null)
@@ -214,10 +216,41 @@ function CoinChallengePage() {
   }, [gameMode, isSpinning, machine.credits, machine.bonusWin, collectibleWin])
 
   useEffect(() => {
+    if (!autoRankRefillEnabledRef.current || autoRankRefillInProgressRef.current || isSpinning || isWithdrawing || compareMode || poolTransferDisplay || creditTransferDisplay) return
+    const current = machineRef.current
+    const refillAmount = rankCreditUnitRef.current
+    if (current.credits !== 0 || current.credits + refillAmount > MAX_MACHINE_CREDITS) return
+    if (readCoinBalance() < refillAmount) return
+
+    autoRankRefillInProgressRef.current = true
+    if (!spendCoinBalance(refillAmount)) {
+      autoRankRefillInProgressRef.current = false
+      return
+    }
+
+    // Commit both sides of the transfer against the same snapshot. Updating the
+    // ref and storage immediately prevents rapid renders from charging the wallet
+    // twice while React is still applying the visible credit update.
+    const next = {
+      ...current,
+      credits: current.credits + refillAmount,
+    }
+    machineRef.current = next
+    saveCoinChallengeState(next)
+    setMachine(next)
+    autoRankRefillInProgressRef.current = false
+  }, [compareMode, creditTransferDisplay, isSpinning, isWithdrawing, machine.credits, poolTransferDisplay])
+
+  useEffect(() => {
     const storedMachine = readCoinChallengeState()
     const storedRefund = storedMachine.credits + storedMachine.bonusWin
     if (storedRefund > 0) addCoinBalance(storedRefund)
-    const emptyMachine = createEmptyChallengeState()
+    let emptyMachine = createEmptyChallengeState()
+    const rankCreditUnit = getRankCreditUnit(readCoinBalance())
+    rankCreditUnitRef.current = rankCreditUnit
+    if (spendCoinBalance(rankCreditUnit)) {
+      emptyMachine = { ...emptyMachine, credits: rankCreditUnit }
+    }
     machineRef.current = emptyMachine
     saveCoinChallengeState(emptyMachine)
     setMachine(emptyMachine)
@@ -562,47 +595,12 @@ function CoinChallengePage() {
   function handleInsertCredit() {
     if (creditTransferDisplay) return
     const latestMachine = readCoinChallengeState()
-    const canTransferPrizePool = !isSpinning && !isWithdrawing && !compareMode && !poolTransferDisplay
-    if (canTransferPrizePool && latestMachine.bonusWin > 0) {
-      const amount = latestMachine.bonusWin
-      const startingCredits = latestMachine.credits
-      const finalCredits = Math.min(9999, startingCredits + amount)
-      const frames = Math.min(60, amount)
-      let frame = 0
-
-      playPoolAudio()
-      updateMachine((current) => ({
-        ...current,
-        bonusWin: 0,
-        credits: Math.min(9999, current.credits + current.bonusWin),
-      }))
-      setCreditTransferDisplay({ credits: startingCredits, pool: amount })
-      if (transferTimerRef.current !== null) window.clearInterval(transferTimerRef.current)
-      transferTimerRef.current = window.setInterval(() => {
-        frame += 1
-        const progress = Math.min(1, frame / frames)
-        setCreditTransferDisplay({
-          credits: Math.round(startingCredits + (finalCredits - startingCredits) * progress),
-          pool: Math.max(0, Math.round(amount * (1 - progress))),
-        })
-        if (progress >= 1) {
-          if (transferTimerRef.current !== null) window.clearInterval(transferTimerRef.current)
-          transferTimerRef.current = null
-          window.setTimeout(() => setCreditTransferDisplay(null), 160)
-        }
-      }, 30)
-      return
-    }
-
-    if (!spendCoinBalance(1)) {
+    autoRankRefillEnabledRef.current = true
+    const creditAmount = 1
+    if (latestMachine.credits + creditAmount > MAX_MACHINE_CREDITS || !spendCoinBalance(creditAmount)) {
       stopCreditHold()
-      if (!walletEmptyAlertShownRef.current) {
-        walletEmptyAlertShownRef.current = true
-        window.alert(copy.walletEmpty)
-      }
       return
     }
-    walletEmptyAlertShownRef.current = false
 
     const coinDropAudio = coinDropAudioRef.current
     safelyRunAudio(() => {
@@ -616,7 +614,7 @@ function CoinChallengePage() {
     })
     updateMachine((current) => ({
       ...current,
-      credits: Math.min(9999, current.credits + 1),
+      credits: Math.min(MAX_MACHINE_CREDITS, current.credits + creditAmount),
     }))
   }
 
@@ -631,21 +629,43 @@ function CoinChallengePage() {
     }
   }
 
+  function handleInsertCreditHundred() {
+    stopCreditHold()
+    if (isSpinning || isWithdrawing || compareMode || poolTransferDisplay || creditTransferDisplay) return
+    const amount = 98
+    const latestMachine = readCoinChallengeState()
+    if (latestMachine.credits + amount > MAX_MACHINE_CREDITS || !spendCoinBalance(amount)) {
+      return
+    }
+    autoRankRefillEnabledRef.current = true
+    safelyRunAudio(() => {
+      const audio = coinDropAudioRef.current
+      if (audio) {
+        audio.currentTime = 0
+        void audio.play().catch(() => {})
+      }
+    })
+    updateMachine(current => ({
+      ...current,
+      credits: Math.min(MAX_MACHINE_CREDITS, current.credits + amount),
+    }))
+  }
+
   function handleCreditPointerDown() {
     if (creditTransferDisplay) return
     stopCreditHold()
-    const isPoolTransfer = !isSpinning && !isWithdrawing && !compareMode && !poolTransferDisplay &&
-      readCoinChallengeState().bonusWin > 0
     handleInsertCredit()
-    if (isPoolTransfer) return
     creditHoldTimeoutRef.current = window.setTimeout(() => {
       creditHoldIntervalRef.current = window.setInterval(handleInsertCredit, 110)
     }, 360)
   }
 
   function handleWithdraw() {
-    const totalCoins = machine.credits + machine.bonusWin + collectibleWin
+    const prizeCoins = machine.bonusWin + collectibleWin
+    const withdrawPrizeOnly = prizeCoins > 0
+    const totalCoins = withdrawPrizeOnly ? prizeCoins : machine.credits
     if (isSpinning || compareMode || isWithdrawing || poolTransferDisplay || creditTransferDisplay || totalCoins < 1) return
+    autoRankRefillEnabledRef.current = false
     setIsWithdrawing(true)
     safelyRunAudio(() => {
     winAudioRef.current?.pause()
@@ -661,12 +681,18 @@ function CoinChallengePage() {
       })
     }
     })
-    let remainingCredits = machine.credits
-    let remainingPool = machine.bonusWin
-    let remainingPending = collectibleWin
+    // One press settles winnings only. CREDIT is returned by a later press once
+    // both winning displays are empty, so a player cannot accidentally cash out
+    // the entire machine together with the prize pool.
+    let remainingCredits = withdrawPrizeOnly ? 0 : machine.credits
+    let remainingPool = withdrawPrizeOnly ? machine.bonusWin : 0
+    let remainingPending = withdrawPrizeOnly ? collectibleWin : 0
+    let withdrawTick = 0
+    const maximumStep = Math.max(1, Math.ceil(totalCoins / 24))
     if (transferTimerRef.current !== null) window.clearInterval(transferTimerRef.current)
     transferTimerRef.current = window.setInterval(() => {
-      if (remainingCredits + remainingPool + remainingPending < 1) {
+      const remaining = remainingCredits + remainingPool + remainingPending
+      if (remaining < 1) {
         if (transferTimerRef.current !== null) window.clearInterval(transferTimerRef.current)
         transferTimerRef.current = null
         safelyRunAudio(() => {
@@ -676,25 +702,27 @@ function CoinChallengePage() {
         setIsWithdrawing(false)
         return
       }
-      if (remainingPending > 0) {
-        remainingPending -= 1
+      const step = Math.min(remaining, maximumStep, 2 ** Math.floor(withdrawTick / 8))
+      withdrawTick += 1
+      const pendingStep = Math.min(remainingPending, step)
+      remainingPending -= pendingStep
+      const poolStep = Math.min(remainingPool, step - pendingStep)
+      remainingPool -= poolStep
+      const creditStep = Math.min(remainingCredits, step - pendingStep - poolStep)
+      remainingCredits -= creditStep
+      if (pendingStep > 0) {
         setCollectibleWin(remainingPending)
-        setRoundWin((current) => Math.max(0, current - 1))
-      } else if (remainingPool > 0) {
-        remainingPool -= 1
+        setRoundWin((current) => Math.max(0, current - pendingStep))
+      }
+      if (poolStep > 0 || creditStep > 0) {
         updateMachine((current) => ({
           ...current,
-          bonusWin: Math.max(0, current.bonusWin - 1),
-        }))
-      } else {
-        remainingCredits -= 1
-        updateMachine((current) => ({
-          ...current,
-          credits: Math.max(0, current.credits - 1),
+          bonusWin: Math.max(0, current.bonusWin - poolStep),
+          credits: Math.max(0, current.credits - creditStep),
         }))
       }
-      addCoinBalance(1)
-    }, 55)
+      addCoinBalance(pendingStep + poolStep + creditStep)
+    }, 45)
   }
 
   function handleCompareStart() {
@@ -724,7 +752,7 @@ function CoinChallengePage() {
     updateMachine((current) => ({
       ...current,
       bets: Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0),
-      credits: Math.min(9999, current.credits + refund),
+      credits: Math.min(MAX_MACHINE_CREDITS, current.credits + refund),
     }))
     setShouldResetAllBets(false)
   }
@@ -810,9 +838,8 @@ function CoinChallengePage() {
   }
 
   function showCreditEmptyOnce() {
-    if (creditEmptyAlertShownRef.current) return
-    creditEmptyAlertShownRef.current = true
-    window.alert(copy.creditEmpty)
+    // Insufficient CREDIT is intentionally silent so repeated play is not
+    // interrupted by modal dialogs.
   }
 
   function handleStart() {
@@ -938,7 +965,6 @@ function CoinChallengePage() {
       machine.credits - repeatBetCost - (usedAutomaticBet ? 1 : 0),
     )
 
-    creditEmptyAlertShownRef.current = false
     setIsSpinning(true)
     setLuckyLitLights([])
     setWinningLight(null)
@@ -955,6 +981,21 @@ function CoinChallengePage() {
         spinClockRef.current = null
         if (gameMode !== 'normal') {
           if (exitLights.includes(target)) {
+            if (gameMode === 'ghost') {
+              autoRankRefillEnabledRef.current = false
+              const currentMachine = machineRef.current
+              const remainingCoins = currentMachine.credits + currentMachine.bonusWin + collectibleWinRef.current
+              const refund = Math.floor(remainingCoins / 2)
+              if (refund > 0) addCoinBalance(refund)
+              collectibleWinRef.current = 0
+              setCollectibleWin(0)
+              setRoundWin(0)
+              updateMachine((current) => ({
+                ...current,
+                credits: 0,
+                bonusWin: 0,
+              }))
+            }
             finishRound(0, 0, 0, target)
             setGameMode('normal')
             setModeRounds(0)
@@ -1316,6 +1357,7 @@ function CoinChallengePage() {
               handleInsertCredit()
             }
           }}
+          onDoubleClick={handleInsertCreditHundred}
           onPointerCancel={stopCreditHold}
           onPointerDown={handleCreditPointerDown}
           onPointerLeave={stopCreditHold}
@@ -1325,7 +1367,7 @@ function CoinChallengePage() {
         >
           <span className="absolute inset-0">
             <SevenSegmentNumber
-              digits={4}
+              digits={5}
               value={creditTransferDisplay?.credits ?? machine.credits}
             />
           </span>
@@ -1451,6 +1493,10 @@ function createEmptyChallengeState(): CoinChallengeState {
   }
 }
 
+function getRankCreditUnit(balance: number) {
+  return Math.max(20, getCoinRank(balance).min)
+}
+
 type CoinChallengeRtpLedger = {
   paid: number
   wagered: number
@@ -1493,7 +1539,7 @@ function readCoinChallengeState(): CoinChallengeState {
       ),
       credits: Math.max(
         0,
-        Math.min(9999, Math.floor(Number(parsed?.credits) || 0)),
+        Math.min(MAX_MACHINE_CREDITS, Math.floor(Number(parsed?.credits) || 0)),
       ),
     }
   } catch {
@@ -1695,7 +1741,7 @@ function getCoinChallengeCopy(locale: Locale) {
       addBet: (position: number) => `第 ${position} 個圖案增加 1 枚金幣`,
       collectPrize: '將中央獎金轉入獎池',
       creditEmpty: 'CREDIT 不足，請先點擊頂部 CREDIT 投入金幣。',
-      insertCredit: '從金幣箱投入 1 枚金幣',
+      insertCredit: '依目前段位從金幣箱投入一檔金幣',
       luckyResult: (payout: number) => `馬里奧幸運三連轉完成，共獲得 ${payout} 分`,
       placeBet: '請先點擊下方圖案投入至少 1 枚金幣。',
       result: (position: number | null, payout: number, multiplier: number) =>
@@ -1719,7 +1765,7 @@ function getCoinChallengeCopy(locale: Locale) {
       addBet: (position: number) => `Add one coin to option ${position}`,
       collectPrize: 'Move the center win into the prize pool',
       creditEmpty: 'No CREDIT. Click the CREDIT display to insert a coin first.',
-      insertCredit: 'Insert one coin from your coin box',
+      insertCredit: 'Insert one rank-based coin bundle from your coin box',
       luckyResult: (payout: number) => `Mario lucky triple spin complete: ${payout} points won.`,
       placeBet: 'Add at least one coin to an option first.',
       result: (position: number | null, payout: number, multiplier: number) =>
@@ -1743,7 +1789,7 @@ function getCoinChallengeCopy(locale: Locale) {
       addBet: (position: number) => `${position} 番の絵柄にコインを1枚追加`,
       collectPrize: '中央の賞金をジャックポットへ移す',
       creditEmpty: 'CREDITがありません。上のCREDIT表示を押してコインを入れてください。',
-      insertCredit: 'コイン箱からコインを1枚入れる',
+      insertCredit: '現在のランクに応じた単位でコイン箱から投入',
       luckyResult: (payout: number) => `マリオのラッキー3連続回転完了：合計${payout}点。`,
       placeBet: '先に下の絵柄へコインを1枚以上入れてください。',
       result: (position: number | null, payout: number, multiplier: number) =>
@@ -1766,7 +1812,7 @@ function getCoinChallengeCopy(locale: Locale) {
     addBet: (position: number) => `第 ${position} 个图案增加 1 个金币`,
     collectPrize: '将中央奖金转入奖池',
     creditEmpty: 'CREDIT 不足，请先点击顶部 CREDIT 投入金币。',
-    insertCredit: '从金币箱投入 1 个金币',
+    insertCredit: '按当前段位从金币箱投入一档金币',
     luckyResult: (payout: number) => `马里奥幸运三连转完成，共获得 ${payout} 分`,
     placeBet: '请先点击下方图案，至少投入 1 个金币。',
     result: (position: number | null, payout: number, multiplier: number) =>
