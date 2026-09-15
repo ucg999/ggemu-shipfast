@@ -2,7 +2,7 @@ import { Outlet, createFileRoute, redirect, useRouterState } from '@tanstack/rea
 import { useEffect, useRef, useState } from 'react'
 import { CoinRewardPopup, FloatingHomeCoin, FlyingCollectedCoin } from '#/components/home/coin-rewards'
 import { normalizeLocale } from '#/lib/i18n'
-import { addCoinBalance } from '#/lib/coin-wallet'
+import { addCoinReward } from '#/lib/coin-wallet'
 import type { GameSearchSort } from '#/lib/ggemu'
 import { type SiteTemplate, normalizeSiteTemplate } from '#/lib/site-config'
 
@@ -194,9 +194,9 @@ function LocaleLayout() {
     })
     setInnerPageCoin(null)
     window.setTimeout(() => {
-      addCoinBalance(amount)
+      const reward = addCoinReward(amount)
       setInnerPageCoinFlight(null)
-      setInnerPageReward({ amount, id: Date.now(), prefix: '+' })
+      setInnerPageReward({ amount: reward.awarded, id: Date.now(), prefix: '+' })
       if (innerRewardTimerRef.current !== null) {
         window.clearTimeout(innerRewardTimerRef.current)
       }

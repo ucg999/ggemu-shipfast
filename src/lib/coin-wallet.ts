@@ -2,6 +2,28 @@ export const COIN_BALANCE_STORAGE_KEY = 'game-adventure-coin-balance'
 export const COIN_BALANCE_EVENT = 'game-adventure-coin-balance-change'
 export const MAX_COIN_BALANCE = 99_999
 
+export type CoinRankId = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'master' | 'king' | 'legend'
+
+export type CoinRank = {
+  id: CoinRankId
+  name: string
+  icon: string
+  min: number
+  max: number
+  multiplier: number
+}
+
+export const COIN_RANKS: ReadonlyArray<CoinRank> = [
+  { id: 'bronze', name: '青铜', icon: '/images/ranks/青铜.png', min: 0, max: 99, multiplier: 1 },
+  { id: 'silver', name: '白银', icon: '/images/ranks/白银.png', min: 100, max: 499, multiplier: 2 },
+  { id: 'gold', name: '黄金', icon: '/images/ranks/黄金.png', min: 500, max: 999, multiplier: 3 },
+  { id: 'platinum', name: '铂金', icon: '/images/ranks/铂金.png', min: 1_000, max: 1_999, multiplier: 4 },
+  { id: 'diamond', name: '钻石', icon: '/images/ranks/钻石.png', min: 2_000, max: 4_999, multiplier: 5 },
+  { id: 'master', name: '大师', icon: '/images/ranks/大师.png', min: 5_000, max: 9_999, multiplier: 6 },
+  { id: 'king', name: '王者', icon: '/images/ranks/王者.png', min: 10_000, max: 49_999, multiplier: 10 },
+  { id: 'legend', name: '传奇', icon: '/images/ranks/传奇.png', min: 50_000, max: MAX_COIN_BALANCE, multiplier: 20 },
+]
+
 const DAILY_GAME_MULTIPLIER_STORAGE_KEY = 'game-adventure-daily-game-multipliers'
 const GAME_PLAY_STARTED_STORAGE_PREFIX = 'game-adventure-play-started:'
 
@@ -33,6 +55,25 @@ export function addCoinBalance(amount: number) {
   }
 
   return next
+}
+
+export function getCoinRank(balance = readCoinBalance()) {
+  const safeBalance = Math.min(MAX_COIN_BALANCE, Math.max(0, Math.floor(balance)))
+  return [...COIN_RANKS].reverse().find(rank => safeBalance >= rank.min) ?? COIN_RANKS[0]
+}
+
+export function hasCoinRank(requiredRank: CoinRankId, balance = readCoinBalance()) {
+  const currentIndex = COIN_RANKS.findIndex(rank => rank.id === getCoinRank(balance).id)
+  const requiredIndex = COIN_RANKS.findIndex(rank => rank.id === requiredRank)
+  return requiredIndex >= 0 && currentIndex >= requiredIndex
+}
+
+export function addCoinReward(amount: number) {
+  const current = readCoinBalance()
+  const multiplier = getCoinRank(current).multiplier
+  const requested = Number.isFinite(amount) && amount > 0 ? Math.floor(amount) * multiplier : 0
+  const balance = requested > 0 ? addCoinBalance(requested) : current
+  return { awarded: Math.max(0, balance - current), balance, multiplier }
 }
 
 export function spendCoinBalance(amount: number) {

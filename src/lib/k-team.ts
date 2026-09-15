@@ -17,6 +17,13 @@ const aliases: Record<string, keyof typeof assets> = {
 }
 
 export function getThemeAsset(platform: FilterOption) {
+  if (platform.name.toLowerCase() === 'arcade') {
+    return {
+      ...assets.mame,
+      pointer: assets.arcade.pointer,
+      description: assets.arcade.description,
+    }
+  }
   const key = aliases[platform.name.toLowerCase()] || aliases[platform.slug?.toLowerCase() || '']
   return key ? assets[key] : { ...assets.html5, description: '', logo: null }
 }
@@ -44,7 +51,7 @@ export function themePlatformLabel(platform: FilterOption, locale: Locale) {
     return locale === 'zh-TW' ? '所有遊戲平台' : '所有游戏平台'
   }
   if (platform.name.toLowerCase() !== 'arcade') return null
-  if (locale === 'en') return 'MAME Arcade'
-  if (locale === 'ja') return 'MAMEアーケード'
-  return locale === 'zh-TW' ? 'MAME街機' : 'MAME街机'
+  if (locale === 'en') return 'Arcade Mode'
+  if (locale === 'ja') return 'アーケードモード'
+  return locale === 'zh-TW' ? '街機模式' : '街机模式'
 }

@@ -3,9 +3,10 @@ import type { CSSProperties } from 'react'
 
 import type { Locale } from '#/lib/ggemu'
 import {
-  addCoinBalance,
+  addCoinReward,
   COIN_BALANCE_EVENT,
   COIN_BALANCE_STORAGE_KEY,
+  getCoinRank,
   readCoinBalance,
 } from '#/lib/coin-wallet'
 
@@ -116,9 +117,10 @@ export function useHomeCoinRewards() {
   const addCoins = useCallback((amount: number, showFeedback = true) => {
     if (!Number.isFinite(amount) || amount <= 0) return
 
-    setBalance(addCoinBalance(amount))
+    const reward = addCoinReward(amount)
+    setBalance(reward.balance)
     if (showFeedback) {
-      showRewardFeedback(Math.floor(amount), '+')
+      showRewardFeedback(reward.awarded, '+')
     }
   }, [showRewardFeedback])
 
@@ -217,6 +219,31 @@ export function HomeCoinBag({
       <CoinRewardPopup feedback={balancePopup} />
     </>
   )
+}
+
+export function CoinRankBadge({ balance, lang, compact = false }: { balance: number; lang: Locale; compact?: boolean }) {
+  const rank = getCoinRank(balance)
+  const names = getCoinRankNames(lang)
+  const levelLabel = lang === 'zh-TW' ? '你的等級' : lang === 'en' ? 'Your rank' : lang === 'ja' ? 'あなたのランク' : '你的等级'
+  return (
+    <div
+      className="coin-rank-badge flex shrink-0 items-center gap-0.5"
+      title={`${names[rank.id]} · ×${rank.multiplier}`}
+    >
+      <img className={compact ? 'h-10 w-10 object-contain' : 'h-9 w-9 object-contain sm:h-12 sm:w-12'} decoding="async" src={rank.icon} alt="" />
+      <span className="-ml-0.5 flex min-w-0 flex-col leading-tight">
+        <small className={compact ? 'text-[9px] text-white/70' : 'text-[8px] text-white/65 sm:text-[10px]'}>{levelLabel}</small>
+        <strong className={compact ? 'whitespace-nowrap text-[11px]' : 'whitespace-nowrap text-xs sm:text-base'}>{names[rank.id]}</strong>
+      </span>
+    </div>
+  )
+}
+
+function getCoinRankNames(lang: Locale) {
+  if (lang === 'zh-TW') return { bronze: '青銅', silver: '白銀', gold: '黃金', platinum: '鉑金', diamond: '鑽石', master: '大師', king: '王者', legend: '傳奇' }
+  if (lang === 'en') return { bronze: 'Bronze', silver: 'Silver', gold: 'Gold', platinum: 'Platinum', diamond: 'Diamond', master: 'Master', king: 'King', legend: 'Legend' }
+  if (lang === 'ja') return { bronze: 'ブロンズ', silver: 'シルバー', gold: 'ゴールド', platinum: 'プラチナ', diamond: 'ダイヤ', master: 'マスター', king: '王者', legend: 'レジェンド' }
+  return { bronze: '青铜', silver: '白银', gold: '黄金', platinum: '铂金', diamond: '钻石', master: '大师', king: '王者', legend: '传奇' }
 }
 
 export function useGlobalCoinBalance() {

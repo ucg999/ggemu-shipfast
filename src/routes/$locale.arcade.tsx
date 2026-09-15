@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 
 import { SiteLayout } from '#/components/site-layout'
 import type { Locale, PublicGame } from '#/lib/ggemu'
-import { getCoinModeGameCost, searchGames } from '#/lib/ggemu'
+import { getCoinModeGameMinimumBalance, getCoinModeGameRequiredRank, searchGames } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
@@ -240,7 +240,8 @@ function getCoinChallengeModeLabel(locale: Locale) {
 
 function CoinModeGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
   const gameId = game.url_slug?.trim() || game._id?.trim() || ''
-  const coinCost = getCoinModeGameCost(game)
+  const requiredRank = getCoinModeGameRequiredRank(game)
+  const minimumBalance = getCoinModeGameMinimumBalance(game)
   const t = getI18n(lang).arcade
 
   return (
@@ -251,8 +252,7 @@ function CoinModeGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
             <img alt={game.name ?? t.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy" src={game.game_cover} />
           ) : null}
           <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/75 px-2 py-1 text-xs font-black text-yellow-300">
-            <img alt="" aria-hidden="true" className="h-4 w-4 [image-rendering:pixelated]" src="/images/coin-rewards/pixel-reward-coin.webp" />
-            ×{coinCost}
+            {getRequiredRankLabel(requiredRank, lang)}{minimumBalance > 0 ? ` · ${minimumBalance}币` : ''}
           </span>
         </figure>
         <div className="p-2.5">
@@ -262,6 +262,15 @@ function CoinModeGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
       </article>
     </Link>
   )
+}
+
+function getRequiredRankLabel(rank: ReturnType<typeof getCoinModeGameRequiredRank>, lang: Locale) {
+  const labels = rank === 'gold'
+    ? ['黄金', '黃金', 'Gold', 'ゴールド']
+    : rank === 'silver'
+      ? ['白银', '白銀', 'Silver', 'シルバー']
+      : ['青铜', '青銅', 'Bronze', 'ブロンズ']
+  return lang === 'zh-TW' ? labels[1] : lang === 'en' ? labels[2] : lang === 'ja' ? labels[3] : labels[0]
 }
 
 function LetterButton({

@@ -4,12 +4,11 @@ import {
   Outlet,
   createFileRoute,
   redirect,
-  useNavigate,
   useRouterState,
 } from '@tanstack/react-router'
 import QRCode from 'qrcode'
 import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties, MouseEvent } from 'react'
+import type { MouseEvent } from 'react'
 
 import {
   GameCardPreviewVideo,
@@ -24,7 +23,8 @@ import {
   type ChineseGameGuide,
 } from '#/lib/chinese-game-guides'
 import {
-  getCoinModeGameCost,
+  getCoinModeGameMinimumBalance,
+  getCoinModeGameRequiredRank,
   getGameDetailPageData,
   getRelatedGamePageData,
   type Locale,
@@ -38,7 +38,7 @@ import {
 } from '#/lib/i18n'
 import { getAlternateLinksFromCanonical } from '#/lib/seo'
 import { getPlatformLabel } from '#/lib/platform-label'
-import { markGamePlayStarted, spendCoinBalance } from '#/lib/coin-wallet'
+import { hasCoinRank, markGamePlayStarted, readCoinBalance } from '#/lib/coin-wallet'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -52,11 +52,13 @@ type InstallPromptWindow = Window & {
 const defaultManifestHref = '/manifest.webmanifest'
 const SHOW_EXTENDED_GAME_DETAILS = false
 
-function getCoinGameCopy(locale: Locale, cost: number) {
-  if (locale === 'zh-TW') return { insufficient: `金幣不足，需要 ${cost} 枚金幣。金幣隨處可見，玩遊戲、看別人玩都可獲得。` }
-  if (locale === 'en') return { insufficient: `You need ${cost} coins. Find coins around the site, play games, or watch others play to earn more.` }
-  if (locale === 'ja') return { insufficient: `${cost}コイン必要です。サイト内のコイン、ゲームプレイ、配信視聴で獲得できます。` }
-  return { insufficient: `金币不足，需要 ${cost} 个金币。金币随处可见，玩游戏、看别人玩都可获得。` }
+function getRankGameCopy(locale: Locale, rank: 'bronze' | 'silver' | 'gold') {
+  const names = rank === 'gold' ? ['黄金', '黃金', 'Gold', 'ゴールド'] : rank === 'silver' ? ['白银', '白銀', 'Silver', 'シルバー'] : ['青铜', '青銅', 'Bronze', 'ブロンズ']
+  const name = locale === 'zh-TW' ? names[1] : locale === 'en' ? names[2] : locale === 'ja' ? names[3] : names[0]
+  if (locale === 'zh-TW') return { label: `${name}段位`, insufficient: `需要達到${name}段位才可以開始遊戲。` }
+  if (locale === 'en') return { label: `${name} rank`, insufficient: `${name} rank is required to start this game.` }
+  if (locale === 'ja') return { label: `${name}ランク`, insufficient: `このゲームを始めるには${name}ランクが必要です。` }
+  return { label: `${name}段位`, insufficient: `需要达到${name}段位才可以开始游戏。` }
 }
 
 export const Route = createFileRoute('/$locale/games/$gameId')({
@@ -299,7 +301,6 @@ function removeEmptySchemaValues<T extends Record<string, unknown>>(schema: T) {
 function LocalizedGameDetailPage() {
   const { canonicalUrl, chineseGuide, game, relatedGamesPromise } = Route.useLoaderData()
   const { gameId, locale } = Route.useParams()
-  const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const locationHash = useRouterState({ select: (state) => state.location.hash })
   const isProStandalone = locationHash === 'PRO' || locationHash === '#PRO'
@@ -316,55 +317,17 @@ function LocalizedGameDetailPage() {
     name: game.name,
     startUrl: playPath,
   })
-  const playButtonRef = useRef<HTMLAnchorElement>(null)
-  const [coinFlight, setCoinFlight] = useState<{
-    id: number
-    left: number
-    top: number
-    travelX: number
-    travelY: number
-  } | null>(null)
-  const [isCoinGameLaunching, setIsCoinGameLaunching] = useState(false)
-  const coinGameCost = getCoinModeGameCost(game)
-  const isCoinGame = coinGameCost !== null
+  const requiredCoinRank = getCoinModeGameRequiredRank(game)
+  const minimumCoinBalance = getCoinModeGameMinimumBalance(game)
 
   const startGame = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (coinGameCost === null) {
-      markGamePlayStarted(gameId)
-      saveRecentPlayedGame(game, gameId)
+    if (requiredCoinRank && (!hasCoinRank(requiredCoinRank) || readCoinBalance() < minimumCoinBalance)) {
+      event.preventDefault()
+      window.alert(minimumCoinBalance > 0 ? `需要达到青铜段位并拥有至少 ${minimumCoinBalance} 个金币才可以开始游戏，金币不会扣除。` : getRankGameCopy(lang, requiredCoinRank).insufficient)
       return
     }
-
-    event.preventDefault()
-    if (isCoinGameLaunching) return
-    if (!spendCoinBalance(coinGameCost)) {
-      window.alert(getCoinGameCopy(lang, coinGameCost).insufficient)
-      return
-    }
-
-    const coinBox = document.querySelector<HTMLElement>('[data-coin-box]')
-    const source = coinBox?.getBoundingClientRect()
-    const target = playButtonRef.current?.getBoundingClientRect()
-    const left = source ? source.left + source.width / 2 - 24 : window.innerWidth / 2
-    const top = source ? source.top + source.height / 2 - 24 : 32
-    setCoinFlight({
-      id: Date.now(),
-      left,
-      top,
-      travelX: target ? target.left + target.width / 2 - left - 24 : 0,
-      travelY: target ? target.top + target.height / 2 - top - 24 : 0,
-    })
-    setIsCoinGameLaunching(true)
     markGamePlayStarted(gameId)
     saveRecentPlayedGame(game, gameId)
-    window.setTimeout(() => {
-      void navigate({
-        hash: isProStandalone ? 'PRO' : undefined,
-        params: { gameId, locale: lang },
-        search: { autoplay: '1', inline: '1' },
-        to: '/$locale/games/$gameId/play',
-      })
-    }, 760)
   }
 
   useEffect(() => {
@@ -429,21 +392,18 @@ function LocalizedGameDetailPage() {
               <div className="relative flex items-start gap-3">
                 <div className="min-w-0 flex-1 lg:flex-none">
                   <Link
-                    aria-disabled={isCoinGameLaunching}
                     className="btn btn-primary btn-lg w-full px-3 text-primary-content hover:text-primary-content lg:w-auto lg:px-8"
                     onClick={startGame}
                     params={{ gameId, locale: lang }}
-                    ref={playButtonRef}
                     hash={isProStandalone ? 'PRO' : undefined}
                     search={{ autoplay: '1', inline: '1' }}
                     to="/$locale/games/$gameId/play"
                   >
                     <i className="ri-play-fill text-xl" />
                     {t.play}
-                    {isCoinGame ? (
+                    {requiredCoinRank ? (
                       <span className="ml-1 flex items-center gap-1 rounded-full bg-black/25 px-2 py-1 text-sm font-black">
-                        <img alt="" aria-hidden="true" className="h-5 w-5 object-contain" src="/images/coin-rewards/pixel-reward-coin.webp" />
-                        ×{coinGameCost}
+                        {getRankGameCopy(lang, requiredCoinRank).label}{minimumCoinBalance > 0 ? ` · ${minimumCoinBalance}币` : ''}
                       </span>
                     ) : null}
                   </Link>
@@ -471,23 +431,6 @@ function LocalizedGameDetailPage() {
               </div>
             ) : null}
           </section>
-
-          {coinFlight ? (
-            <div
-              aria-hidden="true"
-              className="coin-fly-to-box pointer-events-none fixed z-[140] flex h-12 w-12 items-center"
-              key={coinFlight.id}
-              style={{
-                left: coinFlight.left,
-                top: coinFlight.top,
-                '--coin-travel-x': `${coinFlight.travelX}px`,
-                '--coin-travel-y': `${coinFlight.travelY}px`,
-              } as CSSProperties}
-            >
-              <img alt="" className="h-12 w-12 object-contain [image-rendering:pixelated]" src="/images/coin-rewards/pixel-reward-coin.webp" />
-              <span className="-ml-1 rounded bg-black/80 px-1.5 py-0.5 text-sm font-black text-yellow-300">×{coinGameCost}</span>
-            </div>
-          ) : null}
 
           <GameInformationSections
             categories={categories}

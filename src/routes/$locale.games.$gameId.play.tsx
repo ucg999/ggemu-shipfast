@@ -2,16 +2,18 @@ import { Link, createFileRoute, useNavigate, useRouter, useRouterState } from '@
 import { useServerFn } from '@tanstack/react-start'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { getGameDetail, searchGames, type Locale, type PublicGame } from '#/lib/ggemu'
+import { getCoinModeGameMinimumBalance, getCoinModeGameRequiredRank, getGameDetail, searchGames, type Locale, type PublicGame } from '#/lib/ggemu'
 import { normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { siteConfig } from '#/lib/site-config'
 import { useCurrentSiteTheme } from '#/lib/use-site-theme'
 import { calculateGameCoinAward } from '#/lib/game-session-coins'
 import {
-  addCoinBalance,
+  addCoinReward,
   consumeGamePlayStartedAt,
   getDailyGameCoinMultiplier,
+  hasCoinRank,
+  readCoinBalance,
 } from '#/lib/coin-wallet'
 
 const trialDragDocuments = new WeakSet<Document>()
@@ -58,11 +60,14 @@ function LocalizedPlayGamePage() {
   const locationHash = useRouterState({ select: state => state.location.hash })
   const isProGame = locationHash === 'PRO' || locationHash === '#PRO'
   const lang = normalizeLocale(locale)
+  const requiredCoinRank = getCoinModeGameRequiredRank(game)
+  const minimumCoinBalance = getCoinModeGameMinimumBalance(game)
+  const [rankAccessGranted, setRankAccessGranted] = useState(requiredCoinRank === null)
   const embedId = encodeURIComponent(game._id || game.url_slug || gameId)
   const refcode = encodeURIComponent(siteConfig.GGEMU_REFCODE)
   const isPsp = isPspGame(game)
   const theme = useCurrentSiteTheme()
-  const embedSrc = `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp, theme, autoplay === '1')}`
+  const embedSrc = rankAccessGranted ? `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp, theme, autoplay === '1')}` : 'about:blank'
   const [showRecommendations, setShowRecommendations] = useState(false)
   const [recommendations, setRecommendations] = useState<Array<PublicGame>>([])
   const [recommendationType, setRecommendationType] = useState<'series' | 'category'>('category')
@@ -87,6 +92,16 @@ function LocalizedPlayGamePage() {
     : lang === 'ja' ? (isFullscreen ? '全画面を終了' : '全画面')
     : lang === 'zh-TW' ? (isFullscreen ? '退出全螢幕' : '全螢幕')
     : (isFullscreen ? '退出全屏' : '全屏')
+
+  useEffect(() => {
+    if (!requiredCoinRank || (hasCoinRank(requiredCoinRank) && readCoinBalance() >= minimumCoinBalance)) {
+      setRankAccessGranted(true)
+      return
+    }
+    const rankName = requiredCoinRank === 'gold' ? '黄金' : requiredCoinRank === 'silver' ? '白银' : '青铜'
+    window.alert(minimumCoinBalance > 0 ? `需要达到青铜段位并拥有至少 ${minimumCoinBalance} 个金币才可以开始游戏，金币不会扣除。` : `需要达到${rankName}段位才可以开始游戏。`)
+    void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
+  }, [gameId, isProGame, lang, minimumCoinBalance, navigate, requiredCoinRank])
 
   useEffect(() => {
     const update = () => setIsFullscreen(document.fullscreenElement === playerRef.current)
@@ -173,8 +188,7 @@ function LocalizedPlayGamePage() {
     awardedCoinsRef.current = earnedCoins
 
     if (newCoins > 0) {
-      addStoredGameCoins(newCoins)
-      sessionCoinsRef.current += newCoins
+      sessionCoinsRef.current += addStoredGameCoins(newCoins)
     }
 
     return {
@@ -638,7 +652,7 @@ function getCurrentActivePlayTime(accumulatedTime: number, startedAt: number | n
 }
 
 function addStoredGameCoins(amount: number) {
-  addCoinBalance(amount)
+  return addCoinReward(amount).awarded
 }
 
 function getRecommendationLabels(locale: Locale) {

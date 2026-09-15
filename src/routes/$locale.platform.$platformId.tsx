@@ -191,27 +191,27 @@ function loadPlatformPage(locale: Locale, platform: string, page: number) {
 
 function getCoinModeCopy(locale: Locale) {
   if (locale === 'zh-TW') return {
-    description: '只在金幣模式出現的專屬遊戲，每款遊戲會標示所需金幣。',
+    description: '金幣模式遊戲依段位解鎖，只檢查段位與金幣餘額，開始遊戲不會扣除金幣。',
     seoTitle: '金幣模式｜專屬遊戲｜懷舊遊戲廳',
-    subtitle: '收集金幣，解鎖全民鬥地主、美女彈珠打磚塊、美女天蠶變與美女打鑽。點擊遊戲可查看詳情並開始遊玩。',
+    subtitle: '全民鬥地主需青銅段位且至少擁有20枚金幣；美女打鑽、美女彈珠打磚塊需白銀段位；美女天蠶變需黃金段位。達到條件即可遊玩，不扣金幣。',
     title: '金幣模式',
   }
   if (locale === 'en') return {
-    description: 'Exclusive coin-mode games. Each game shows its coin cost.',
+    description: 'Coin Mode games unlock by rank. Starting a game does not spend coins.',
     seoTitle: 'Coin Mode | Exclusive Games | Retro Game Hall',
-    subtitle: 'Collect coins to unlock Dou Dizhu, Wiggie Waggie, WOW New Fantasia, and Excelsior.',
+    subtitle: 'Dou Dizhu requires Bronze rank and a balance of 20 coins. Wiggie Waggie and Excelsior require Silver; WOW New Fantasia requires Gold. Coins are not deducted.',
     title: 'Coin Mode',
   }
   if (locale === 'ja') return {
-    description: 'コインモード限定ゲームです。必要なコイン数はゲームごとに表示されます。',
+    description: 'コインモードのゲームはランクで解放され、開始時にコインは消費されません。',
     seoTitle: 'コインモード｜限定ゲーム｜レトロゲームセンター',
-    subtitle: 'コインを集めて全民斗地主、Wiggie Waggie、WOW New Fantasia、Excelsior をプレイしましょう。',
+    subtitle: '全民斗地主はブロンズランクと20コイン以上、Wiggie WaggieとExcelsiorはシルバー、WOW New Fantasiaはゴールドが必要です。コインは消費されません。',
     title: 'コインモード',
   }
   return {
-    description: '只在金币模式出现的专属游戏，每款游戏会标示所需金币。',
+    description: '金币模式游戏按段位解锁，只检查段位和金币余额，开始游戏不会扣除金币。',
     seoTitle: '金币模式｜金币专属游戏｜怀旧游戏厅',
-    subtitle: '收集金币，解锁全民斗地主、美女弹珠打砖块、美女天蚕变和美女打钻。点击游戏可查看详情并开始游玩。',
+    subtitle: '全民斗地主需青铜段位且至少拥有20个金币；美女打钻、美女弹珠打砖块需白银段位；美女天蚕变需黄金段位。达到条件即可游玩，不扣金币。',
     title: '金币模式',
   }
 }

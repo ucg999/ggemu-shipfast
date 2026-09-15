@@ -7,14 +7,15 @@ const API_BASE_URL = 'https://ggemu.com'
 const PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
 const NON_GCOIN_GAME = '0'
-const COIN_MODE_GAME_COSTS: Readonly<Record<string, number>> = {
-  'wiggie waggie': 20,
-  'wow new fantasia': 20,
-  excelsior: 20,
-  '美女弹珠打砖块': 20,
-  '美女天蚕变': 20,
-  '美女打钻': 20,
-  '全民斗地主': 10,
+export type CoinModeRequiredRank = 'bronze' | 'silver' | 'gold'
+const COIN_MODE_GAME_RANKS: Readonly<Record<string, CoinModeRequiredRank>> = {
+  'wiggie waggie': 'silver',
+  'wow new fantasia': 'gold',
+  excelsior: 'silver',
+  '美女弹珠打砖块': 'silver',
+  '美女天蚕变': 'gold',
+  '美女打钻': 'silver',
+  '全民斗地主': 'bronze',
 }
 const COIN_MODE_GAME_QUERIES = ['wiggie waggie', 'wow new fantasia', 'excelsior', '斗地主'] as const
 const COIN_MODE_CHINESE_NAMES: Readonly<Record<string, string>> = {
@@ -575,13 +576,23 @@ export const searchCoinModeGames = createServerFn({ method: 'GET' })
   })
 
 export function isCoinModeGame(game: Pick<PublicGame, 'name'> | string | undefined) {
-  return getCoinModeGameCost(game) !== null
+  return getCoinModeGameRequiredRank(game) !== null
 }
 
 export function getCoinModeGameCost(game: Pick<PublicGame, 'name'> | string | undefined) {
+  return getCoinModeGameRequiredRank(game) === null ? null : 0
+}
+
+export function getCoinModeGameRequiredRank(game: Pick<PublicGame, 'name'> | string | undefined) {
   const name = typeof game === 'string' ? game : game?.name
   const normalized = name?.trim().toLocaleLowerCase() ?? ''
-  return COIN_MODE_GAME_COSTS[normalized] ?? null
+  return COIN_MODE_GAME_RANKS[normalized] ?? null
+}
+
+export function getCoinModeGameMinimumBalance(game: Pick<PublicGame, 'name'> | string | undefined) {
+  const name = typeof game === 'string' ? game : game?.name
+  const normalized = name?.trim().toLocaleLowerCase() ?? ''
+  return normalized === '全民斗地主' || normalized.includes('斗地主') ? 20 : 0
 }
 
 function resolveCoinModeSearchQuery(query: string) {

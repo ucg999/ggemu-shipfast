@@ -9,7 +9,7 @@ import { useServerFn } from '@tanstack/react-start'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { SiteLayout } from '#/components/site-layout'
-import { addCoinBalance } from '#/lib/coin-wallet'
+import { addCoinReward } from '#/lib/coin-wallet'
 import {
   searchLiveRooms,
   type Locale,
@@ -327,9 +327,8 @@ function LiveRoomPlayerModal({
     const newCoins = Math.max(0, earnedCoins - awardedCoinsRef.current)
 
     if (newCoins > 0) {
-      addStoredLiveCoins(newCoins)
+      sessionCoinsRef.current += addStoredLiveCoins(newCoins)
       awardedCoinsRef.current = earnedCoins
-      sessionCoinsRef.current += newCoins
     }
 
     return {
@@ -467,7 +466,7 @@ type LiveCoinSettlement = {
 }
 
 function addStoredLiveCoins(amount: number) {
-  addCoinBalance(amount)
+  return addCoinReward(amount).awarded
 }
 
 function getLiveCoinLabels(locale: Locale) {

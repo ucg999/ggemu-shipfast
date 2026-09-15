@@ -11,6 +11,7 @@ import { SWITCH_LIBRARY_GAMES } from '#/lib/switch-library'
 import { PSP_LIBRARY_GAMES } from '#/lib/psp-library'
 import {
   CoinRewardPopup,
+  CoinRankBadge,
   FloatingHomeCoin,
   FlyingCollectedCoin,
   HomeCoinBag,
@@ -22,11 +23,16 @@ import { SITE_ORIGIN } from '#/lib/site-url'
 import '#/styles/theme-mode.css'
 import { createThemeGameCache } from '#/lib/theme-game-cache'
 import themeImageFormats from '#/lib/theme-image-formats.json'
+import libraryUpdates from '#/lib/library-updates.json'
 
 const themeGamesCache = createThemeGameCache<Array<PublicGame>>()
 const themeFirstPagesCache = createThemeGameCache<Array<GameSearchResult>>()
+const DAILY_CHALLENGE_STORAGE_KEY = 'game-adventure-daily-challenge'
 
 export const Route = createFileRoute('/$locale/PRO')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    platform: search.platform === 'psp' || search.platform === 'switch' ? search.platform : undefined,
+  }),
   beforeLoad: ({ params }) => {
     const locale = normalizeLocale(params.locale)
     if (locale === 'en' || locale === 'ja') {
@@ -60,6 +66,7 @@ export const Route = createFileRoute('/$locale/PRO')({
 
 function ThemeMode() {
   const { platforms: sourcePlatforms } = Route.useLoaderData()
+  const requestedLibrary = Route.useSearch().platform
   const lang = normalizeLocale(Route.useParams().locale)
   const english = lang === 'en'
   const layoutCopy = getI18n(lang).layout
@@ -91,13 +98,46 @@ function ThemeMode() {
       }
       merged.push(item)
     }
+    const fcIndex = merged.findIndex(item => ['famicom', 'nes', 'nintendo entertainment system'].includes(item.name.toLowerCase()))
+    const snesIndex = merged.findIndex(item => ['super famicom', 'snes', 'super nintendo'].includes(item.name.toLowerCase()))
+    if (fcIndex >= 0 && snesIndex >= 0 && snesIndex !== fcIndex + 1) {
+      const [snes] = merged.splice(snesIndex, 1)
+      const updatedFcIndex = merged.findIndex(item => ['famicom', 'nes', 'nintendo entertainment system'].includes(item.name.toLowerCase()))
+      merged.splice(updatedFcIndex + 1, 0, snes)
+    }
+    const segaItems = [
+      merged.find(item => ['game gear', 'sega game gear'].includes(item.name.toLowerCase())),
+      merged.find(item => item.slug === 'theme-merged-md' || ['genesis', 'sega genesis', 'mega drive', 'sega mega drive'].includes(item.name.toLowerCase())),
+      merged.find(item => ['master system', 'sega master system', 'sms'].includes(item.name.toLowerCase())),
+    ].filter((item): item is (typeof merged)[number] => Boolean(item))
+    const saturn = merged.find(item => ['sega saturn', 'seag saturn', 'saturn'].includes(item.name.toLowerCase()))
+    if (saturn && segaItems.length > 0) {
+      for (const item of segaItems) {
+        const index = merged.indexOf(item)
+        if (index >= 0) merged.splice(index, 1)
+      }
+      const saturnIndex = merged.indexOf(saturn)
+      merged.splice(saturnIndex + 1, 0, ...segaItems)
+    }
+    const endingPlatforms = [
+      merged.find(item => isPspThemePlatform(item)),
+      merged.find(item => ['playstation', 'playstation 1', 'ps1', 'psx'].includes(item.name.toLowerCase())),
+      merged.find(item => isSwitchThemePlatform(item)),
+    ].filter((item): item is (typeof merged)[number] => Boolean(item))
+    for (const item of endingPlatforms) {
+      const index = merged.indexOf(item)
+      if (index >= 0) merged.splice(index, 1)
+    }
+    merged.push(...endingPlatforms)
     return merged
   }, [sourcePlatforms])
-  const [selected, setSelected] = useState(0)
-  const [inLibrary, setInLibrary] = useState(false)
+  const requestedLibraryIndex = platforms.findIndex(item => requestedLibrary === 'psp' ? isPspThemePlatform(item) : requestedLibrary === 'switch' ? isSwitchThemePlatform(item) : false)
+  const [selected, setSelected] = useState(requestedLibraryIndex >= 0 ? requestedLibraryIndex : 0)
+  const [inLibrary, setInLibrary] = useState(requestedLibraryIndex >= 0)
   const [page, setPage] = useState(1)
   const [query, setQuery] = useState('')
   const [librarySort, setLibrarySort] = useState<'random' | 'popular' | 'updatedAt' | 'releaseDate'>('releaseDate')
+  const [librarySortReverse, setLibrarySortReverse] = useState(false)
   const [librarySearchField, setLibrarySearchField] = useState<'all' | 'genre' | 'publisher'>('all')
   const [libraryRandomSeed, setLibraryRandomSeed] = useState(0)
   const [result, setResult] = useState<GameSearchResult | null>(null)
@@ -109,6 +149,7 @@ function ThemeMode() {
   const [showcaseVideoFailed, setShowcaseVideoFailed] = useState(false)
   const [pageVisible, setPageVisible] = useState(true)
   const coinRewards = useHomeCoinRewards()
+  const [dailyCheckIn, setDailyCheckIn] = useState({ completed: false, streak: 0 })
   const [fullscreen, setFullscreen] = useState(false)
   const [notice, setNotice] = useState('')
   const [favoriteGames, setFavoriteGames] = useState<Array<PublicGame>>([])
@@ -136,6 +177,26 @@ function ThemeMode() {
   const activeGame = result?.games[inLibrary ? gameIndex : showcaseIndex]
   const count = result?.pagination.total ?? platform?.count
   const platformLabel = themePlatformLabel(platform, lang) || getPlatformLabel(platform.name, lang)
+
+  useEffect(() => {
+    setDailyCheckIn(readProDailyCheckIn())
+  }, [])
+
+  function checkIn() {
+    const current = readProDailyCheckIn()
+    if (current.completed) return
+    const now = new Date()
+    const yesterday = new Date(now)
+    yesterday.setDate(now.getDate() - 1)
+    const streak = current.lastDate === getLocalDateKey(yesterday) ? current.streak + 1 : 1
+    try {
+      window.localStorage.setItem(DAILY_CHALLENGE_STORAGE_KEY, JSON.stringify({ lastCompletedDate: getLocalDateKey(now), streak }))
+    } catch {
+      // Keep the current visit usable when browser storage is unavailable.
+    }
+    setDailyCheckIn({ completed: true, streak })
+    coinRewards.addCoins(streak * 10)
+  }
 
   const advanceShowcase = useCallback(() => {
     const games = result?.games || []
@@ -257,7 +318,7 @@ function ThemeMode() {
       return
     }
     if (switchPlatform) {
-      const games = prepareThemeLibraryGames(SWITCH_LIBRARY_GAMES, query, librarySearchField, librarySort, libraryRandomSeed).map(game => ({
+      const games = prepareThemeLibraryGames(SWITCH_LIBRARY_GAMES, 'switch', query, librarySearchField, librarySort, librarySortReverse, libraryRandomSeed).map(game => ({
         _id: game.id,
         url_slug: game.id,
         name: game.title,
@@ -265,6 +326,8 @@ function ThemeMode() {
         developer: game.publisher,
         released_year: game.releaseDate,
         platform: 'Nintendo Switch',
+        categories: [game.genre],
+        languages: [game.language],
         game_cover: game.cover,
       }))
       setResult({ games, pagination: { total: games.length, page: 1, limit: games.length || 1, pages: 1 } })
@@ -272,7 +335,7 @@ function ThemeMode() {
       return
     }
     if (pspPlatform) {
-      const games = prepareThemeLibraryGames(PSP_LIBRARY_GAMES, query, librarySearchField, librarySort, libraryRandomSeed).map(game => ({
+      const games = prepareThemeLibraryGames(PSP_LIBRARY_GAMES, 'psp', query, librarySearchField, librarySort, librarySortReverse, libraryRandomSeed).map(game => ({
         _id: game.id,
         url_slug: game.id,
         name: game.title,
@@ -280,6 +343,8 @@ function ThemeMode() {
         developer: game.publisher,
         released_year: game.releaseDate,
         platform: 'PSP',
+        categories: [game.genre],
+        languages: ['cardLanguage' in game ? String(game.cardLanguage ?? game.language) : game.language],
         game_cover: game.cover,
       }))
       setResult({ games, pagination: { total: games.length, page: 1, limit: games.length || 1, pages: 1 } })
@@ -321,7 +386,7 @@ function ThemeMode() {
         .finally(() => { if (!cancelled) setLoading(false) })
     }, query ? 220 : 0)
     return () => { cancelled = true; window.clearTimeout(timer) }
-  }, [platform, allGames, favoritesPlatform, lastPlayedPlatform, favoriteGames, switchPlatform, pspPlatform, lang, page, query, retry, sourcePlatforms, librarySearchField, librarySort, libraryRandomSeed])
+  }, [platform, allGames, favoritesPlatform, lastPlayedPlatform, favoriteGames, switchPlatform, pspPlatform, lang, page, query, retry, sourcePlatforms, librarySearchField, librarySort, librarySortReverse, libraryRandomSeed])
 
   function toggleFavorite(game: PublicGame) {
     const id = game.url_slug || game._id
@@ -479,6 +544,12 @@ function ThemeMode() {
         </> : <section className="kt-library">
           <div className="kt-library-top">
             <button onClick={back}>← {english ? 'Platforms' : '平台选择'}</button><h1>{platformLabel}</h1>
+            {(switchPlatform || pspPlatform) ? <a
+              className="kt-library-archive"
+              href={switchPlatform ? 'https://www.kdocs.cn/l/cs8H4NUI4lC4' : 'https://www.kdocs.cn/l/coH3Z1VLgop3'}
+              rel="noreferrer"
+              target="_blank"
+            >{switchPlatform ? (lang === 'zh-TW' ? 'Switch全遊戲檔案' : 'Switch全游戏档案') : (lang === 'zh-TW' ? 'PSP全遊戲檔案' : 'PSP全游戏档案')}</a> : null}
             {(switchPlatform || pspPlatform) ? <div className="kt-library-filters">
               {getThemeLibraryFilters(lang).map(filter => <button
                 aria-pressed={filter.field === librarySearchField || filter.field === librarySort}
@@ -488,13 +559,14 @@ function ThemeMode() {
                   if (filter.field === 'genre' || filter.field === 'publisher') setLibrarySearchField(filter.field)
                   else {
                     setLibrarySearchField('all')
+                    setLibrarySortReverse(filter.field === librarySort && filter.field !== 'random' ? value => !value : false)
                     setLibrarySort(filter.field)
                     if (filter.field === 'random') setLibraryRandomSeed(Date.now())
                   }
                   setPage(1)
                 }}
                 type="button"
-              >{filter.label}</button>)}
+              >{filter.label}{filter.field === librarySort && filter.field !== 'random' ? <span aria-hidden="true">{librarySortReverse ? '↑' : '↓'}</span> : null}</button>)}
             </div> : null}
             <input aria-label="搜索游戏" placeholder={getThemeLibrarySearchPlaceholder(lang, librarySearchField)} value={query} onChange={event => { setQuery(event.target.value); setPage(1) }} />
           </div>
@@ -512,6 +584,7 @@ function ThemeMode() {
                   <span className="kt-game-number">{String((page - 1) * 24 + index + 1).padStart(3, '0')}</span>
                   <ThemeGameCardPreview game={game} eager={index < 6} />
                   <strong>{game.name}</strong>
+                  {(switchPlatform || pspPlatform) ? <small className="kt-game-meta">{formatThemeLibraryCardMeta(game)}</small> : null}
                 </a>
                 {allGames && <button className={`kt-favorite ${favorite ? 'is-favorite' : ''}`} aria-label={favorite ? '取消收藏' : '收藏游戏'} aria-pressed={favorite} onClick={() => toggleFavorite(game)}>{favorite ? '♥' : '♡'}</button>}
               </div>
@@ -523,16 +596,18 @@ function ThemeMode() {
           <div className="kt-footer-brand">
             <a href={`/${lang}#classic`} aria-label={layoutCopy.siteName}><img src="/logo.png" alt="" /><span className="kt-footer-title"><strong>{layoutCopy.siteName}</strong><small>{layoutCopy.siteSlogan}</small></span></a>
             <HomeCoinBag balance={coinRewards.balance} lang={lang} onOpen={() => {}} />
+            <CoinRankBadge balance={coinRewards.balance} compact lang={lang} />
             <Link className="kt-footer-shortcut" to="/$locale/platform/$platformId" params={{ locale: lang, platformId: 'coin' }} hash="PRO">{getThemeFooterCopy(lang).coinMode}</Link>
             <Link className="kt-footer-shortcut" to="/$locale/original-games" params={{ locale: lang }} hash="PRO">{getOriginalGamesTitle(lang)}</Link>
           </div>
-          <span className="kt-footer-help">{english ? '↑ ↓ Select   ·   Enter Confirm   ·   Esc Back' : '↑ ↓ 选择　·　Enter 确认　·　Esc 返回'}</span>
+          <span className="kt-footer-help"><strong>游戏交流Q群：62119057</strong><small>喜欢V群的（比较活跃）：扫主页的码-需要手拉</small></span>
           <div className="kt-footer-actions">
+            <button className="kt-check-in" disabled={dailyCheckIn.completed} onClick={checkIn} type="button">{dailyCheckIn.completed ? '已签到' : '签到'}</button>
             <Link to="/$locale/live" params={{ locale: lang }} hash="PRO" className="kt-watch"><span aria-hidden="true" className="live-watch-eye"><span className="live-watch-pupil" /></span><span>{getThemeFooterCopy(lang).watching}</span></Link>
             <details className="kt-language"><summary>{lang === 'zh-CN' ? '简' : lang === 'zh-TW' ? '繁' : lang === 'en' ? '英' : '日'} ▴</summary><div>
               {(['zh-CN', 'zh-TW'] as const).map(locale => <Link key={locale} to="/$locale/PRO" params={{ locale }}>{locale === 'zh-CN' ? '简' : '繁'}</Link>)}
             </div></details>
-            <span className="kt-version">v1.0</span>
+            <span className="kt-version">v1.1</span>
           </div>
         </footer>
         {notice && <button className="kt-notice" onClick={() => setNotice('')}>{notice} ×</button>}
@@ -549,6 +624,30 @@ function getThemeFooterCopy(lang: ReturnType<typeof normalizeLocale>) {
   if (lang === 'en') return { coinMode: 'Coin Mode', watching: 'See What Others Play' }
   if (lang === 'ja') return { coinMode: 'コインモード', watching: 'みんなが遊んでいるゲーム' }
   return { coinMode: '金币模式', watching: '看别人在玩什么' }
+}
+
+function getLocalDateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function readProDailyCheckIn() {
+  const fallback = { completed: false, lastDate: '', streak: 0 }
+  if (typeof window === 'undefined') return fallback
+  try {
+    const stored = window.localStorage.getItem(DAILY_CHALLENGE_STORAGE_KEY)
+    const parsed = stored ? JSON.parse(stored) as { lastCompletedDate?: string; streak?: number } : null
+    const lastDate = parsed?.lastCompletedDate || ''
+    return {
+      completed: lastDate === getLocalDateKey(new Date()),
+      lastDate,
+      streak: Math.max(0, Number(parsed?.streak) || 0),
+    }
+  } catch {
+    return fallback
+  }
 }
 
 function getSwitchPlatformNotice(lang: ReturnType<typeof normalizeLocale>) {
@@ -572,9 +671,11 @@ type ThemeLibraryGame = (typeof SWITCH_LIBRARY_GAMES)[number]
 
 function prepareThemeLibraryGames<T extends ThemeLibraryGame>(
   library: Array<T>,
+  platform: 'switch' | 'psp',
   query: string,
   searchField: 'all' | 'genre' | 'publisher',
   sort: 'random' | 'popular' | 'updatedAt' | 'releaseDate',
+  reverse: boolean,
   randomSeed: number,
 ) {
   const normalizedQuery = query.trim().toLocaleLowerCase()
@@ -588,11 +689,30 @@ function prepareThemeLibraryGames<T extends ThemeLibraryGame>(
     return values.some(value => value.toLocaleLowerCase().includes(normalizedQuery))
   })
   return games.sort((left, right) => {
-    if (sort === 'popular') return (right.popularity || 0) - (left.popularity || 0)
-    if (sort === 'updatedAt') return Date.parse(right.updatedAt || '') - Date.parse(left.updatedAt || '') || right.releaseDate.localeCompare(left.releaseDate)
-    if (sort === 'random') return hashThemeLibraryId(`${left.id}:${randomSeed}`) - hashThemeLibraryId(`${right.id}:${randomSeed}`)
-    return right.releaseDate.localeCompare(left.releaseDate)
+    let result = 0
+    if (sort === 'popular') result = (right.popularity || 0) - (left.popularity || 0)
+    else if (sort === 'updatedAt') result = getThemeLibraryUpdateTime(platform, right) - getThemeLibraryUpdateTime(platform, left) || parseThemeLibraryDate(right.releaseDate) - parseThemeLibraryDate(left.releaseDate)
+    else if (sort === 'random') return hashThemeLibraryId(`${left.id}:${randomSeed}`) - hashThemeLibraryId(`${right.id}:${randomSeed}`)
+    else result = parseThemeLibraryDate(right.releaseDate) - parseThemeLibraryDate(left.releaseDate)
+    return reverse ? -result : result
   })
+}
+
+function getThemeLibraryUpdateTime(platform: 'switch' | 'psp', game: ThemeLibraryGame) {
+  const updates = libraryUpdates as Record<string, { updatedAt?: string | null }>
+  return Date.parse(updates[`${platform}/${game.id}`]?.updatedAt ?? game.updatedAt ?? '') || 0
+}
+
+function parseThemeLibraryDate(value: string) {
+  const parts = value.trim().match(/^(\d{4})[-./年](\d{1,2})?(?:[-./月](\d{1,2}))?/)
+  if (parts) return Date.UTC(Number(parts[1]), Math.max(0, Number(parts[2] || 1) - 1), Number(parts[3] || 1))
+  return Date.parse(value) || 0
+}
+
+function formatThemeLibraryCardMeta(game: PublicGame) {
+  const language = game.languages?.[0]?.split(/[、，,\/；;]/)[0]?.trim() || ''
+  const genre = game.categories?.[0]?.split('、')[0]?.trim() || ''
+  return [game.platform === 'Nintendo Switch' ? 'Switch' : game.platform, language, genre, game.released_year].filter(Boolean).join(' · ')
 }
 
 function hashThemeLibraryId(value: string) {

@@ -7,8 +7,8 @@ import { getI18n, normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { getOriginalGamesTitle } from '#/lib/original-games'
 import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
-import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
-import { addCoinBalance } from '#/lib/coin-wallet'
+import { CoinRankBadge, HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
+import { addCoinReward } from '#/lib/coin-wallet'
 import { confirmResourceDownload, unlockPaidResource } from '#/lib/paid-resource'
 
 const SITE_VISIT_COIN_SESSION_KEY = 'game-adventure-site-visit-coin-awarded'
@@ -68,7 +68,7 @@ export function SiteLayout({
     try {
       if (window.sessionStorage.getItem(SITE_VISIT_COIN_SESSION_KEY) === '1') return
       window.sessionStorage.setItem(SITE_VISIT_COIN_SESSION_KEY, '1')
-      addCoinBalance(1)
+      addCoinReward(1)
     } catch {
       // The site remains usable when session storage is unavailable.
     }
@@ -217,6 +217,11 @@ export function SiteLayout({
   }
 
   const isProStandalone = location.hash === 'PRO' || location.hash === '#PRO'
+  const proLibraryPlatform = location.pathname.includes('/platform/psp/')
+    ? 'psp'
+    : location.pathname.includes('/platform/switch/')
+      ? 'switch'
+      : undefined
 
   if (isProStandalone) {
     return (
@@ -227,12 +232,14 @@ export function SiteLayout({
               if (location.pathname.endsWith('/play')) {
                 window.dispatchEvent(new Event('ggemu-request-game-exit'))
               } else {
-                void navigate({ to: '/$locale/PRO', params: { locale } })
+                void navigate({ to: '/$locale/PRO', params: { locale }, search: proLibraryPlatform ? { platform: proLibraryPlatform } : {} })
               }
             }}
           type="button"
         >
-          ← {locale === 'zh-TW' ? '返回主題模式' : locale === 'en' ? 'Back to Theme Mode' : locale === 'ja' ? 'テーマモードに戻る' : '返回主题模式'}
+          ← {proLibraryPlatform
+            ? locale === 'zh-TW' ? `返回${proLibraryPlatform === 'psp' ? 'PSP' : 'Switch'}遊戲庫` : locale === 'en' ? `Back to ${proLibraryPlatform === 'psp' ? 'PSP' : 'Switch'} library` : locale === 'ja' ? `${proLibraryPlatform === 'psp' ? 'PSP' : 'Switch'}ライブラリへ戻る` : `返回${proLibraryPlatform === 'psp' ? 'PSP' : 'Switch'}游戏库`
+            : locale === 'zh-TW' ? '返回主題模式' : locale === 'en' ? 'Back to Theme Mode' : locale === 'ja' ? 'テーマモードに戻る' : '返回主题模式'}
         </button>
         {children}
       </main>
@@ -242,7 +249,7 @@ export function SiteLayout({
   return (
     <main className="min-h-screen w-full max-w-full overflow-x-clip bg-base-100 text-base-content">
       <header className="sticky top-0 z-40 border-b border-red-700 bg-red-600 text-white shadow-sm">
-        <div className="navbar flex-nowrap gap-1 pl-0 pr-2 sm:px-6 lg:grid lg:grid-cols-[290px_minmax(0,1fr)_auto] lg:gap-0 lg:px-8">
+        <div className="navbar flex-nowrap gap-1 pl-0 pr-2 sm:px-6 lg:grid lg:grid-cols-[max-content_minmax(0,1fr)_auto] lg:gap-0 lg:px-8">
           <div className="navbar-start min-w-0 w-auto flex-none">
             {hideHeaderNav ? null : (
               <button
@@ -259,7 +266,7 @@ export function SiteLayout({
               </button>
             )}
             <Link
-              className="flex min-w-0 items-center gap-3"
+              className="flex shrink-0 items-center gap-3"
               params={{ locale }}
               to="/$locale"
             >
@@ -270,9 +277,9 @@ export function SiteLayout({
                   src="/logo.png"
                 />
               </span>
-              <span className="hidden w-max min-w-0 text-left leading-tight sm:flex sm:flex-col sm:items-start">
+              <span className="hidden w-max shrink-0 text-left leading-tight sm:flex sm:flex-col sm:items-start">
                 <span
-                  className={`block w-full text-2xl font-bold ${
+                  className={`block w-full whitespace-nowrap text-2xl font-bold ${
                     locale === 'zh-CN' || locale === 'zh-TW'
                       ? 'text-justify [text-align-last:justify]'
                       : ''
@@ -285,12 +292,13 @@ export function SiteLayout({
                 </span>
               </span>
             </Link>
-            <div className="relative flex shrink-0 items-center">
+            <div className="relative ml-2 flex shrink-0 items-center sm:ml-4">
               <HomeCoinBag
                 balance={globalCoins.balance}
                 lang={locale}
                 onOpen={globalCoins.showBalance}
               />
+              <CoinRankBadge balance={globalCoins.balance} lang={locale} />
               {brandAddon ? <div className="absolute left-full top-1/2 -translate-y-1/2">{brandAddon}</div> : null}
             </div>
           </div>

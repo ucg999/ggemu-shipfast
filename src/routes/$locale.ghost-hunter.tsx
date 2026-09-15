@@ -2,7 +2,7 @@ import ghostHunterStyles from '#/components/ghost-hunter.css?url'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { memo, useEffect, useRef, useState } from 'react'
 import { CoinRewardPopup } from '#/components/home/coin-rewards'
-import { addCoinBalance } from '#/lib/coin-wallet'
+import { addCoinReward } from '#/lib/coin-wallet'
 import type { PointerEvent } from 'react'
 import { SiteLayout } from '#/components/site-layout'
 import { normalizeLocale } from '#/lib/i18n'
@@ -104,6 +104,7 @@ function GhostHunterPage() {
   const [lightning, setLightning] = useState(1)
   const [gameOver, setGameOver] = useState(false)
   const [zap, setZap] = useState(0)
+  const [coinReward, setCoinReward] = useState(10)
   const [message, setMessage] = useState('把右侧模块拖进场景，点击模块旋转 90°。')
   const found = litGhosts(placed, level.ghosts)
   const foundKey = found.map(([x, y]) => `${x},${y}`).sort().join('|')
@@ -252,7 +253,7 @@ function GhostHunterPage() {
     if (!won || gameOver) return
     if (!rewardedRef.current) {
       rewardedRef.current = true
-      addCoinBalance(10)
+      setCoinReward(addCoinReward(10).awarded)
       setCleared(value => value + 1)
       setLightning(value => value + 1)
     }
@@ -384,7 +385,7 @@ function GhostHunterPage() {
       <div className="ghost-play-area"><div className="ghost-stage">
         <div ref={boardRef} className={`ghost-board relative aspect-square select-none overflow-hidden rounded-xl bg-slate-950 shadow-xl ${won ? 'ghost-board-complete cursor-pointer' : ''}`} onClick={won ? advanceLevel : undefined} style={{ touchAction: 'none' }}>
           <img src={level.image} alt={`幽灵捕手关卡 ${level.id}`} draggable={false} className="pointer-events-none absolute inset-0 z-0 h-full w-full" />
-          {won && !gameOver ? <CoinRewardPopup feedback={{ amount: 10, id: level.id * 100 + cleared, prefix: '+' }} /> : null}
+          {won && !gameOver ? <CoinRewardPopup feedback={{ amount: coinReward, id: level.id * 100 + cleared, prefix: '+' }} /> : null}
           {floating && <button type="button" {...handlers(floating.id)} onClick={e => { if (e.detail === 0) rotate(floating.id) }} aria-label="悬浮模块，点击旋转或拖动吸附" className="ghost-floating-module absolute z-30 cursor-grab" style={{ left: `${floating.x * 25}%`, top: `${floating.y * 25}%`, width: `${geometry(floating.id, rotations[floating.id]).width * 25}%`, height: `${geometry(floating.id, rotations[floating.id]).height * 25}%` }}><ModuleImage id={floating.id} rotation={rotations[floating.id]} outline="yellow" /></button>}
           {gameOver && <div className="ghost-game-over" role="alert"><strong>GAME OVER</strong><span>本次过关 {cleared} 关</span><span>即将切换新场景，重新开始…</span></div>}
           {placed.map((p, id) => {
