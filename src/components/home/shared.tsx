@@ -370,7 +370,7 @@ export function SearchForm({
           </button>
         </label>
 
-        {(lang === 'zh-CN' || lang === 'zh-TW') ? <Link className="flex h-9 items-center gap-1 whitespace-nowrap rounded-full border border-cyan-300/50 bg-cyan-400/15 px-3 text-sm text-white" params={{ locale: lang }} to="/$locale/PRO">
+        {(lang === 'zh-CN' || lang === 'zh-TW') ? <Link className="flex h-9 items-center gap-1 whitespace-nowrap rounded-full border border-cyan-300/50 bg-cyan-400/15 px-3 text-sm text-white" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO">
           <i className="ri-gamepad-line" />{lang === 'zh-TW' ? '主題模式' : '主题模式'}
         </Link> : null}
         <div className="tooltip tooltip-bottom" data-tip={getI18n(lang).arcade.tooltip}>

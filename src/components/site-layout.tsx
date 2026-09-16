@@ -232,7 +232,7 @@ export function SiteLayout({
               if (location.pathname.endsWith('/play')) {
                 window.dispatchEvent(new Event('ggemu-request-game-exit'))
               } else {
-                void navigate({ to: '/$locale/PRO', params: { locale }, search: proLibraryPlatform ? { platform: proLibraryPlatform } : {} })
+                void navigate({ to: '/$locale/PRO', params: { locale }, search: { platform: proLibraryPlatform } })
               }
             }}
           type="button"
@@ -803,7 +803,7 @@ function GameDetailHeaderNavigation({
       <Link className={linkClass} params={{ locale }} to="/$locale/arcade">
         {labels.arcade}
       </Link>
-      {(locale === 'zh-CN' || locale === 'zh-TW') ? <Link className={linkClass} params={{ locale }} to="/$locale/PRO">
+      {(locale === 'zh-CN' || locale === 'zh-TW') ? <Link className={linkClass} params={{ locale }} search={{ platform: undefined }} to="/$locale/PRO">
         {locale === 'zh-TW' ? '主題模式' : '主题模式'}
       </Link> : null}
       <Link className={linkClass} params={{ locale, platformId: 'famicom' }} to="/$locale/platform/$platformId">

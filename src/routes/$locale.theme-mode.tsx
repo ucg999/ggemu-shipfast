@@ -5,6 +5,7 @@ export const Route = createFileRoute('/$locale/theme-mode')({
     throw redirect({
       params: { locale: params.locale },
       replace: true,
+      search: { platform: undefined },
       to: '/$locale/PRO',
     })
   },

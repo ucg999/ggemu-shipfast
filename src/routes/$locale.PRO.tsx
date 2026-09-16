@@ -605,7 +605,7 @@ function ThemeMode() {
             <button className="kt-check-in" disabled={dailyCheckIn.completed} onClick={checkIn} type="button">{dailyCheckIn.completed ? '已签到' : '签到'}</button>
             <Link to="/$locale/live" params={{ locale: lang }} hash="PRO" className="kt-watch"><span aria-hidden="true" className="live-watch-eye"><span className="live-watch-pupil" /></span><span>{getThemeFooterCopy(lang).watching}</span></Link>
             <details className="kt-language"><summary>{lang === 'zh-CN' ? '简' : lang === 'zh-TW' ? '繁' : lang === 'en' ? '英' : '日'} ▴</summary><div>
-              {(['zh-CN', 'zh-TW'] as const).map(locale => <Link key={locale} to="/$locale/PRO" params={{ locale }}>{locale === 'zh-CN' ? '简' : '繁'}</Link>)}
+              {(['zh-CN', 'zh-TW'] as const).map(locale => <Link key={locale} to="/$locale/PRO" params={{ locale }} search={{ platform: undefined }}>{locale === 'zh-CN' ? '简' : '繁'}</Link>)}
             </div></details>
             <span className="kt-version">v1.1</span>
           </div>

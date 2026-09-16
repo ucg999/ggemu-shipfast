@@ -38,11 +38,11 @@ const LANDING_GROUPS = [
   { name: 'x3', weight: 14, cells: [8, 14, 20] },
   { name: 'five', weight: 22.25, cells: [5, 10, 16, 22] },
   { name: 'ten', weight: 17.25, cells: [0, 1, 6, 12, 13, 18] },
-  { name: 'bomb', weight: 5, cells: [PENALTY_LIGHT_INDEX] },
-  { name: 'ghost', weight: 8.75, cells: [BAR_25_LIGHT_INDEX] },
+  { name: 'bomb', weight: 5.5, cells: [PENALTY_LIGHT_INDEX] },
+  { name: 'ghost', weight: 5.5, cells: [BAR_25_LIGHT_INDEX] },
   { name: 'twenty', weight: 8.75, cells: [7, 15, 19] },
-  { name: 'gold', weight: 5.75, cells: [BAR_50_LIGHT_INDEX] },
-  { name: 'lucky', weight: 2.5, cells: [LUCKY_LIGHT_INDEX] },
+  { name: 'gold', weight: 5.5, cells: [BAR_50_LIGHT_INDEX] },
+  { name: 'lucky', weight: 5.5, cells: [LUCKY_LIGHT_INDEX] },
   { name: 'hundred', weight: 1.75, cells: [BAR_100_LIGHT_INDEX] },
 ] as const
 
@@ -60,6 +60,11 @@ type CoinChallengeState = {
   bets: Array<number>
   bonusWin: number
   credits: number
+}
+
+type CoinChallengeExitState = {
+  collectibleWin: number
+  gameMode: 'normal' | 'gold' | 'ghost'
 }
 
 type CoinChallengeSearch = {
@@ -204,6 +209,7 @@ function CoinChallengePage() {
   const machineRef = useRef<CoinChallengeState>(createEmptyChallengeState())
   const collectibleWinRef = useRef(0)
   const gameModeRef = useRef(gameMode)
+  const storageInitializedRef = useRef(false)
   gameModeRef.current = gameMode
   shouldResetAllBetsRef.current = shouldResetAllBets
 
@@ -243,7 +249,11 @@ function CoinChallengePage() {
 
   useEffect(() => {
     const storedMachine = readCoinChallengeState()
-    const storedRefund = storedMachine.credits + storedMachine.bonusWin
+    const storedExitState = readCoinChallengeExitState()
+    const storedRemaining = storedMachine.credits + storedMachine.bonusWin + storedExitState.collectibleWin
+    const storedRefund = storedExitState.gameMode === 'ghost'
+      ? Math.floor(storedRemaining / 2)
+      : storedRemaining
     if (storedRefund > 0) addCoinBalance(storedRefund)
     let emptyMachine = createEmptyChallengeState()
     const rankCreditUnit = getRankCreditUnit(readCoinBalance())
@@ -253,7 +263,9 @@ function CoinChallengePage() {
     }
     machineRef.current = emptyMachine
     saveCoinChallengeState(emptyMachine)
+    saveCoinChallengeExitState({ collectibleWin: 0, gameMode: 'normal' })
     setMachine(emptyMachine)
+    storageInitializedRef.current = true
 
     const cashOutOnExit = () => {
       spinClockRef.current?.stop()
@@ -272,12 +284,16 @@ function CoinChallengePage() {
       }
       stopCreditHold()
       const current = machineRef.current
-      const refund = current.credits + current.bonusWin + collectibleWinRef.current
-      if (gameModeRef.current !== 'ghost' && refund > 0) addCoinBalance(refund)
+      const remainingCoins = current.credits + current.bonusWin + collectibleWinRef.current
+      const refund = gameModeRef.current === 'ghost'
+        ? Math.floor(remainingCoins / 2)
+        : remainingCoins
+      if (refund > 0) addCoinBalance(refund)
       const resetMachine = createEmptyChallengeState()
       machineRef.current = resetMachine
       collectibleWinRef.current = 0
       saveCoinChallengeState(resetMachine)
+      saveCoinChallengeExitState({ collectibleWin: 0, gameMode: 'normal' })
       setMachine(resetMachine)
       setCollectibleWin(0)
       setRoundWin(0)
@@ -367,7 +383,16 @@ function CoinChallengePage() {
 
   useEffect(() => {
     collectibleWinRef.current = collectibleWin
+    if (storageInitializedRef.current) {
+      saveCoinChallengeExitState({ collectibleWin, gameMode: gameModeRef.current })
+    }
   }, [collectibleWin])
+
+  useEffect(() => {
+    if (storageInitializedRef.current) {
+      saveCoinChallengeExitState({ collectibleWin: collectibleWinRef.current, gameMode })
+    }
+  }, [gameMode])
 
   function updateMachine(
     update: (current: CoinChallengeState) => CoinChallengeState,
@@ -661,6 +686,28 @@ function CoinChallengePage() {
   }
 
   function handleWithdraw() {
+    if (gameMode === 'ghost') {
+      const remainingCoins = machine.credits + machine.bonusWin + collectibleWin
+      const refund = Math.floor(remainingCoins / 2)
+      if (isSpinning || compareMode || isWithdrawing || poolTransferDisplay || creditTransferDisplay || remainingCoins < 1) return
+      autoRankRefillEnabledRef.current = false
+      safelyRunAudio(() => {
+        const withdrawAudio = withdrawAudioRef.current
+        if (withdrawAudio) {
+          withdrawAudio.currentTime = 0
+          void withdrawAudio.play().catch(() => {})
+        }
+      })
+      if (refund > 0) addCoinBalance(refund)
+      collectibleWinRef.current = 0
+      setCollectibleWin(0)
+      setRoundWin(0)
+      updateMachine((current) => ({ ...current, credits: 0, bonusWin: 0 }))
+      setGameMode('normal')
+      setModeRounds(0)
+      setWinningLight(null)
+      return
+    }
     const prizeCoins = machine.bonusWin + collectibleWin
     const withdrawPrizeOnly = prizeCoins > 0
     const totalCoins = withdrawPrizeOnly ? prizeCoins : machine.credits
@@ -919,7 +966,7 @@ function CoinChallengePage() {
       credits: Math.max(0, current.credits - repeatBetCost),
     }))
 
-    const normalTarget = chooseStandardTarget()
+    const normalTarget = chooseStandardTarget(roundBets)
     const exitLights = [BAR_50_LIGHT_INDEX, BAR_25_LIGHT_INDEX, LUCKY_LIGHT_INDEX, PENALTY_LIGHT_INDEX]
     const target = gameMode === 'normal'
       ? normalTarget
@@ -958,7 +1005,9 @@ function CoinChallengePage() {
     }
     stepTimes[stepTimes.length - 1] = runningLightsDurationMs
     let completedSteps = 0
-    let penaltyPendingBalance = collectibleWin
+    // Any visible win was moved into the pool above before this spin starts.
+    // Do not keep a second pending copy or a bomb can appear to award coins.
+    let penaltyPendingBalance = 0
     let penaltyPoolBalance = Math.min(9999, machine.bonusWin + carriedWin)
     let penaltyCreditBalance = Math.max(
       0,
@@ -981,21 +1030,6 @@ function CoinChallengePage() {
         spinClockRef.current = null
         if (gameMode !== 'normal') {
           if (exitLights.includes(target)) {
-            if (gameMode === 'ghost') {
-              autoRankRefillEnabledRef.current = false
-              const currentMachine = machineRef.current
-              const remainingCoins = currentMachine.credits + currentMachine.bonusWin + collectibleWinRef.current
-              const refund = Math.floor(remainingCoins / 2)
-              if (refund > 0) addCoinBalance(refund)
-              collectibleWinRef.current = 0
-              setCollectibleWin(0)
-              setRoundWin(0)
-              updateMachine((current) => ({
-                ...current,
-                credits: 0,
-                bonusWin: 0,
-              }))
-            }
             finishRound(0, 0, 0, target)
             setGameMode('normal')
             setModeRounds(0)
@@ -1198,6 +1232,7 @@ function CoinChallengePage() {
         setActiveLight((current) => (current + 1) % trackLength)
 
         if (completed >= steps) {
+          // A bomb only charges a landed symbol that the player actually bet on.
           const penalty = roundBets[selectedOption] * selected.multiplier
           let remainingPenalty = penalty
           const pendingDeduction = Math.min(penaltyPendingBalance, remainingPenalty)
@@ -1549,9 +1584,44 @@ function readCoinChallengeState(): CoinChallengeState {
 
 function saveCoinChallengeState(state: CoinChallengeState) {
   try {
-    window.localStorage.setItem(COIN_CHALLENGE_STORAGE_KEY, JSON.stringify(state))
+    const exitState = readCoinChallengeExitState()
+    window.localStorage.setItem(
+      COIN_CHALLENGE_STORAGE_KEY,
+      JSON.stringify({ ...state, ...exitState }),
+    )
   } catch {
     // The machine remains usable for the current page when storage is unavailable.
+  }
+}
+
+function readCoinChallengeExitState(): CoinChallengeExitState {
+  try {
+    const stored = window.localStorage.getItem(COIN_CHALLENGE_STORAGE_KEY)
+    const parsed = stored ? JSON.parse(stored) as Partial<CoinChallengeExitState> : null
+    const gameMode = parsed?.gameMode === 'ghost' || parsed?.gameMode === 'gold'
+      ? parsed.gameMode
+      : 'normal'
+    return {
+      collectibleWin: Math.max(
+        0,
+        Math.min(9999, Math.floor(Number(parsed?.collectibleWin) || 0)),
+      ),
+      gameMode,
+    }
+  } catch {
+    return { collectibleWin: 0, gameMode: 'normal' }
+  }
+}
+
+function saveCoinChallengeExitState(exitState: CoinChallengeExitState) {
+  try {
+    const machine = readCoinChallengeState()
+    window.localStorage.setItem(
+      COIN_CHALLENGE_STORAGE_KEY,
+      JSON.stringify({ ...machine, ...exitState }),
+    )
+  } catch {
+    // The current game remains playable when storage is unavailable.
   }
 }
 
@@ -1685,15 +1755,42 @@ function createTrackLights() {
   return lights
 }
 
-function chooseStandardTarget(random = Math.random) {
-  let roll = random() * 100
-  for (const group of LANDING_GROUPS) {
-    if (roll < group.weight) {
-      return group.cells[Math.floor(random() * group.cells.length)]
-    }
-    roll -= group.weight
+function chooseStandardTarget(bets: ReadonlyArray<number>, random = Math.random) {
+  const coveredOptions = bets.filter((bet) => bet > 0).length
+  const totalBet = bets.reduce((sum, bet) => sum + bet, 0)
+  const coveragePressure = coveredOptions / CHALLENGE_OPTION_COUNT
+  const stakePressure = Math.min(1, totalBet / 12)
+  const riskPressure = Math.min(1, coveragePressure * 0.6 + stakePressure * 0.4)
+  const wageredTargetScale = Math.max(
+    0.4,
+    1 - coveragePressure * 0.35 - stakePressure * 0.25,
+  )
+  const targets = LANDING_GROUPS.flatMap((group) =>
+    group.cells.map((cell) => {
+      const option = TRACK_LIGHTS[cell]?.option
+      const isSpecial = group.name === 'bomb' || group.name === 'ghost' ||
+        group.name === 'gold' || group.name === 'lucky'
+      const isWagered = !isSpecial && option !== null && option !== undefined &&
+        (bets[option] ?? 0) > 0
+      const lowMultiplierBoost = group.name === 'x2' || group.name === 'x3' || group.name === 'five'
+        ? 1 + riskPressure * 0.8
+        : 1
+      const highMultiplierReduction = group.name === 'ten' || group.name === 'twenty' || group.name === 'hundred'
+        ? 1 - riskPressure * 0.55
+        : 1
+      return {
+        cell,
+        weight: group.weight / group.cells.length * lowMultiplierBoost * highMultiplierReduction *
+          (isWagered ? wageredTargetScale : 1),
+      }
+    }),
+  )
+  let roll = random() * targets.reduce((sum, target) => sum + target.weight, 0)
+  for (const target of targets) {
+    if (roll < target.weight) return target.cell
+    roll -= target.weight
   }
-  return BAR_100_LIGHT_INDEX
+  return targets.at(-1)?.cell ?? BAR_100_LIGHT_INDEX
 }
 
 function getMobileTrackShift(light: { x: number; y: number }) {

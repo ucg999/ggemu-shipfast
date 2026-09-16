@@ -156,7 +156,7 @@ export function DefaultHomeTemplate(
       >
         <div className="flex flex-nowrap items-center justify-around gap-1 overflow-x-auto py-1.5">
           {mobileModes.map((mode) => mode.to ? (
-            <Link className="btn btn-ghost btn-xs shrink-0 rounded-full border-0 px-2 text-xs text-base-content/75" key={mode.label} params={{ locale: lang }} to={mode.to}>
+            <Link className="btn btn-ghost btn-xs shrink-0 rounded-full border-0 px-2 text-xs text-base-content/75" key={mode.label} params={{ locale: lang }} search={{ platform: undefined }} to={mode.to}>
               {mode.label}
             </Link>
           ) : (

@@ -138,7 +138,7 @@ function LocalizedPlayGamePage() {
   useEffect(() => {
     if (!isProGame) return
     // Warm the return route while the player is already open.
-    void router.preloadRoute({ to: '/$locale/PRO', params: { locale: lang } }).catch(() => {})
+    void router.preloadRoute({ to: '/$locale/PRO', params: { locale: lang }, search: { platform: undefined } }).catch(() => {})
   }, [isProGame, lang, router])
 
   const loadRecommendations = useCallback(async () => {
@@ -246,7 +246,7 @@ function LocalizedPlayGamePage() {
       settlementTimerRef.current = null
       // Isolated PSP documents must leave their isolation boundary with a full navigation.
       if (window.crossOriginIsolated) window.location.assign(`/${lang}/PRO`)
-      else void navigate({ to: '/$locale/PRO', params: { locale: lang } }).catch(() => window.location.assign(`/${lang}/PRO`))
+      else void navigate({ to: '/$locale/PRO', params: { locale: lang }, search: { platform: undefined } }).catch(() => window.location.assign(`/${lang}/PRO`))
     }, 2_200)
   }, [collectDueSessionCoins, isProGame, lang, navigate, settleAndShowRecommendations])
 
