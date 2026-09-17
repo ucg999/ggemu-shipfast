@@ -155,6 +155,11 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                 aria-label={draftField ? `${copy.search} · ${copy[draftField]}` : '输入游戏名称、关键词'}
                 value={draftQuery}
                 onChange={(event) => setDraftQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229)) {
+                    event.preventDefault()
+                  }
+                }}
                 placeholder={draftField ? `${copy.search} · ${copy[draftField]}` : '输入游戏名称、关键词'}
               />
               <button className="h-8 shrink-0 border-0 bg-transparent px-2 text-sm text-white shadow-none" type="submit">{copy.confirm}</button>

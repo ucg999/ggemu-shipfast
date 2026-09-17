@@ -570,13 +570,13 @@ function ThemeMode() {
             </div> : null}
             <input aria-label="搜索游戏" placeholder={getThemeLibrarySearchPlaceholder(lang, librarySearchField)} value={query} onChange={event => { setQuery(event.target.value); setPage(1) }} />
           </div>
-          <div className="kt-game-list" aria-label="游戏列表" aria-busy={loading}>
+          <div className={`kt-game-list${switchPlatform || pspPlatform ? ' kt-download-list' : ''}`} aria-label="游戏列表" aria-busy={loading}>
             {loading ? <p role="status">{english ? 'Loading games…' : '正在加载游戏…'}</p> : error ? <p role="alert">{english ? 'Could not load games.' : '游戏加载失败。'} <button onClick={() => setRetry(v => v + 1)}>{english ? 'Retry' : '重试'}</button></p> : !result?.games.length ? <p>{english ? 'No games found' : '没有找到游戏'}</p> : result.games.map((game, index) => {
               const id = game.url_slug || game._id
               const favorite = favoriteGames.some(item => (item.url_slug || item._id) === id)
               return <div key={id} data-active-game={index === gameIndex} className={`kt-game-row ${index === gameIndex ? 'is-selected' : ''}`}>
                 <a
-                  className="kt-game-select"
+                  className={`kt-game-select${switchPlatform || pspPlatform ? ' kt-download-card' : ''}`}
                   data-start-game
                   href={switchPlatform ? `/${lang}/platform/switch/${id}#PRO` : pspPlatform ? `/${lang}/platform/psp/${id}#PRO` : `/${lang}/games/${id}#PRO`}
                   onFocus={() => setGameIndex(index)}

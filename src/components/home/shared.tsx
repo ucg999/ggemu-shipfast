@@ -11,6 +11,7 @@ import { formatCopy, getHomeFaqs, getI18n } from '#/lib/i18n'
 import type { GamesSectionProps, HomeCopy, SearchFormProps } from './types'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { setDailyGameCoinMultiplier } from '#/lib/coin-wallet'
+import { getOriginalGamesTitle } from '#/lib/original-games'
 import { CardScrollRow } from './card-scroll-row'
 import { CoinFruitCard } from '#/components/coin-fruit-card'
 
@@ -160,7 +161,7 @@ export function HomeMostPlayedGamesSection({
   )
 }
 
-function LazyAutoplayVideo({ className, poster, src }: { className: string; poster?: string; src?: string }) {
+export function LazyAutoplayVideo({ className, poster, src }: { className: string; poster?: string; src?: string }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isNearViewport, setIsNearViewport] = useState(false)
 
@@ -349,66 +350,28 @@ export function SearchForm({
 
   return (
     <form className="flex w-full flex-col gap-3" onSubmit={onSearch}>
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="flex h-9 w-full min-w-0 items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 shadow-sm transition focus-within:border-rose-300 focus-within:bg-white sm:w-64">
-          <i className="ri-search-line text-lg text-gray-500" />
-          <input
-            className="h-full min-w-0 flex-1 bg-transparent text-xs text-black caret-black outline-none placeholder:text-gray-500"
-            onFocus={() => window.location.assign(`/${lang}/search`)}
-            onChange={(event) => onQueryChange(event.currentTarget.value)}
-            placeholder={searchPlaceholder}
-            type="search"
-            value={filters.query}
-          />
-          <button
-            aria-label={t.search}
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-red-800 text-white transition hover:bg-red-900"
-            disabled={isLoading}
-            type="submit"
-          >
-            <i className="ri-arrow-right-line" />
-          </button>
-        </label>
-
-        {(lang === 'zh-CN' || lang === 'zh-TW') ? <Link className="flex h-9 items-center gap-1 whitespace-nowrap rounded-full border border-cyan-300/50 bg-cyan-400/15 px-3 text-sm text-white" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO">
+      <div className="flex flex-nowrap items-center gap-2">
+        <details className="dropdown shrink-0 lg:ml-10">
+          <summary className="flex h-9 cursor-pointer list-none items-center gap-1 whitespace-nowrap px-2 text-sm font-normal">
+            {getI18n(lang).layout.explore}
+            <i className="ri-arrow-down-s-line text-sm" />
+          </summary>
+          <ul className="menu dropdown-content z-50 mt-2 w-52 bg-[#f0f0ed] p-2 text-sm text-black shadow-xl">
+            <li><Link params={{ locale: lang }} to="/$locale">{getI18n(lang).layout.games}</Link></li>
+            <li><Link params={{ locale: lang }} to="/$locale/all-games">{getI18n(lang).layout.allGames}</Link></li>
+            <li><Link params={{ locale: lang, rankingId: 'latest' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.latestGames}</Link></li>
+            <li><Link params={{ locale: lang, rankingId: 'popular' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.mostPopularGames}</Link></li>
+            <li><Link params={{ locale: lang, rankingId: 'weekly' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.weeklyPopularGames}</Link></li>
+            <li><Link params={{ locale: lang, rankingId: 'rising' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.fastestGrowingGames}</Link></li>
+            <li><Link params={{ locale: lang }} search={{ region: undefined }} to="/$locale/deals">{getI18n(lang).layout.gameDeals}</Link></li>
+            <li><Link params={{ locale: lang }} search={{}} to="/$locale/play-my-rom">{t.superEmulator}</Link></li>
+            <li><Link params={{ locale: lang }} to="/$locale/blog">{getI18n(lang).layout.blog}</Link></li>
+            <li><Link params={{ locale: lang }} to="/$locale/original-games">{getOriginalGamesTitle(lang)}</Link></li>
+          </ul>
+        </details>
+        {(lang === 'zh-CN' || lang === 'zh-TW') ? <Link className="desktop-theme-mode-link flex h-9 items-center gap-1 whitespace-nowrap rounded-full border border-cyan-300/50 bg-cyan-400/15 px-3 text-sm text-white" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO">
           <i className="ri-gamepad-line" />{lang === 'zh-TW' ? '主題模式' : '主题模式'}
         </Link> : null}
-        <div className="tooltip tooltip-bottom" data-tip={getI18n(lang).arcade.tooltip}>
-          <Link
-            className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white"
-            params={{ locale: lang }}
-            to="/$locale/arcade"
-          >
-            {getI18n(lang).arcade.mode}
-          </Link>
-        </div>
-        <div className="tooltip tooltip-bottom" data-tip={getI18n(lang).arcade.famicomTooltip}>
-          <Link
-            className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white"
-            params={{ locale: lang, platformId: 'famicom' }}
-            to="/$locale/platform/$platformId"
-          >
-            {getI18n(lang).arcade.famicomMode}
-          </Link>
-        </div>
-        <div className="tooltip tooltip-bottom" data-tip={getI18n(lang).arcade.gbaTooltip}>
-          <Link
-            className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white"
-            params={{ locale: lang, platformId: 'gba' }}
-            to="/$locale/platform/$platformId"
-          >
-            {getI18n(lang).arcade.gbaMode}
-          </Link>
-        </div>
-        <div className="tooltip tooltip-bottom" data-tip={getI18n(lang).arcade.flashTooltip}>
-          <Link
-            className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white"
-            params={{ locale: lang, platformId: 'flash' }}
-            to="/$locale/platform/$platformId"
-          >
-            {getI18n(lang).arcade.flashMode}
-          </Link>
-        </div>
         <div className="tooltip tooltip-bottom" data-tip={getCoinModeCopy(lang).tooltip}>
           <Link
             className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white"
@@ -424,6 +387,17 @@ export function SearchForm({
         <div className="tooltip tooltip-bottom" data-tip="Switch">
           <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
         </div>
+        <label className="flex h-9 min-w-40 flex-1 items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 shadow-sm transition focus-within:border-rose-300 focus-within:bg-white lg:max-w-md">
+          <i className="ri-search-line text-lg text-gray-500" />
+          <input
+            className="h-full min-w-0 flex-1 bg-transparent text-xs text-black caret-black outline-none placeholder:text-gray-500"
+            onFocus={() => window.location.assign(`/${lang}/search`)}
+            onChange={(event) => onQueryChange(event.currentTarget.value)}
+            placeholder={lang === 'zh-CN' ? '按需求搜索' : searchPlaceholder}
+            type="search"
+            value={filters.query}
+          />
+        </label>
 
       </div>
     </form>

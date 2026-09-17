@@ -252,16 +252,6 @@ function LocalizedHomePage() {
   const coinRewards = useHomeCoinRewards()
 
   useEffect(() => {
-    if (
-      (lang === 'zh-CN' || lang === 'zh-TW') &&
-      window.location.hash !== '#classic' &&
-      window.matchMedia('(min-width: 1024px)').matches
-    ) {
-      window.location.replace(`/${lang}/PRO`)
-    }
-  }, [lang])
-
-  useEffect(() => {
     const mobile = window.matchMedia('(max-width: 1023px)').matches
       ? readHomeCards<GameSearchResult>(`${cacheKey}:mobile`) : undefined
     if (mobile?.games.length) setResult(mobile)

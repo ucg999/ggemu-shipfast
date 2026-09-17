@@ -128,7 +128,13 @@ export function useHomeCoinRewards() {
     const coinPosition = coinPositions.find((position) => position.id === coinId)
     if (!coinPosition) return
 
-    const coinBox = document.querySelector<HTMLElement>('[data-coin-box]')
+    const coinBox = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-coin-box]'),
+    ).find((element) => {
+      const rect = element.getBoundingClientRect()
+      const style = window.getComputedStyle(element)
+      return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden'
+    })
     const coinBoxRect = coinBox?.getBoundingClientRect()
     const left = (window.innerWidth * coinPosition.left) / 100
     const top = (window.innerHeight * coinPosition.top) / 100

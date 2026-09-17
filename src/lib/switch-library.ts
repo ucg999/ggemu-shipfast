@@ -196,4 +196,23 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     ],
     "foreignTitle": "GTA 5"
   },
+  {
+    "id": "ace-angler",
+    "title": "王牌钓手",
+    "foreignTitle": "Ace Angler Nintendo Switch version",
+    "cover": "/switch-library/ace-angler/cover.webp",
+    "genre": "模拟、动作",
+    "publisher": "BANDAI",
+    "releaseDate": "2019-07-25",
+    "requiredSystem": "9.2",
+    "language": "中、日、英",
+    "updatedAt": "2026-09-16T08:03:44+00:00",
+    "downloadStatus": "分享资源待添加",
+    "description": "本作是一款体感模拟钓鱼游戏，玩家可以挥动Joy-Con以投掷浮标、再转动另一支手腕模拟捲线动作，重现钓竿钓鱼的乐趣。\n除剧情模式以外，本作还为玩家带来了复古街机风格的“硬币模式”以及4人本地联机的“同乐模式”。\n在鱼类数量方面，本作拥有250余种鱼类供玩家垂钓，喜爱钓鱼活动的玩家不要错过。",
+    "screenshots": [
+      "/switch-library/ace-angler/screenshot-01.webp",
+      "/switch-library/ace-angler/screenshot-02.webp",
+      "/switch-library/ace-angler/screenshot-03.webp"
+    ]
+  },
 ]

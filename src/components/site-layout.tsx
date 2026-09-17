@@ -13,6 +13,7 @@ import { confirmResourceDownload, unlockPaidResource } from '#/lib/paid-resource
 
 const SITE_VISIT_COIN_SESSION_KEY = 'game-adventure-site-visit-coin-awarded'
 const DESKTOP_SIDEBAR_STATE_KEY = 'retro-games-desktop-sidebar-state'
+const DAILY_CHECK_IN_STORAGE_KEY = 'game-adventure-daily-challenge'
 
 export function SiteLayout({
   children,
@@ -55,6 +56,28 @@ export function SiteLayout({
   const canSwitchTheme = siteThemes.length > 1
   const sidebarSearchParams = new URLSearchParams(location.searchStr)
   const globalCoins = useGlobalCoinBalance()
+  const [dailyCheckIn, setDailyCheckIn] = useState({ completed: false, streak: 0 })
+
+  useEffect(() => {
+    const current = readDailyCheckIn()
+    setDailyCheckIn({ completed: current.completed, streak: current.streak })
+  }, [])
+
+  function handleDailyCheckIn() {
+    const current = readDailyCheckIn()
+    if (current.completed) return
+    const now = new Date()
+    const yesterday = new Date(now)
+    yesterday.setDate(now.getDate() - 1)
+    const streak = current.lastDate === getSiteDateKey(yesterday) ? current.streak + 1 : 1
+    try {
+      window.localStorage.setItem(DAILY_CHECK_IN_STORAGE_KEY, JSON.stringify({ lastCompletedDate: getSiteDateKey(now), streak }))
+    } catch {
+      // Keep check-in usable for the current visit if storage is unavailable.
+    }
+    addCoinReward(streak * 10)
+    setDailyCheckIn({ completed: true, streak })
+  }
 
   useEffect(() => {
     const storedTheme = normalizeSiteTheme(
@@ -247,8 +270,8 @@ export function SiteLayout({
   }
 
   return (
-    <main className="min-h-screen w-full max-w-full overflow-x-clip bg-base-100 text-base-content">
-      <header className="sticky top-0 z-40 border-b border-red-700 bg-red-600 text-white shadow-sm">
+    <main className="desktop-clean-shell min-h-screen w-full max-w-full overflow-x-clip bg-base-100 text-base-content">
+      <header className={`desktop-clean-header top-0 z-40 border-b shadow-sm ${isHomePage ? 'desktop-awwwards-header lg:static' : ''} sticky border-red-700 bg-red-600 text-white lg:border-0 lg:bg-[#f0f0ed] lg:text-black lg:shadow-none`}>
         <div className="navbar flex-nowrap gap-1 pl-0 pr-2 sm:px-6 lg:grid lg:grid-cols-[max-content_minmax(0,1fr)_auto] lg:gap-0 lg:px-8">
           <div className="navbar-start min-w-0 w-auto flex-none">
             {hideHeaderNav ? null : (
@@ -277,22 +300,25 @@ export function SiteLayout({
                   src="/logo.png"
                 />
               </span>
-              <span className="hidden w-max shrink-0 text-left leading-tight sm:flex sm:flex-col sm:items-start">
-                <span
-                  className={`block w-full whitespace-nowrap text-2xl font-bold ${
+              <span className="hidden w-max shrink-0 text-left leading-tight sm:flex sm:flex-col sm:items-start sm:justify-center">
+                <span className="flex w-full items-center whitespace-nowrap">
+                  <span
+                    className={`block w-full whitespace-nowrap text-2xl font-bold ${
                     locale === 'zh-CN' || locale === 'zh-TW'
                       ? 'text-justify [text-align-last:justify]'
                       : ''
-                  }`}
-                >
-                  {t.siteName}
+                    }`}
+                  >
+                    {t.siteName}
+                  </span>
+                  <i aria-hidden="true" className="mb-0.5 ml-1 hidden h-1.5 w-1.5 shrink-0 self-end rounded-full bg-current lg:block" />
                 </span>
-                <span className="block w-full truncate text-xs text-white/75">
+                <span className="block w-full truncate text-xs text-white/75 lg:hidden">
                   {t.siteSlogan}
                 </span>
               </span>
             </Link>
-            <div className="relative ml-2 flex shrink-0 items-center sm:ml-4">
+            <div className="relative ml-2 flex shrink-0 items-center sm:ml-4 lg:hidden">
               <HomeCoinBag
                 balance={globalCoins.balance}
                 lang={locale}
@@ -307,9 +333,9 @@ export function SiteLayout({
             <div className="order-3 hidden w-full border-t border-white/20 pt-3 lg:order-none lg:block lg:min-w-0 lg:border-t-0 lg:pt-0">
               {topContent}
             </div>
-          ) : isGameDetailPage ? (
-            <GameDetailHeaderNavigation locale={locale} />
-          ) : null}
+          ) : (
+            <DesktopUnifiedHeaderNavigation locale={locale} />
+          )}
 
           <div className="navbar-end ml-auto w-auto flex-none flex-nowrap gap-1 sm:gap-2">
             {onOpenSearch ? (
@@ -323,9 +349,9 @@ export function SiteLayout({
                 <i className="ri-search-line text-base" />
               </button>
             ) : null}
-            {isHomePage ? <Link
+            <Link
               aria-label={t.watchOthers}
-              className="btn h-6 min-h-6 lg:h-9 lg:min-h-9 shrink-0 gap-0.5 rounded-full border border-rose-200 bg-rose-100 px-1.5 text-[10px] font-semibold text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 lg:gap-2 lg:px-4 lg:text-sm max-lg:[&_.live-watch-eye]:scale-75"
+              className={`desktop-watch-button btn h-6 min-h-6 shrink-0 gap-0.5 rounded-full border border-rose-200 bg-rose-100 px-1.5 text-[10px] font-semibold text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 lg:h-9 lg:min-h-9 lg:gap-2 lg:px-4 lg:text-sm max-lg:[&_.live-watch-eye]:scale-75 ${isHomePage ? '' : 'hidden lg:flex'}`}
               params={{ locale }}
               to="/$locale/live"
             >
@@ -333,7 +359,7 @@ export function SiteLayout({
                 <span className="live-watch-pupil" />
               </span>
               <span>{t.watchOthers}</span>
-            </Link> : null}
+            </Link>
 
             {headerActions}
 
@@ -342,7 +368,7 @@ export function SiteLayout({
                 <div
                   aria-label={t.theme}
                   role="group"
-                  className="join flex h-6 lg:h-9 shrink-0 items-stretch overflow-hidden rounded-full border border-rose-200 bg-rose-100 text-black"
+                  className="join flex h-6 shrink-0 items-stretch overflow-hidden rounded-full border border-rose-200 bg-rose-100 text-black lg:hidden"
                 >
                   <button
                     aria-label={t.lightTheme}
@@ -376,8 +402,8 @@ export function SiteLayout({
               </>
             ) : null}
 
-            {isHomePage ? <details
-              className="dropdown dropdown-end"
+            <details
+              className={`dropdown dropdown-end ${isHomePage ? '' : 'hidden lg:block'}`}
               onToggle={(event) => setIsLocaleMenuOpen(event.currentTarget.open)}
               open={isLocaleMenuOpen}
               ref={localeMenuRef}
@@ -420,19 +446,26 @@ export function SiteLayout({
                   </button>
                 </li>
               </ul>
-            </details> : null}
-            {isGameDetailPage ? (
-              <Link
-                aria-label={t.searchGames}
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-white/90 transition hover:bg-white/15 hover:text-white"
-                params={{ locale }}
-                search={{ q: '' }}
-                title={t.searchGames}
-                to="/$locale/search"
-              >
-                <i className="ri-search-line text-xl" />
-              </Link>
-            ) : null}
+            </details>
+            <button
+              className="hidden h-9 shrink-0 items-center rounded-full px-3 text-sm font-semibold text-black transition hover:bg-black/5 disabled:cursor-default disabled:opacity-45 lg:flex"
+              disabled={dailyCheckIn.completed}
+              onClick={handleDailyCheckIn}
+              title={dailyCheckIn.completed ? (locale === 'zh-TW' ? '今日已簽到' : '今日已签到') : `+${Math.max(1, dailyCheckIn.streak + 1) * 10}`}
+              type="button"
+            >
+              {dailyCheckIn.completed
+                ? locale === 'zh-TW' ? '已簽到' : locale === 'en' ? 'Checked in' : locale === 'ja' ? 'チェック済み' : '已签到'
+                : locale === 'zh-TW' ? '簽到' : locale === 'en' ? 'Check in' : locale === 'ja' ? 'チェックイン' : '签到'}
+            </button>
+            <div className="ml-2 hidden shrink-0 items-center gap-0 [&_.coin-rank-badge]:-mr-2 lg:flex">
+              <CoinRankBadge balance={globalCoins.balance} lang={locale} />
+              <HomeCoinBag
+                balance={globalCoins.balance}
+                lang={locale}
+                onOpen={globalCoins.showBalance}
+              />
+            </div>
           </div>
         </div>
       </header>
@@ -450,15 +483,13 @@ export function SiteLayout({
         className={
           hideHeaderNav
             ? 'min-w-0'
-            : isDesktopSidebarCollapsed
-              ? 'min-w-0 lg:grid lg:grid-cols-[72px_minmax(0,1fr)]'
-              : 'min-w-0 lg:grid lg:grid-cols-[220px_minmax(0,1fr)]'
+            : 'min-w-0 lg:block'
         }
       >
         {hideHeaderNav ? null : (
           <>
           <aside
-            className={`fixed bottom-0 left-0 top-[61px] z-40 w-[min(82vw,280px)] overflow-y-auto border-r border-base-300 bg-base-100 px-3 py-5 shadow-2xl transition-all duration-200 lg:sticky lg:top-[65px] lg:block lg:h-[calc(100vh-65px)] lg:w-auto lg:translate-x-0 lg:shadow-none ${
+            className={`fixed bottom-0 left-0 top-[61px] z-40 w-[min(82vw,280px)] overflow-y-auto border-r border-base-300 bg-base-100 px-3 py-5 shadow-2xl transition-all duration-200 lg:hidden ${
               isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
             } ${isDesktopSidebarCollapsed ? 'lg:px-2 lg:[&_.sidebar-label]:hidden lg:[&_.sidebar-badge]:hidden lg:[&_.sidebar-submenu]:hidden lg:[&_nav_.menu>li>a]:justify-center lg:[&_nav_.menu>li>details>summary]:justify-center lg:[&_nav_.menu>li>details>summary]:after:hidden' : ''}`}
             onClickCapture={handleCollapsedSidebarClick}
@@ -753,7 +784,7 @@ export function SiteLayout({
           </aside>
           <button
             aria-label={isDesktopSidebarCollapsed ? t.openSidebar : t.closeSidebar}
-            className="fixed top-1/2 z-[70] hidden h-9 w-5 -translate-y-1/2 cursor-pointer text-base-content transition-[left,color] duration-200 hover:text-primary lg:block"
+            className="fixed top-1/2 z-[70] hidden h-9 w-5 -translate-y-1/2 cursor-pointer text-base-content transition-[left,color] duration-200 hover:text-primary"
             onClick={toggleDesktopSidebar}
             style={{ left: isDesktopSidebarCollapsed ? '54px' : '202px' }}
             title={isDesktopSidebarCollapsed ? t.openSidebar : t.closeSidebar}
@@ -787,36 +818,53 @@ export function SiteLayout({
   )
 }
 
-function GameDetailHeaderNavigation({
+function DesktopUnifiedHeaderNavigation({
   locale,
 }: {
   locale: Locale
 }) {
-  const labels = getGameModeLabels(locale)
-  const linkClass = 'shrink-0 px-2 py-2 text-sm font-medium text-white/85 transition hover:text-white'
+  const layout = getI18n(locale).layout
+  const home = getI18n(locale).home
+  const linkClass = 'flex h-9 shrink-0 items-center whitespace-nowrap px-2 text-sm font-normal'
 
   return (
     <nav
-      aria-label={labels.navigation}
-      className="hidden min-w-0 items-center justify-start gap-1 overflow-x-auto lg:flex"
+      aria-label={layout.mainNavigation}
+      className="hidden min-w-0 items-center gap-2 lg:flex lg:pl-10"
     >
-      <Link className={linkClass} params={{ locale }} to="/$locale/arcade">
-        {labels.arcade}
-      </Link>
-      {(locale === 'zh-CN' || locale === 'zh-TW') ? <Link className={linkClass} params={{ locale }} search={{ platform: undefined }} to="/$locale/PRO">
-        {locale === 'zh-TW' ? '主題模式' : '主题模式'}
-      </Link> : null}
-      <Link className={linkClass} params={{ locale, platformId: 'famicom' }} to="/$locale/platform/$platformId">
-        {labels.famicom}
-      </Link>
-      <Link className={linkClass} params={{ locale, platformId: 'gba' }} to="/$locale/platform/$platformId">
-        {labels.gba}
-      </Link>
-      <Link className={linkClass} params={{ locale, platformId: 'flash' }} to="/$locale/platform/$platformId">
-        {labels.web}
-      </Link>
-      <Link className={linkClass} params={{ locale, platformId: 'coin' }} to="/$locale/platform/$platformId">
-        {labels.coin}
+      <details className="dropdown shrink-0">
+        <summary className="flex h-9 cursor-pointer list-none items-center gap-1 whitespace-nowrap px-2 text-sm font-normal">
+          {layout.explore}<i className="ri-arrow-down-s-line text-sm" />
+        </summary>
+        <ul className="menu dropdown-content z-50 mt-2 w-52 bg-[#f0f0ed] p-2 text-sm text-black shadow-xl">
+          <li><Link params={{ locale }} to="/$locale">{layout.games}</Link></li>
+          <li><Link params={{ locale }} to="/$locale/all-games">{layout.allGames}</Link></li>
+          <li><Link params={{ locale, rankingId: 'latest' }} to="/$locale/rankings/$rankingId">{layout.latestGames}</Link></li>
+          <li><Link params={{ locale, rankingId: 'popular' }} to="/$locale/rankings/$rankingId">{layout.mostPopularGames}</Link></li>
+          <li><Link params={{ locale, rankingId: 'weekly' }} to="/$locale/rankings/$rankingId">{layout.weeklyPopularGames}</Link></li>
+          <li><Link params={{ locale, rankingId: 'rising' }} to="/$locale/rankings/$rankingId">{layout.fastestGrowingGames}</Link></li>
+          <li><Link params={{ locale }} search={{ region: undefined }} to="/$locale/deals">{layout.gameDeals}</Link></li>
+          <li><Link params={{ locale }} search={{}} to="/$locale/play-my-rom">{home.superEmulator}</Link></li>
+          <li><Link params={{ locale }} to="/$locale/blog">{layout.blog}</Link></li>
+          <li><Link params={{ locale }} to="/$locale/original-games">{getOriginalGamesTitle(locale)}</Link></li>
+        </ul>
+      </details>
+      {(locale === 'zh-CN' || locale === 'zh-TW') ? (
+        <Link className={linkClass} params={{ locale }} search={{ platform: undefined }} to="/$locale/PRO">
+          <i className="ri-gamepad-line mr-1" />{locale === 'zh-TW' ? '主題模式' : '主题模式'}
+        </Link>
+      ) : null}
+      <Link className={linkClass} params={{ locale, platformId: 'coin' }} to="/$locale/platform/$platformId">{getGameModeLabels(locale).coin}</Link>
+      <Link className={linkClass} params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
+      <Link className={linkClass} params={{ locale, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
+      <Link
+        className="ml-1 flex h-9 min-w-40 max-w-md flex-1 items-center gap-2 rounded-full border border-black/30 px-3 text-xs text-black/60"
+        params={{ locale }}
+        search={{ q: '' }}
+        to="/$locale/search"
+      >
+        <i className="ri-search-line text-lg" />
+        {locale === 'zh-CN' ? '按需求搜索' : layout.searchGames}
       </Link>
     </nav>
   )
@@ -835,56 +883,28 @@ export function SiteFooter({ locale }: { locale: Locale }) {
   if (pathname.replace(/\/+$/, '') !== `/${locale}` && pathname !== '/') return null
 
   return (
-    <footer className="border-t border-base-300 bg-base-100">
-      <div className="w-full px-4 py-6 text-sm text-base-content/70 sm:px-6 lg:px-8">
-        <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:gap-10">
-          <section className="min-w-0">
-            <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-lg bg-base-100">
-                <img
-                  alt={t.siteName}
-                  className="h-full w-full object-contain"
-                  src="/logo.png"
-                />
-              </span>
-              <div>
-                <p className="text-base font-semibold text-base-content">
-                  {t.siteName}
-                </p>
-              </div>
-            </div>
-            <p className="mt-3 overflow-x-auto whitespace-nowrap text-[clamp(11px,1vw,14px)] leading-6">
-              {t.footer}
-            </p>
-          </section>
-
-          <nav className="md:min-w-40">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-base-content/45">
-              {t.legal}
-            </p>
-            <div className="flex flex-col items-start gap-2.5">
-              <Link
-                className="link-hover link flex items-center"
-                params={{ locale }}
-                to="/$locale/privacy-policy"
-              >
-                <i className="ri-shield-check-line mr-1" />
+    <footer className="min-h-44 bg-base-100 lg:bg-white">
+      <div className="w-full px-4 pb-14 pt-6 text-sm text-base-content/70 sm:px-6 lg:px-8">
+        <div>
+          <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <p className="font-medium text-base-content">{t.copyright}</p>
+              <Link className="link-hover link text-xs" params={{ locale }} to="/$locale/privacy-policy">
                 {t.privacyPolicy}
               </Link>
-              <Link
-                className="link-hover link flex items-center"
-                params={{ locale }}
-                to="/$locale/terms-of-service"
-              >
-                <i className="ri-file-list-3-line mr-1" />
+              <Link className="link-hover link text-xs" params={{ locale }} to="/$locale/terms-of-service">
                 {t.termsOfService}
               </Link>
             </div>
-          </nav>
-        </div>
-
-        <div className="mt-6 border-t border-base-300 pt-4">
-          <p className="font-medium text-base-content">{t.copyright}</p>
+            <nav aria-label="Social media" className="flex flex-wrap justify-end gap-x-5 gap-y-2 text-xs font-medium text-base-content/70">
+              <a className="transition hover:text-base-content" href="https://www.xiaohongshu.com/" rel="noreferrer" target="_blank">小红书</a>
+              <a className="transition hover:text-base-content" href="https://www.douyin.com/" rel="noreferrer" target="_blank">抖音</a>
+              <a className="transition hover:text-base-content" href="https://channels.weixin.qq.com/" rel="noreferrer" target="_blank">视频号</a>
+              <a className="transition hover:text-base-content" href="https://mp.weixin.qq.com/" rel="noreferrer" target="_blank">公众号</a>
+              <a className="transition hover:text-base-content" href="https://x.com/" rel="noreferrer" target="_blank">X</a>
+              <a className="transition hover:text-base-content" href="https://www.youtube.com/" rel="noreferrer" target="_blank">YouTube</a>
+            </nav>
+          </div>
           <p className="mt-2 max-w-5xl text-xs leading-5 text-base-content/50">
             {t.disclaimer}
           </p>
@@ -919,6 +939,30 @@ function getResourceCoinCopy(locale: Locale) {
     return { insufficient: 'コイン残高が不足しています。ゲームを遊んだり、ほかの人のプレイを見たりすると獲得できます。' }
   }
   return { insufficient: 'Not enough coins. Find coins around the site, play games, or watch others play to earn more.' }
+}
+
+function getSiteDateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function readDailyCheckIn() {
+  const fallback = { completed: false, lastDate: '', streak: 0 }
+  if (typeof window === 'undefined') return fallback
+  try {
+    const stored = window.localStorage.getItem(DAILY_CHECK_IN_STORAGE_KEY)
+    const parsed = stored ? JSON.parse(stored) as { lastCompletedDate?: string; streak?: number } : null
+    const lastDate = parsed?.lastCompletedDate || ''
+    return {
+      completed: lastDate === getSiteDateKey(new Date()),
+      lastDate,
+      streak: Math.max(0, Number(parsed?.streak) || 0),
+    }
+  } catch {
+    return fallback
+  }
 }
 
 function saveDesktopSidebarState(collapsed: boolean) {

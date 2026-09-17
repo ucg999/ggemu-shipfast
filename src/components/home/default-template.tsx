@@ -4,14 +4,12 @@ import type { MouseEvent } from 'react'
 
 import {
   GamesSection,
-  HomeFaqSection,
   HomeLatestGamesRow,
-  HomeLatestBlogPostsSection,
   HomeMostPlayedGamesSection,
+  LazyAutoplayVideo,
 } from './shared'
 import {
   PopularGameCollections,
-  RecentPlayedHeaderPanel,
   useRecentPlayedGames,
 } from './recent-played-games'
 import type { HomeTemplateProps } from './types'
@@ -31,7 +29,6 @@ export function DefaultHomeTemplate(
     filterOptions,
     filters,
     lang,
-    latestBlogPosts,
     latestGames,
     mostPlayedGames,
     onFilterChange,
@@ -129,7 +126,7 @@ export function DefaultHomeTemplate(
     { label: mobileModeLabels.coin, platformId: 'coin' },
   ]
   return (
-    <div className="w-full min-w-0 max-w-full overflow-x-clip">
+    <div className="awwwards-home w-full min-w-0 max-w-full overflow-x-clip">
       {rankingFailed ? <div role="status" className="flex items-center gap-2 px-4 py-1 text-xs">
         <span>{lang === 'en' ? 'Rankings could not refresh.' : lang === 'ja' ? 'ランキングを更新できませんでした。' : lang === 'zh-TW' ? '榜單更新失敗，已保留原卡片。' : '榜单更新失败，已保留原卡片。'}</span>
         <button type="button" className="underline" onClick={() => setRankingRetry((value) => value + 1)}>{lang === 'en' ? 'Retry' : lang === 'ja' ? '再試行' : '重试'}</button>
@@ -167,81 +164,42 @@ export function DefaultHomeTemplate(
         </div>
       </nav>
 
-      <section className="hidden bg-base-100 lg:block">
-        <div className="flex w-full flex-wrap items-start gap-8 px-4 py-6 sm:px-6 lg:px-8 xl:flex-nowrap">
-          <div className="w-fit">
-            <h1 className="rainbow-title hidden whitespace-nowrap text-[clamp(2rem,3.7vw,4rem)] font-bold leading-tight sm:block">
-              {t.title}
+      <section className="desktop-home-hero hidden bg-base-100 lg:block">
+        <div className="desktop-home-hero-inner flex w-full flex-wrap items-start gap-8 px-4 py-6 sm:px-6 lg:px-8 xl:flex-nowrap">
+          <div className="desktop-home-title w-fit">
+            <p className="desktop-home-tagline">{getI18n(lang).layout.siteSlogan}</p>
+            <h1 aria-label="G.A.M.E." className="rainbow-title hidden whitespace-nowrap text-[clamp(2rem,3.7vw,4rem)] font-bold leading-tight sm:flex">
+              <span>G</span><i className="desktop-home-title-dot" />
+              <span>A</span><i className="desktop-home-title-dot" />
+              <span>M</span><i className="desktop-home-title-dot" />
+              <span>E</span><i className="desktop-home-title-dot" />
             </h1>
-            <p className="mt-3 hidden text-center text-lg font-medium text-base-content/65 sm:block lg:text-xl">
-              {t.nostalgiaSubtitle}
+            <p className="desktop-home-game-caption">
+              {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
             </p>
+            <div className="desktop-daily-video-grid">
+              {randomVideoGames.slice(0, 3).map((game) => {
+                const gameId = game.url_slug || game._id || ''
+                return (
+                  <Link
+                    className="desktop-daily-video-card group"
+                    key={gameId}
+                    params={{ gameId, locale: lang }}
+                    search={{}}
+                    to="/$locale/games/$gameId"
+                  >
+                    <LazyAutoplayVideo
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                      poster={game.game_cover}
+                      src={game.game_video}
+                    />
+                  </Link>
+                )
+              })}
+            </div>
           </div>
-          <RecentPlayedHeaderPanel games={recentPlayedGames} lang={lang} />
         </div>
       </section>
-
-      <div className="hidden lg:block">
-        <HomeMostPlayedGamesSection
-          challengeCompleted={challengeCompleted}
-          challengeReward={challengeReward}
-          games={randomVideoGames}
-          isRandomGameLoading={isRandomGameLoading}
-          lang={lang}
-          onRandomGame={showOneRandomGame}
-          streakDays={streakDays}
-        />
-        <HomeLatestGamesRow games={latestGames} lang={lang} />
-        <HomeLatestGamesRow
-          games={rankingRows.weekly}
-          lang={lang}
-          pinnedCoin
-          pinnedCoinPosition={1}
-          title={t.weeklyPopularGames}
-        />
-        <HomeLatestGamesRow games={rankingRows.rising} lang={lang} title={t.fastestGrowingGames} />
-      </div>
-
-      <nav
-        aria-label={t.platformNavigation}
-        className="hidden border-y border-base-300 bg-base-100 px-4 sm:px-6 lg:block lg:px-8"
-      >
-        <div className="flex items-center gap-1 overflow-x-auto py-2">
-          <button
-            className={`btn btn-sm shrink-0 rounded-full border-0 px-4 ${
-              filters.platform ||
-              filters.category ||
-              filters.query ||
-              filters.sort !== 'popular'
-                ? 'btn-ghost text-base-content/65'
-                : 'bg-base-content text-base-100'
-            }`}
-            onClick={onHomeRecommendations}
-            type="button"
-          >
-            {getI18n(lang).layout.allGames}
-          </button>
-
-          {orderedPlatforms.map((platform) => {
-            const isActive = filters.platform === platform.name
-
-            return (
-              <button
-                className={`btn btn-sm shrink-0 rounded-full border-0 px-4 ${
-                  isActive
-                    ? 'bg-base-content text-base-100'
-                    : 'btn-ghost text-base-content/65'
-                }`}
-                key={platform.name}
-                onClick={() => onFilterChange('platform', platform.name)}
-                type="button"
-              >
-                {getPlatformLabel(platform.name, lang)}
-              </button>
-            )
-          })}
-        </div>
-      </nav>
 
       <div className="lg:hidden">
         <HomeMostPlayedGamesSection
@@ -310,30 +268,9 @@ export function DefaultHomeTemplate(
         />
       </div>
 
-      <div className="hidden lg:block">
-        <GamesSection
-          {...props}
-          games={props.games}
-          gridClassName="grid grid-cols-7 gap-2"
-          page={props.page}
-          pages={props.pages}
-          pagination={props.pagination}
-          sectionClassName="flex w-full flex-col gap-1 px-4 py-1 sm:px-6 lg:px-8"
-          showHeader={false}
-        />
-      </div>
-
       <section className="px-3 py-1 sm:px-4 lg:hidden">
         <PopularGameCollections lang={lang} />
       </section>
-
-      <div className="hidden lg:block">
-        <section className="bg-base-100 px-4 py-1 sm:px-6 lg:px-8">
-          <PopularGameCollections lang={lang} />
-        </section>
-        <HomeLatestBlogPostsSection blogPosts={latestBlogPosts} lang={lang} />
-        <HomeFaqSection lang={lang} />
-      </div>
 
       {randomPopupGame ? (
         <RandomGameModal

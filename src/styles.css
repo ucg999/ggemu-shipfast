@@ -142,6 +142,263 @@ body {
     grid-column: span 1 / span 1;
     grid-row: span 1 / span 1;
   }
+
+  /* Editorial desktop home inspired by contemporary design-award indexes. */
+  .awwwards-home {
+    --home-paper: #f0f0ed;
+    --home-ink: #161616;
+    --home-rule: rgb(22 22 22 / 32%);
+    background: var(--home-paper);
+    color: var(--home-ink);
+    font-family: Arial, Helvetica, "Microsoft YaHei", sans-serif;
+  }
+
+  .desktop-clean-shell {
+    background: #f0f0ed;
+    color: #161616;
+    font-family: Arial, Helvetica, "Microsoft YaHei", sans-serif;
+  }
+
+  .desktop-clean-header {
+    background: #f0f0ed;
+    color: #161616;
+    font-family: Arial, Helvetica, "Microsoft YaHei", sans-serif;
+  }
+
+  .desktop-clean-header .navbar {
+    min-height: 72px;
+    padding-right: 32px;
+    padding-left: 32px;
+  }
+
+  .desktop-clean-header a,
+  .desktop-clean-header button,
+  .desktop-clean-header summary,
+  .desktop-clean-header [class*="text-white"] {
+    color: #161616;
+  }
+
+  .desktop-clean-header [class*="border-rose"] {
+    border-color: rgb(22 22 22 / 28%);
+  }
+
+  .desktop-clean-header [class*="bg-rose"] {
+    background: transparent;
+  }
+
+  .desktop-clean-header form label {
+    border-color: rgb(22 22 22 / 32%);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .desktop-clean-header form button[type="submit"] {
+    border-radius: 0;
+    background: #161616;
+    color: #f0f0ed;
+  }
+
+  .desktop-clean-header .desktop-theme-mode-link {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .desktop-clean-header .desktop-watch-button,
+  .desktop-clean-header .desktop-watch-button:hover {
+    border-color: #161616;
+    background: #161616;
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .desktop-clean-header .desktop-watch-button .live-watch-pupil {
+    background: #161616;
+  }
+
+  .desktop-clean-header .desktop-home-topnav {
+    min-height: 42px;
+    overflow: visible;
+  }
+
+  .desktop-clean-header .desktop-home-topnav > a,
+  .desktop-clean-header .desktop-home-topnav > details > summary {
+    display: flex;
+    min-height: 41px;
+    cursor: pointer;
+    list-style: none;
+    align-items: center;
+    padding: 0 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+    transition: background-color 160ms ease, color 160ms ease;
+  }
+
+  .desktop-clean-header .desktop-home-topnav > a:first-child {
+    padding-left: 0;
+  }
+
+  .desktop-clean-header .desktop-home-topnav > a:hover,
+  .desktop-clean-header .desktop-home-topnav > details > summary:hover {
+    background: #161616;
+    color: #f0f0ed;
+  }
+
+  .awwwards-home > section,
+  .awwwards-home > nav,
+  .awwwards-home > div > section,
+  .awwwards-home > div > div > section {
+    background: transparent;
+  }
+
+  .awwwards-home .desktop-home-hero {
+    min-height: min(43vw, 560px);
+  }
+
+  .awwwards-home .desktop-home-hero-inner {
+    min-height: inherit;
+    padding: 28px 34px 32px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .awwwards-home .desktop-home-title {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .awwwards-home .desktop-home-tagline {
+    margin: 0 0 18px;
+    color: rgb(22 22 22 / 65%);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .12em;
+  }
+
+  .awwwards-home .rainbow-title {
+    margin: 0;
+    align-items: baseline;
+    justify-content: center;
+    background: none;
+    color: var(--home-ink);
+    animation: none;
+    max-width: none;
+    white-space: normal;
+    font-family: "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei", sans-serif;
+    font-size: clamp(88px, 14vw, 220px);
+    font-weight: 600;
+    letter-spacing: -.055em;
+    line-height: .8;
+  }
+
+  .awwwards-home .desktop-home-title-dot {
+    width: .115em;
+    height: .115em;
+    flex: none;
+    margin-right: .035em;
+    margin-left: .085em;
+    border-radius: 9999px;
+    background: currentColor;
+    transform: translateY(-.02em);
+  }
+
+  .awwwards-home .desktop-daily-video-grid {
+    display: grid;
+    width: min(1600px, 96vw);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 52px;
+  }
+
+  .awwwards-home .desktop-home-game-caption {
+    margin-top: 24px;
+    color: rgb(22 22 22 / 68%);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: .08em;
+  }
+
+  .awwwards-home .desktop-daily-video-card {
+    display: block;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: 18px;
+    background: #ddd;
+  }
+
+  .awwwards-home h2 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+  }
+
+  .awwwards-home > .hidden.lg\:block,
+  .awwwards-home > nav,
+  .awwwards-home > div.hidden.lg\:block > section {
+    border-bottom: 1px solid var(--home-rule);
+  }
+
+  .awwwards-home > nav[aria-label] {
+    padding-right: 34px;
+    padding-left: 34px;
+    border-top: 0;
+    border-color: var(--home-rule);
+  }
+
+  .awwwards-home > nav[aria-label] .btn {
+    min-height: 34px;
+    border-radius: 0;
+    background: transparent;
+    color: var(--home-ink);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+
+  .awwwards-home > nav[aria-label] .btn:hover,
+  .awwwards-home > nav[aria-label] .btn.bg-base-content {
+    background: var(--home-ink);
+    color: var(--home-paper);
+  }
+
+  .awwwards-home .game-mosaic-card,
+  .awwwards-home .game-mosaic-card figure,
+  .awwwards-home a[class*="rounded-xl"],
+  .awwwards-home a[class*="rounded-lg"] {
+    border-radius: 2px;
+  }
+
+  .awwwards-home .game-mosaic-card {
+    transition: transform 180ms ease, opacity 180ms ease;
+  }
+
+  .awwwards-home .game-mosaic-card:hover {
+    z-index: 2;
+    transform: translateY(-4px);
+  }
+
+  .awwwards-home section[class*="px-"] {
+    padding-right: 34px;
+    padding-left: 34px;
+  }
+
+  .awwwards-home section > h2,
+  .awwwards-home section > div > h2,
+  .awwwards-home section > div > div > h2 {
+    margin-top: 12px;
+    margin-bottom: 10px;
+  }
 }
 
 .rainbow-title {
