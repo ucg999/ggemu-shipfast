@@ -107,6 +107,14 @@ export function DefaultHomeTemplate(
       setIsRandomGameLoading(false)
     }
   }
+
+  useEffect(() => {
+    const openRandomGame = () => {
+      void showOneRandomGame()
+    }
+    window.addEventListener('home-random-game-request', openRandomGame)
+    return () => window.removeEventListener('home-random-game-request', openRandomGame)
+  })
   const mobileRecentGames = recentPlayedGames.map((game) => ({
     _id: game.id,
     game_cover: game.cover,
@@ -168,12 +176,7 @@ export function DefaultHomeTemplate(
         <div className="desktop-home-hero-inner flex w-full flex-wrap items-start gap-8 px-4 py-6 sm:px-6 lg:px-8 xl:flex-nowrap">
           <div className="desktop-home-title w-fit">
             <p className="desktop-home-tagline">{getI18n(lang).layout.siteSlogan}</p>
-            <h1 aria-label="G.A.M.E." className="rainbow-title hidden whitespace-nowrap text-[clamp(2rem,3.7vw,4rem)] font-bold leading-tight sm:flex">
-              <span>G</span><i className="desktop-home-title-dot" />
-              <span>A</span><i className="desktop-home-title-dot" />
-              <span>M</span><i className="desktop-home-title-dot" />
-              <span>E</span><i className="desktop-home-title-dot" />
-            </h1>
+            <DesktopGameWordmark lang={lang} />
             <p className="desktop-home-game-caption">
               {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
             </p>
@@ -197,6 +200,23 @@ export function DefaultHomeTemplate(
                 )
               })}
             </div>
+            <section className="desktop-home-best-section">
+              <p className="desktop-home-tagline">{getI18n(lang).layout.siteSlogan}</p>
+              <DesktopBestTitle lang={lang} />
+              <p className="desktop-home-game-caption">
+                {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
+              </p>
+              <div className="desktop-home-best-grid">
+                {mostPlayedGames.slice(0, 3).map((game) => {
+                  const gameId = game.url_slug || game._id || ''
+                  return (
+                    <Link className="desktop-daily-video-card group" key={`best-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
+                      <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} />
+                    </Link>
+                  )
+                })}
+              </div>
+            </section>
           </div>
         </div>
       </section>
@@ -285,6 +305,30 @@ export function DefaultHomeTemplate(
   )
 }
 
+function DesktopGameWordmark({ lang }: { lang: HomeTemplateProps['lang'] }) {
+  return (
+    <h1 aria-label="G.A.M.E." className="rainbow-title hidden whitespace-nowrap text-[clamp(2rem,3.7vw,4rem)] font-bold leading-tight sm:flex">
+      <span>G</span><DesktopProDot lang={lang} />
+      <span>A</span><DesktopProDot lang={lang} />
+      <span>M</span><DesktopProDot lang={lang} />
+      <span>E</span><DesktopProDot lang={lang} />
+    </h1>
+  )
+}
+
+function DesktopProDot({ lang }: { lang: HomeTemplateProps['lang'] }) {
+  if (lang !== 'zh-CN' && lang !== 'zh-TW') return <i className="desktop-home-title-dot" />
+  return <Link aria-label={lang === 'zh-TW' ? '進入主題模式' : '进入主题模式'} className="desktop-home-title-dot desktop-home-title-dot-link" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO" />
+}
+
+function DesktopBestTitle({ lang }: { lang: HomeTemplateProps['lang'] }) {
+  return (
+    <h2 className="desktop-home-best-title">
+      {lang === 'zh-TW' ? '今日最佳' : lang === 'en' ? "Today's Best" : lang === 'ja' ? '今日のベスト' : '今日最佳'}
+    </h2>
+  )
+}
+
 const DAILY_CHALLENGE_STORAGE_KEY = 'game-adventure-daily-challenge'
 
 type DailyChallengeProgress = {
@@ -369,7 +413,7 @@ function RandomGameModal({
       <section
         aria-label={t.randomGame}
         aria-modal="true"
-        className="w-full max-w-md overflow-hidden rounded-2xl bg-base-100 shadow-2xl"
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-white text-black shadow-2xl"
         onClick={(event) => event.stopPropagation()}
         role="dialog"
       >
@@ -384,7 +428,7 @@ function RandomGameModal({
           ) : null}
           <button aria-label={t.close} className="btn btn-circle btn-sm absolute right-3 top-3" onClick={onClose} type="button">✕</button>
         </figure>
-        <div className="p-4">
+        <div className="bg-white p-4 text-black">
           <div className="flex min-w-0 items-center gap-2">
             <h3 className="min-w-0 truncate text-xl font-semibold">{game.name}</h3>
             <span className="flex shrink-0 items-center gap-1 text-sm font-black text-amber-600">

@@ -8,7 +8,7 @@ import { getPlatformLabel } from '#/lib/platform-label'
 import { getOriginalGamesTitle } from '#/lib/original-games'
 import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
 import { CoinRankBadge, HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
-import { addCoinReward } from '#/lib/coin-wallet'
+import { addCoinBalance, prepareRandomGameCoinMultiplier } from '#/lib/coin-wallet'
 import { confirmResourceDownload, unlockPaidResource } from '#/lib/paid-resource'
 
 const SITE_VISIT_COIN_SESSION_KEY = 'game-adventure-site-visit-coin-awarded'
@@ -56,11 +56,11 @@ export function SiteLayout({
   const canSwitchTheme = siteThemes.length > 1
   const sidebarSearchParams = new URLSearchParams(location.searchStr)
   const globalCoins = useGlobalCoinBalance()
-  const [dailyCheckIn, setDailyCheckIn] = useState({ completed: false, streak: 0 })
+  const [dailyCheckIn, setDailyCheckIn] = useState({ completed: false, lastDate: '', streak: 0 })
 
   useEffect(() => {
     const current = readDailyCheckIn()
-    setDailyCheckIn({ completed: current.completed, streak: current.streak })
+    setDailyCheckIn(current)
   }, [])
 
   function handleDailyCheckIn() {
@@ -75,8 +75,8 @@ export function SiteLayout({
     } catch {
       // Keep check-in usable for the current visit if storage is unavailable.
     }
-    addCoinReward(streak * 10)
-    setDailyCheckIn({ completed: true, streak })
+    addCoinBalance(streak * 10)
+    setDailyCheckIn({ completed: true, lastDate: getSiteDateKey(now), streak })
   }
 
   useEffect(() => {
@@ -91,7 +91,7 @@ export function SiteLayout({
     try {
       if (window.sessionStorage.getItem(SITE_VISIT_COIN_SESSION_KEY) === '1') return
       window.sessionStorage.setItem(SITE_VISIT_COIN_SESSION_KEY, '1')
-      addCoinReward(1)
+      addCoinBalance(1)
     } catch {
       // The site remains usable when session storage is unavailable.
     }
@@ -448,15 +448,16 @@ export function SiteLayout({
               </ul>
             </details>
             <button
-              className="hidden h-9 shrink-0 items-center rounded-full px-3 text-sm font-semibold text-black transition hover:bg-black/5 disabled:cursor-default disabled:opacity-45 lg:flex"
+              className="hidden h-9 shrink-0 items-center gap-1 rounded-full border border-black/35 px-3 text-sm font-semibold text-black transition hover:border-black hover:bg-black/5 disabled:cursor-default disabled:opacity-55 lg:flex"
               disabled={dailyCheckIn.completed}
               onClick={handleDailyCheckIn}
-              title={dailyCheckIn.completed ? (locale === 'zh-TW' ? '今日已簽到' : '今日已签到') : `+${Math.max(1, dailyCheckIn.streak + 1) * 10}`}
+              title={dailyCheckIn.completed ? (locale === 'zh-TW' ? '今日已簽到' : '今日已签到') : `+${getNextCheckInMultiplier(dailyCheckIn) * 10}`}
               type="button"
             >
-              {dailyCheckIn.completed
+              <span>{dailyCheckIn.completed
                 ? locale === 'zh-TW' ? '已簽到' : locale === 'en' ? 'Checked in' : locale === 'ja' ? 'チェック済み' : '已签到'
-                : locale === 'zh-TW' ? '簽到' : locale === 'en' ? 'Check in' : locale === 'ja' ? 'チェックイン' : '签到'}
+                : locale === 'zh-TW' ? '簽到' : locale === 'en' ? 'Check in' : locale === 'ja' ? 'チェックイン' : '签到'}</span>
+              <strong>×{dailyCheckIn.completed ? Math.max(1, dailyCheckIn.streak) : getNextCheckInMultiplier(dailyCheckIn)}</strong>
             </button>
             <div className="ml-2 hidden shrink-0 items-center gap-0 [&_.coin-rank-badge]:-mr-2 lg:flex">
               <CoinRankBadge balance={globalCoins.balance} lang={locale} />
@@ -857,15 +858,21 @@ function DesktopUnifiedHeaderNavigation({
       <Link className={linkClass} params={{ locale, platformId: 'coin' }} to="/$locale/platform/$platformId">{getGameModeLabels(locale).coin}</Link>
       <Link className={linkClass} params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
       <Link className={linkClass} params={{ locale, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
-      <Link
-        className="ml-1 flex h-9 min-w-40 max-w-md flex-1 items-center gap-2 rounded-full border border-black/30 px-3 text-xs text-black/60"
-        params={{ locale }}
-        search={{ q: '' }}
-        to="/$locale/search"
-      >
-        <i className="ri-search-line text-lg" />
-        {locale === 'zh-CN' ? '按需求搜索' : layout.searchGames}
-      </Link>
+      <div className="ml-1 flex h-9 min-w-48 max-w-md flex-1 items-center rounded-full border border-black/30 text-xs text-black/60">
+        <Link className="flex min-w-0 flex-1 items-center gap-2 px-3" params={{ locale }} search={{ q: '' }} to="/$locale/search">
+          <i className="ri-search-line text-lg" />
+          <span className="truncate">{locale === 'zh-CN' ? '按需求搜索' : layout.searchGames}</span>
+        </Link>
+        <Link
+          className="flex h-5 shrink-0 items-center border-l border-black/20 px-3 font-medium text-black/75 hover:text-black"
+          onClick={() => prepareRandomGameCoinMultiplier()}
+          params={{ locale }}
+          search={{ p: undefined }}
+          to="/$locale/random"
+        >
+          {locale === 'zh-TW' ? '隨機' : locale === 'en' ? 'Random' : locale === 'ja' ? 'ランダム' : '随机'}
+        </Link>
+      </div>
     </nav>
   )
 }
@@ -963,6 +970,15 @@ function readDailyCheckIn() {
   } catch {
     return fallback
   }
+}
+
+function getNextCheckInMultiplier(progress: { completed: boolean; lastDate: string; streak: number }) {
+  if (progress.completed) return Math.max(1, progress.streak)
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  return progress.lastDate === getSiteDateKey(yesterday)
+    ? Math.max(1, progress.streak + 1)
+    : 1
 }
 
 function saveDesktopSidebarState(collapsed: boolean) {

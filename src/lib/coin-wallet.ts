@@ -25,6 +25,8 @@ export const COIN_RANKS: ReadonlyArray<CoinRank> = [
 ]
 
 const DAILY_GAME_MULTIPLIER_STORAGE_KEY = 'game-adventure-daily-game-multipliers'
+const DAILY_CHECK_IN_STORAGE_KEY = 'game-adventure-daily-challenge'
+const PENDING_RANDOM_GAME_MULTIPLIER_KEY = 'game-adventure-pending-random-game-multiplier'
 const GAME_PLAY_STARTED_STORAGE_PREFIX = 'game-adventure-play-started:'
 
 type DailyGameMultipliers = {
@@ -70,10 +72,53 @@ export function hasCoinRank(requiredRank: CoinRankId, balance = readCoinBalance(
 
 export function addCoinReward(amount: number) {
   const current = readCoinBalance()
-  const multiplier = getCoinRank(current).multiplier
+  const rankMultiplier = getCoinRank(current).multiplier
+  const checkInMultiplier = getDailyCheckInMultiplier()
+  const multiplier = rankMultiplier * checkInMultiplier
   const requested = Number.isFinite(amount) && amount > 0 ? Math.floor(amount) * multiplier : 0
   const balance = requested > 0 ? addCoinBalance(requested) : current
-  return { awarded: Math.max(0, balance - current), balance, multiplier }
+  return { awarded: Math.max(0, balance - current), balance, checkInMultiplier, multiplier, rankMultiplier }
+}
+
+export function getDailyCheckInMultiplier() {
+  if (typeof window === 'undefined') return 1
+  try {
+    const stored = window.localStorage.getItem(DAILY_CHECK_IN_STORAGE_KEY)
+    const parsed = stored ? JSON.parse(stored) as { lastCompletedDate?: string; streak?: number } : null
+    if (parsed?.lastCompletedDate !== getLocalDateKey(new Date())) return 1
+    return Math.max(1, Math.floor(Number(parsed?.streak)) || 1)
+  } catch {
+    return 1
+  }
+}
+
+export function pickRandomGameCoinMultiplier() {
+  const choices = Math.random() < 0.8
+    ? [2, 2, 2, 2, 3, 3, 3, 4, 4, 5]
+    : [6, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 10]
+  return choices[Math.floor(Math.random() * choices.length)] ?? 2
+}
+
+export function prepareRandomGameCoinMultiplier() {
+  const multiplier = pickRandomGameCoinMultiplier()
+  try {
+    window.sessionStorage.setItem(PENDING_RANDOM_GAME_MULTIPLIER_KEY, String(multiplier))
+  } catch {
+    // Random navigation still works when session storage is unavailable.
+  }
+  return multiplier
+}
+
+export function consumeRandomGameCoinMultiplier(gameId: string) {
+  if (!gameId) return 1
+  try {
+    const multiplier = Math.max(1, Math.min(20, Math.floor(Number(window.sessionStorage.getItem(PENDING_RANDOM_GAME_MULTIPLIER_KEY))) || 1))
+    window.sessionStorage.removeItem(PENDING_RANDOM_GAME_MULTIPLIER_KEY)
+    if (multiplier > 1) setDailyGameCoinMultiplier(gameId, multiplier)
+    return multiplier
+  } catch {
+    return 1
+  }
 }
 
 export function spendCoinBalance(amount: number) {

@@ -311,6 +311,16 @@ body {
     transform: translateY(-.02em);
   }
 
+  .awwwards-home .desktop-home-title-dot-link {
+    cursor: pointer;
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+
+  .awwwards-home .desktop-home-title-dot-link:hover {
+    opacity: .65;
+    transform: translateY(-.02em) scale(1.5);
+  }
+
   .awwwards-home .desktop-daily-video-grid {
     display: grid;
     width: min(1600px, 96vw);
@@ -325,6 +335,29 @@ body {
     font-size: 14px;
     font-weight: 500;
     letter-spacing: .08em;
+  }
+
+  .awwwards-home .desktop-home-best-section {
+    width: min(1600px, 96vw);
+    margin-top: 186px;
+    padding: 28px 0 8px;
+  }
+
+  .awwwards-home .desktop-home-best-title {
+    color: var(--home-ink);
+    font-family: "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei", sans-serif;
+    font-size: clamp(44px, 7vw, 106px);
+    font-weight: 800;
+    letter-spacing: -.05em;
+    line-height: .95;
+  }
+
+  .awwwards-home .desktop-home-best-grid {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 36px;
   }
 
   .awwwards-home .desktop-daily-video-card {

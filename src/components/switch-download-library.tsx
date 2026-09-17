@@ -97,6 +97,18 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
             <div className="flex items-baseline gap-2">
               <h1 className="text-3xl font-bold text-base-content">{copy.title}</h1>
               <span className="text-xs font-normal text-base-content/55">{copy.gameCount(library.length)}</span>
+              {(lang === 'zh-CN' || lang === 'zh-TW') ? (
+                <a
+                  className="ml-2 whitespace-nowrap text-sm font-medium text-error hover:underline"
+                  href={platform === 'psp' ? 'https://www.kdocs.cn/l/coH3Z1VLgop3' : 'https://www.kdocs.cn/l/cs8H4NUI4lC4'}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {platform === 'psp'
+                    ? (lang === 'zh-TW' ? 'PSP全遊戲檔案' : 'PSP全游戏档案')
+                    : (lang === 'zh-TW' ? 'Switch全遊戲檔案' : 'Switch全游戏档案')}
+                </a>
+              ) : null}
             </div>
             <div className="flex min-w-0 max-w-full flex-nowrap items-center justify-end gap-1 overflow-x-auto max-sm:w-full max-sm:justify-center max-sm:gap-0 max-sm:[&>.btn]:h-7 max-sm:[&>.btn]:min-h-7 max-sm:[&>.btn]:min-w-0 max-sm:[&>.btn]:shrink max-sm:[&>.btn]:gap-0.5 max-sm:[&>.btn]:px-1 max-sm:[&>.btn]:text-[clamp(11px,3vw,13px)] max-sm:[&>.btn]:whitespace-nowrap max-sm:[&>.btn-square]:w-7 max-sm:[&>.btn-square]:shrink-0 max-sm:[&>.btn>i]:text-sm">
               {filters.map(({ field, label }) => (

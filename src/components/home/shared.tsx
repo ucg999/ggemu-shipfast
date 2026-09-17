@@ -387,17 +387,26 @@ export function SearchForm({
         <div className="tooltip tooltip-bottom" data-tip="Switch">
           <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
         </div>
-        <label className="flex h-9 min-w-40 flex-1 items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 shadow-sm transition focus-within:border-rose-300 focus-within:bg-white lg:max-w-md">
-          <i className="ri-search-line text-lg text-gray-500" />
-          <input
-            className="h-full min-w-0 flex-1 bg-transparent text-xs text-black caret-black outline-none placeholder:text-gray-500"
-            onFocus={() => window.location.assign(`/${lang}/search`)}
-            onChange={(event) => onQueryChange(event.currentTarget.value)}
-            placeholder={lang === 'zh-CN' ? '按需求搜索' : searchPlaceholder}
-            type="search"
-            value={filters.query}
-          />
-        </label>
+        <div className="flex h-9 min-w-40 flex-1 items-center rounded-full border border-rose-200 bg-rose-50 shadow-sm transition focus-within:border-rose-300 focus-within:bg-white lg:max-w-md">
+          <label className="flex h-full min-w-0 flex-1 items-center gap-2 pl-3">
+            <i className="ri-search-line text-lg text-gray-500" />
+            <input
+              className="h-full min-w-0 flex-1 bg-transparent text-xs text-black caret-black outline-none placeholder:text-gray-500"
+              onFocus={() => window.location.assign(`/${lang}/search`)}
+              onChange={(event) => onQueryChange(event.currentTarget.value)}
+              placeholder={lang === 'zh-CN' ? '按需求搜索' : searchPlaceholder}
+              type="search"
+              value={filters.query}
+            />
+          </label>
+          <button
+            className="mr-1 flex h-6 shrink-0 items-center border-l border-rose-200 px-3 text-xs font-medium text-gray-700 hover:text-black"
+            onClick={() => window.dispatchEvent(new Event('home-random-game-request'))}
+            type="button"
+          >
+            {lang === 'zh-TW' ? '隨機' : lang === 'en' ? 'Random' : lang === 'ja' ? 'ランダム' : '随机'}
+          </button>
+        </div>
 
       </div>
     </form>

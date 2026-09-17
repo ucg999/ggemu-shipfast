@@ -2,7 +2,7 @@ import { Outlet, createFileRoute, redirect, useRouterState } from '@tanstack/rea
 import { useEffect, useRef, useState } from 'react'
 import { CoinRewardPopup, FloatingHomeCoin, FlyingCollectedCoin } from '#/components/home/coin-rewards'
 import { normalizeLocale } from '#/lib/i18n'
-import { addCoinReward } from '#/lib/coin-wallet'
+import { addCoinBalance, readCoinBalance } from '#/lib/coin-wallet'
 import type { GameSearchSort } from '#/lib/ggemu'
 import { type SiteTemplate, normalizeSiteTemplate } from '#/lib/site-config'
 
@@ -179,7 +179,7 @@ function LocaleLayout() {
 
   function collectInnerPageCoin(coinId: number) {
     if (!innerPageCoin || innerPageCoin.id !== coinId) return
-    const amount = Math.random() < 0.5 ? 1 : 2
+    const amount = Math.floor(Math.random() * 10) + 1
     const coinBox = document.querySelector<HTMLElement>('[data-coin-box]')
     const coinBoxRect = coinBox?.getBoundingClientRect()
     const left = (window.innerWidth * innerPageCoin.left) / 100
@@ -194,9 +194,10 @@ function LocaleLayout() {
     })
     setInnerPageCoin(null)
     window.setTimeout(() => {
-      const reward = addCoinReward(amount)
+      const previousBalance = readCoinBalance()
+      const balance = addCoinBalance(amount)
       setInnerPageCoinFlight(null)
-      setInnerPageReward({ amount: reward.awarded, id: Date.now(), prefix: '+' })
+      setInnerPageReward({ amount: Math.max(0, balance - previousBalance), id: Date.now(), prefix: '+' })
       if (innerRewardTimerRef.current !== null) {
         window.clearTimeout(innerRewardTimerRef.current)
       }

@@ -38,7 +38,7 @@ import {
 } from '#/lib/i18n'
 import { getAlternateLinksFromCanonical } from '#/lib/seo'
 import { getPlatformLabel } from '#/lib/platform-label'
-import { hasCoinRank, markGamePlayStarted, readCoinBalance } from '#/lib/coin-wallet'
+import { consumeRandomGameCoinMultiplier, hasCoinRank, markGamePlayStarted, readCoinBalance } from '#/lib/coin-wallet'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -319,6 +319,10 @@ function LocalizedGameDetailPage() {
   })
   const requiredCoinRank = getCoinModeGameRequiredRank(game)
   const minimumCoinBalance = getCoinModeGameMinimumBalance(game)
+
+  useEffect(() => {
+    consumeRandomGameCoinMultiplier(gameId)
+  }, [gameId])
 
   const startGame = (event: MouseEvent<HTMLAnchorElement>) => {
     if (requiredCoinRank && (!hasCoinRank(requiredCoinRank) || readCoinBalance() < minimumCoinBalance)) {

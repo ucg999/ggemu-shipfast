@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react'
 
 import type { Locale } from '#/lib/ggemu'
 import {
-  addCoinReward,
+  addCoinBalance,
   COIN_BALANCE_EVENT,
   COIN_BALANCE_STORAGE_KEY,
   getCoinRank,
@@ -117,10 +117,12 @@ export function useHomeCoinRewards() {
   const addCoins = useCallback((amount: number, showFeedback = true) => {
     if (!Number.isFinite(amount) || amount <= 0) return
 
-    const reward = addCoinReward(amount)
-    setBalance(reward.balance)
+    const previousBalance = readCoinBalance()
+    const nextBalance = addCoinBalance(amount)
+    const awarded = Math.max(0, nextBalance - previousBalance)
+    setBalance(nextBalance)
     if (showFeedback) {
-      showRewardFeedback(reward.awarded, '+')
+      showRewardFeedback(awarded, '+')
     }
   }, [showRewardFeedback])
 
@@ -150,10 +152,15 @@ export function useHomeCoinRewards() {
       current.filter((position) => position.id !== coinId),
     )
     window.setTimeout(() => {
-      addCoins(1, false)
+      // A coin picked up directly from the page is always worth exactly one.
+      // It intentionally does not use rank or consecutive check-in bonuses.
+      const previousBalance = readCoinBalance()
+      const nextBalance = addCoinBalance(1)
+      setBalance(nextBalance)
+      showRewardFeedback(Math.max(0, nextBalance - previousBalance), '+')
       setCollectedCoinFlight(null)
     }, 720)
-  }, [addCoins, coinPositions])
+  }, [coinPositions, showRewardFeedback])
 
   const showBalance = useCallback(() => {
     showRewardFeedback(balance, '×')
