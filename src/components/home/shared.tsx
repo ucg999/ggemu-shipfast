@@ -386,7 +386,7 @@ export function SearchForm({
             {getCoinModeCopy(lang).mode}
           </Link>
         </div>
-        <div className="tooltip tooltip-bottom" data-tip="PSP">
+        <div className="tooltip tooltip-bottom" data-tip={lang === 'zh-TW' ? '一分鐘扣一個幣' : lang === 'en' ? 'Costs 1 coin per minute' : lang === 'ja' ? '1分につき1コイン消費' : '一分钟扣一个币'}>
           <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'mahjong' }} to="/$locale/platform/$platformId">{lang === 'zh-TW' ? '街機麻將' : lang === 'en' ? 'Arcade Mahjong' : lang === 'ja' ? 'アーケード麻雀' : '街机麻将'}</Link>
         </div>
         <div className="tooltip tooltip-bottom" data-tip="PSP">

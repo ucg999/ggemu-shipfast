@@ -8,6 +8,7 @@ import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 import { PlatformModeContent } from './$locale.arcade'
 import { SwitchDownloadLibrary } from '#/components/switch-download-library'
 import { PspDownloadLibrary } from '#/components/psp-download-library'
+import { ARCADE_MAHJONG_GAME_QUERIES, normalizeArcadeMahjongGameName } from '#/lib/arcade-mahjong-games'
 
 const PAGE_SIZE = 100
 const PLATFORM_MODES = {
@@ -156,10 +157,10 @@ function getModeCopy(locale: Locale, modeId: PlatformModeId | undefined) {
 }
 
 function getMahjongModeCopy(locale: Locale) {
-  if (locale === 'zh-TW') return { description: '精選經典街機麻將與電子基盤遊戲。', seoTitle: '街機麻將遊戲｜懷舊遊戲廳', subtitle: '明星三缺一、幸運滿貫、龍虎榜2等經典作品。', title: '街機麻將' }
-  if (locale === 'en') return { description: 'A curated collection of classic arcade mahjong games.', seoTitle: 'Arcade Mahjong | Retro Game Hall', subtitle: 'Classic arcade mahjong and table games.', title: 'Arcade Mahjong' }
-  if (locale === 'ja') return { description: 'クラシックなアーケード麻雀ゲームのセレクション。', seoTitle: 'アーケード麻雀｜懐かしゲームセンター', subtitle: '往年のアーケード麻雀・テーブルゲーム。', title: 'アーケード麻雀' }
-  return { description: '精选经典街机麻将与电子基盘游戏。', seoTitle: '街机麻将游戏｜怀旧游戏厅', subtitle: '明星三缺一、幸运满贯、龙虎榜2等经典作品。', title: '街机麻将' }
+  if (locale === 'zh-TW') return { description: '精選經典街機麻將與電子基盤遊戲。遊玩期間每分鐘扣除 1 枚金幣，金幣用完後遊戲會自動退出。', seoTitle: '街機麻將遊戲｜懷舊遊戲廳', subtitle: '明星三缺一、幸運滿貫、龍虎榜2等經典作品；一分鐘扣一個幣。', title: '街機麻將' }
+  if (locale === 'en') return { description: 'A curated collection of classic arcade mahjong games. Playing costs 1 coin per minute; the game closes automatically when your balance reaches zero.', seoTitle: 'Arcade Mahjong | Retro Game Hall', subtitle: 'Classic arcade mahjong and table games. Costs 1 coin per minute.', title: 'Arcade Mahjong' }
+  if (locale === 'ja') return { description: 'クラシックなアーケード麻雀ゲームのセレクション。プレイ中は1分ごとに1コイン消費し、残高がなくなるとゲームは自動終了します。', seoTitle: 'アーケード麻雀｜懐かしゲームセンター', subtitle: '往年のアーケード麻雀・テーブルゲーム。1分につき1コイン消費します。', title: 'アーケード麻雀' }
+  return { description: '精选经典街机麻将与电子基盘游戏。游玩期间每分钟扣除 1 个金币，金币用完后游戏会自动退出。', seoTitle: '街机麻将游戏｜怀旧游戏厅', subtitle: '明星三缺一、幸运满贯、龙虎榜2等经典作品；一分钟扣一个币。', title: '街机麻将' }
 }
 
 function getSwitchLibraryCopy(locale: Locale) {
@@ -181,26 +182,20 @@ async function loadModeGames(locale: Locale, platform: string) {
   return dedupeGames(groups.flat())
 }
 
-const MAHJONG_GAME_QUERIES = ['明星三缺一', '幸运满贯', '龙虎榜', '电子基盘', '天开眼', '泰山闯天关2'] as const
-
 async function loadMahjongGames(locale: Locale) {
-  const results = await Promise.all(MAHJONG_GAME_QUERIES.map(query => searchGames({
+  const results = await Promise.all(ARCADE_MAHJONG_GAME_QUERIES.map(query => searchGames({
     data: { locale, query, sort: 'popular', page: 1, limit: 10 },
   })))
 
   const selected = results.flatMap((result, index) => {
-    const query = normalizeGameName(MAHJONG_GAME_QUERIES[index])
+    const query = normalizeArcadeMahjongGameName(ARCADE_MAHJONG_GAME_QUERIES[index])
     const exact = result.games.find(game => {
-      const name = normalizeGameName(game.name)
+      const name = normalizeArcadeMahjongGameName(game.name)
       return name === query || name.includes(query) || query.includes(name)
     })
     return exact ? [exact] : []
   })
   return dedupeGames(selected)
-}
-
-function normalizeGameName(value: string | undefined) {
-  return (value ?? '').normalize('NFKC').toLowerCase().replaceAll(/\s+/g, '')
 }
 
 async function loadAllPlatformPages(locale: Locale, platform: string) {

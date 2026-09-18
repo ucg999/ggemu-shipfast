@@ -8,12 +8,15 @@ import { getPlatformLabel } from '#/lib/platform-label'
 import { siteConfig } from '#/lib/site-config'
 import { useCurrentSiteTheme } from '#/lib/use-site-theme'
 import { calculateGameCoinAward } from '#/lib/game-session-coins'
+import { isArcadeMahjongGame } from '#/lib/arcade-mahjong-games'
+import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
 import {
   addCoinReward,
   consumeGamePlayStartedAt,
   getDailyGameCoinMultiplier,
   hasCoinRank,
   readCoinBalance,
+  spendCoinBalance,
 } from '#/lib/coin-wallet'
 
 const trialDragDocuments = new WeakSet<Document>()
@@ -61,7 +64,8 @@ function LocalizedPlayGamePage() {
   const isProGame = locationHash === 'PRO' || locationHash === '#PRO'
   const lang = normalizeLocale(locale)
   const requiredCoinRank = getCoinModeGameRequiredRank(game)
-  const loadingTrialDisabled = isMahjongLoadingTrialExcluded(game)
+  const isMahjongCoinChargeGame = isArcadeMahjongGame(game)
+  const loadingTrialDisabled = isMahjongCoinChargeGame
   const minimumCoinBalance = getCoinModeGameMinimumBalance(game)
   const [rankAccessGranted, setRankAccessGranted] = useState(requiredCoinRank === null)
   const embedId = encodeURIComponent(game._id || game.url_slug || gameId)
@@ -83,12 +87,14 @@ function LocalizedPlayGamePage() {
   const coinMultiplierRef = useRef(1)
   const settlementTimerRef = useRef<number | null>(null)
   const exitingRef = useRef(false)
+  const coinDepletedRef = useRef(false)
   const [returnPending, setReturnPending] = useState(false)
   const recommendationsRequestedRef = useRef(false)
   const trialDragRef = useRef<{ offsetX: number; offsetY: number; width: number; height: number } | null>(null)
   const labels = useMemo(() => getRecommendationLabels(lang), [lang])
   const playerRef = useRef<HTMLElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const globalCoins = useGlobalCoinBalance()
   const fullscreenLabel = lang === 'en' ? (isFullscreen ? 'Exit fullscreen' : 'Fullscreen')
     : lang === 'ja' ? (isFullscreen ? '全画面を終了' : '全画面')
     : lang === 'zh-TW' ? (isFullscreen ? '退出全螢幕' : '全螢幕')
@@ -130,6 +136,7 @@ function LocalizedPlayGamePage() {
     awardedCoinsRef.current = 0
     playStartedAtRef.current = consumeGamePlayStartedAt(gameId)
     sessionCoinsRef.current = 0
+    coinDepletedRef.current = false
     coinMultiplierRef.current = getDailyGameCoinMultiplier(gameId)
     recommendationsRequestedRef.current = false
     setRecommendations([])
@@ -181,6 +188,42 @@ function LocalizedPlayGamePage() {
       activePlayTimeRef.current,
       playStartedAtRef.current,
     )
+
+    if (isMahjongCoinChargeGame) {
+      const chargeableCoins = Math.floor(Math.max(0, activeTime) / 60_000)
+      const dueCoins = Math.max(0, chargeableCoins - awardedCoinsRef.current)
+      awardedCoinsRef.current = chargeableCoins
+
+      if (dueCoins > 0) {
+        const currentBalance = readCoinBalance()
+        const deductedCoins = Math.min(dueCoins, currentBalance)
+        if (deductedCoins > 0 && spendCoinBalance(deductedCoins)) {
+          sessionCoinsRef.current += deductedCoins
+        }
+
+        if (currentBalance - deductedCoins <= 0 && !coinDepletedRef.current) {
+          coinDepletedRef.current = true
+          playStartedAtRef.current = null
+          setShowLoadingTrial(false)
+          window.setTimeout(() => {
+            window.alert(labels.mahjongCoinsDepleted)
+            if (isProGame) {
+              void navigate({ params: { locale: lang }, search: { platform: 'mahjong' }, to: '/$locale/PRO' })
+            } else {
+              void navigate({ params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
+            }
+          }, 0)
+        }
+      }
+
+      return {
+        coins: sessionCoinsRef.current,
+        deducted: true,
+        multiplier: 1,
+        minutes: Math.max(1, Math.ceil(activeTime / 60_000)),
+      }
+    }
+
     const multiplier = coinMultiplierRef.current
     const { earned: earnedCoins, additional: newCoins } = calculateGameCoinAward(
       activeTime, multiplier, awardedCoinsRef.current, sessionCoinsRef.current,
@@ -194,10 +237,11 @@ function LocalizedPlayGamePage() {
 
     return {
       coins: sessionCoinsRef.current,
+      deducted: false,
       multiplier,
       minutes: Math.max(1, Math.ceil(activeTime / 60_000)),
     }
-  }, [])
+  }, [gameId, isMahjongCoinChargeGame, isProGame, labels.mahjongCoinsDepleted, lang, navigate])
 
   const settleAndShowRecommendations = useCallback(() => {
     if (playStartedAtRef.current !== null) {
@@ -315,6 +359,11 @@ function LocalizedPlayGamePage() {
         {fullscreenLabel}
       </button>
       </div>
+      {isMahjongCoinChargeGame ? (
+        <div className="fixed right-2 top-2 z-50 rounded-full bg-black/55 p-1 shadow-lg backdrop-blur-sm sm:right-3 sm:top-3">
+          <HomeCoinBag balance={globalCoins.balance} lang={lang} onOpen={globalCoins.showBalance} />
+        </div>
+      ) : null}
       <p
         aria-live="polite"
         className="game-loading-notice pointer-events-none absolute left-1/2 top-12 z-20 w-[min(90%,42rem)] -translate-x-1/2 text-center text-sm font-medium text-white/85 drop-shadow-md sm:top-16 sm:text-base"
@@ -415,6 +464,7 @@ function LocalizedPlayGamePage() {
 
 type GameSessionSettlement = {
   coins: number
+  deducted: boolean
   multiplier: number
   minutes: number
 }
@@ -439,10 +489,10 @@ function GameCoinSettlement({
           src="/images/coin-rewards/pixel-reward-coin.webp"
         />
         <div className="whitespace-nowrap">
-          <p className="text-xs text-white/60">{labels.sessionSettlement}</p>
-          <p className="mt-0.5 text-xl font-black text-yellow-300">
-            +{settlement.coins} {labels.coins}
-            {settlement.multiplier > 1 ? <span className="ml-2 text-sm">×{settlement.multiplier}</span> : null}
+          <p className="text-xs text-white/60">{settlement.deducted ? labels.sessionCharge : labels.sessionSettlement}</p>
+          <p className={`mt-0.5 text-xl font-black ${settlement.deducted ? 'text-orange-300' : 'text-yellow-300'}`}>
+            {settlement.deducted ? '-' : '+'}{settlement.coins} {labels.coins}
+            {!settlement.deducted && settlement.multiplier > 1 ? <span className="ml-2 text-sm">×{settlement.multiplier}</span> : null}
           </p>
           <p className="mt-0.5 text-xs text-white/70">
             {labels.playedMinutes.replace('{minutes}', String(settlement.minutes))}
@@ -652,29 +702,6 @@ function getCurrentActivePlayTime(accumulatedTime: number, startedAt: number | n
   return accumulatedTime + (startedAt === null ? 0 : Date.now() - startedAt)
 }
 
-const MAHJONG_LOADING_TRIAL_EXCLUSIONS = [
-  '明星三缺一',
-  '幸运满贯',
-  '幸運滿貫',
-  '龙虎榜2',
-  '龍虎榜2',
-  '电子基盘',
-  '電子基盤',
-  '天开眼',
-  '天開眼',
-  '泰山闯天关2',
-  '泰山闖天關2',
-].map(normalizeTrialGameName)
-
-function normalizeTrialGameName(value: string | undefined) {
-  return (value ?? '').normalize('NFKC').toLowerCase().replaceAll(/\s+/g, '')
-}
-
-function isMahjongLoadingTrialExcluded(game: PublicGame) {
-  const name = normalizeTrialGameName(game.name)
-  return MAHJONG_LOADING_TRIAL_EXCLUSIONS.some(excluded => name === excluded || name.includes(excluded))
-}
-
 function addStoredGameCoins(amount: number) {
   return addCoinReward(amount).awarded
 }
@@ -693,6 +720,8 @@ function getRecommendationLabels(locale: Locale) {
       loadingNotice: '游戏加载速度跟你的设备和网速有关，请耐心等待',
       playNow: '立即游玩',
       playedMinutes: '本局游玩 {minutes} 分钟',
+      mahjongCoinsDepleted: '金币已经用完，游戏已自动关闭。',
+      sessionCharge: '街机麻将游玩扣币',
       sessionSettlement: '本局金币结算',
       title: '再玩一款同系列游戏',
     }
@@ -711,6 +740,8 @@ function getRecommendationLabels(locale: Locale) {
       loadingNotice: '遊戲載入速度與您的裝置及網路速度有關，請耐心等候',
       playNow: '立即遊玩',
       playedMinutes: '本局遊玩 {minutes} 分鐘',
+      mahjongCoinsDepleted: '金幣已經用完，遊戲已自動關閉。',
+      sessionCharge: '街機麻將遊玩扣幣',
       sessionSettlement: '本局金幣結算',
       title: '再玩一款同系列遊戲',
     }
@@ -729,6 +760,8 @@ function getRecommendationLabels(locale: Locale) {
       loadingNotice: 'ゲームの読み込み速度は端末と通信環境によって異なります。しばらくお待ちください',
       playNow: '今すぐプレイ',
       playedMinutes: '今回のプレイ：{minutes}分',
+      mahjongCoinsDepleted: 'コインがなくなったため、ゲームを終了しました。',
+      sessionCharge: 'アーケード麻雀のコイン消費',
       sessionSettlement: 'コイン精算',
       title: '同じシリーズのゲーム',
     }
@@ -746,6 +779,8 @@ function getRecommendationLabels(locale: Locale) {
     loadingNotice: 'Loading speed depends on your device and connection. Please wait patiently.',
     playNow: 'Play now',
     playedMinutes: 'Played {minutes} minutes this session',
+    mahjongCoinsDepleted: 'You are out of coins. The game has been closed.',
+    sessionCharge: 'Arcade Mahjong coin charge',
     sessionSettlement: 'Session coin summary',
     title: 'Play another game in the series',
   }

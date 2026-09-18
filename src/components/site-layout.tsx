@@ -863,7 +863,7 @@ function DesktopUnifiedHeaderNavigation({
         </Link>
       ) : null}
       <Link className={linkClass} params={{ locale, platformId: 'coin' }} to="/$locale/platform/$platformId">{getGameModeLabels(locale).coin}</Link>
-      <Link className={linkClass} params={{ locale, platformId: 'mahjong' }} to="/$locale/platform/$platformId">{getGameModeLabels(locale).mahjong}</Link>
+      <Link className={linkClass} params={{ locale, platformId: 'mahjong' }} title={getMahjongChargeTip(locale)} to="/$locale/platform/$platformId">{getGameModeLabels(locale).mahjong}</Link>
       <Link className={linkClass} params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
       <Link className={linkClass} params={{ locale, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
       <div className="ml-1 flex h-9 min-w-48 max-w-md flex-1 items-center rounded-full border border-black/30 text-xs text-black/60">
@@ -890,6 +890,13 @@ function getGameModeLabels(locale: Locale) {
   if (locale === 'en') return { navigation: 'Game modes', arcade: 'Arcade', famicom: 'Famicom', gba: 'GBA', web: 'Web games', coin: 'Coin mode', mahjong: 'Arcade Mahjong' }
   if (locale === 'ja') return { navigation: 'ゲームモード', arcade: 'アーケード', famicom: 'FC', gba: 'GBA', web: 'ウェブゲーム', coin: 'コインモード', mahjong: 'アーケード麻雀' }
   return { navigation: '游戏模式', arcade: '街机模式', famicom: '小霸王模式', gba: 'GBA模式', web: '网页模式', coin: '金币模式', mahjong: '街机麻将' }
+}
+
+function getMahjongChargeTip(locale: Locale) {
+  if (locale === 'zh-TW') return '一分鐘扣一個幣'
+  if (locale === 'en') return 'Costs 1 coin per minute'
+  if (locale === 'ja') return '1分につき1コイン消費'
+  return '一分钟扣一个币'
 }
 
 export function SiteFooter({ locale }: { locale: Locale }) {
@@ -926,7 +933,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale, platformId: 'coin' }} to="/$locale/platform/$platformId">
               {modeLabels.coin}
             </Link>
-            <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale, platformId: 'mahjong' }} to="/$locale/platform/$platformId">
+            <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale, platformId: 'mahjong' }} title={getMahjongChargeTip(locale)} to="/$locale/platform/$platformId">
               {modeLabels.mahjong}
             </Link>
             <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
