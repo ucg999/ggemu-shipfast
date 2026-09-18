@@ -2,7 +2,7 @@ import ghostHunterStyles from '#/components/ghost-hunter.css?url'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { memo, useEffect, useRef, useState } from 'react'
 import { CoinRewardPopup } from '#/components/home/coin-rewards'
-import { addCoinReward } from '#/lib/coin-wallet'
+import { addCoinBalance, readCoinBalance } from '#/lib/coin-wallet'
 import type { PointerEvent } from 'react'
 import { SiteLayout } from '#/components/site-layout'
 import { normalizeLocale } from '#/lib/i18n'
@@ -257,7 +257,9 @@ function GhostHunterPage() {
     if (!rewardedRef.current) {
       rewardedRef.current = true
       const consecutiveClearReward = (cleared + 1) * 10
-      setCoinReward(addCoinReward(consecutiveClearReward).awarded)
+      const previousBalance = readCoinBalance()
+      const nextBalance = addCoinBalance(consecutiveClearReward)
+      setCoinReward(Math.max(0, nextBalance - previousBalance))
       setCleared(value => value + 1)
       setLightning(value => value + 1)
     }

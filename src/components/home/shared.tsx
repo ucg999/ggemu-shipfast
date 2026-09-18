@@ -356,18 +356,23 @@ export function SearchForm({
             {getI18n(lang).layout.explore}
             <i className="ri-arrow-down-s-line text-sm" />
           </summary>
-          <ul className="menu dropdown-content z-50 mt-2 w-52 bg-[#f0f0ed] p-2 text-sm text-black shadow-xl">
-            <li><Link params={{ locale: lang }} to="/$locale">{getI18n(lang).layout.games}</Link></li>
-            <li><Link params={{ locale: lang }} to="/$locale/all-games">{getI18n(lang).layout.allGames}</Link></li>
-            <li><Link params={{ locale: lang, rankingId: 'latest' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.latestGames}</Link></li>
-            <li><Link params={{ locale: lang, rankingId: 'popular' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.mostPopularGames}</Link></li>
-            <li><Link params={{ locale: lang, rankingId: 'weekly' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.weeklyPopularGames}</Link></li>
-            <li><Link params={{ locale: lang, rankingId: 'rising' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.fastestGrowingGames}</Link></li>
-            <li><Link params={{ locale: lang }} search={{ region: undefined }} to="/$locale/deals">{getI18n(lang).layout.gameDeals}</Link></li>
-            <li><Link params={{ locale: lang }} search={{}} to="/$locale/play-my-rom">{t.superEmulator}</Link></li>
-            <li><Link params={{ locale: lang }} to="/$locale/blog">{getI18n(lang).layout.blog}</Link></li>
-            <li><Link params={{ locale: lang }} to="/$locale/original-games">{getOriginalGamesTitle(lang)}</Link></li>
-          </ul>
+          <div className="dropdown-content z-50 mt-2 flex w-max overflow-hidden bg-[#f0f0ed] text-sm text-black shadow-xl">
+            <ul className="menu w-52 shrink-0 p-2">
+              <li><Link params={{ locale: lang }} to="/$locale">{getI18n(lang).layout.games}</Link></li>
+              <li><span>{getI18n(lang).layout.gameLibrary}</span></li>
+              <li><Link params={{ locale: lang }} search={{ region: undefined }} to="/$locale/deals">{getI18n(lang).layout.gameDeals}</Link></li>
+              <li><Link params={{ locale: lang }} search={{}} to="/$locale/play-my-rom">{t.superEmulator}</Link></li>
+              <li><Link params={{ locale: lang }} to="/$locale/blog">{getI18n(lang).layout.blog}</Link></li>
+              <li><Link params={{ locale: lang }} to="/$locale/original-games">{getOriginalGamesTitle(lang)}</Link></li>
+            </ul>
+            <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
+              <li><Link params={{ locale: lang }} to="/$locale/all-games">{getI18n(lang).layout.allGames}</Link></li>
+              <li><Link params={{ locale: lang, rankingId: 'latest' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.latestGames}</Link></li>
+              <li><Link params={{ locale: lang, rankingId: 'popular' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.mostPopularGames}</Link></li>
+              <li><Link params={{ locale: lang, rankingId: 'weekly' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.weeklyPopularGames}</Link></li>
+              <li><Link params={{ locale: lang, rankingId: 'rising' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.fastestGrowingGames}</Link></li>
+            </ul>
+          </div>
         </details>
         {(lang === 'zh-CN' || lang === 'zh-TW') ? <Link className="desktop-theme-mode-link flex h-9 items-center gap-1 whitespace-nowrap rounded-full border border-cyan-300/50 bg-cyan-400/15 px-3 text-sm text-white" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO">
           <i className="ri-gamepad-line" />{lang === 'zh-TW' ? '主題模式' : '主题模式'}
@@ -380,6 +385,9 @@ export function SearchForm({
           >
             {getCoinModeCopy(lang).mode}
           </Link>
+        </div>
+        <div className="tooltip tooltip-bottom" data-tip="PSP">
+          <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'mahjong' }} to="/$locale/platform/$platformId">{lang === 'zh-TW' ? '街機麻將' : lang === 'en' ? 'Arcade Mahjong' : lang === 'ja' ? 'アーケード麻雀' : '街机麻将'}</Link>
         </div>
         <div className="tooltip tooltip-bottom" data-tip="PSP">
           <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>

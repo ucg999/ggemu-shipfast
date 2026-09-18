@@ -200,7 +200,7 @@ function buildSitemapEntries(
   const entries: Array<SitemapEntry> = []
 
   for (const locale of locales) {
-    for (const path of ['/arcade', '/platform/famicom', '/platform/gba', '/platform/flash', '/platform/coin', '/platform/psp', '/platform/switch', '/rankings/latest', '/rankings/popular', '/rankings/weekly', '/rankings/rising']) {
+    for (const path of ['/arcade', '/platform/famicom', '/platform/gba', '/platform/flash', '/platform/coin', '/platform/mahjong', '/platform/psp', '/platform/switch', '/rankings/latest', '/rankings/popular', '/rankings/weekly', '/rankings/rising']) {
       entries.push({ locale, loc: toAbsoluteLocalizedUrl(origin, locale, path), path, changefreq: 'daily', priority: 0.8 })
     }
     entries.push({

@@ -72,7 +72,7 @@ export function PlatformModeContent({
   description: string
   games: Array<PublicGame>
   lang: Locale
-  layout?: 'cards' | 'list'
+  layout?: 'cards' | 'library-cards' | 'list'
   showCoinChallenge?: boolean
   title: string
 }) {
@@ -178,10 +178,12 @@ export function PlatformModeContent({
 
       <section className="px-4 py-6 sm:px-6 lg:px-8">
         {visibleGames.length > 0 || showCoinChallengeCard ? (
-          <div className={layout === 'cards' ? 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'flex flex-col gap-2'}>
+          <div className={layout !== 'list' ? 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'flex flex-col gap-2'}>
             {showCoinChallengeCard ? <CoinChallengeGameCard lang={lang} /> : null}
             {visibleGames.map((game) => layout === 'cards' ? (
               <CoinModeGameCard game={game} key={game.url_slug || game._id} lang={lang} />
+            ) : layout === 'library-cards' ? (
+              <ArcadeLibraryGameCard game={game} key={game.url_slug || game._id} lang={lang} />
             ) : (
               <ArcadeGameRow game={game} key={game.url_slug || game._id} lang={lang} />
             ))}
@@ -193,6 +195,29 @@ export function PlatformModeContent({
         )}
       </section>
     </SiteLayout>
+  )
+}
+
+function ArcadeLibraryGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
+  const gameId = game.url_slug?.trim() || game._id?.trim() || ''
+  const categories = game.categories?.slice(0, 1).join('')
+  const language = game.languages?.slice(0, 1).join('')
+
+  return (
+    <Link className="group overflow-hidden rounded-xl bg-white text-black shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
+      <figure className="aspect-[616/353] overflow-hidden bg-neutral-100">
+        {game.game_cover ? <img alt={game.name ?? ''} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} /> : null}
+      </figure>
+      <div className="p-2.5 sm:py-4">
+        <h2 className="truncate text-sm font-semibold sm:text-lg" title={game.name}>{game.name}</h2>
+        <p className="mt-1.5 overflow-hidden text-ellipsis whitespace-nowrap text-[9px] text-black/55 sm:mt-2 sm:text-xs">
+          <span>{game.platform ? getPlatformLabel(game.platform, lang) : 'Arcade'}</span>
+          {language ? <> · <span>{language}</span></> : null}
+          {categories ? <> · <span>{categories}</span></> : null}
+          {game.released_year ? <> · <span>{game.released_year}</span></> : null}
+        </p>
+      </div>
+    </Link>
   )
 }
 

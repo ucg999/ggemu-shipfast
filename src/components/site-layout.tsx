@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
 
 import type { GameFilterOptions, Locale } from '#/lib/ggemu'
-import { getI18n, normalizeLocale } from '#/lib/i18n'
+import { getHomeFaqs, getI18n, normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { getOriginalGamesTitle } from '#/lib/original-games'
 import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
@@ -837,18 +837,25 @@ function DesktopUnifiedHeaderNavigation({
         <summary className="flex h-9 cursor-pointer list-none items-center gap-1 whitespace-nowrap px-2 text-sm font-normal">
           {layout.explore}<i className="ri-arrow-down-s-line text-sm" />
         </summary>
-        <ul className="menu dropdown-content z-50 mt-2 w-52 bg-[#f0f0ed] p-2 text-sm text-black shadow-xl">
-          <li><Link params={{ locale }} to="/$locale">{layout.games}</Link></li>
-          <li><Link params={{ locale }} to="/$locale/all-games">{layout.allGames}</Link></li>
-          <li><Link params={{ locale, rankingId: 'latest' }} to="/$locale/rankings/$rankingId">{layout.latestGames}</Link></li>
-          <li><Link params={{ locale, rankingId: 'popular' }} to="/$locale/rankings/$rankingId">{layout.mostPopularGames}</Link></li>
-          <li><Link params={{ locale, rankingId: 'weekly' }} to="/$locale/rankings/$rankingId">{layout.weeklyPopularGames}</Link></li>
-          <li><Link params={{ locale, rankingId: 'rising' }} to="/$locale/rankings/$rankingId">{layout.fastestGrowingGames}</Link></li>
-          <li><Link params={{ locale }} search={{ region: undefined }} to="/$locale/deals">{layout.gameDeals}</Link></li>
-          <li><Link params={{ locale }} search={{}} to="/$locale/play-my-rom">{home.superEmulator}</Link></li>
-          <li><Link params={{ locale }} to="/$locale/blog">{layout.blog}</Link></li>
-          <li><Link params={{ locale }} to="/$locale/original-games">{getOriginalGamesTitle(locale)}</Link></li>
-        </ul>
+        <div className="dropdown-content z-50 mt-2 flex w-max overflow-hidden bg-[#f0f0ed] text-sm text-black shadow-xl">
+          <ul className="menu w-52 shrink-0 p-2">
+            <li><Link params={{ locale }} to="/$locale">{layout.games}</Link></li>
+            <li>
+              <span>{layout.gameLibrary}</span>
+            </li>
+            <li><Link params={{ locale }} search={{ region: undefined }} to="/$locale/deals">{layout.gameDeals}</Link></li>
+            <li><Link params={{ locale }} search={{}} to="/$locale/play-my-rom">{home.superEmulator}</Link></li>
+            <li><Link params={{ locale }} to="/$locale/blog">{layout.blog}</Link></li>
+            <li><Link params={{ locale }} to="/$locale/original-games">{getOriginalGamesTitle(locale)}</Link></li>
+          </ul>
+          <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
+              <li><Link params={{ locale }} to="/$locale/all-games">{layout.allGames}</Link></li>
+              <li><Link params={{ locale, rankingId: 'latest' }} to="/$locale/rankings/$rankingId">{layout.latestGames}</Link></li>
+              <li><Link params={{ locale, rankingId: 'popular' }} to="/$locale/rankings/$rankingId">{layout.mostPopularGames}</Link></li>
+              <li><Link params={{ locale, rankingId: 'weekly' }} to="/$locale/rankings/$rankingId">{layout.weeklyPopularGames}</Link></li>
+              <li><Link params={{ locale, rankingId: 'rising' }} to="/$locale/rankings/$rankingId">{layout.fastestGrowingGames}</Link></li>
+          </ul>
+        </div>
       </details>
       {(locale === 'zh-CN' || locale === 'zh-TW') ? (
         <Link className={linkClass} params={{ locale }} search={{ platform: undefined }} to="/$locale/PRO">
@@ -856,6 +863,7 @@ function DesktopUnifiedHeaderNavigation({
         </Link>
       ) : null}
       <Link className={linkClass} params={{ locale, platformId: 'coin' }} to="/$locale/platform/$platformId">{getGameModeLabels(locale).coin}</Link>
+      <Link className={linkClass} params={{ locale, platformId: 'mahjong' }} to="/$locale/platform/$platformId">{getGameModeLabels(locale).mahjong}</Link>
       <Link className={linkClass} params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
       <Link className={linkClass} params={{ locale, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
       <div className="ml-1 flex h-9 min-w-48 max-w-md flex-1 items-center rounded-full border border-black/30 text-xs text-black/60">
@@ -878,20 +886,80 @@ function DesktopUnifiedHeaderNavigation({
 }
 
 function getGameModeLabels(locale: Locale) {
-  if (locale === 'zh-TW') return { navigation: '遊戲模式', arcade: '街機模式', famicom: '小霸王模式', gba: 'GBA模式', web: '網頁模式', coin: '金幣模式' }
-  if (locale === 'en') return { navigation: 'Game modes', arcade: 'Arcade', famicom: 'Famicom', gba: 'GBA', web: 'Web games', coin: 'Coin mode' }
-  if (locale === 'ja') return { navigation: 'ゲームモード', arcade: 'アーケード', famicom: 'FC', gba: 'GBA', web: 'ウェブゲーム', coin: 'コインモード' }
-  return { navigation: '游戏模式', arcade: '街机模式', famicom: '小霸王模式', gba: 'GBA模式', web: '网页模式', coin: '金币模式' }
+  if (locale === 'zh-TW') return { navigation: '遊戲模式', arcade: '街機模式', famicom: '小霸王模式', gba: 'GBA模式', web: '網頁模式', coin: '金幣模式', mahjong: '街機麻將' }
+  if (locale === 'en') return { navigation: 'Game modes', arcade: 'Arcade', famicom: 'Famicom', gba: 'GBA', web: 'Web games', coin: 'Coin mode', mahjong: 'Arcade Mahjong' }
+  if (locale === 'ja') return { navigation: 'ゲームモード', arcade: 'アーケード', famicom: 'FC', gba: 'GBA', web: 'ウェブゲーム', coin: 'コインモード', mahjong: 'アーケード麻雀' }
+  return { navigation: '游戏模式', arcade: '街机模式', famicom: '小霸王模式', gba: 'GBA模式', web: '网页模式', coin: '金币模式', mahjong: '街机麻将' }
 }
 
 export function SiteFooter({ locale }: { locale: Locale }) {
   const t = getI18n(locale).layout
+  const faq = getHomeFaqs(locale)
+  const modeLabels = getGameModeLabels(locale)
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   if (pathname.replace(/\/+$/, '') !== `/${locale}` && pathname !== '/') return null
 
+  const footerNavigationLabel = locale === 'zh-TW'
+    ? '快速入口'
+    : locale === 'en'
+      ? 'Quick links'
+      : locale === 'ja'
+        ? 'クイックリンク'
+        : '快捷入口'
+  const themeModeLabel = locale === 'zh-TW'
+    ? '主題模式'
+    : locale === 'en'
+      ? 'Theme mode'
+      : locale === 'ja'
+        ? 'テーマモード'
+        : '主题模式'
+
   return (
-    <footer className="min-h-44 bg-base-100 lg:bg-white">
+    <footer className="min-h-44 bg-[#f0f0ed] lg:bg-white">
       <div className="w-full px-4 pb-14 pt-6 text-sm text-base-content/70 sm:px-6 lg:px-8">
+        <nav aria-label={footerNavigationLabel} className="mb-12">
+          <h2 className="mb-6 text-sm font-semibold tracking-wide text-base-content">{footerNavigationLabel}</h2>
+          <div className="grid grid-cols-2 gap-x-10 gap-y-7 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-16 lg:gap-y-9">
+            <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale }} search={{ platform: undefined }} to="/$locale/PRO">
+              {themeModeLabel}
+            </Link>
+            <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale, platformId: 'coin' }} to="/$locale/platform/$platformId">
+              {modeLabels.coin}
+            </Link>
+            <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale, platformId: 'mahjong' }} to="/$locale/platform/$platformId">
+              {modeLabels.mahjong}
+            </Link>
+            <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
+            <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
+            <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale }} to="/$locale/all-games">{t.allGames}</Link>
+            <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale, rankingId: 'latest' }} to="/$locale/rankings/$rankingId">{t.latestGames}</Link>
+            <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale, rankingId: 'popular' }} to="/$locale/rankings/$rankingId">{t.mostPopularGames}</Link>
+            <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale }} to="/$locale/original-games">{getOriginalGamesTitle(locale)}</Link>
+            <details className="group relative">
+              <summary className="cursor-pointer list-none text-base font-medium text-base-content transition hover:opacity-55">
+                {faq.title}
+              </summary>
+              <div className="absolute bottom-full right-0 z-30 mb-4 w-[min(88vw,38rem)] rounded-2xl border border-base-content/10 bg-base-100 p-5 text-left shadow-2xl">
+                <div className="flex items-center justify-between gap-4 border-b border-base-content/10 pb-3">
+                  <h3 className="text-lg font-semibold text-base-content">{faq.title}</h3>
+                  <i className="ri-close-line text-lg text-base-content/45" />
+                </div>
+                <div className="max-h-[55vh] overflow-y-auto pr-1">
+                  {faq.items.map((item) => (
+                    <details className="border-b border-base-content/10" key={item.question}>
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-5 py-4 font-medium text-base-content">
+                        <span>{item.question}</span>
+                        <i className="ri-add-line shrink-0 text-lg text-base-content/45" />
+                      </summary>
+                      <p className="pb-4 pr-7 text-sm leading-7 text-base-content/60">{item.answer}</p>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            </details>
+          </div>
+        </nav>
+
         <div>
           <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">

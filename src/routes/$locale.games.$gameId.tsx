@@ -353,7 +353,12 @@ function LocalizedGameDetailPage() {
             <div className="breadcrumbs text-sm">
               <ul className="min-w-0">
                 <li>
-                  {isProStandalone ? <a href={`/${lang}/PRO`}>{lang === 'zh-TW' ? '主題模式' : '主题模式'}</a> : <Link params={{ locale: lang }} search={{}} to="/$locale">{t.home}</Link>}
+                  {isProStandalone ? <a href={`/${lang}/PRO`}>{lang === 'zh-TW' ? '主題模式' : '主题模式'}</a> : (
+                    <button className="inline-flex items-center gap-1" onClick={() => returnToPreviousGameSelection(lang)} type="button">
+                      <i className="ri-arrow-left-line" aria-hidden="true" />
+                      {getDetailBackLabel(lang)}
+                    </button>
+                  )}
                 </li>
                 <li className="min-w-0">
                   <span className="block max-w-[min(70vw,32rem)] truncate">{game.name}</span>
@@ -464,6 +469,21 @@ function LocalizedGameDetailPage() {
       </div>
     </SiteLayout>
   )
+}
+
+function getDetailBackLabel(locale: Locale) {
+  if (locale === 'zh-TW') return '返回'
+  if (locale === 'en') return 'Back'
+  if (locale === 'ja') return '戻る'
+  return '返回'
+}
+
+function returnToPreviousGameSelection(locale: Locale) {
+  if (window.history.length > 1) {
+    window.history.back()
+    return
+  }
+  window.location.assign(`/${locale}`)
 }
 
 function GameInformationSections({

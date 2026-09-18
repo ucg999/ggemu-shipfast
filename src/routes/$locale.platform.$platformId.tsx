@@ -46,6 +46,13 @@ const PLATFORM_MODES = {
     subtitleKey: 'flashSubtitle',
     titleKey: 'flashTitle',
   },
+  mahjong: {
+    apiPlatform: 'mahjong-curated',
+    descriptionKey: 'flashDescription',
+    seoTitleKey: 'flashSeoTitle',
+    subtitleKey: 'flashSubtitle',
+    titleKey: 'flashTitle',
+  },
   switch: {
     apiPlatform: 'switch-library',
     descriptionKey: 'gbaDescription',
@@ -115,7 +122,7 @@ function PlatformModePage() {
       description={copy.description}
       games={games}
       lang={lang}
-      layout={modeId === 'coin' ? 'cards' : 'list'}
+      layout={modeId === 'coin' ? 'cards' : modeId === 'mahjong' ? 'library-cards' : 'list'}
       showCoinChallenge={modeId === 'coin'}
       title={copy.title}
     />
@@ -131,6 +138,7 @@ function getPlatformMode(value: string) {
 
 function getModeCopy(locale: Locale, modeId: PlatformModeId | undefined) {
   if (modeId === 'coin') return getCoinModeCopy(locale)
+  if (modeId === 'mahjong') return getMahjongModeCopy(locale)
   if (modeId === 'switch') return getSwitchLibraryCopy(locale)
   if (modeId === 'psp') {
     const copy = getSwitchLibraryCopy(locale)
@@ -147,6 +155,13 @@ function getModeCopy(locale: Locale, modeId: PlatformModeId | undefined) {
   }
 }
 
+function getMahjongModeCopy(locale: Locale) {
+  if (locale === 'zh-TW') return { description: '精選經典街機麻將與電子基盤遊戲。', seoTitle: '街機麻將遊戲｜懷舊遊戲廳', subtitle: '明星三缺一、幸運滿貫、龍虎榜2等經典作品。', title: '街機麻將' }
+  if (locale === 'en') return { description: 'A curated collection of classic arcade mahjong games.', seoTitle: 'Arcade Mahjong | Retro Game Hall', subtitle: 'Classic arcade mahjong and table games.', title: 'Arcade Mahjong' }
+  if (locale === 'ja') return { description: 'クラシックなアーケード麻雀ゲームのセレクション。', seoTitle: 'アーケード麻雀｜懐かしゲームセンター', subtitle: '往年のアーケード麻雀・テーブルゲーム。', title: 'アーケード麻雀' }
+  return { description: '精选经典街机麻将与电子基盘游戏。', seoTitle: '街机麻将游戏｜怀旧游戏厅', subtitle: '明星三缺一、幸运满贯、龙虎榜2等经典作品。', title: '街机麻将' }
+}
+
 function getSwitchLibraryCopy(locale: Locale) {
   if (locale === 'zh-TW') return { description: 'Switch 遊戲庫，集中展示中文 Switch 遊戲。', seoTitle: 'Switch遊戲庫｜懷舊遊戲廳', subtitle: '瀏覽 Switch 遊戲。', title: 'Switch遊戲庫' }
   if (locale === 'en') return { description: 'Browse available Switch games.', seoTitle: 'Switch Game Library | Retro Game Hall', subtitle: 'Browse available Switch games.', title: 'Switch Game Library' }
@@ -156,6 +171,7 @@ function getSwitchLibraryCopy(locale: Locale) {
 
 async function loadModeGames(locale: Locale, platform: string) {
   if (platform === 'switch-library' || platform === 'psp-library') return []
+  if (platform === 'mahjong-curated') return loadMahjongGames(locale)
   if (platform === 'coin') {
     return (await searchCoinModeGames({ data: { locale } })).games
   }
@@ -163,6 +179,28 @@ async function loadModeGames(locale: Locale, platform: string) {
   const platforms = platform === 'web' ? ['FLASH', 'HTML5', 'DOS'] : [platform]
   const groups = await Promise.all(platforms.map((item) => loadAllPlatformPages(locale, item)))
   return dedupeGames(groups.flat())
+}
+
+const MAHJONG_GAME_QUERIES = ['明星三缺一', '幸运满贯', '龙虎榜', '电子基盘', '天开眼', '泰山闯天关2'] as const
+
+async function loadMahjongGames(locale: Locale) {
+  const results = await Promise.all(MAHJONG_GAME_QUERIES.map(query => searchGames({
+    data: { locale, query, sort: 'popular', page: 1, limit: 10 },
+  })))
+
+  const selected = results.flatMap((result, index) => {
+    const query = normalizeGameName(MAHJONG_GAME_QUERIES[index])
+    const exact = result.games.find(game => {
+      const name = normalizeGameName(game.name)
+      return name === query || name.includes(query) || query.includes(name)
+    })
+    return exact ? [exact] : []
+  })
+  return dedupeGames(selected)
+}
+
+function normalizeGameName(value: string | undefined) {
+  return (value ?? '').normalize('NFKC').toLowerCase().replaceAll(/\s+/g, '')
 }
 
 async function loadAllPlatformPages(locale: Locale, platform: string) {

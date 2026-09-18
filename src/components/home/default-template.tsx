@@ -8,15 +8,13 @@ import {
   HomeMostPlayedGamesSection,
   LazyAutoplayVideo,
 } from './shared'
-import {
-  PopularGameCollections,
-  useRecentPlayedGames,
-} from './recent-played-games'
+import { useRecentPlayedGames } from './recent-played-games'
 import type { HomeTemplateProps } from './types'
 import type { PublicGame } from '#/lib/ggemu'
 import { getGameDetail, getRandomPlayableGame, searchGames } from '#/lib/ggemu'
 import { getI18n } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
+import { getOriginalGamesTitle } from '#/lib/original-games'
 import { setDailyGameCoinMultiplier } from '#/lib/coin-wallet'
 import { confirmResourceDownload, unlockPaidResource } from '#/lib/paid-resource'
 import { useServerFn } from '@tanstack/react-start'
@@ -61,6 +59,9 @@ export function DefaultHomeTemplate(
   const [randomVideoGames, setRandomVideoGames] = useState(() =>
     mostPlayedGames.slice(0, 6),
   )
+  const [dailyBestGames, setDailyBestGames] = useState(() =>
+    mostPlayedGames.slice(0, 3),
+  )
   const [randomPopupGame, setRandomPopupGame] = useState<PublicGame | null>(null)
   const [randomPopupMultiplier, setRandomPopupMultiplier] = useState(2)
   const [isRandomGameLoading, setIsRandomGameLoading] = useState(false)
@@ -73,6 +74,10 @@ export function DefaultHomeTemplate(
 
   useEffect(() => {
     if (mostPlayedGames.length > 0) setRandomVideoGames(selectDailyVideoGames(mostPlayedGames, 6))
+  }, [mostPlayedGames])
+
+  useEffect(() => {
+    if (mostPlayedGames.length > 0) setDailyBestGames(selectDailyBestGames(mostPlayedGames, 3))
   }, [mostPlayedGames])
 
   useEffect(() => {
@@ -132,6 +137,8 @@ export function DefaultHomeTemplate(
   const mobileModes = [
     ...(lang === 'zh-CN' || lang === 'zh-TW' ? [{ label: lang === 'zh-TW' ? '主題模式' : '主题模式', to: '/$locale/PRO' as const }] : []),
     { label: mobileModeLabels.coin, platformId: 'coin' },
+    { label: mobileModeLabels.mahjong, platformId: 'mahjong' },
+    { label: getOriginalGamesTitle(lang), to: '/$locale/original-games' as const },
   ]
   return (
     <div className="awwwards-home w-full min-w-0 max-w-full overflow-x-clip">
@@ -159,13 +166,13 @@ export function DefaultHomeTemplate(
         aria-label={modeCopyLabel(lang)}
         className="mx-3 border-b border-base-300 bg-base-100 px-1 sm:mx-4 lg:hidden"
       >
-        <div className="flex flex-nowrap items-center justify-around gap-1 overflow-x-auto py-1.5">
+        <div className="grid grid-cols-2 items-center gap-x-2 gap-y-1 py-1.5">
           {mobileModes.map((mode) => mode.to ? (
-            <Link className="btn btn-ghost btn-xs shrink-0 rounded-full border-0 px-2 text-xs text-base-content/75" key={mode.label} params={{ locale: lang }} search={{ platform: undefined }} to={mode.to}>
+            <Link className="btn btn-ghost btn-xs w-full rounded-full border-0 px-2 text-xs font-normal text-base-content/75" key={mode.label} params={{ locale: lang }} search={{ platform: undefined }} to={mode.to}>
               {mode.label}
             </Link>
           ) : (
-            <Link className="btn btn-ghost btn-xs shrink-0 rounded-full border-0 px-2 text-xs text-base-content/75" key={mode.label} params={{ locale: lang, platformId: mode.platformId! }} to="/$locale/platform/$platformId">
+            <Link className="btn btn-ghost btn-xs w-full rounded-full border-0 px-2 text-xs font-normal text-base-content/75" key={mode.label} params={{ locale: lang, platformId: mode.platformId! }} to="/$locale/platform/$platformId">
               {mode.label}
             </Link>
           ))}
@@ -207,7 +214,7 @@ export function DefaultHomeTemplate(
                 {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
               </p>
               <div className="desktop-home-best-grid">
-                {mostPlayedGames.slice(0, 3).map((game) => {
+                {dailyBestGames.map((game) => {
                   const gameId = game.url_slug || game._id || ''
                   return (
                     <Link className="desktop-daily-video-card group" key={`best-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
@@ -287,10 +294,6 @@ export function DefaultHomeTemplate(
           showHeader={false}
         />
       </div>
-
-      <section className="px-3 py-1 sm:px-4 lg:hidden">
-        <PopularGameCollections lang={lang} />
-      </section>
 
       {randomPopupGame ? (
         <RandomGameModal
@@ -472,6 +475,22 @@ function pickWeightedRandomCoinMultiplier() {
   return 2
 }
 
+function selectDailyBestGames(games: PublicGame[], limit: number) {
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  const dateKey = getLocalDateKey(yesterday)
+  const uniqueGames = Array.from(
+    new Map(games.map(game => [getGameId(game), game])).values(),
+  ).filter(game => getGameId(game))
+
+  return uniqueGames
+    .sort((left, right) => (
+      dailyGameScore(`${dateKey}:best:${getGameId(left)}`) -
+      dailyGameScore(`${dateKey}:best:${getGameId(right)}`)
+    ))
+    .slice(0, limit)
+}
+
 const WEEKLY_VIDEO_CARD_HISTORY_KEY = 'game-adventure-weekly-video-card-history'
 const RECENT_VIDEO_CARD_LIMIT = 84
 
@@ -577,10 +596,10 @@ function getGameId(game: PublicGame) {
 }
 
 function getMobileModeLabels(lang: HomeTemplateProps['lang']) {
-  if (lang === 'zh-TW') return { arcade: '街機模式', famicom: '小霸王模式', gba: 'GBA模式', web: '網頁模式', coin: '金幣模式' }
-  if (lang === 'en') return { arcade: 'Arcade Mode', famicom: 'Famicom Mode', gba: 'GBA Mode', web: 'Web Mode', coin: 'Coin Mode' }
-  if (lang === 'ja') return { arcade: 'アーケードモード', famicom: 'FCモード', gba: 'GBAモード', web: 'ウェブモード', coin: 'コインモード' }
-  return { arcade: '街机模式', famicom: '小霸王模式', gba: 'GBA模式', web: '网页模式', coin: '金币模式' }
+  if (lang === 'zh-TW') return { arcade: '街機模式', famicom: '小霸王模式', gba: 'GBA模式', web: '網頁模式', coin: '金幣模式', mahjong: '街機麻將' }
+  if (lang === 'en') return { arcade: 'Arcade Mode', famicom: 'Famicom Mode', gba: 'GBA Mode', web: 'Web Mode', coin: 'Coin Mode', mahjong: 'Arcade Mahjong' }
+  if (lang === 'ja') return { arcade: 'アーケードモード', famicom: 'FCモード', gba: 'GBAモード', web: 'ウェブモード', coin: 'コインモード', mahjong: 'アーケード麻雀' }
+  return { arcade: '街机模式', famicom: '小霸王模式', gba: 'GBA模式', web: '网页模式', coin: '金币模式', mahjong: '街机麻将' }
 }
 
 function modeCopyLabel(lang: HomeTemplateProps['lang']) {

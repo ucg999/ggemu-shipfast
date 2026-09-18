@@ -61,6 +61,7 @@ function LocalizedPlayGamePage() {
   const isProGame = locationHash === 'PRO' || locationHash === '#PRO'
   const lang = normalizeLocale(locale)
   const requiredCoinRank = getCoinModeGameRequiredRank(game)
+  const loadingTrialDisabled = isMahjongLoadingTrialExcluded(game)
   const minimumCoinBalance = getCoinModeGameMinimumBalance(game)
   const [rankAccessGranted, setRankAccessGranted] = useState(requiredCoinRank === null)
   const embedId = encodeURIComponent(game._id || game.url_slug || gameId)
@@ -72,7 +73,7 @@ function LocalizedPlayGamePage() {
   const [recommendations, setRecommendations] = useState<Array<PublicGame>>([])
   const [recommendationType, setRecommendationType] = useState<'series' | 'category'>('category')
   const [settlement, setSettlement] = useState<GameSessionSettlement | null>(null)
-  const [showLoadingTrial, setShowLoadingTrial] = useState(true)
+  const [showLoadingTrial, setShowLoadingTrial] = useState(!loadingTrialDisabled)
   const [trialPosition, setTrialPosition] = useState<{ x: number; y: number } | null>(null)
   const loadGameRecommendations = useServerFn(searchGames)
   const activePlayTimeRef = useRef(0)
@@ -123,7 +124,7 @@ function LocalizedPlayGamePage() {
     setSettlement(null)
     exitingRef.current = false
     setReturnPending(false)
-    setShowLoadingTrial(true)
+    setShowLoadingTrial(!loadingTrialDisabled)
     setTrialPosition(null)
     activePlayTimeRef.current = 0
     awardedCoinsRef.current = 0
@@ -133,7 +134,7 @@ function LocalizedPlayGamePage() {
     recommendationsRequestedRef.current = false
     setRecommendations([])
     setRecommendationType('category')
-  }, [gameId])
+  }, [gameId, loadingTrialDisabled])
 
   useEffect(() => {
     if (!isProGame) return
@@ -649,6 +650,29 @@ function normalizeSeriesText(value: string | undefined) {
 
 function getCurrentActivePlayTime(accumulatedTime: number, startedAt: number | null) {
   return accumulatedTime + (startedAt === null ? 0 : Date.now() - startedAt)
+}
+
+const MAHJONG_LOADING_TRIAL_EXCLUSIONS = [
+  '明星三缺一',
+  '幸运满贯',
+  '幸運滿貫',
+  '龙虎榜2',
+  '龍虎榜2',
+  '电子基盘',
+  '電子基盤',
+  '天开眼',
+  '天開眼',
+  '泰山闯天关2',
+  '泰山闖天關2',
+].map(normalizeTrialGameName)
+
+function normalizeTrialGameName(value: string | undefined) {
+  return (value ?? '').normalize('NFKC').toLowerCase().replaceAll(/\s+/g, '')
+}
+
+function isMahjongLoadingTrialExcluded(game: PublicGame) {
+  const name = normalizeTrialGameName(game.name)
+  return MAHJONG_LOADING_TRIAL_EXCLUSIONS.some(excluded => name === excluded || name.includes(excluded))
 }
 
 function addStoredGameCoins(amount: number) {
