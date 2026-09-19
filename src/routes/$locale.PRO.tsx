@@ -25,6 +25,7 @@ import { createThemeGameCache } from '#/lib/theme-game-cache'
 import themeImageFormats from '#/lib/theme-image-formats.json'
 import libraryUpdates from '#/lib/library-updates.json'
 import { prefersThemeMode, setThemeModePreference } from '#/lib/theme-mode-preference'
+import { rememberGameDetailReturnPath } from '#/lib/game-detail-return'
 
 const themeGamesCache = createThemeGameCache<Array<PublicGame>>()
 const themeFirstPagesCache = createThemeGameCache<Array<GameSearchResult>>()
@@ -32,7 +33,9 @@ const DAILY_CHALLENGE_STORAGE_KEY = 'game-adventure-daily-challenge'
 
 export const Route = createFileRoute('/$locale/PRO')({
   validateSearch: (search: Record<string, unknown>) => ({
-    platform: search.platform === 'psp' || search.platform === 'switch' ? search.platform : undefined,
+    platform: typeof search.platform === 'string' && search.platform.trim().length <= 120
+      ? search.platform.trim()
+      : undefined,
   }),
   beforeLoad: ({ params }) => {
     const locale = normalizeLocale(params.locale)
@@ -132,7 +135,12 @@ function ThemeMode() {
     merged.push(...endingPlatforms)
     return merged
   }, [sourcePlatforms])
-  const requestedLibraryIndex = platforms.findIndex(item => requestedLibrary === 'psp' ? isPspThemePlatform(item) : requestedLibrary === 'switch' ? isSwitchThemePlatform(item) : false)
+  const requestedLibraryIndex = platforms.findIndex(item => {
+    if (requestedLibrary === 'psp') return isPspThemePlatform(item)
+    if (requestedLibrary === 'switch') return isSwitchThemePlatform(item)
+    const requested = normalizeThemePlatformKey(requestedLibrary)
+    return requested.length > 0 && [item.name, item.slug].some(value => normalizeThemePlatformKey(value) === requested)
+  })
   const [selected, setSelected] = useState(requestedLibraryIndex >= 0 ? requestedLibraryIndex : 0)
   const [inLibrary, setInLibrary] = useState(requestedLibraryIndex >= 0)
   const [page, setPage] = useState(1)
@@ -506,7 +514,7 @@ function ThemeMode() {
         </picture>
         <div className="kt-shade" />
         <header className="kt-header">
-          <button className={preferredMode ? 'is-liked' : ''} onClick={togglePreferredMode}>{preferredMode ? (lang === 'zh-TW' ? '已喜歡' : '已喜欢') : (lang === 'zh-TW' ? '喜歡' : '喜欢')} ♥</button>
+          <button className={preferredMode ? 'is-liked' : ''} onClick={togglePreferredMode}>{preferredMode ? (lang === 'zh-TW' ? '已設預設' : '已设默认') : (lang === 'zh-TW' ? '預設模式' : '默认模式')} ♥</button>
           <button onClick={toggleFullscreen}>{fullscreen ? (english ? 'Exit fullscreen' : '退出全屏') : (english ? 'Fullscreen' : '全屏')} ⛶</button>
         </header>
 
@@ -594,6 +602,7 @@ function ThemeMode() {
                   data-start-game
                   href={switchPlatform ? `/${lang}/platform/switch/${id}#PRO` : pspPlatform ? `/${lang}/platform/psp/${id}#PRO` : `/${lang}/games/${id}#PRO`}
                   onFocus={() => setGameIndex(index)}
+                  onClick={() => rememberGameDetailReturnPath(lang, `/${lang}/PRO?platform=${encodeURIComponent(getThemePlatformReturnKey(platform))}`)}
                 >
                   <span className="kt-game-number">{String((page - 1) * 24 + index + 1).padStart(3, '0')}</span>
                   <ThemeGameCardPreview game={game} eager={index < 6} />
@@ -837,6 +846,16 @@ function isPspThemePlatform(platform?: FilterOption) {
   if (!platform) return false
   const identity = `${platform.name} ${platform.slug || ''}`.toLowerCase().replace(/[^a-z]/g, '')
   return identity.includes('psp') || identity.includes('playstationportable')
+}
+
+function getThemePlatformReturnKey(platform?: FilterOption) {
+  if (isPspThemePlatform(platform)) return 'psp'
+  if (isSwitchThemePlatform(platform)) return 'switch'
+  return platform?.slug?.trim() || platform?.name?.trim() || 'all-games'
+}
+
+function normalizeThemePlatformKey(value: string | undefined) {
+  return (value ?? '').normalize('NFKC').trim().toLowerCase().replaceAll(/[^a-z0-9\u3400-\u9fff]+/g, '')
 }
 
 function readFavoriteGames() {

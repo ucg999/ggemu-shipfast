@@ -2,6 +2,7 @@ import { Outlet, createFileRoute, redirect, useRouterState } from '@tanstack/rea
 import { useEffect, useRef, useState } from 'react'
 import { CoinRewardPopup, FloatingHomeCoin, FlyingCollectedCoin } from '#/components/home/coin-rewards'
 import { normalizeLocale } from '#/lib/i18n'
+import { rememberGameDetailSource } from '#/lib/game-detail-return'
 import { addCoinBalance, readCoinBalance } from '#/lib/coin-wallet'
 import type { GameSearchSort } from '#/lib/ggemu'
 import { type SiteTemplate, normalizeSiteTemplate } from '#/lib/site-config'
@@ -152,6 +153,15 @@ function LocaleLayout() {
   } | null>(null)
   const lastRewardPathRef = useRef<string | null>(null)
   const innerRewardTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    const rememberSource = (event: MouseEvent) => {
+      const anchor = (event.target as Element | null)?.closest<HTMLAnchorElement>('a[href]')
+      if (anchor) rememberGameDetailSource(lang, anchor.href)
+    }
+    document.addEventListener('click', rememberSource, true)
+    return () => document.removeEventListener('click', rememberSource, true)
+  }, [lang])
 
   useEffect(() => {
     if (pathname === `/${locale}` || pathname === `/${locale}/PRO` || pathname === `/${locale}/theme-mode` || lastRewardPathRef.current === pathname) return

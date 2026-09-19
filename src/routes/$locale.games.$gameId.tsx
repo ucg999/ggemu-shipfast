@@ -17,6 +17,7 @@ import {
 import { SiteLayout } from '#/components/site-layout'
 import { GameFavoriteButton } from '#/components/game-favorite-button'
 import { saveRecentPlayedGame } from '#/components/home/recent-played-games'
+import { getGameDetailReturnUrl } from '#/lib/game-detail-return'
 import {
   applyChineseGameGuide,
   getChineseGameGuide,
@@ -353,12 +354,10 @@ function LocalizedGameDetailPage() {
             <div className="breadcrumbs text-sm">
               <ul className="min-w-0">
                 <li>
-                  {isProStandalone ? <a href={`/${lang}/PRO`}>{lang === 'zh-TW' ? '主題模式' : '主题模式'}</a> : (
-                    <button className="inline-flex items-center gap-1" onClick={() => returnToPreviousGameSelection(lang)} type="button">
-                      <i className="ri-arrow-left-line" aria-hidden="true" />
-                      {getDetailBackLabel(lang)}
-                    </button>
-                  )}
+                  <button className="inline-flex items-center gap-1" onClick={() => returnToPreviousGameSelection(lang)} type="button">
+                    <i className="ri-arrow-left-line" aria-hidden="true" />
+                    {getDetailBackLabel(lang)}
+                  </button>
                 </li>
                 <li className="min-w-0">
                   <span className="block max-w-[min(70vw,32rem)] truncate">{game.name}</span>
@@ -479,11 +478,7 @@ function getDetailBackLabel(locale: Locale) {
 }
 
 function returnToPreviousGameSelection(locale: Locale) {
-  if (window.history.length > 1) {
-    window.history.back()
-    return
-  }
-  window.location.assign(`/${locale}`)
+  window.location.assign(getGameDetailReturnUrl(locale))
 }
 
 function GameInformationSections({

@@ -360,7 +360,7 @@ function LocalizedPlayGamePage() {
       </button>
       </div>
       {isMahjongCoinChargeGame ? (
-        <div className="fixed right-2 top-2 z-50 rounded-full bg-black/55 p-1 shadow-lg backdrop-blur-sm sm:right-3 sm:top-3">
+        <div className="fixed bottom-2 right-2 z-50 sm:bottom-3 sm:right-3">
           <HomeCoinBag balance={globalCoins.balance} lang={lang} onOpen={globalCoins.showBalance} />
         </div>
       ) : null}
@@ -381,6 +381,12 @@ function LocalizedPlayGamePage() {
         src={embedSrc}
         title={game.name ?? 'Retro game'}
       />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute right-2 top-2 z-20 grid h-8 min-w-10 place-items-center rounded bg-zinc-900/45 px-1 text-xs font-medium text-white/65 shadow-sm"
+      >
+        设置
+      </span>
       {showLoadingTrial ? (
         <section
           aria-label={`等待游戏加载时试玩${trialGame === 'ghost' ? '幽灵捕手' : '金币娱乐'}`}
