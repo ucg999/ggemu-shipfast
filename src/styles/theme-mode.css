@@ -9,7 +9,7 @@
 .kt-background{object-fit:cover;z-index:-3;animation:kt-reveal .45s ease-out}
 .kt-shade{z-index:-2;background:linear-gradient(180deg,#0009 0%,#0003 28%,transparent 48%,#0009 100%)}
 .kt-header{height:4.5%;min-height:30px;position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:flex-end;padding:0 1%;background:transparent;z-index:22;font-size:12px;pointer-events:none}
-.kt-header button{pointer-events:auto;padding:5px 9px;background:#050914d9}
+.kt-header button{pointer-events:auto;padding:5px 9px;background:#050914d9}.kt-header button.is-liked{border-color:#ff7598;background:#a20f42d9;color:#fff}
 .kt-header button,.kt-home{padding:8px 12px;border:1px solid #ffffff38;border-radius:4px;background:#0004;text-decoration:none;color:white}
 .kt-brand{flex:1;font-weight:800;letter-spacing:2px}.kt-brand small{font-weight:400;letter-spacing:1px;opacity:.65}
 .kt-platform-marquee{position:absolute;top:0;left:0;right:0;height:4.5%;z-index:21;overflow:hidden;display:flex;align-items:center;background:transparent;white-space:nowrap;text-shadow:0 1px 3px #000}

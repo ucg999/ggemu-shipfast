@@ -24,6 +24,7 @@ import '#/styles/theme-mode.css'
 import { createThemeGameCache } from '#/lib/theme-game-cache'
 import themeImageFormats from '#/lib/theme-image-formats.json'
 import libraryUpdates from '#/lib/library-updates.json'
+import { prefersThemeMode, setThemeModePreference } from '#/lib/theme-mode-preference'
 
 const themeGamesCache = createThemeGameCache<Array<PublicGame>>()
 const themeFirstPagesCache = createThemeGameCache<Array<GameSearchResult>>()
@@ -151,6 +152,7 @@ function ThemeMode() {
   const coinRewards = useHomeCoinRewards()
   const [dailyCheckIn, setDailyCheckIn] = useState({ completed: false, streak: 0 })
   const [fullscreen, setFullscreen] = useState(false)
+  const [preferredMode, setPreferredMode] = useState(false)
   const [notice, setNotice] = useState('')
   const [favoriteGames, setFavoriteGames] = useState<Array<PublicGame>>([])
   const [browserStats, setBrowserStats] = useState({ favorites: 0, played: 0, frequent: '', lastDate: '' })
@@ -173,6 +175,17 @@ function ThemeMode() {
   const centeredCollectionPreview = allGames || favoritesPlatform || lastPlayedPlatform || preciselyCenteredPlatform
   const switchPlatform = isSwitchThemePlatform(platform)
   const pspPlatform = isPspThemePlatform(platform)
+
+  useEffect(() => setPreferredMode(prefersThemeMode()), [])
+
+  function togglePreferredMode() {
+    const next = !preferredMode
+    setPreferredMode(next)
+    setThemeModePreference(next)
+    setNotice(next
+      ? (lang === 'zh-TW' ? '已設為預設模式' : '已设为默认模式')
+      : (lang === 'zh-TW' ? '已取消預設模式' : '已取消默认模式'))
+  }
   const asset = platform ? getThemeAsset(platform) : null
   const activeGame = result?.games[inLibrary ? gameIndex : showcaseIndex]
   const count = result?.pagination.total ?? platform?.count
@@ -493,7 +506,8 @@ function ThemeMode() {
         </picture>
         <div className="kt-shade" />
         <header className="kt-header">
-          <button onClick={toggleFullscreen}>{fullscreen ? (english ? 'Exit fullscreen' : '退出全屏') : (english ? 'Fullscreen' : '全屏显示')} ⛶</button>
+          <button className={preferredMode ? 'is-liked' : ''} onClick={togglePreferredMode}>{preferredMode ? (lang === 'zh-TW' ? '已喜歡' : '已喜欢') : (lang === 'zh-TW' ? '喜歡' : '喜欢')} ♥</button>
+          <button onClick={toggleFullscreen}>{fullscreen ? (english ? 'Exit fullscreen' : '退出全屏') : (english ? 'Fullscreen' : '全屏')} ⛶</button>
         </header>
 
         {!inLibrary ? <>

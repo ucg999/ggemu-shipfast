@@ -52,6 +52,7 @@ import {
 } from '#/lib/site-config'
 import { getSeoOrigin, getLocalizedSeoLinks } from '#/lib/seo'
 import { SITE_ORIGIN } from '#/lib/site-url'
+import { prefersThemeMode } from '#/lib/theme-mode-preference'
 
 const DEFAULT_HOME_REQUEST_SIZE = 21
 const MOBILE_API_PAGE_SIZE = 36
@@ -250,6 +251,22 @@ function LocalizedHomePage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const coinRewards = useHomeCoinRewards()
+
+  useEffect(() => {
+    const normalizedLocale = normalizeLocale(locale)
+    if (
+      !template &&
+      (normalizedLocale === 'zh-CN' || normalizedLocale === 'zh-TW') &&
+      prefersThemeMode()
+    ) {
+      void router.navigate({
+        params: { locale: normalizedLocale },
+        replace: true,
+        search: { platform: undefined },
+        to: '/$locale/PRO',
+      })
+    }
+  }, [locale, router, template])
 
   useEffect(() => {
     const mobile = window.matchMedia('(max-width: 1023px)').matches

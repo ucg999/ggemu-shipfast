@@ -8,7 +8,7 @@ import { getPlatformLabel } from '#/lib/platform-label'
 import { siteConfig } from '#/lib/site-config'
 import { useCurrentSiteTheme } from '#/lib/use-site-theme'
 import { calculateGameCoinAward } from '#/lib/game-session-coins'
-import { isArcadeMahjongGame } from '#/lib/arcade-mahjong-games'
+import { ARCADE_MAHJONG_COINS_PER_MINUTE, isArcadeMahjongGame } from '#/lib/arcade-mahjong-games'
 import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
 import {
   addCoinReward,
@@ -190,7 +190,7 @@ function LocalizedPlayGamePage() {
     )
 
     if (isMahjongCoinChargeGame) {
-      const chargeableCoins = Math.floor(Math.max(0, activeTime) / 60_000)
+      const chargeableCoins = Math.floor(Math.max(0, activeTime) / 60_000) * ARCADE_MAHJONG_COINS_PER_MINUTE
       const dueCoins = Math.max(0, chargeableCoins - awardedCoinsRef.current)
       awardedCoinsRef.current = chargeableCoins
 

@@ -8,7 +8,12 @@ export const ARCADE_MAHJONG_GAME_QUERIES = [
   '电子基盘',
   '天开眼',
   '泰山闯天关2',
+  '超级大满贯',
+  '超级斗地主两副牌',
+  '超级斗地主',
 ] as const
+
+export const ARCADE_MAHJONG_COINS_PER_MINUTE = 5
 
 const ARCADE_MAHJONG_GAME_ALIASES = [
   ...ARCADE_MAHJONG_GAME_QUERIES,

@@ -172,7 +172,7 @@ export function DefaultHomeTemplate(
               {mode.label}
             </Link>
           ) : (
-            <Link className="btn btn-ghost btn-xs w-full rounded-full border-0 px-2 text-xs font-normal text-base-content/75" key={mode.label} params={{ locale: lang, platformId: mode.platformId! }} title={mode.platformId === 'mahjong' ? (lang === 'zh-TW' ? '一分鐘扣一個幣' : lang === 'en' ? 'Costs 1 coin per minute' : lang === 'ja' ? '1分につき1コイン消費' : '一分钟扣一个币') : undefined} to="/$locale/platform/$platformId">
+            <Link className="btn btn-ghost btn-xs w-full rounded-full border-0 px-2 text-xs font-normal text-base-content/75" key={mode.label} params={{ locale: lang, platformId: mode.platformId! }} title={mode.platformId === 'mahjong' ? (lang === 'zh-TW' ? '一分鐘扣 5 個幣' : lang === 'en' ? 'Costs 5 coins per minute' : lang === 'ja' ? '1分につき5コイン消費' : '一分钟扣 5 个币') : undefined} to="/$locale/platform/$platformId">
               {mode.label}
             </Link>
           ))}

@@ -893,10 +893,10 @@ function getGameModeLabels(locale: Locale) {
 }
 
 function getMahjongChargeTip(locale: Locale) {
-  if (locale === 'zh-TW') return '一分鐘扣一個幣'
-  if (locale === 'en') return 'Costs 1 coin per minute'
-  if (locale === 'ja') return '1分につき1コイン消費'
-  return '一分钟扣一个币'
+  if (locale === 'zh-TW') return '一分鐘扣 5 個幣'
+  if (locale === 'en') return 'Costs 5 coins per minute'
+  if (locale === 'ja') return '1分につき5コイン消費'
+  return '一分钟扣 5 个币'
 }
 
 export function SiteFooter({ locale }: { locale: Locale }) {
