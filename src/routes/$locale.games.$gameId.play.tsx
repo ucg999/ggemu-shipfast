@@ -10,6 +10,7 @@ import { useCurrentSiteTheme } from '#/lib/use-site-theme'
 import { calculateGameCoinAward } from '#/lib/game-session-coins'
 import { ARCADE_MAHJONG_COINS_PER_MINUTE, isArcadeMahjongGame } from '#/lib/arcade-mahjong-games'
 import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
+import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
 import {
   addCoinReward,
   consumeGamePlayStartedAt,
@@ -558,12 +559,13 @@ function GameExitRecommendations({
                 return id ? (
                   <Link
                     className={`group min-w-0 ${index >= 4 ? 'hidden lg:block' : ''}`}
+                    {...gameCardPreviewHandlers}
                     key={id}
                     params={{ gameId: id, locale: lang }}
                     search={{}}
                     to="/$locale/games/$gameId"
                   >
-                    <div className="aspect-square overflow-hidden rounded-lg bg-zinc-800">
+                    <div className="relative aspect-square overflow-hidden rounded-lg bg-zinc-800">
                       {game.game_cover ? (
                         <img
                           alt={game.name ?? labels.game}
@@ -572,6 +574,7 @@ function GameExitRecommendations({
                           src={game.game_cover}
                         />
                       ) : null}
+                      <GameCardPreviewVideo src={game.game_video} />
                     </div>
                     <p className="mt-2 truncate text-sm font-medium">{game.name ?? labels.game}</p>
                     <p className="mt-0.5 truncate text-xs text-white/45">

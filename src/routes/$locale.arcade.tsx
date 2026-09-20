@@ -2,6 +2,7 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 
 import { SiteLayout } from '#/components/site-layout'
+import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
 import type { Locale, PublicGame } from '#/lib/ggemu'
 import { getCoinModeGameMinimumBalance, getCoinModeGameRequiredRank, searchGames } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
@@ -204,9 +205,10 @@ function ArcadeLibraryGameCard({ game, lang }: { game: PublicGame; lang: Locale 
   const language = game.languages?.slice(0, 1).join('')
 
   return (
-    <Link className="group overflow-hidden rounded-xl bg-white text-black shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
-      <figure className="aspect-[616/353] overflow-hidden bg-neutral-100">
+    <Link className="group overflow-hidden rounded-xl bg-white text-black shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" {...gameCardPreviewHandlers} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
+      <figure className="relative aspect-[616/353] overflow-hidden bg-neutral-100">
         {game.game_cover ? <img alt={game.name ?? ''} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} /> : null}
+        <GameCardPreviewVideo src={game.game_video} />
       </figure>
       <div className="p-2.5 sm:py-4">
         <h2 className="truncate text-sm font-semibold sm:text-lg" title={game.name}>{game.name}</h2>
@@ -270,12 +272,13 @@ function CoinModeGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
   const t = getI18n(lang).arcade
 
   return (
-    <Link className="group min-w-0" params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
+    <Link className="group min-w-0" {...gameCardPreviewHandlers} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
       <article className="overflow-hidden rounded-lg border border-base-300 bg-base-100 transition hover:-translate-y-0.5 hover:border-amber-400">
         <figure className="relative aspect-[4/3] overflow-hidden bg-base-200">
           {game.game_cover ? (
             <img alt={game.name ?? t.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy" src={game.game_cover} />
           ) : null}
+          <GameCardPreviewVideo src={game.game_video} />
           <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/75 px-2 py-1 text-xs font-black text-yellow-300">
             {getRequiredRankLabel(requiredRank, lang)}{minimumBalance > 0 ? ` · ${minimumBalance}币` : ''}
           </span>
@@ -331,7 +334,8 @@ function ArcadeGameRow({ game, lang }: { game: PublicGame; lang: Locale }) {
   return (
     <article className="flex items-center gap-4 rounded-xl border border-base-300 bg-base-100 p-3 transition hover:border-base-content/25 sm:gap-5">
       <Link
-        className="h-20 w-24 shrink-0 overflow-hidden rounded-lg bg-base-200 sm:h-24 sm:w-32"
+        className="group relative h-20 w-24 shrink-0 overflow-hidden rounded-lg bg-base-200 sm:h-24 sm:w-32"
+        {...gameCardPreviewHandlers}
         params={{ gameId, locale: lang }}
         search={{}}
         to="/$locale/games/$gameId"
@@ -339,6 +343,7 @@ function ArcadeGameRow({ game, lang }: { game: PublicGame; lang: Locale }) {
         {game.game_cover ? (
           <img alt={game.name ?? t.title} className="h-full w-full object-cover" loading="lazy" src={game.game_cover} />
         ) : null}
+        <GameCardPreviewVideo src={game.game_video} />
       </Link>
 
       <div className="min-w-0 flex-1">

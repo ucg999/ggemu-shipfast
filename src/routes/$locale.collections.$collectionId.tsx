@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 
 import { SiteLayout } from '#/components/site-layout'
+import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
 import { searchGames, type PublicGame } from '#/lib/ggemu'
 import { getGameCollection, type GameCollection } from '#/lib/game-collections'
 import { normalizeLocale } from '#/lib/i18n'
@@ -169,6 +170,7 @@ function CollectionGameCard({
   return (
     <Link
       className="group block"
+      {...gameCardPreviewHandlers}
       params={{ gameId, locale: lang }}
       search={{}}
       to="/$locale/games/$gameId"
@@ -180,6 +182,7 @@ function CollectionGameCard({
           loading="lazy"
           src={game.game_cover}
         />
+        <GameCardPreviewVideo src={game.game_video} />
         {game.platform ? (
           <span className="absolute left-2 top-2 rounded bg-black/75 px-2 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
             {getPlatformLabel(game.platform, lang)}

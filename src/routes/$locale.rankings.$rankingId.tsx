@@ -1,6 +1,7 @@
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 
 import { SiteLayout } from '#/components/site-layout'
+import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
 import { type GameSearchSort, type Locale, type PublicGame, searchGames } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
@@ -87,11 +88,12 @@ function RankingGameCard({ game, index, lang }: { game: PublicGame; index: numbe
   const gameId = game.url_slug?.trim() || game._id?.trim() || ''
 
   return (
-    <Link className="group min-w-0" params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
+    <Link className="group min-w-0" {...gameCardPreviewHandlers} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
       <figure className="relative aspect-[4/3] overflow-hidden rounded-md bg-base-200">
         {game.game_cover ? (
           <img alt={game.name ?? ''} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy" src={game.game_cover} />
         ) : null}
+        <GameCardPreviewVideo src={game.game_video} />
         <span className="absolute left-2 top-2 grid h-7 min-w-7 place-items-center rounded-full bg-black/75 px-2 text-xs font-bold text-white">
           {index + 1}
         </span>

@@ -19,6 +19,7 @@ import { setDailyGameCoinMultiplier } from '#/lib/coin-wallet'
 import { confirmResourceDownload, unlockPaidResource } from '#/lib/paid-resource'
 import { useServerFn } from '@tanstack/react-start'
 import { readHomeCards, saveHomeCards } from '#/lib/home-card-cache'
+import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
 
 export function DefaultHomeTemplate(
   props: HomeTemplateProps & { onCoinsEarned?: (amount: number) => void },
@@ -73,8 +74,11 @@ export function DefaultHomeTemplate(
   const recentPlayedGames = useRecentPlayedGames()
 
   useEffect(() => {
-    if (mostPlayedGames.length > 0) setRandomVideoGames(selectDailyVideoGames(mostPlayedGames, 6))
-  }, [mostPlayedGames])
+    if (mostPlayedGames.length > 0) {
+      const dailyGames = selectDailyVideoGames(mostPlayedGames, 6)
+      setRandomVideoGames(selectRefreshVideoForMiddle(dailyGames, mostPlayedGames, lang))
+    }
+  }, [lang, mostPlayedGames])
 
   useEffect(() => {
     if (mostPlayedGames.length > 0) setDailyBestGames(selectDailyBestGames(mostPlayedGames, 3))
@@ -217,8 +221,9 @@ export function DefaultHomeTemplate(
                 {dailyBestGames.map((game) => {
                   const gameId = game.url_slug || game._id || ''
                   return (
-                    <Link className="desktop-daily-video-card group" key={`best-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
+                    <Link className="desktop-daily-video-card group" {...gameCardPreviewHandlers} key={`best-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
                       <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} />
+                      <GameCardPreviewVideo src={game.game_video} />
                     </Link>
                   )
                 })}
@@ -555,6 +560,41 @@ function dedupeVideoGames(games: Array<PublicGame>) {
     seen.add(id)
     return true
   })
+}
+
+function selectRefreshVideoForMiddle(
+  dailyGames: Array<PublicGame>,
+  allGames: Array<PublicGame>,
+  locale: string,
+) {
+  if (dailyGames.length < 3 || typeof window === 'undefined') return dailyGames
+
+  const fixedIds = new Set([getGameId(dailyGames[0]), getGameId(dailyGames[2])])
+  const storageKey = `game-adventure-refresh-video-middle:${locale}`
+  let previousId = ''
+  try {
+    previousId = window.sessionStorage.getItem(storageKey) ?? ''
+  } catch {
+    // A random middle card still works when browser storage is unavailable.
+  }
+  const candidates = dedupeVideoGames(allGames).filter((game) => {
+    const id = getGameId(game)
+    return Boolean(id) && !fixedIds.has(id) && id !== previousId
+  })
+  const fallbackCandidates = dedupeVideoGames(allGames).filter((game) => {
+    const id = getGameId(game)
+    return Boolean(id) && !fixedIds.has(id)
+  })
+  const pool = candidates.length > 0 ? candidates : fallbackCandidates
+  if (pool.length === 0) return dailyGames
+
+  const middleGame = pool[Math.floor(Math.random() * pool.length)]
+  try {
+    window.sessionStorage.setItem(storageKey, getGameId(middleGame))
+  } catch {
+    // Ignore storage restrictions; the selected card remains valid for this load.
+  }
+  return [dailyGames[0], middleGame, ...dailyGames.slice(2)]
 }
 
 function readWeeklyVideoCardHistory(): WeeklyVideoCardHistory | undefined {

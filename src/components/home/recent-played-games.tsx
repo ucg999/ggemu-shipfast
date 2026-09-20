@@ -6,6 +6,7 @@ import { GAME_COLLECTIONS } from '#/lib/game-collections'
 import { getI18n } from '#/lib/i18n'
 import { markGamePlayStarted } from '#/lib/coin-wallet'
 import { CardScrollRow } from './card-scroll-row'
+import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
 
 const RECENT_PLAYED_GAMES_KEY = 'ggemu-recent-played-games'
 const RECENT_PLAYED_GAMES_LIMIT = 102
@@ -16,6 +17,7 @@ export type RecentPlayedGame = {
   id: string
   name: string
   platform?: string
+  video?: string
   playCount?: number
   playedAt?: number
 }
@@ -188,6 +190,7 @@ export function RecentPlayedGameCard({
     <Link
       aria-label={game.name}
       className="group block h-full rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+      {...gameCardPreviewHandlers}
       onClick={() => {
         if (directPlay) markGamePlayStarted(game.id)
       }}
@@ -208,6 +211,7 @@ export function RecentPlayedGameCard({
             Retro
           </div>
         )}
+        <GameCardPreviewVideo src={game.video} />
 
         {!compact ? (
           <span className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full border border-base-300 bg-base-100/90 text-xs text-base-content opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 sm:right-3 sm:top-3">
@@ -233,6 +237,7 @@ function getRecentPlayedGame(game: PublicGame, fallbackId: string): RecentPlayed
     id,
     name,
     platform: game.platform?.trim() || undefined,
+    video: game.game_video?.trim() || undefined,
     playedAt: Date.now(),
   } satisfies RecentPlayedGame
 }
