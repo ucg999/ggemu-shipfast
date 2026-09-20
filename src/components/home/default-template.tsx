@@ -221,7 +221,7 @@ export function DefaultHomeTemplate(
                 {dailyBestGames.map((game) => {
                   const gameId = game.url_slug || game._id || ''
                   return (
-                    <Link className="desktop-daily-video-card group" {...gameCardPreviewHandlers} key={`best-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
+                    <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} key={`best-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
                       <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} />
                       <GameCardPreviewVideo src={game.game_video} />
                     </Link>

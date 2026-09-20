@@ -40,14 +40,16 @@ export function GameCardPreviewVideo({
   }
 
   return (
-    <video
-      className={`absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-200 group-hover:opacity-100 ${className}`}
-      data-game-card-preview-video
-      loop
-      muted
-      playsInline
-      preload="none"
-      src={src}
-    />
+    <span className="pointer-events-none absolute inset-0 block overflow-hidden opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
+      <video
+        className={`block h-full max-h-full w-full max-w-full object-cover ${className}`}
+        data-game-card-preview-video
+        loop
+        muted
+        playsInline
+        preload="none"
+        src={src}
+      />
+    </span>
   )
 }
