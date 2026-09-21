@@ -1,8 +1,9 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
 import { useEffect, useRef, useState } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
 
-import type { GameFilterOptions, Locale } from '#/lib/ggemu'
+import { getGameDetail, getRandomPlayableGame, type GameFilterOptions, type Locale, type PublicGame } from '#/lib/ggemu'
 import { getHomeFaqs, getI18n, normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { getOriginalGamesTitle } from '#/lib/original-games'
@@ -57,6 +58,27 @@ export function SiteLayout({
   const sidebarSearchParams = new URLSearchParams(location.searchStr)
   const globalCoins = useGlobalCoinBalance()
   const [dailyCheckIn, setDailyCheckIn] = useState({ completed: false, lastDate: '', streak: 0 })
+  const [randomPopupGame, setRandomPopupGame] = useState<PublicGame | null>(null)
+  const [randomPopupMultiplier, setRandomPopupMultiplier] = useState(2)
+  const [isRandomGameLoading, setIsRandomGameLoading] = useState(false)
+  const loadRandomGame = useServerFn(getRandomPlayableGame)
+  const loadGameDetail = useServerFn(getGameDetail)
+
+  async function showRandomGame() {
+    if (isRandomGameLoading) return
+    setIsRandomGameLoading(true)
+    try {
+      const randomGame = await loadRandomGame({ data: {} })
+      const gameId = randomGame?.url_slug?.trim() || randomGame?._id?.trim()
+      if (!gameId) return
+      const multiplier = prepareRandomGameCoinMultiplier()
+      const game = await loadGameDetail({ data: { id: gameId } })
+      setRandomPopupMultiplier(multiplier)
+      setRandomPopupGame(game)
+    } finally {
+      setIsRandomGameLoading(false)
+    }
+  }
 
   useEffect(() => {
     const current = readDailyCheckIn()
@@ -262,7 +284,7 @@ export function SiteLayout({
         >
           ← {proLibraryPlatform
             ? locale === 'zh-TW' ? `返回${proLibraryPlatform === 'psp' ? 'PSP' : 'Switch'}遊戲庫` : locale === 'en' ? `Back to ${proLibraryPlatform === 'psp' ? 'PSP' : 'Switch'} library` : locale === 'ja' ? `${proLibraryPlatform === 'psp' ? 'PSP' : 'Switch'}ライブラリへ戻る` : `返回${proLibraryPlatform === 'psp' ? 'PSP' : 'Switch'}游戏库`
-            : locale === 'zh-TW' ? '返回主題模式' : locale === 'en' ? 'Back to Theme Mode' : locale === 'ja' ? 'テーマモードに戻る' : '返回主题模式'}
+            : locale === 'zh-TW' ? '返回主機模式' : locale === 'en' ? 'Back to Console Mode' : locale === 'ja' ? 'コンソールモードに戻る' : '返回主机模式'}
         </button>
         {children}
       </main>
@@ -334,7 +356,7 @@ export function SiteLayout({
               {topContent}
             </div>
           ) : (
-            <DesktopUnifiedHeaderNavigation locale={locale} />
+            <DesktopUnifiedHeaderNavigation isRandomGameLoading={isRandomGameLoading} locale={locale} onRandomGame={showRandomGame} />
           )}
 
           <div className="navbar-end ml-auto w-auto flex-none flex-nowrap gap-1 sm:gap-2">
@@ -416,33 +438,17 @@ export function SiteLayout({
                 }}
               >
                 <i className="ri-global-line" />
-                {locale === 'zh-CN'
-                  ? '简'
-                  : locale === 'zh-TW'
-                    ? '繁'
-                    : locale === 'en'
-                      ? '英'
-                      : '日'}
+                {locale === 'en' ? '英' : '中'}
               </summary>
               <ul className="menu dropdown-content z-50 mt-3 w-36 rounded-box border border-base-300 bg-base-100 p-2 text-black shadow-xl">
                 <li>
                   <button onClick={() => handleLocaleChange('zh-CN')} type="button">
-                    简
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => handleLocaleChange('zh-TW')} type="button">
-                    繁
+                    中
                   </button>
                 </li>
                 <li>
                   <button onClick={() => handleLocaleChange('en')} type="button">
                     英
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => handleLocaleChange('ja')} type="button">
-                    日
                   </button>
                 </li>
               </ul>
@@ -631,7 +637,7 @@ export function SiteLayout({
                     <span className="sidebar-label min-w-0 flex-1">{t.blog}</span>
                   </Link>
                 </li>
-                <li>
+                <li className="hidden lg:block">
                   <details
                     onToggle={(event) =>
                       setIsUsefulMenuOpen(event.currentTarget.open)
@@ -815,14 +821,27 @@ export function SiteLayout({
           )}
         </div>
       </div>
+      {randomPopupGame ? (
+        <SiteRandomGameModal
+          game={randomPopupGame}
+          locale={locale}
+          multiplier={randomPopupMultiplier}
+          onClose={() => setRandomPopupGame(null)}
+          onRandomAgain={showRandomGame}
+        />
+      ) : null}
     </main>
   )
 }
 
 function DesktopUnifiedHeaderNavigation({
+  isRandomGameLoading,
   locale,
+  onRandomGame,
 }: {
+  isRandomGameLoading: boolean
   locale: Locale
+  onRandomGame: () => void | Promise<void>
 }) {
   const layout = getI18n(locale).layout
   const home = getI18n(locale).home
@@ -850,6 +869,11 @@ function DesktopUnifiedHeaderNavigation({
           </ul>
           <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
               <li><Link params={{ locale }} to="/$locale/all-games">{layout.allGames}</Link></li>
+              <li>
+                <Link params={{ locale }} search={{ platform: undefined }} to="/$locale/PRO">
+                  {locale === 'zh-CN' ? '所有平台' : locale === 'zh-TW' ? '所有平台' : locale === 'ja' ? 'すべてのプラットフォーム' : 'All Platforms'}
+                </Link>
+              </li>
               <li><Link params={{ locale, rankingId: 'latest' }} to="/$locale/rankings/$rankingId">{layout.latestGames}</Link></li>
               <li><Link params={{ locale, rankingId: 'popular' }} to="/$locale/rankings/$rankingId">{layout.mostPopularGames}</Link></li>
               <li><Link params={{ locale, rankingId: 'weekly' }} to="/$locale/rankings/$rankingId">{layout.weeklyPopularGames}</Link></li>
@@ -859,29 +883,67 @@ function DesktopUnifiedHeaderNavigation({
       </details>
       {(locale === 'zh-CN' || locale === 'zh-TW') ? (
         <Link className={linkClass} params={{ locale }} search={{ platform: undefined }} to="/$locale/PRO">
-          <i className="ri-gamepad-line mr-1" />{locale === 'zh-TW' ? '主題模式' : '主题模式'}
+          <i className="ri-gamepad-line mr-1" />{locale === 'zh-TW' ? '主機模式' : '主机模式'}
         </Link>
       ) : null}
       <Link className={linkClass} params={{ locale, platformId: 'coin' }} to="/$locale/platform/$platformId">{getGameModeLabels(locale).coin}</Link>
       <Link className={linkClass} params={{ locale, platformId: 'mahjong' }} title={getMahjongChargeTip(locale)} to="/$locale/platform/$platformId">{getGameModeLabels(locale).mahjong}</Link>
-      <Link className={linkClass} params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
-      <Link className={linkClass} params={{ locale, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
       <div className="ml-1 flex h-9 min-w-48 max-w-md flex-1 items-center rounded-full border border-black/30 text-xs text-black/60">
         <Link className="flex min-w-0 flex-1 items-center gap-2 px-3" params={{ locale }} search={{ q: '' }} to="/$locale/search">
           <i className="ri-search-line text-lg" />
           <span className="truncate">{locale === 'zh-CN' ? '按需求搜索' : layout.searchGames}</span>
         </Link>
-        <Link
+        <button
           className="flex h-5 shrink-0 items-center border-l border-black/20 px-3 font-medium text-black/75 hover:text-black"
-          onClick={() => prepareRandomGameCoinMultiplier()}
-          params={{ locale }}
-          search={{ p: undefined }}
-          to="/$locale/random"
+          disabled={isRandomGameLoading}
+          onClick={onRandomGame}
+          type="button"
         >
-          {locale === 'zh-TW' ? '隨機' : locale === 'en' ? 'Random' : locale === 'ja' ? 'ランダム' : '随机'}
-        </Link>
+          {isRandomGameLoading
+            ? locale === 'en' ? 'Loading…' : '加载中…'
+            : locale === 'en' ? 'Random Play' : '随机玩玩'}
+        </button>
       </div>
     </nav>
+  )
+}
+
+function SiteRandomGameModal({
+  game,
+  locale,
+  multiplier,
+  onClose,
+  onRandomAgain,
+}: {
+  game: PublicGame
+  locale: Locale
+  multiplier: number
+  onClose: () => void
+  onRandomAgain: () => void | Promise<void>
+}) {
+  const gameId = game.url_slug?.trim() || game._id?.trim() || ''
+  const copy = getI18n(locale).home
+
+  return (
+    <div className="fixed inset-0 z-[120] grid place-items-center bg-black/65 p-4" onClick={onClose} role="presentation">
+      <section aria-label={copy.randomGame} aria-modal="true" className="w-full max-w-md overflow-hidden rounded-2xl bg-white text-black shadow-2xl" onClick={(event) => event.stopPropagation()} role="dialog">
+        <figure className="relative aspect-[4/3] overflow-hidden bg-neutral-200">
+          {game.game_cover ? <img alt={game.name ?? copy.randomGame} className="h-full w-full object-cover" src={game.game_cover} /> : null}
+          {game.platform ? <span className="absolute bottom-3 right-3 rounded bg-black/70 px-2 py-1 text-xs text-white">{getPlatformLabel(game.platform, locale)}</span> : null}
+          <button aria-label={copy.close} className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-black shadow" onClick={onClose} type="button">✕</button>
+        </figure>
+        <div className="p-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 className="min-w-0 flex-1 truncate text-xl font-semibold">{game.name}</h2>
+            <span className="flex shrink-0 items-center gap-1 font-black text-amber-600"><img alt="" aria-hidden="true" className="h-5 w-5" src="/images/coin-rewards/pixel-reward-coin.webp" />×{multiplier}</span>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button className="btn btn-warning" onClick={onRandomAgain} type="button">{copy.randomAgain}</button>
+            <Link className="btn btn-primary" onClick={onClose} params={{ gameId, locale }} search={{}} to="/$locale/games/$gameId">{copy.playNow}</Link>
+          </div>
+        </div>
+      </section>
+    </div>
   )
 }
 
@@ -893,14 +955,15 @@ function getGameModeLabels(locale: Locale) {
 }
 
 function getMahjongChargeTip(locale: Locale) {
-  if (locale === 'zh-TW') return '一分鐘扣 5 個幣'
-  if (locale === 'en') return 'Costs 5 coins per minute'
-  if (locale === 'ja') return '1分につき5コイン消費'
-  return '一分钟扣 5 个币'
+  if (locale === 'zh-TW') return '前 5 分鐘免費試玩，之後每分鐘扣 1 個幣'
+  if (locale === 'en') return 'First 5 minutes free, then 1 coin per minute'
+  if (locale === 'ja') return '最初の5分間は無料、その後は1分につき1コイン消費'
+  return '前5分钟免费试玩，之后每分钟扣1个币'
 }
 
 export function SiteFooter({ locale }: { locale: Locale }) {
   const t = getI18n(locale).layout
+  const homeT = getI18n(locale).home
   const faq = getHomeFaqs(locale)
   const modeLabels = getGameModeLabels(locale)
   const pathname = useRouterState({ select: (state) => state.location.pathname })
@@ -914,12 +977,12 @@ export function SiteFooter({ locale }: { locale: Locale }) {
         ? 'クイックリンク'
         : '快捷入口'
   const themeModeLabel = locale === 'zh-TW'
-    ? '主題模式'
+    ? '主機模式'
     : locale === 'en'
-      ? 'Theme mode'
+      ? 'Console mode'
       : locale === 'ja'
-        ? 'テーマモード'
-        : '主题模式'
+        ? 'コンソールモード'
+        : '主机模式'
 
   return (
     <footer className="min-h-44 bg-[#f0f0ed] lg:bg-white">
@@ -941,7 +1004,22 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale }} to="/$locale/all-games">{t.allGames}</Link>
             <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale, rankingId: 'latest' }} to="/$locale/rankings/$rankingId">{t.latestGames}</Link>
             <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale, rankingId: 'popular' }} to="/$locale/rankings/$rankingId">{t.mostPopularGames}</Link>
-            <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale }} to="/$locale/original-games">{getOriginalGamesTitle(locale)}</Link>
+            <Link className="text-base font-medium text-base-content transition hover:opacity-55 lg:hidden" params={{ locale }} to="/$locale/original-games">{getOriginalGamesTitle(locale)}</Link>
+            <details className="group relative hidden lg:block">
+              <summary className="cursor-pointer list-none text-base font-medium text-base-content transition hover:opacity-55">
+                {homeT.findFriends}
+              </summary>
+              <div className="absolute bottom-full left-0 z-30 mb-4 grid w-80 grid-cols-2 gap-4 rounded-2xl border border-base-content/10 bg-base-100 p-4 text-center shadow-2xl">
+                <div>
+                  <p className="mb-2 font-medium text-base-content"><i className="ri-wechat-fill mr-1 text-[#07c160]" />{homeT.wechat}</p>
+                  <img alt={homeT.wechatQrAlt} className="aspect-square w-full rounded-lg bg-white object-contain" loading="lazy" src="/wechat-qr.png" />
+                </div>
+                <div>
+                  <p className="mb-2 font-medium text-base-content"><i className="ri-qq-fill mr-1" />QQ</p>
+                  <img alt={homeT.qqQrAlt} className="aspect-square w-full rounded-lg object-contain" loading="lazy" src="/qq-qr.jpg" />
+                </div>
+              </div>
+            </details>
             <details className="group relative">
               <summary className="cursor-pointer list-none text-base font-medium text-base-content transition hover:opacity-55">
                 {faq.title}

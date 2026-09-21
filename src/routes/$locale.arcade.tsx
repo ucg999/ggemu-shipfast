@@ -132,7 +132,7 @@ export function PlatformModeContent({
         <div className="flex flex-wrap items-baseline gap-2">
           <h1 className="text-4xl font-black tracking-tight sm:text-6xl">{title}</h1>
           {(lang === 'zh-CN' || lang === 'zh-TW') ? <Link className="btn btn-sm btn-outline ml-auto rounded-full" to="/$locale/PRO" params={{ locale: lang }} search={{ platform: undefined }}>
-            <i className="ri-gamepad-line" />{lang === 'zh-TW' ? '主題模式' : '主题模式'}
+            <i className="ri-gamepad-line" />{lang === 'zh-TW' ? '主機模式' : '主机模式'}
           </Link> : null}
           <span className="text-base font-medium text-base-content/65 sm:text-lg">
             {formatGameTotal(games.length + (showCoinChallenge ? 1 : 0), lang)}

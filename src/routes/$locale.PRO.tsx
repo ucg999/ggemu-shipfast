@@ -505,7 +505,7 @@ function ThemeMode() {
       <div className="kt-rotate-notice" role="status">
         <span aria-hidden="true">↻</span>
         <strong>{english ? 'Please rotate your phone' : lang === 'ja' ? 'スマートフォンを横向きにしてください' : lang === 'zh-TW' ? '請將手機旋轉為橫屏' : '请将手机旋转为横屏'}</strong>
-        <small>{english ? 'Theme mode is available in landscape.' : lang === 'ja' ? 'テーマモードは横画面で利用できます。' : lang === 'zh-TW' ? '主題模式僅支援橫屏操作' : '主题模式仅支持横屏操作'}</small>
+        <small>{english ? 'Console mode is available in landscape.' : lang === 'ja' ? 'コンソールモードは横画面で利用できます。' : lang === 'zh-TW' ? '主機模式僅支援橫屏操作' : '主机模式仅支持横屏操作'}</small>
       </div>
       <div className="kt-stage">
         <picture>
@@ -627,8 +627,8 @@ function ThemeMode() {
           <div className="kt-footer-actions">
             <button className="kt-check-in" disabled={dailyCheckIn.completed} onClick={checkIn} type="button">{dailyCheckIn.completed ? '已签到' : '签到'}</button>
             <Link to="/$locale/live" params={{ locale: lang }} hash="PRO" className="kt-watch"><span aria-hidden="true" className="live-watch-eye"><span className="live-watch-pupil" /></span><span>{getThemeFooterCopy(lang).watching}</span></Link>
-            <details className="kt-language"><summary>{lang === 'zh-CN' ? '简' : lang === 'zh-TW' ? '繁' : lang === 'en' ? '英' : '日'} ▴</summary><div>
-              {(['zh-CN', 'zh-TW'] as const).map(locale => <Link key={locale} to="/$locale/PRO" params={{ locale }} search={{ platform: undefined }}>{locale === 'zh-CN' ? '简' : '繁'}</Link>)}
+            <details className="kt-language"><summary>{lang === 'en' ? '英' : '中'} ▴</summary><div>
+              {(['zh-CN', 'en'] as const).map(locale => <Link key={locale} to="/$locale/PRO" params={{ locale }} search={{ platform: undefined }}>{locale === 'zh-CN' ? '中' : '英'}</Link>)}
             </div></details>
             <span className="kt-version">v1.1</span>
           </div>

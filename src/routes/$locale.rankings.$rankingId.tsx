@@ -98,7 +98,7 @@ function RankingGameCard({ game, index, lang }: { game: PublicGame; index: numbe
           {index + 1}
         </span>
         {game.platform ? (
-          <span className="absolute bottom-2 right-2 rounded bg-black/70 px-2 py-1 text-[10px] font-medium text-white">
+          <span className="absolute bottom-2 left-2 hidden max-w-[62%] truncate rounded bg-black/70 px-2 py-1 text-[10px] font-medium text-white lg:block">
             {getPlatformLabel(game.platform, lang)}
           </span>
         ) : null}

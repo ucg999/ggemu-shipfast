@@ -16,10 +16,8 @@ import { HomeSearchOverlay } from './search-overlay'
 import type { HomeTemplateProps } from './types'
 
 const localeOptions: Array<{ label: string; value: Locale }> = [
-  { label: '简', value: 'zh-CN' },
-  { label: '繁', value: 'zh-TW' },
+  { label: '中', value: 'zh-CN' },
   { label: '英', value: 'en' },
-  { label: '日', value: 'ja' },
 ]
 
 export function SidenavHomeTemplate(props: HomeTemplateProps) {
@@ -241,13 +239,7 @@ function HomeSidenav({
             >
               <i className="ri-global-line" />
               <span className="truncate">
-                {locale === 'zh-CN'
-                  ? '简'
-                  : locale === 'zh-TW'
-                    ? '繁'
-                    : locale === 'en'
-                      ? '英'
-                      : '日'}
+                {locale === 'en' ? '英' : '中'}
               </span>
             </summary>
             <ul

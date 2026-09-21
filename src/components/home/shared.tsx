@@ -367,6 +367,11 @@ export function SearchForm({
             </ul>
             <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
               <li><Link params={{ locale: lang }} to="/$locale/all-games">{getI18n(lang).layout.allGames}</Link></li>
+              <li>
+                <Link params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO">
+                  {lang === 'zh-CN' ? '所有平台' : lang === 'zh-TW' ? '所有平台' : lang === 'ja' ? 'すべてのプラットフォーム' : 'All Platforms'}
+                </Link>
+              </li>
               <li><Link params={{ locale: lang, rankingId: 'latest' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.latestGames}</Link></li>
               <li><Link params={{ locale: lang, rankingId: 'popular' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.mostPopularGames}</Link></li>
               <li><Link params={{ locale: lang, rankingId: 'weekly' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.weeklyPopularGames}</Link></li>
@@ -375,7 +380,7 @@ export function SearchForm({
           </div>
         </details>
         {(lang === 'zh-CN' || lang === 'zh-TW') ? <Link className="desktop-theme-mode-link flex h-9 items-center gap-1 whitespace-nowrap rounded-full border border-cyan-300/50 bg-cyan-400/15 px-3 text-sm text-white" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO">
-          <i className="ri-gamepad-line" />{lang === 'zh-TW' ? '主題模式' : '主题模式'}
+          <i className="ri-gamepad-line" />{lang === 'zh-TW' ? '主機模式' : '主机模式'}
         </Link> : null}
         <div className="tooltip tooltip-bottom" data-tip={getCoinModeCopy(lang).tooltip}>
           <Link
@@ -386,14 +391,8 @@ export function SearchForm({
             {getCoinModeCopy(lang).mode}
           </Link>
         </div>
-        <div className="tooltip tooltip-bottom" data-tip={lang === 'zh-TW' ? '一分鐘扣 5 個幣' : lang === 'en' ? 'Costs 5 coins per minute' : lang === 'ja' ? '1分につき5コイン消費' : '一分钟扣 5 个币'}>
+        <div className="tooltip tooltip-bottom" data-tip={lang === 'zh-TW' ? '前 5 分鐘免費試玩，之後每分鐘扣 1 個幣' : lang === 'en' ? 'First 5 minutes free, then 1 coin per minute' : lang === 'ja' ? '最初の5分間は無料、その後は1分につき1コイン消費' : '前5分钟免费试玩，之后每分钟扣1个币'}>
           <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'mahjong' }} to="/$locale/platform/$platformId">{lang === 'zh-TW' ? '街機麻將' : lang === 'en' ? 'Arcade Mahjong' : lang === 'ja' ? 'アーケード麻雀' : '街机麻将'}</Link>
-        </div>
-        <div className="tooltip tooltip-bottom" data-tip="PSP">
-          <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
-        </div>
-        <div className="tooltip tooltip-bottom" data-tip="Switch">
-          <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
         </div>
         <div className="flex h-9 min-w-40 flex-1 items-center rounded-full border border-rose-200 bg-rose-50 shadow-sm transition focus-within:border-rose-300 focus-within:bg-white lg:max-w-md">
           <label className="flex h-full min-w-0 flex-1 items-center gap-2 pl-3">
@@ -732,8 +731,14 @@ function GameCard({
         </span>
 
         {isFeaturedTile ? (
-          <span className="absolute bottom-2 left-2 rounded-full bg-yellow-400 px-2 py-0.5 text-[9px] font-semibold text-black lg:hidden">
+          <span className="absolute bottom-8 left-2 rounded-full bg-yellow-400 px-2 py-0.5 text-[9px] font-semibold text-black lg:hidden">
             {getI18n(lang).home.playNow}
+          </span>
+        ) : null}
+
+        {game.platform ? (
+          <span className="absolute bottom-2 left-2 hidden max-w-[62%] truncate rounded bg-black/70 px-2 py-1 text-[10px] font-medium text-white lg:block">
+            {getPlatformLabel(game.platform, lang)}
           </span>
         ) : null}
 

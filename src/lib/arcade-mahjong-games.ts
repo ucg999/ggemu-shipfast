@@ -11,9 +11,12 @@ export const ARCADE_MAHJONG_GAME_QUERIES = [
   '超级大满贯',
   '超级斗地主两副牌',
   '超级斗地主',
+  '双龙抢珠',
+  '天降神兵',
 ] as const
 
-export const ARCADE_MAHJONG_COINS_PER_MINUTE = 5
+export const ARCADE_MAHJONG_COINS_PER_MINUTE = 1
+export const ARCADE_MAHJONG_FREE_TRIAL_MINUTES = 5
 
 const ARCADE_MAHJONG_GAME_ALIASES = [
   ...ARCADE_MAHJONG_GAME_QUERIES,
@@ -22,6 +25,7 @@ const ARCADE_MAHJONG_GAME_ALIASES = [
   '電子基盤',
   '天開眼',
   '泰山闖天關2',
+  '雙龍搶珠',
 ].map(normalizeArcadeMahjongGameName)
 
 export function isArcadeMahjongGame(game: PublicGame) {

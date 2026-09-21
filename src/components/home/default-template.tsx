@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import type { MouseEvent } from 'react'
 
@@ -139,7 +139,7 @@ export function DefaultHomeTemplate(
   const orderedPlatforms = orderHomePlatforms(filterOptions.platforms)
   const mobileModeLabels = getMobileModeLabels(lang)
   const mobileModes = [
-    ...(lang === 'zh-CN' || lang === 'zh-TW' ? [{ label: lang === 'zh-TW' ? '主題模式' : '主题模式', to: '/$locale/PRO' as const }] : []),
+    ...(lang === 'zh-CN' || lang === 'zh-TW' ? [{ label: lang === 'zh-TW' ? '主機模式' : '主机模式', to: '/$locale/PRO' as const }] : []),
     { label: mobileModeLabels.coin, platformId: 'coin' },
     { label: mobileModeLabels.mahjong, platformId: 'mahjong' },
     { label: getOriginalGamesTitle(lang), to: '/$locale/original-games' as const },
@@ -150,22 +150,6 @@ export function DefaultHomeTemplate(
         <span>{lang === 'en' ? 'Rankings could not refresh.' : lang === 'ja' ? 'ランキングを更新できませんでした。' : lang === 'zh-TW' ? '榜單更新失敗，已保留原卡片。' : '榜单更新失败，已保留原卡片。'}</span>
         <button type="button" className="underline" onClick={() => setRankingRetry((value) => value + 1)}>{lang === 'en' ? 'Retry' : lang === 'ja' ? '再試行' : '重试'}</button>
       </div> : null}
-      <nav aria-label="PSP and Switch" className="grid w-full grid-cols-2 bg-blue-600 text-white lg:hidden">
-        <Link
-          className="flex h-9 items-center justify-center border-r border-white/25 text-sm font-medium transition hover:bg-blue-700"
-          params={{ locale: lang, platformId: 'psp' }}
-          to="/$locale/platform/$platformId"
-        >
-          PSP
-        </Link>
-        <Link
-          className="flex h-9 items-center justify-center text-sm font-medium transition hover:bg-blue-700"
-          params={{ locale: lang, platformId: 'switch' }}
-          to="/$locale/platform/$platformId"
-        >
-          Switch
-        </Link>
-      </nav>
       <nav
         aria-label={modeCopyLabel(lang)}
         className="mx-3 border-b border-base-300 bg-base-100 px-1 sm:mx-4 lg:hidden"
@@ -176,7 +160,7 @@ export function DefaultHomeTemplate(
               {mode.label}
             </Link>
           ) : (
-            <Link className="btn btn-ghost btn-xs w-full rounded-full border-0 px-2 text-xs font-normal text-base-content/75" key={mode.label} params={{ locale: lang, platformId: mode.platformId! }} title={mode.platformId === 'mahjong' ? (lang === 'zh-TW' ? '一分鐘扣 5 個幣' : lang === 'en' ? 'Costs 5 coins per minute' : lang === 'ja' ? '1分につき5コイン消費' : '一分钟扣 5 个币') : undefined} to="/$locale/platform/$platformId">
+            <Link className="btn btn-ghost btn-xs w-full rounded-full border-0 px-2 text-xs font-normal text-base-content/75" key={mode.label} params={{ locale: lang, platformId: mode.platformId! }} title={mode.platformId === 'mahjong' ? (lang === 'zh-TW' ? '前 5 分鐘免費試玩，之後每分鐘扣 1 個幣' : lang === 'en' ? 'First 5 minutes free, then 1 coin per minute' : lang === 'ja' ? '最初の5分間は無料、その後は1分につき1コイン消費' : '前5分钟免费试玩，之后每分钟扣1个币') : undefined} to="/$locale/platform/$platformId">
               {mode.label}
             </Link>
           ))}
@@ -187,7 +171,7 @@ export function DefaultHomeTemplate(
         <div className="desktop-home-hero-inner flex w-full flex-wrap items-start gap-8 px-4 py-6 sm:px-6 lg:px-8 xl:flex-nowrap">
           <div className="desktop-home-title w-fit">
             <p className="desktop-home-tagline">{getI18n(lang).layout.siteSlogan}</p>
-            <DesktopGameWordmark lang={lang} />
+            <DesktopGameWordmark lang={lang} platforms={orderedPlatforms.map((platform) => platform.name)} />
             <p className="desktop-home-game-caption">
               {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
             </p>
@@ -313,12 +297,23 @@ export function DefaultHomeTemplate(
   )
 }
 
-function DesktopGameWordmark({ lang }: { lang: HomeTemplateProps['lang'] }) {
+function DesktopGameWordmark({ lang, platforms }: { lang: HomeTemplateProps['lang']; platforms: string[] }) {
+  const navigate = useNavigate()
+  const openRandomPlatform = () => {
+    const candidates = platforms.filter((platform) => platform.trim().length > 0)
+    if (candidates.length === 0) {
+      void navigate({ params: { locale: lang }, search: { platform: undefined }, to: '/$locale/PRO' })
+      return
+    }
+    const platform = candidates[Math.floor(Math.random() * candidates.length)]
+    void navigate({ params: { locale: lang }, search: { platform }, to: '/$locale/PRO' })
+  }
+
   return (
     <h1 aria-label="G.A.M.E." className="rainbow-title hidden whitespace-nowrap text-[clamp(2rem,3.7vw,4rem)] font-bold leading-tight sm:flex">
-      <span>G</span><DesktopProDot lang={lang} />
-      <span>A</span><DesktopProDot lang={lang} />
-      <span>M</span><DesktopProDot lang={lang} />
+      <span>G</span><Link aria-label={lang === 'en' ? 'Open Arcade games' : '进入街机游戏页面'} className="desktop-home-title-dot desktop-home-title-dot-link" params={{ locale: lang }} search={{}} to="/$locale/arcade" />
+      <span>A</span><Link aria-label={lang === 'en' ? 'Open FC games' : '进入FC游戏页面'} className="desktop-home-title-dot desktop-home-title-dot-link" params={{ locale: lang, platformId: 'famicom' }} to="/$locale/platform/$platformId" />
+      <span>M</span><button aria-label={lang === 'en' ? 'Open a random game platform' : '随机进入一个游戏平台'} className="desktop-home-title-dot desktop-home-title-dot-link" onClick={openRandomPlatform} type="button" />
       <span>E</span><DesktopProDot lang={lang} />
     </h1>
   )
@@ -326,7 +321,7 @@ function DesktopGameWordmark({ lang }: { lang: HomeTemplateProps['lang'] }) {
 
 function DesktopProDot({ lang }: { lang: HomeTemplateProps['lang'] }) {
   if (lang !== 'zh-CN' && lang !== 'zh-TW') return <i className="desktop-home-title-dot" />
-  return <Link aria-label={lang === 'zh-TW' ? '進入主題模式' : '进入主题模式'} className="desktop-home-title-dot desktop-home-title-dot-link" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO" />
+  return <Link aria-label={lang === 'zh-TW' ? '進入主機模式' : '进入主机模式'} className="desktop-home-title-dot desktop-home-title-dot-link" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO" />
 }
 
 function DesktopBestTitle({ lang }: { lang: HomeTemplateProps['lang'] }) {
