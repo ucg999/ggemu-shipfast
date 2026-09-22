@@ -93,3 +93,40 @@
 .kt-download-list .kt-game-cover img,.kt-download-list .kt-game-cover video{object-fit:cover}
 @media(min-width:640px){.kt-game-list.kt-download-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}}
 @media(min-width:1024px){.kt-game-list.kt-download-list{max-width:none;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}}
+
+/* PSP library cards use their portrait box art and compact information layout. */
+.kt-game-list.kt-psp-download-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kt-psp-download-list .kt-game-cover{aspect-ratio:353/600;background:transparent}
+.kt-psp-download-list .kt-game-cover img,.kt-psp-download-list .kt-game-cover video{object-fit:contain}
+.kt-psp-download-card strong{padding:8px 8px 0;font-size:12px;line-height:16px}
+.kt-psp-download-card .kt-game-meta{padding:4px 8px 8px;font-size:8px;line-height:11px}
+@media(min-width:640px){
+  .kt-game-list.kt-psp-download-list{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .kt-psp-download-card strong{padding-top:6px;font-size:14px;line-height:18px}
+  .kt-psp-download-card .kt-game-meta{padding-top:2px;padding-bottom:6px;font-size:10px;line-height:13px}
+}
+@media(min-width:1024px){.kt-game-list.kt-psp-download-list{grid-template-columns:repeat(9,minmax(0,1fr));gap:10px}.kt-psp-download-card strong{padding:5px 6px 0;font-size:11px;line-height:14px}.kt-psp-download-card .kt-game-meta{padding:2px 6px 6px;font-size:8px;line-height:10px}}
+
+/* Keep the PRO download libraries in a normal document grid on phones.
+   The general landscape carousel uses two fixed-height rows, which can make
+   portrait PSP covers and Switch card captions overlap. */
+@media(max-width:1000px) and (orientation:landscape){
+  .kt-game-list.kt-download-list{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    grid-template-rows:none;
+    grid-auto-flow:row;
+    grid-auto-rows:max-content;
+    align-content:start;
+    align-items:start;
+    gap:8px;
+    overflow-x:hidden;
+    overflow-y:auto;
+  }
+  .kt-download-list .kt-game-row,
+  .kt-download-list .kt-game-select{width:100%;height:auto;min-height:0}
+  .kt-download-list .kt-game-cover{flex:none;min-height:0}
+  .kt-game-list.kt-psp-download-list{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .kt-psp-download-card strong{padding:4px 5px 0;font-size:8px;line-height:10px}
+  .kt-psp-download-card .kt-game-meta{padding:2px 5px 5px;font-size:6px;line-height:8px}
+}

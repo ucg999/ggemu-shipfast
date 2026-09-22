@@ -5,7 +5,7 @@ export const PSP_LIBRARY_GAMES: (SwitchLibraryGame & { boxCover?: string; detail
   title: '幻想传说：换装迷宫X',
   videoUrl: 'https://v.douyin.com/4IklCoDfZXs/',
   cover: '/psp-library/narikiri-dungeon-x/main.webp',
-  boxCover: '/psp-library/narikiri-dungeon-x/box.webp',
+  boxCover: '/psp-library/narikiri-dungeon-x/cover-new.png',
   genre: '角色扮演、动作',
   publisher: 'Bandai Namco Games',
   releaseDate: '2010-08-05',

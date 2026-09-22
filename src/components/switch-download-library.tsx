@@ -179,18 +179,27 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
           ) : null}
           {searchQuery ? <button className="btn btn-ghost btn-sm mb-3" onClick={() => { setSearchQuery(''); setDraftQuery(''); setPage(1) }}>{copy.clear}: {searchQuery} ×</button> : null}
           {games.length === 0 ? <p className="py-12 text-center text-base-content/60">{copy.empty}</p> : null}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
-            {visibleGames.map((game) => (
+          <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${platform === 'psp' ? 'sm:grid-cols-4 lg:grid-cols-7' : 'sm:grid-cols-3 lg:grid-cols-5'}`}>
+            {visibleGames.map((game) => {
+              const pspCover = platform === 'psp' && 'boxCover' in game ? game.boxCover : undefined
+              return (
               <Link className="group overflow-hidden rounded-xl bg-base-100" key={game.id} params={{ gameId: game.id, locale: lang }} to={platform === 'psp' ? '/$locale/platform/psp/$gameId' : '/$locale/platform/switch/$gameId'}>
-                <SwitchLibraryImage clickable className="aspect-[616/353] w-full transition group-hover:scale-[1.02]" src={game.cover} alt={game.title} />
-                <div className="p-2.5 sm:py-4">
-                  <h2 className="truncate text-sm font-semibold text-base-content sm:text-lg" title={game.title}>{game.title}</h2>
-                  <div className="mt-1.5 overflow-hidden text-ellipsis whitespace-nowrap text-[9px] text-base-content/55 sm:mt-2 sm:text-xs">
+                <SwitchLibraryImage
+                  clickable
+                  className={`${platform === 'psp' ? 'aspect-[353/600] [&_img]:object-contain' : 'aspect-[616/353]'} w-full transition group-hover:scale-[1.02]`}
+                  src={pspCover ?? game.cover}
+                  alt={`${game.title}${platform === 'psp' ? ' 封面' : ''}`}
+                  transparent={platform === 'psp'}
+                />
+                <div className={platform === 'psp' ? 'p-2 sm:py-2.5' : 'p-2.5 sm:py-4'}>
+                  <h2 className={`truncate font-semibold text-base-content ${platform === 'psp' ? 'text-xs sm:text-sm' : 'text-sm sm:text-lg'}`} title={game.title}>{game.title}</h2>
+                  <div className={`overflow-hidden text-ellipsis whitespace-nowrap text-base-content/55 ${platform === 'psp' ? 'mt-1 text-[8px] sm:text-[10px]' : 'mt-1.5 text-[9px] sm:mt-2 sm:text-xs'}`}>
                     <span>{platformName}</span>{' · '}<span>{getCardLanguage('cardLanguage' in game ? String(game.cardLanguage ?? game.language) : game.language)}</span>{' · '}<span>{game.genre.split('、')[0]}</span>{' · '}<time>{game.releaseDate}</time>
                   </div>
                 </div>
               </Link>
-            ))}
+              )
+            })}
           </div>
           {pageCount > 1 ? <nav className="mt-8 flex items-center justify-center gap-4" aria-label={copy.pagination}>
             <button className="btn btn-sm" disabled={page === 1} onClick={() => setPage(page - 1)}>{copy.previous}</button>
