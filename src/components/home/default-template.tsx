@@ -160,7 +160,7 @@ export function DefaultHomeTemplate(
               {mode.label}
             </Link>
           ) : (
-            <Link className="btn btn-ghost btn-xs w-full rounded-full border-0 px-2 text-xs font-normal text-base-content/75" key={mode.label} params={{ locale: lang, platformId: mode.platformId! }} title={mode.platformId === 'mahjong' ? (lang === 'zh-TW' ? '前 5 分鐘免費試玩，之後每分鐘扣 1 個幣' : lang === 'en' ? 'First 5 minutes free, then 1 coin per minute' : lang === 'ja' ? '最初の5分間は無料、その後は1分につき1コイン消費' : '前5分钟免费试玩，之后每分钟扣1个币') : undefined} to="/$locale/platform/$platformId">
+            <Link className="btn btn-ghost btn-xs w-full rounded-full border-0 px-2 text-xs font-normal text-base-content/75" key={mode.label} params={{ locale: lang, platformId: mode.platformId! }} title={mode.platformId === 'mahjong' ? (lang === 'zh-TW' ? '每分鐘扣 1 個幣，無免費試玩' : lang === 'en' ? 'Costs 1 coin per minute with no free trial' : lang === 'ja' ? '無料体験なし、1分につき1コイン消費' : '每分钟扣1个币，无免费试玩') : undefined} to="/$locale/platform/$platformId">
               {mode.label}
             </Link>
           ))}

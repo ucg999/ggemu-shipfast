@@ -157,10 +157,10 @@ function getModeCopy(locale: Locale, modeId: PlatformModeId | undefined) {
 }
 
 function getMahjongModeCopy(locale: Locale) {
-  if (locale === 'zh-TW') return { description: '精選經典街機麻將與電子基盤遊戲。前 5 分鐘可免費試玩，之後每分鐘扣除 1 枚金幣；金幣用完後遊戲會自動退出，本模式不顯示載入小遊戲。', seoTitle: '街機麻將遊戲｜懷舊遊戲廳', subtitle: '明星三缺一、幸運滿貫、雙龍搶珠、天降神兵等經典作品；前 5 分鐘免費，之後每分鐘扣 1 個幣。', title: '街機麻將' }
-  if (locale === 'en') return { description: 'A curated collection of classic arcade mahjong and table games. The first 5 minutes are free, then play costs 1 coin per minute. The game closes automatically when your balance reaches zero, and loading mini-games are disabled.', seoTitle: 'Arcade Mahjong | Retro Game Hall', subtitle: 'Classic arcade mahjong and table games. First 5 minutes free, then 1 coin per minute.', title: 'Arcade Mahjong' }
-  if (locale === 'ja') return { description: 'クラシックなアーケード麻雀・テーブルゲームのセレクション。最初の5分間は無料、その後は1分につき1コイン消費します。残高がなくなると自動終了し、読み込み中のミニゲームは表示されません。', seoTitle: 'アーケード麻雀｜懐かしゲームセンター', subtitle: '最初の5分間は無料、その後は1分につき1コイン消費します。', title: 'アーケード麻雀' }
-  return { description: '精选经典街机麻将与电子基盘游戏。前5分钟可免费试玩，之后每分钟扣除1个金币；金币用完后游戏会自动退出，本模式不显示加载小游戏。', seoTitle: '街机麻将游戏｜怀旧游戏厅', subtitle: '明星三缺一、幸运满贯、双龙抢珠、天降神兵等经典作品；前5分钟免费，之后每分钟扣1个币。', title: '街机麻将' }
+  if (locale === 'zh-TW') return { description: '精選經典街機麻將與電子基盤遊戲。遊玩每分鐘扣除 1 枚金幣，不提供免費試玩；金幣用完後遊戲會自動退出，本模式不顯示載入小遊戲。', seoTitle: '街機麻將遊戲｜懷舊遊戲廳', subtitle: '明星三缺一、幸運滿貫、雙龍搶珠、天降神兵等經典作品；每分鐘扣 1 個幣，無免費試玩。', title: '街機麻將' }
+  if (locale === 'en') return { description: 'A curated collection of classic arcade mahjong and table games. Play costs 1 coin per minute with no free trial. The game closes automatically when your balance reaches zero, and loading mini-games are disabled.', seoTitle: 'Arcade Mahjong | Retro Game Hall', subtitle: 'Classic arcade mahjong and table games. Costs 1 coin per minute with no free trial.', title: 'Arcade Mahjong' }
+  if (locale === 'ja') return { description: 'クラシックなアーケード麻雀・テーブルゲームのセレクション。無料体験はなく、1分につき1コイン消費します。残高がなくなると自動終了し、読み込み中のミニゲームは表示されません。', seoTitle: 'アーケード麻雀｜懐かしゲームセンター', subtitle: '無料体験なし、1分につき1コイン消費します。', title: 'アーケード麻雀' }
+  return { description: '精选经典街机麻将与电子基盘游戏。游玩每分钟扣除1个金币，不提供免费试玩；金币用完后游戏会自动退出，本模式不显示加载小游戏。', seoTitle: '街机麻将游戏｜怀旧游戏厅', subtitle: '明星三缺一、幸运满贯、双龙抢珠、天降神兵等经典作品；每分钟扣1个币，无免费试玩。', title: '街机麻将' }
 }
 
 function getSwitchLibraryCopy(locale: Locale) {

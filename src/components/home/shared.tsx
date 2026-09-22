@@ -391,7 +391,7 @@ export function SearchForm({
             {getCoinModeCopy(lang).mode}
           </Link>
         </div>
-        <div className="tooltip tooltip-bottom" data-tip={lang === 'zh-TW' ? '前 5 分鐘免費試玩，之後每分鐘扣 1 個幣' : lang === 'en' ? 'First 5 minutes free, then 1 coin per minute' : lang === 'ja' ? '最初の5分間は無料、その後は1分につき1コイン消費' : '前5分钟免费试玩，之后每分钟扣1个币'}>
+        <div className="tooltip tooltip-bottom" data-tip={lang === 'zh-TW' ? '每分鐘扣 1 個幣，無免費試玩' : lang === 'en' ? 'Costs 1 coin per minute with no free trial' : lang === 'ja' ? '無料体験なし、1分につき1コイン消費' : '每分钟扣1个币，无免费试玩'}>
           <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'mahjong' }} to="/$locale/platform/$platformId">{lang === 'zh-TW' ? '街機麻將' : lang === 'en' ? 'Arcade Mahjong' : lang === 'ja' ? 'アーケード麻雀' : '街机麻将'}</Link>
         </div>
         <div className="flex h-9 min-w-40 flex-1 items-center rounded-full border border-rose-200 bg-rose-50 shadow-sm transition focus-within:border-rose-300 focus-within:bg-white lg:max-w-md">

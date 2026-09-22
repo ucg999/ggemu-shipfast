@@ -955,10 +955,10 @@ function getGameModeLabels(locale: Locale) {
 }
 
 function getMahjongChargeTip(locale: Locale) {
-  if (locale === 'zh-TW') return '前 5 分鐘免費試玩，之後每分鐘扣 1 個幣'
-  if (locale === 'en') return 'First 5 minutes free, then 1 coin per minute'
-  if (locale === 'ja') return '最初の5分間は無料、その後は1分につき1コイン消費'
-  return '前5分钟免费试玩，之后每分钟扣1个币'
+  if (locale === 'zh-TW') return '每分鐘扣 1 個幣，無免費試玩'
+  if (locale === 'en') return 'Costs 1 coin per minute with no free trial'
+  if (locale === 'ja') return '無料体験なし、1分につき1コイン消費'
+  return '游玩每分钟扣1个币，无免费试玩'
 }
 
 export function SiteFooter({ locale }: { locale: Locale }) {
