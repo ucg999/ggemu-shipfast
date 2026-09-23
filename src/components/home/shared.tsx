@@ -368,7 +368,7 @@ export function SearchForm({
             <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
               <li><Link params={{ locale: lang }} to="/$locale/all-games">{getI18n(lang).layout.allGames}</Link></li>
               <li>
-                <Link params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO">
+                <Link params={{ locale: lang }} search={{ platform: undefined }} title={lang === 'en' ? 'A beautiful visual guide to classic game consoles' : lang === 'zh-TW' ? '各種遊戲機的精美圖鑑' : '各种游戏机的精美图鉴'} to="/$locale/PRO">
                   {lang === 'zh-CN' ? '所有平台' : lang === 'zh-TW' ? '所有平台' : lang === 'ja' ? 'すべてのプラットフォーム' : 'All Platforms'}
                 </Link>
               </li>
@@ -379,7 +379,7 @@ export function SearchForm({
             </ul>
           </div>
         </details>
-        {(lang === 'zh-CN' || lang === 'zh-TW' || lang === 'en') ? <Link className="desktop-theme-mode-link flex h-9 items-center gap-1 whitespace-nowrap rounded-full border border-cyan-300/50 bg-cyan-400/15 px-3 text-sm text-white" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO">
+        {(lang === 'zh-CN' || lang === 'zh-TW' || lang === 'en') ? <Link className="desktop-theme-mode-link tooltip tooltip-bottom flex h-9 items-center gap-1 whitespace-nowrap rounded-full border border-cyan-300/50 bg-cyan-400/15 px-3 text-sm text-white" data-tip={lang === 'en' ? 'A beautiful visual guide to classic game consoles' : lang === 'zh-TW' ? '各種遊戲機的精美圖鑑' : '各种游戏机的精美图鉴'} params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO">
           <i className="ri-gamepad-line" />{lang === 'en' ? 'Console Mode' : lang === 'zh-TW' ? '主機模式' : '主机模式'}
         </Link> : null}
         <div className="tooltip tooltip-bottom" data-tip={getCoinModeCopy(lang).tooltip}>

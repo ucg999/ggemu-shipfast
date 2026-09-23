@@ -870,7 +870,7 @@ function DesktopUnifiedHeaderNavigation({
           <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
               <li><Link params={{ locale }} to="/$locale/all-games">{layout.allGames}</Link></li>
               <li>
-                <Link params={{ locale }} search={{ platform: undefined }} to="/$locale/PRO">
+                <Link className="tooltip tooltip-bottom" data-tip={locale === 'en' ? 'A beautiful visual guide to classic game consoles' : locale === 'zh-TW' ? '各種遊戲機的精美圖鑑' : '各种游戏机的精美图鉴'} params={{ locale }} search={{ platform: undefined }} to="/$locale/PRO">
                   {locale === 'zh-CN' ? '所有平台' : locale === 'zh-TW' ? '所有平台' : locale === 'ja' ? 'すべてのプラットフォーム' : 'All Platforms'}
                 </Link>
               </li>
@@ -882,7 +882,7 @@ function DesktopUnifiedHeaderNavigation({
         </div>
       </details>
       {(locale === 'zh-CN' || locale === 'zh-TW' || locale === 'en') ? (
-        <Link className={linkClass} params={{ locale }} search={{ platform: undefined }} to="/$locale/PRO">
+        <Link className={`${linkClass} tooltip tooltip-bottom`} data-tip={locale === 'en' ? 'A beautiful visual guide to classic game consoles' : locale === 'zh-TW' ? '各種遊戲機的精美圖鑑' : '各种游戏机的精美图鉴'} params={{ locale }} search={{ platform: undefined }} to="/$locale/PRO">
           <i className="ri-gamepad-line mr-1" />{locale === 'en' ? 'Console Mode' : locale === 'zh-TW' ? '主機模式' : '主机模式'}
         </Link>
       ) : null}

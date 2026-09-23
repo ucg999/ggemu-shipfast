@@ -1,5 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { MouseEvent } from 'react'
 
 import {
@@ -20,6 +20,7 @@ import { confirmResourceDownload, unlockPaidResource } from '#/lib/paid-resource
 import { useServerFn } from '@tanstack/react-start'
 import { readHomeCards, saveHomeCards } from '#/lib/home-card-cache'
 import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
+import { preloadProModeAssets, scheduleInitialProModePreload } from '#/lib/pro-asset-preload'
 
 export function DefaultHomeTemplate(
   props: HomeTemplateProps & { onCoinsEarned?: (amount: number) => void },
@@ -35,6 +36,9 @@ export function DefaultHomeTemplate(
     onCoinsEarned,
     t,
   } = props
+  const visibleMostPlayedGames = useMemo(() => mostPlayedGames.filter(game => !isHiddenHomeGame(game)), [mostPlayedGames])
+  const visibleLatestGames = useMemo(() => latestGames.filter(game => !isHiddenHomeGame(game)), [latestGames])
+  const visibleHomeGames = useMemo(() => props.games.filter(game => !isHiddenHomeGame(game)), [props.games])
   const [showMobileRecent, setShowMobileRecent] = useState(false)
   const [rankingRows, setRankingRows] = useState<{ weekly: PublicGame[]; rising: PublicGame[] }>({ weekly: [], rising: [] })
   const loadRanking = useServerFn(searchGames)
@@ -42,13 +46,17 @@ export function DefaultHomeTemplate(
   const [rankingFailed, setRankingFailed] = useState(false)
   useEffect(() => {
     let cancelled = false
-    setRankingRows(readHomeCards<{ weekly: PublicGame[]; rising: PublicGame[] }>(`${lang}:rankings`) ?? { weekly: [], rising: [] })
+    const cachedRankings = readHomeCards<{ weekly: PublicGame[]; rising: PublicGame[] }>(`${lang}:rankings`)
+    setRankingRows(cachedRankings ? {
+      weekly: cachedRankings.weekly.filter(game => !isHiddenHomeGame(game)),
+      rising: cachedRankings.rising.filter(game => !isHiddenHomeGame(game)),
+    } : { weekly: [], rising: [] })
     setRankingFailed(false)
     for (const sort of ['weekly', 'rising'] as const) {
       void loadRanking({ data: { locale: lang, query: '', sort, page: 1, limit: 20 } })
         .then((result) => {
           if (!cancelled && result.games.length > 0) setRankingRows((current) => {
-            const next = { ...current, [sort]: result.games }
+            const next = { ...current, [sort]: result.games.filter(game => !isHiddenHomeGame(game)) }
             saveHomeCards(`${lang}:rankings`, next)
             return next
           })
@@ -58,10 +66,10 @@ export function DefaultHomeTemplate(
     return () => { cancelled = true }
   }, [lang, loadRanking, rankingRetry])
   const [randomVideoGames, setRandomVideoGames] = useState(() =>
-    mostPlayedGames.slice(0, 6),
+    visibleMostPlayedGames.slice(0, 6),
   )
   const [dailyBestGames, setDailyBestGames] = useState(() =>
-    mostPlayedGames.slice(0, 3),
+    visibleMostPlayedGames.slice(0, 3),
   )
   const [homeMahjongGames, setHomeMahjongGames] = useState<PublicGame[]>(() =>
     readHomeCards<PublicGame[]>(`${lang}:home-mahjong`) ?? [],
@@ -77,15 +85,30 @@ export function DefaultHomeTemplate(
   const recentPlayedGames = useRecentPlayedGames()
 
   useEffect(() => {
-    if (mostPlayedGames.length > 0) {
-      const dailyGames = selectDailyVideoGames(mostPlayedGames, 6)
-      setRandomVideoGames(selectRefreshVideoForMiddle(dailyGames, mostPlayedGames, lang))
+    const cancelPreload = scheduleInitialProModePreload()
+    const preloadOnIntent = (event: Event) => {
+      const target = event.target
+      if (target instanceof Element && target.closest('a[href*="/PRO"]')) preloadProModeAssets('expanded')
     }
-  }, [lang, mostPlayedGames])
+    document.addEventListener('pointerover', preloadOnIntent, { passive: true })
+    document.addEventListener('focusin', preloadOnIntent)
+    return () => {
+      cancelPreload()
+      document.removeEventListener('pointerover', preloadOnIntent)
+      document.removeEventListener('focusin', preloadOnIntent)
+    }
+  }, [])
 
   useEffect(() => {
-    if (mostPlayedGames.length > 0) setDailyBestGames(selectDailyBestGames(mostPlayedGames, 3))
-  }, [mostPlayedGames])
+    if (visibleMostPlayedGames.length > 0) {
+      const dailyGames = selectDailyVideoGames(visibleMostPlayedGames, 6)
+      setRandomVideoGames(selectRefreshVideoForMiddle(dailyGames, visibleMostPlayedGames, lang))
+    }
+  }, [lang, visibleMostPlayedGames])
+
+  useEffect(() => {
+    if (visibleMostPlayedGames.length > 0) setDailyBestGames(selectDailyBestGames(visibleMostPlayedGames, 3))
+  }, [visibleMostPlayedGames])
 
   useEffect(() => {
     let cancelled = false
@@ -128,11 +151,12 @@ export function DefaultHomeTemplate(
     setIsRandomGameLoading(true)
 
     try {
-      const randomGame = await loadRandomGame({ data: {} })
-      const gameId = randomGame?.url_slug?.trim() || randomGame?._id?.trim()
-
-      if (gameId) {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const randomGame = await loadRandomGame({ data: {} })
+        const gameId = randomGame?.url_slug?.trim() || randomGame?._id?.trim()
+        if (!gameId) continue
         const game = await loadGameDetail({ data: { id: gameId } })
+        if (isHiddenHomeGame(game)) continue
         setRandomPopupGame(game)
         setRandomPopupMultiplier(pickWeightedRandomCoinMultiplier())
         const progress = completeDailyChallenge()
@@ -142,6 +166,7 @@ export function DefaultHomeTemplate(
         setChallengeCompleted(true)
         setChallengeReward(progress.streak * 10)
         setStreakDays(progress.streak)
+        break
       }
     } finally {
       setIsRandomGameLoading(false)
@@ -155,7 +180,7 @@ export function DefaultHomeTemplate(
     window.addEventListener('home-random-game-request', openRandomGame)
     return () => window.removeEventListener('home-random-game-request', openRandomGame)
   })
-  const mobileRecentGames = recentPlayedGames.map((game) => ({
+  const mobileRecentGames = recentPlayedGames.filter(game => !isHiddenHomeGame(game)).map((game) => ({
     _id: game.id,
     game_cover: game.cover,
     name: game.name,
@@ -187,7 +212,7 @@ export function DefaultHomeTemplate(
       >
         <div className="grid grid-cols-2 items-center gap-x-2 gap-y-1 py-1.5">
           {mobileModes.map((mode) => mode.to ? (
-            <Link className="btn btn-ghost btn-xs w-full rounded-full border-0 px-2 text-xs font-normal text-base-content/75" key={mode.label} params={{ locale: lang }} search={{ platform: undefined }} to={mode.to}>
+            <Link className="btn btn-ghost btn-xs w-full rounded-full border-0 px-2 text-xs font-normal text-base-content/75" key={mode.label} params={{ locale: lang }} search={{ platform: undefined }} title={mode.to === '/$locale/PRO' ? (lang === 'en' ? 'A beautiful visual guide to classic game consoles' : lang === 'zh-TW' ? '各種遊戲機的精美圖鑑' : '各种游戏机的精美图鉴') : undefined} to={mode.to}>
               {mode.label}
             </Link>
           ) : (
@@ -279,7 +304,7 @@ export function DefaultHomeTemplate(
           onRandomGame={showOneRandomGame}
           streakDays={streakDays}
         />
-        <HomeLatestGamesRow games={latestGames} lang={lang} />
+        <HomeLatestGamesRow games={visibleLatestGames} lang={lang} />
         <HomeLatestGamesRow games={rankingRows.weekly} lang={lang} title={t.weeklyPopularGames} pinnedCoin />
         <HomeLatestGamesRow games={rankingRows.rising} lang={lang} title={t.fastestGrowingGames} />
       </div>
@@ -322,7 +347,7 @@ export function DefaultHomeTemplate(
       <div className="lg:hidden">
         <GamesSection
           {...props}
-          games={showMobileRecent ? mobileRecentGames : props.games}
+          games={showMobileRecent ? mobileRecentGames : visibleHomeGames}
           gridClassName="game-mosaic-grid grid grid-flow-dense grid-cols-12 gap-2 sm:grid-cols-12"
           mobileItemLimit={36}
           page={showMobileRecent ? 1 : props.page}
@@ -372,7 +397,7 @@ function DesktopGameWordmark({ lang, platforms }: { lang: HomeTemplateProps['lan
 
 function DesktopProDot({ lang }: { lang: HomeTemplateProps['lang'] }) {
   if (lang === 'ja') return <i className="desktop-home-title-dot" />
-  return <Link aria-label={lang === 'en' ? 'Open Console Mode' : lang === 'zh-TW' ? '進入主機模式' : '进入主机模式'} className="desktop-home-title-dot desktop-home-title-dot-link" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO" />
+  return <Link aria-label={lang === 'en' ? 'Thrilling' : lang === 'zh-TW' ? '刺激' : '刺激'} className="desktop-home-title-dot desktop-home-title-dot-link desktop-pro-dot" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO"><span aria-hidden="true">{lang === 'en' ? 'Thrilling' : '刺激'}</span></Link>
 }
 
 function DesktopBestTitle({ lang }: { lang: HomeTemplateProps['lang'] }) {
@@ -391,6 +416,13 @@ const HOME_MAHJONG_GAMES = [
 
 function normalizeHomeGameName(value: string | undefined) {
   return (value ?? '').normalize('NFKC').toLowerCase().replaceAll(/\s+/g, '')
+}
+
+function isHiddenHomeGame(game: { _id?: string; id?: string; name?: string; url_slug?: string }) {
+  const identity = [game.name, game.url_slug, game._id, game.id]
+    .map(normalizeHomeGameName)
+    .join('|')
+  return identity.includes('美女天蚕变') || identity.includes('wownewfantasia')
 }
 
 const DAILY_CHALLENGE_STORAGE_KEY = 'game-adventure-daily-challenge'

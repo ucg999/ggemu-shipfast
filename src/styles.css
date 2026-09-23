@@ -321,6 +321,35 @@ body {
     transform: translateY(-.02em) scale(1.5);
   }
 
+  .awwwards-home .desktop-pro-dot {
+    position: relative;
+  }
+
+  .awwwards-home .desktop-pro-dot > span {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    z-index: 30;
+    display: none;
+    width: max-content;
+    padding: 5px 9px;
+    border-radius: 5px;
+    background: #111;
+    color: #fff;
+    font-family: inherit;
+    font-size: 8px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: .14em;
+    white-space: nowrap;
+    transform: translateX(-50%);
+  }
+
+  .awwwards-home .desktop-pro-dot:hover > span,
+  .awwwards-home .desktop-pro-dot:focus-visible > span {
+    display: block;
+  }
+
   .awwwards-home .desktop-daily-video-grid {
     display: grid;
     width: min(1600px, 96vw);
