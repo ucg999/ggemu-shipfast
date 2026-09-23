@@ -63,6 +63,9 @@ export function DefaultHomeTemplate(
   const [dailyBestGames, setDailyBestGames] = useState(() =>
     mostPlayedGames.slice(0, 3),
   )
+  const [homeMahjongGames, setHomeMahjongGames] = useState<PublicGame[]>(() =>
+    readHomeCards<PublicGame[]>(`${lang}:home-mahjong`) ?? [],
+  )
   const [randomPopupGame, setRandomPopupGame] = useState<PublicGame | null>(null)
   const [randomPopupMultiplier, setRandomPopupMultiplier] = useState(2)
   const [isRandomGameLoading, setIsRandomGameLoading] = useState(false)
@@ -83,6 +86,34 @@ export function DefaultHomeTemplate(
   useEffect(() => {
     if (mostPlayedGames.length > 0) setDailyBestGames(selectDailyBestGames(mostPlayedGames, 3))
   }, [mostPlayedGames])
+
+  useEffect(() => {
+    let cancelled = false
+    const cached = readHomeCards<PublicGame[]>(`${lang}:home-mahjong`)
+    if (cached?.length) setHomeMahjongGames(cached)
+
+    void Promise.all(HOME_MAHJONG_GAMES.map(item => loadRanking({
+      data: { locale: lang, query: item.query, sort: 'popular', page: 1, limit: 10 },
+    }))).then((results) => {
+      if (cancelled) return
+      const games = results.flatMap((result, index) => {
+        const aliases = HOME_MAHJONG_GAMES[index].aliases.map(normalizeHomeGameName)
+        const exact = result.games.find(game => aliases.includes(normalizeHomeGameName(game.name)))
+        const fuzzy = result.games.find(game => {
+          const name = normalizeHomeGameName(game.name)
+          return Boolean(name) && aliases.some(alias => name.includes(alias) || alias.includes(name))
+        })
+        return exact ? [exact] : fuzzy ? [fuzzy] : []
+      })
+      const unique = Array.from(new Map(games.map(game => [getGameId(game), game])).values()).filter(game => getGameId(game))
+      if (unique.length) {
+        setHomeMahjongGames(unique)
+        saveHomeCards(`${lang}:home-mahjong`, unique)
+      }
+    }).catch(() => {})
+
+    return () => { cancelled = true }
+  }, [lang, loadRanking])
 
   useEffect(() => {
     const progress = readDailyChallengeProgress()
@@ -139,7 +170,7 @@ export function DefaultHomeTemplate(
   const orderedPlatforms = orderHomePlatforms(filterOptions.platforms)
   const mobileModeLabels = getMobileModeLabels(lang)
   const mobileModes = [
-    ...(lang === 'zh-CN' || lang === 'zh-TW' ? [{ label: lang === 'zh-TW' ? '主機模式' : '主机模式', to: '/$locale/PRO' as const }] : []),
+    ...(lang === 'zh-CN' || lang === 'zh-TW' || lang === 'en' ? [{ label: lang === 'en' ? 'Console Mode' : lang === 'zh-TW' ? '主機模式' : '主机模式', to: '/$locale/PRO' as const }] : []),
     { label: mobileModeLabels.coin, platformId: 'coin' },
     { label: mobileModeLabels.mahjong, platformId: 'mahjong' },
     { label: getOriginalGamesTitle(lang), to: '/$locale/original-games' as const },
@@ -160,7 +191,7 @@ export function DefaultHomeTemplate(
               {mode.label}
             </Link>
           ) : (
-            <Link className="btn btn-ghost btn-xs w-full rounded-full border-0 px-2 text-xs font-normal text-base-content/75" key={mode.label} params={{ locale: lang, platformId: mode.platformId! }} title={mode.platformId === 'mahjong' ? (lang === 'zh-TW' ? '每分鐘扣 1 個幣，無免費試玩' : lang === 'en' ? 'Costs 1 coin per minute with no free trial' : lang === 'ja' ? '無料体験なし、1分につき1コイン消費' : '每分钟扣1个币，无免费试玩') : undefined} to="/$locale/platform/$platformId">
+            <Link className="btn btn-ghost btn-xs w-full rounded-full border-0 px-2 text-xs font-normal text-base-content/75" key={mode.label} params={{ locale: lang, platformId: mode.platformId! }} title={mode.platformId === 'mahjong' ? (lang === 'zh-TW' ? '經典的麻將遊戲' : lang === 'en' ? 'Classic mahjong games' : lang === 'ja' ? 'クラシック麻雀ゲーム' : '经典的麻将游戏') : undefined} to="/$locale/platform/$platformId">
               {mode.label}
             </Link>
           ))}
@@ -212,6 +243,26 @@ export function DefaultHomeTemplate(
                   )
                 })}
               </div>
+              <section className="desktop-home-mahjong-section">
+                <p className="desktop-home-tagline">{getI18n(lang).layout.siteSlogan}</p>
+                <h2 className="desktop-home-best-title">
+                  {lang === 'zh-TW' ? '街機麻將' : lang === 'en' ? 'Arcade Mahjong' : lang === 'ja' ? 'アーケード麻雀' : '街机麻将'}
+                </h2>
+                <p className="desktop-home-game-caption">
+                  {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
+                </p>
+                <div className="desktop-home-best-grid">
+                  {homeMahjongGames.map((game) => {
+                    const gameId = getGameId(game)
+                    return (
+                      <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} key={`mahjong-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
+                        <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} />
+                        <GameCardPreviewVideo src={game.game_video} />
+                      </Link>
+                    )
+                  })}
+                </div>
+              </section>
             </section>
           </div>
         </div>
@@ -320,8 +371,8 @@ function DesktopGameWordmark({ lang, platforms }: { lang: HomeTemplateProps['lan
 }
 
 function DesktopProDot({ lang }: { lang: HomeTemplateProps['lang'] }) {
-  if (lang !== 'zh-CN' && lang !== 'zh-TW') return <i className="desktop-home-title-dot" />
-  return <Link aria-label={lang === 'zh-TW' ? '進入主機模式' : '进入主机模式'} className="desktop-home-title-dot desktop-home-title-dot-link" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO" />
+  if (lang === 'ja') return <i className="desktop-home-title-dot" />
+  return <Link aria-label={lang === 'en' ? 'Open Console Mode' : lang === 'zh-TW' ? '進入主機模式' : '进入主机模式'} className="desktop-home-title-dot desktop-home-title-dot-link" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO" />
 }
 
 function DesktopBestTitle({ lang }: { lang: HomeTemplateProps['lang'] }) {
@@ -330,6 +381,16 @@ function DesktopBestTitle({ lang }: { lang: HomeTemplateProps['lang'] }) {
       {lang === 'zh-TW' ? '今日最佳' : lang === 'en' ? "Today's Best" : lang === 'ja' ? '今日のベスト' : '今日最佳'}
     </h2>
   )
+}
+
+const HOME_MAHJONG_GAMES = [
+  { query: '超级大满贯', aliases: ['超级大满贯2', '超级大满贯'] },
+  { query: '泰山闯天关2', aliases: ['泰山闯天关2', '泰山闯天关'] },
+  { query: '电子基盘', aliases: ['电子基盘'] },
+] as const
+
+function normalizeHomeGameName(value: string | undefined) {
+  return (value ?? '').normalize('NFKC').toLowerCase().replaceAll(/\s+/g, '')
 }
 
 const DAILY_CHALLENGE_STORAGE_KEY = 'game-adventure-daily-challenge'

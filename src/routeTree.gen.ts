@@ -33,6 +33,7 @@ import { Route as LocaleRandomRouteImport } from './routes/$locale.random'
 import { Route as LocaleSearchRouteImport } from './routes/$locale.search'
 import { Route as LocaleTermsOfServiceRouteImport } from './routes/$locale.terms-of-service'
 import { Route as LocaleThemeModeRouteImport } from './routes/$locale.theme-mode'
+import { Route as ApiLocaleSuggestionRouteImport } from './routes/api/locale-suggestion'
 import { Route as ApiShareImageRouteImport } from './routes/api/share-image'
 import { Route as GamesGameIdRouteImport } from './routes/games/$gameId'
 import { Route as LocaleBlogBlogIdRouteImport } from './routes/$locale.blog.$blogId'
@@ -168,6 +169,11 @@ const LocaleThemeModeRoute = LocaleThemeModeRouteImport.update({
   path: '/theme-mode',
   getParentRoute: () => LocaleRoute,
 } as any)
+const ApiLocaleSuggestionRoute = ApiLocaleSuggestionRouteImport.update({
+  id: '/api/locale-suggestion',
+  path: '/api/locale-suggestion',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiShareImageRoute = ApiShareImageRouteImport.update({
   id: '/api/share-image',
   path: '/api/share-image',
@@ -267,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/$locale/theme-mode': typeof LocaleThemeModeRoute
+  '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale/': typeof LocaleIndexRoute
@@ -306,6 +313,7 @@ export interface FileRoutesByTo {
   '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/$locale/theme-mode': typeof LocaleThemeModeRoute
+  '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale': typeof LocaleIndexRoute
@@ -347,6 +355,7 @@ export interface FileRoutesById {
   '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/$locale/theme-mode': typeof LocaleThemeModeRoute
+  '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale/': typeof LocaleIndexRoute
@@ -389,6 +398,7 @@ export interface FileRouteTypes {
     | '/$locale/search'
     | '/$locale/terms-of-service'
     | '/$locale/theme-mode'
+    | '/api/locale-suggestion'
     | '/api/share-image'
     | '/games/$gameId'
     | '/$locale/'
@@ -428,6 +438,7 @@ export interface FileRouteTypes {
     | '/$locale/search'
     | '/$locale/terms-of-service'
     | '/$locale/theme-mode'
+    | '/api/locale-suggestion'
     | '/api/share-image'
     | '/games/$gameId'
     | '/$locale'
@@ -468,6 +479,7 @@ export interface FileRouteTypes {
     | '/$locale/search'
     | '/$locale/terms-of-service'
     | '/$locale/theme-mode'
+    | '/api/locale-suggestion'
     | '/api/share-image'
     | '/games/$gameId'
     | '/$locale/'
@@ -493,6 +505,7 @@ export interface RootRouteChildren {
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   XRoute: typeof XRoute
+  ApiLocaleSuggestionRoute: typeof ApiLocaleSuggestionRoute
   ApiShareImageRoute: typeof ApiShareImageRoute
   GamesGameIdRoute: typeof GamesGameIdRouteWithChildren
   UsernameArticleStatusidRoute: typeof UsernameArticleStatusidRoute
@@ -668,6 +681,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$locale/theme-mode'
       preLoaderRoute: typeof LocaleThemeModeRouteImport
       parentRoute: typeof LocaleRoute
+    }
+    '/api/locale-suggestion': {
+      id: '/api/locale-suggestion'
+      path: '/api/locale-suggestion'
+      fullPath: '/api/locale-suggestion'
+      preLoaderRoute: typeof ApiLocaleSuggestionRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/share-image': {
       id: '/api/share-image'
@@ -870,6 +890,7 @@ const rootRouteChildren: RootRouteChildren = {
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   XRoute: XRoute,
+  ApiLocaleSuggestionRoute: ApiLocaleSuggestionRoute,
   ApiShareImageRoute: ApiShareImageRoute,
   GamesGameIdRoute: GamesGameIdRouteWithChildren,
   UsernameArticleStatusidRoute: UsernameArticleStatusidRoute,

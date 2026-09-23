@@ -1,4 +1,4 @@
-import { Link, createFileRoute, redirect } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { getThemePlatforms, searchGames } from '#/lib/ggemu'
@@ -37,12 +37,6 @@ export const Route = createFileRoute('/$locale/PRO')({
       ? search.platform.trim()
       : undefined,
   }),
-  beforeLoad: ({ params }) => {
-    const locale = normalizeLocale(params.locale)
-    if (locale === 'en' || locale === 'ja') {
-      throw redirect({ params: { locale }, replace: true, to: '/$locale' })
-    }
-  },
   loader: () => getThemePlatforms(),
   staleTime: 5 * 60 * 1000,
   preloadStaleTime: 5 * 60 * 1000,
@@ -191,8 +185,8 @@ function ThemeMode() {
     setPreferredMode(next)
     setThemeModePreference(next)
     setNotice(next
-      ? (lang === 'zh-TW' ? '已設為預設模式' : '已设为默认模式')
-      : (lang === 'zh-TW' ? '已取消預設模式' : '已取消默认模式'))
+      ? (english ? 'Set as default mode' : lang === 'zh-TW' ? '已設為預設模式' : '已设为默认模式')
+      : (english ? 'Default mode disabled' : lang === 'zh-TW' ? '已取消預設模式' : '已取消默认模式'))
   }
   const asset = platform ? getThemeAsset(platform) : null
   const activeGame = result?.games[inLibrary ? gameIndex : showcaseIndex]
@@ -514,15 +508,15 @@ function ThemeMode() {
         </picture>
         <div className="kt-shade" />
         <header className="kt-header">
-          <button className={preferredMode ? 'is-liked' : ''} onClick={togglePreferredMode}>{preferredMode ? (lang === 'zh-TW' ? '已設預設' : '已设默认') : (lang === 'zh-TW' ? '預設模式' : '默认模式')} ♥</button>
+          <button className={preferredMode ? 'is-liked' : ''} onClick={togglePreferredMode}>{preferredMode ? (english ? 'Default' : lang === 'zh-TW' ? '已設預設' : '已设默认') : (english ? 'Set default' : lang === 'zh-TW' ? '預設模式' : '默认模式')} ♥</button>
           <button onClick={toggleFullscreen}>{fullscreen ? (english ? 'Exit fullscreen' : '退出全屏') : (english ? 'Fullscreen' : '全屏')} ⛶</button>
         </header>
 
         {!inLibrary ? <>
-          <div className="kt-platform-marquee" aria-label={asset.description || platform.name}>
+          <div className="kt-platform-marquee" aria-label={english ? platformLabel : asset.description || platform.name}>
             <div>
-              <span>{asset.description || platform.name}</span>
-              <span aria-hidden="true">{asset.description || platform.name}</span>
+              <span>{english ? platformLabel : asset.description || platform.name}</span>
+              <span aria-hidden="true">{english ? platformLabel : asset.description || platform.name}</span>
             </div>
           </div>
           <section className="kt-description" aria-live="polite">
@@ -571,7 +565,7 @@ function ThemeMode() {
               href={switchPlatform ? 'https://www.kdocs.cn/l/cs8H4NUI4lC4' : 'https://www.kdocs.cn/l/coH3Z1VLgop3'}
               rel="noreferrer"
               target="_blank"
-            >{switchPlatform ? (lang === 'zh-TW' ? 'Switch全遊戲檔案' : 'Switch全游戏档案') : (lang === 'zh-TW' ? 'PSP全遊戲檔案' : 'PSP全游戏档案')}</a> : null}
+            >{switchPlatform ? (english ? 'Complete Switch Game Archive' : lang === 'zh-TW' ? 'Switch全遊戲檔案' : 'Switch全游戏档案') : (english ? 'Complete PSP Game Archive' : lang === 'zh-TW' ? 'PSP全遊戲檔案' : 'PSP全游戏档案')}</a> : null}
             {(switchPlatform || pspPlatform) ? <div className="kt-library-filters">
               {getThemeLibraryFilters(lang).map(filter => <button
                 aria-pressed={filter.field === librarySearchField || filter.field === librarySort}
@@ -590,9 +584,9 @@ function ThemeMode() {
                 type="button"
               >{filter.label}{filter.field === librarySort && filter.field !== 'random' ? <span aria-hidden="true">{librarySortReverse ? '↑' : '↓'}</span> : null}</button>)}
             </div> : null}
-            <input aria-label="搜索游戏" placeholder={getThemeLibrarySearchPlaceholder(lang, librarySearchField)} value={query} onChange={event => { setQuery(event.target.value); setPage(1) }} />
+            <input aria-label={english ? 'Search games' : '搜索游戏'} placeholder={getThemeLibrarySearchPlaceholder(lang, librarySearchField)} value={query} onChange={event => { setQuery(event.target.value); setPage(1) }} />
           </div>
-          <div className={`kt-game-list${switchPlatform || pspPlatform ? ' kt-download-list' : ''}${pspPlatform ? ' kt-psp-download-list' : ''}`} aria-label="游戏列表" aria-busy={loading}>
+          <div className={`kt-game-list${switchPlatform || pspPlatform ? ' kt-download-list' : ''}${pspPlatform ? ' kt-psp-download-list' : ''}`} aria-label={english ? 'Game list' : '游戏列表'} aria-busy={loading}>
             {loading ? <p role="status">{english ? 'Loading games…' : '正在加载游戏…'}</p> : error ? <p role="alert">{english ? 'Could not load games.' : '游戏加载失败。'} <button onClick={() => setRetry(v => v + 1)}>{english ? 'Retry' : '重试'}</button></p> : !result?.games.length ? <p>{english ? 'No games found' : '没有找到游戏'}</p> : result.games.map((game, index) => {
               const id = game.url_slug || game._id
               const favorite = favoriteGames.some(item => (item.url_slug || item._id) === id)
@@ -609,7 +603,7 @@ function ThemeMode() {
                   <strong>{game.name}</strong>
                   {(switchPlatform || pspPlatform) ? <small className="kt-game-meta">{formatThemeLibraryCardMeta(game)}</small> : null}
                 </a>
-                {allGames && <button className={`kt-favorite ${favorite ? 'is-favorite' : ''}`} aria-label={favorite ? '取消收藏' : '收藏游戏'} aria-pressed={favorite} onClick={() => toggleFavorite(game)}>{favorite ? '♥' : '♡'}</button>}
+                {allGames && <button className={`kt-favorite ${favorite ? 'is-favorite' : ''}`} aria-label={english ? (favorite ? 'Remove from favorites' : 'Add to favorites') : (favorite ? '取消收藏' : '收藏游戏')} aria-pressed={favorite} onClick={() => toggleFavorite(game)}>{favorite ? '♥' : '♡'}</button>}
               </div>
             })}
           </div>
@@ -623,9 +617,9 @@ function ThemeMode() {
             <Link className="kt-footer-shortcut" to="/$locale/platform/$platformId" params={{ locale: lang, platformId: 'coin' }} hash="PRO">{getThemeFooterCopy(lang).coinMode}</Link>
             <Link className="kt-footer-shortcut" to="/$locale/original-games" params={{ locale: lang }} hash="PRO">{getOriginalGamesTitle(lang)}</Link>
           </div>
-          <span className="kt-footer-help"><strong>游戏交流Q群：62119057</strong><small>喜欢V群的（比较活跃）：扫主页的码-需要手拉</small></span>
+          <span className="kt-footer-help"><strong>{english ? 'Game community QQ group: 62119057' : '游戏交流Q群：62119057'}</strong><small>{english ? 'For the active WeChat group, scan the QR code on the home page and request an invite.' : '喜欢V群的（比较活跃）：扫主页的码-需要手拉'}</small></span>
           <div className="kt-footer-actions">
-            <button className="kt-check-in" disabled={dailyCheckIn.completed} onClick={checkIn} type="button">{dailyCheckIn.completed ? '已签到' : '签到'}</button>
+            <button className="kt-check-in" disabled={dailyCheckIn.completed} onClick={checkIn} type="button">{dailyCheckIn.completed ? (english ? 'Checked in' : '已签到') : (english ? 'Check in' : '签到')}</button>
             <Link to="/$locale/live" params={{ locale: lang }} hash="PRO" className="kt-watch"><span aria-hidden="true" className="live-watch-eye"><span className="live-watch-pupil" /></span><span>{getThemeFooterCopy(lang).watching}</span></Link>
             <details className="kt-language"><summary>{lang === 'en' ? '英' : '中'} ▴</summary><div>
               {(['zh-CN', 'en'] as const).map(locale => <Link key={locale} to="/$locale/PRO" params={{ locale }} search={{ platform: undefined }}>{locale === 'zh-CN' ? '中' : '英'}</Link>)}
@@ -681,11 +675,13 @@ function getSwitchPlatformNotice(lang: ReturnType<typeof normalizeLocale>) {
 }
 
 function getThemeLibraryFilters(lang: ReturnType<typeof normalizeLocale>) {
+  if (lang === 'en') return [{ field: 'random' as const, label: 'Random' }, { field: 'popular' as const, label: 'Popular' }, { field: 'updatedAt' as const, label: 'Updated' }, { field: 'genre' as const, label: 'Genre' }, { field: 'publisher' as const, label: 'Publisher' }, { field: 'releaseDate' as const, label: 'Release Date' }]
   if (lang === 'zh-TW') return [{ field: 'random' as const, label: '隨機' }, { field: 'popular' as const, label: '最受歡迎' }, { field: 'updatedAt' as const, label: '更新時間' }, { field: 'genre' as const, label: '遊戲類型' }, { field: 'publisher' as const, label: '遊戲廠商' }, { field: 'releaseDate' as const, label: '發行日期' }]
   return [{ field: 'random' as const, label: '随机' }, { field: 'popular' as const, label: '最受欢迎' }, { field: 'updatedAt' as const, label: '更新时间' }, { field: 'genre' as const, label: '游戏类型' }, { field: 'publisher' as const, label: '游戏厂商' }, { field: 'releaseDate' as const, label: '发行日期' }]
 }
 
 function getThemeLibrarySearchPlaceholder(lang: ReturnType<typeof normalizeLocale>, field: 'all' | 'genre' | 'publisher') {
+  if (lang === 'en') return field === 'genre' ? 'Search genres' : field === 'publisher' ? 'Search publishers' : 'Search games'
   if (lang === 'zh-TW') return field === 'genre' ? '搜尋遊戲類型' : field === 'publisher' ? '搜尋遊戲廠商' : '搜尋遊戲'
   return field === 'genre' ? '搜索游戏类型' : field === 'publisher' ? '搜索游戏厂商' : '搜索游戏'
 }

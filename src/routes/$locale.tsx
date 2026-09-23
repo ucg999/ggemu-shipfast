@@ -7,8 +7,9 @@ import { addCoinBalance, readCoinBalance } from '#/lib/coin-wallet'
 import type { GameSearchSort } from '#/lib/ggemu'
 import { type SiteTemplate, normalizeSiteTemplate } from '#/lib/site-config'
 
-const INNER_PAGE_COIN_COOLDOWN_MS = 5 * 60 * 1000
-const INNER_PAGE_COIN_CHANCE = 0.35
+const INNER_PAGE_COIN_COOLDOWN_MS = 30 * 60 * 1000
+const INNER_PAGE_COIN_OPPORTUNITY_KEY = 'inner-page-coin-opportunity'
+const ENGLISH_SUGGESTION_DISMISSED_KEY = 'ucg999-english-suggestion-dismissed'
 
 type HomeSearch = {
   category?: string
@@ -151,8 +152,37 @@ function LocaleLayout() {
     travelX: number
     travelY: number
   } | null>(null)
+  const [showEnglishSuggestion, setShowEnglishSuggestion] = useState(false)
   const lastRewardPathRef = useRef<string | null>(null)
   const innerRewardTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (lang !== 'zh-CN' || window.localStorage.getItem(ENGLISH_SUGGESTION_DISMISSED_KEY) === '1') return
+    let cancelled = false
+    void fetch('/api/locale-suggestion', { cache: 'no-store' })
+      .then(response => response.ok ? response.json() as Promise<{ suggestEnglish?: boolean }> : null)
+      .then(result => { if (!cancelled && result?.suggestEnglish) setShowEnglishSuggestion(true) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [lang])
+
+  function dismissEnglishSuggestion() {
+    window.localStorage.setItem(ENGLISH_SUGGESTION_DISMISSED_KEY, '1')
+    setShowEnglishSuggestion(false)
+  }
+
+  function switchToEnglish() {
+    window.localStorage.setItem(ENGLISH_SUGGESTION_DISMISSED_KEY, '1')
+    window.location.assign(`${window.location.pathname.replace(/^\/zh-CN(?=\/|$)/, '/en')}${window.location.search}${window.location.hash}`)
+  }
+
+  const englishSuggestion = showEnglishSuggestion ? (
+    <aside className="fixed bottom-4 left-1/2 z-[200] flex w-[min(92vw,34rem)] -translate-x-1/2 items-center gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3 text-black shadow-2xl" role="status">
+      <p className="min-w-0 flex-1 text-sm"><strong className="block">English version available</strong><span className="text-black/65">An English version is available for international visitors.</span></p>
+      <button className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white" onClick={switchToEnglish} type="button">English</button>
+      <button aria-label="继续使用中文" className="px-2 py-2 text-sm text-black/55" onClick={dismissEnglishSuggestion} type="button">中文</button>
+    </aside>
+  ) : null
 
   useEffect(() => {
     const rememberSource = (event: MouseEvent) => {
@@ -170,12 +200,10 @@ function LocaleLayout() {
     setInnerPageCoinFlight(null)
     setInnerPageReward(null)
 
-    const opportunityKey = `inner-page-coin-opportunity:${pathname}`
-    const lastOpportunity = Number(window.localStorage.getItem(opportunityKey)) || 0
+    const lastOpportunity = Number(window.localStorage.getItem(INNER_PAGE_COIN_OPPORTUNITY_KEY)) || 0
     const now = Date.now()
     if (now - lastOpportunity < INNER_PAGE_COIN_COOLDOWN_MS) return
-    window.localStorage.setItem(opportunityKey, String(now))
-    if (Math.random() >= INNER_PAGE_COIN_CHANCE) return
+    window.localStorage.setItem(INNER_PAGE_COIN_OPPORTUNITY_KEY, String(now))
 
     const minimumLeft = window.innerWidth >= 1024
       ? Math.min(28, (240 / window.innerWidth) * 100)
@@ -219,7 +247,7 @@ function LocaleLayout() {
   }
 
 
-  if (pathname.replace(/\/$/, '') === `/${locale}` || pathname.replace(/\/$/, '') === `/${locale}/PRO` || pathname.replace(/\/$/, '') === `/${locale}/theme-mode`) return <Outlet />
+  if (pathname.replace(/\/$/, '') === `/${locale}` || pathname.replace(/\/$/, '') === `/${locale}/PRO` || pathname.replace(/\/$/, '') === `/${locale}/theme-mode`) return <><Outlet />{englishSuggestion}</>
     return (
       <>
         <Outlet />
@@ -230,6 +258,7 @@ function LocaleLayout() {
         />
         <FlyingCollectedCoin flight={innerPageCoinFlight} />
         <CoinRewardPopup feedback={innerPageReward} />
+        {englishSuggestion}
       </>
     )
 }

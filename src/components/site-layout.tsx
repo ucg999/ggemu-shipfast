@@ -881,9 +881,9 @@ function DesktopUnifiedHeaderNavigation({
           </ul>
         </div>
       </details>
-      {(locale === 'zh-CN' || locale === 'zh-TW') ? (
+      {(locale === 'zh-CN' || locale === 'zh-TW' || locale === 'en') ? (
         <Link className={linkClass} params={{ locale }} search={{ platform: undefined }} to="/$locale/PRO">
-          <i className="ri-gamepad-line mr-1" />{locale === 'zh-TW' ? '主機模式' : '主机模式'}
+          <i className="ri-gamepad-line mr-1" />{locale === 'en' ? 'Console Mode' : locale === 'zh-TW' ? '主機模式' : '主机模式'}
         </Link>
       ) : null}
       <Link className={linkClass} params={{ locale, platformId: 'coin' }} to="/$locale/platform/$platformId">{getGameModeLabels(locale).coin}</Link>
@@ -955,10 +955,10 @@ function getGameModeLabels(locale: Locale) {
 }
 
 function getMahjongChargeTip(locale: Locale) {
-  if (locale === 'zh-TW') return '每分鐘扣 1 個幣，無免費試玩'
-  if (locale === 'en') return 'Costs 1 coin per minute with no free trial'
-  if (locale === 'ja') return '無料体験なし、1分につき1コイン消費'
-  return '游玩每分钟扣1个币，无免费试玩'
+  if (locale === 'zh-TW') return '經典的麻將遊戲'
+  if (locale === 'en') return 'Classic mahjong games'
+  if (locale === 'ja') return 'クラシック麻雀ゲーム'
+  return '经典的麻将游戏'
 }
 
 export function SiteFooter({ locale }: { locale: Locale }) {

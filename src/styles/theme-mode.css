@@ -96,10 +96,17 @@
 
 /* PSP library cards use their portrait box art and compact information layout. */
 .kt-game-list.kt-psp-download-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kt-psp-download-list .kt-game-row{overflow:visible;background:transparent;box-shadow:none}
+.kt-psp-download-list .kt-game-row:hover,.kt-psp-download-list .kt-game-row.is-selected{transform:none;border-color:transparent}
+.kt-game-select.kt-psp-download-card{background:transparent}
 .kt-psp-download-list .kt-game-cover{aspect-ratio:353/600;background:transparent}
 .kt-psp-download-list .kt-game-cover img,.kt-psp-download-list .kt-game-cover video{object-fit:contain}
-.kt-psp-download-card strong{padding:8px 8px 0;font-size:12px;line-height:16px}
-.kt-psp-download-card .kt-game-meta{padding:4px 8px 8px;font-size:8px;line-height:11px}
+.kt-psp-download-card .kt-game-cover{position:relative;isolation:isolate;overflow:visible;border-radius:8px;background:transparent;transition:transform .18s ease}
+.kt-psp-download-card .kt-game-cover img,.kt-psp-download-card .kt-game-cover video{border-radius:inherit}
+.kt-psp-download-card .kt-game-cover::after{position:absolute;z-index:-1;right:-6%;bottom:-7px;left:-6%;height:15px;content:"";background:linear-gradient(to bottom,#000e,#0000);clip-path:polygon(30% 0,70% 0,100% 100%,0 100%);filter:blur(3px);transform:perspective(70px) rotateX(48deg);transform-origin:top center;pointer-events:none}
+.kt-psp-download-list .kt-game-row:hover .kt-game-cover,.kt-psp-download-list .kt-game-row.is-selected .kt-game-cover{transform:translateY(-1px)}
+.kt-psp-download-card strong{margin-top:7px;border-radius:7px 7px 0 0;background:#fff;padding:8px 8px 0;font-size:12px;line-height:16px}
+.kt-psp-download-card .kt-game-meta{border-radius:0 0 7px 7px;background:#fff;padding:4px 8px 8px;font-size:8px;line-height:11px}
 @media(min-width:640px){
   .kt-game-list.kt-psp-download-list{grid-template-columns:repeat(4,minmax(0,1fr))}
   .kt-psp-download-card strong{padding-top:6px;font-size:14px;line-height:18px}

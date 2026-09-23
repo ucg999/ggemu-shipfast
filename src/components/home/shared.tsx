@@ -379,8 +379,8 @@ export function SearchForm({
             </ul>
           </div>
         </details>
-        {(lang === 'zh-CN' || lang === 'zh-TW') ? <Link className="desktop-theme-mode-link flex h-9 items-center gap-1 whitespace-nowrap rounded-full border border-cyan-300/50 bg-cyan-400/15 px-3 text-sm text-white" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO">
-          <i className="ri-gamepad-line" />{lang === 'zh-TW' ? '主機模式' : '主机模式'}
+        {(lang === 'zh-CN' || lang === 'zh-TW' || lang === 'en') ? <Link className="desktop-theme-mode-link flex h-9 items-center gap-1 whitespace-nowrap rounded-full border border-cyan-300/50 bg-cyan-400/15 px-3 text-sm text-white" params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO">
+          <i className="ri-gamepad-line" />{lang === 'en' ? 'Console Mode' : lang === 'zh-TW' ? '主機模式' : '主机模式'}
         </Link> : null}
         <div className="tooltip tooltip-bottom" data-tip={getCoinModeCopy(lang).tooltip}>
           <Link
@@ -391,7 +391,7 @@ export function SearchForm({
             {getCoinModeCopy(lang).mode}
           </Link>
         </div>
-        <div className="tooltip tooltip-bottom" data-tip={lang === 'zh-TW' ? '每分鐘扣 1 個幣，無免費試玩' : lang === 'en' ? 'Costs 1 coin per minute with no free trial' : lang === 'ja' ? '無料体験なし、1分につき1コイン消費' : '每分钟扣1个币，无免费试玩'}>
+        <div className="tooltip tooltip-bottom" data-tip={lang === 'zh-TW' ? '經典的麻將遊戲' : lang === 'en' ? 'Classic mahjong games' : lang === 'ja' ? 'クラシック麻雀ゲーム' : '经典的麻将游戏'}>
           <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'mahjong' }} to="/$locale/platform/$platformId">{lang === 'zh-TW' ? '街機麻將' : lang === 'en' ? 'Arcade Mahjong' : lang === 'ja' ? 'アーケード麻雀' : '街机麻将'}</Link>
         </div>
         <div className="flex h-9 min-w-40 flex-1 items-center rounded-full border border-rose-200 bg-rose-50 shadow-sm transition focus-within:border-rose-300 focus-within:bg-white lg:max-w-md">

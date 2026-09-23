@@ -77,7 +77,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
   ]
   return (
     <SiteLayout locale={lang} hideFooter brandAddon={
-      <nav className="ml-1 flex items-center gap-1" aria-label="游戏库切换">
+      <nav className="ml-1 flex items-center gap-1" aria-label={lang === 'en' ? 'Choose game library' : '游戏库切换'}>
         {(['psp', 'switch'] as const).map((libraryPlatform) => (
           <Link
             key={libraryPlatform}
@@ -97,7 +97,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
             <div className="flex items-baseline gap-2">
               <h1 className="text-3xl font-bold text-base-content">{copy.title}</h1>
               <span className="text-xs font-normal text-base-content/55">{copy.gameCount(library.length)}</span>
-              {(lang === 'zh-CN' || lang === 'zh-TW') ? (
+              {(lang === 'zh-CN' || lang === 'zh-TW' || lang === 'en') ? (
                 <a
                   className="ml-2 whitespace-nowrap text-sm font-medium text-error hover:underline"
                   href={platform === 'psp' ? 'https://www.kdocs.cn/l/coH3Z1VLgop3' : 'https://www.kdocs.cn/l/cs8H4NUI4lC4'}
@@ -105,8 +105,8 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                   target="_blank"
                 >
                   {platform === 'psp'
-                    ? (lang === 'zh-TW' ? 'PSP全遊戲檔案' : 'PSP全游戏档案')
-                    : (lang === 'zh-TW' ? 'Switch全遊戲檔案' : 'Switch全游戏档案')}
+                    ? (lang === 'en' ? 'PSP Complete Game Archive' : lang === 'zh-TW' ? 'PSP全遊戲檔案' : 'PSP全游戏档案')
+                    : (lang === 'en' ? 'Switch Complete Game Archive' : lang === 'zh-TW' ? 'Switch全遊戲檔案' : 'Switch全游戏档案')}
                 </a>
               ) : null}
             </div>
@@ -164,7 +164,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                 autoFocus
                 className="h-8 min-w-0 flex-1 appearance-none border-0 bg-transparent px-2 text-sm text-white shadow-none outline-none placeholder:text-white/70 focus:outline-none"
                 type="search"
-                aria-label={draftField ? `${copy.search} · ${copy[draftField]}` : '输入游戏名称、关键词'}
+                aria-label={draftField ? `${copy.search} · ${copy[draftField]}` : lang === 'en' ? 'Enter a game title or keyword' : '输入游戏名称、关键词'}
                 value={draftQuery}
                 onChange={(event) => setDraftQuery(event.target.value)}
                 onKeyDown={(event) => {
@@ -172,7 +172,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                     event.preventDefault()
                   }
                 }}
-                placeholder={draftField ? `${copy.search} · ${copy[draftField]}` : '输入游戏名称、关键词'}
+                placeholder={draftField ? `${copy.search} · ${copy[draftField]}` : lang === 'en' ? 'Enter a game title or keyword' : '输入游戏名称、关键词'}
               />
               <button className="h-8 shrink-0 border-0 bg-transparent px-2 text-sm text-white shadow-none" type="submit">{copy.confirm}</button>
             </form>
@@ -183,18 +183,18 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
             {visibleGames.map((game) => {
               const pspCover = platform === 'psp' && 'boxCover' in game ? game.boxCover : undefined
               return (
-              <Link className="group overflow-hidden rounded-xl bg-base-100" key={game.id} params={{ gameId: game.id, locale: lang }} to={platform === 'psp' ? '/$locale/platform/psp/$gameId' : '/$locale/platform/switch/$gameId'}>
+              <Link className={`group ${platform === 'psp' ? 'psp-library-card' : 'overflow-hidden rounded-xl bg-base-100'}`} key={game.id} params={{ gameId: game.id, locale: lang }} to={platform === 'psp' ? '/$locale/platform/psp/$gameId' : '/$locale/platform/switch/$gameId'}>
                 <SwitchLibraryImage
                   clickable
-                  className={`${platform === 'psp' ? 'aspect-[353/600] [&_img]:object-contain' : 'aspect-[616/353]'} w-full transition group-hover:scale-[1.02]`}
+                  className={`${platform === 'psp' ? 'psp-library-cover aspect-[353/600] [&_img]:object-contain' : 'aspect-[616/353] transition group-hover:scale-[1.02]'} w-full`}
                   src={pspCover ?? game.cover}
                   alt={`${game.title}${platform === 'psp' ? ' 封面' : ''}`}
                   transparent={platform === 'psp'}
                 />
-                <div className={platform === 'psp' ? 'p-2 sm:py-2.5' : 'p-2.5 sm:py-4'}>
+                <div className={platform === 'psp' ? 'psp-library-info bg-base-100 p-2 sm:py-2.5' : 'p-2.5 sm:py-4'}>
                   <h2 className={`truncate font-semibold text-base-content ${platform === 'psp' ? 'text-xs sm:text-sm' : 'text-sm sm:text-lg'}`} title={game.title}>{game.title}</h2>
                   <div className={`overflow-hidden text-ellipsis whitespace-nowrap text-base-content/55 ${platform === 'psp' ? 'mt-1 text-[8px] sm:text-[10px]' : 'mt-1.5 text-[9px] sm:mt-2 sm:text-xs'}`}>
-                    <span>{platformName}</span>{' · '}<span>{getCardLanguage('cardLanguage' in game ? String(game.cardLanguage ?? game.language) : game.language)}</span>{' · '}<span>{game.genre.split('、')[0]}</span>{' · '}<time>{game.releaseDate}</time>
+                    <span>{platformName}</span>{' · '}<span>{getCardLanguage('cardLanguage' in game ? String(game.cardLanguage ?? game.language) : game.language, lang)}</span>{' · '}<span>{game.genre.split('、')[0]}</span>{' · '}<time>{game.releaseDate}</time>
                   </div>
                 </div>
               </Link>
@@ -212,8 +212,12 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
   )
 }
 
-function getCardLanguage(language: string) {
+function getCardLanguage(language: string, lang: Locale) {
   const first = language.split(/[、，,\/；;]/)[0].trim()
+  if (lang === 'en') {
+    const englishNames: Record<string, string> = { 中: 'Chinese', 日: 'Japanese', 英: 'English', 法: 'French', 德: 'German', 西: 'Spanish', 韩: 'Korean', 俄: 'Russian', 意: 'Italian', 葡: 'Portuguese' }
+    return englishNames[first] ?? first
+  }
   const names: Record<string, string> = { 中: '中文', 日: '日文', 英: '英文', 法: '法文', 德: '德文', 西: '西班牙文', 韩: '韩文', 俄: '俄文', 意: '意大利文', 葡: '葡萄牙文' }
   return names[first] ?? first
 }

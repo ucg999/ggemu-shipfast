@@ -131,8 +131,8 @@ export function PlatformModeContent({
       <section className="bg-base-100 px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-baseline gap-2">
           <h1 className="text-4xl font-black tracking-tight sm:text-6xl">{title}</h1>
-          {(lang === 'zh-CN' || lang === 'zh-TW') ? <Link className="btn btn-sm btn-outline ml-auto rounded-full" to="/$locale/PRO" params={{ locale: lang }} search={{ platform: undefined }}>
-            <i className="ri-gamepad-line" />{lang === 'zh-TW' ? '主機模式' : '主机模式'}
+          {(lang === 'zh-CN' || lang === 'zh-TW' || lang === 'en') ? <Link className="btn btn-sm btn-outline ml-auto rounded-full" to="/$locale/PRO" params={{ locale: lang }} search={{ platform: undefined }}>
+            <i className="ri-gamepad-line" />{lang === 'en' ? 'Console Mode' : lang === 'zh-TW' ? '主機模式' : '主机模式'}
           </Link> : null}
           <span className="text-base font-medium text-base-content/65 sm:text-lg">
             {formatGameTotal(games.length + (showCoinChallenge ? 1 : 0), lang)}

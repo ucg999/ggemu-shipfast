@@ -238,6 +238,11 @@ export const enHomeFaqs = {
     'Learn how to play online, find games, filter by platform, and contact us about content issues.',
   items: [
     {
+      question: 'How can I earn coins?',
+      answer:
+        'You can earn coins from daily check-ins, the daily challenge, playing standard games, watching other players, and collecting coins that appear on pages. The moving coin on the home page is always worth 1 coin. Inner-page coins award a random 1–10 coins and appear site-wide once every 30 minutes. Standard gameplay settles rewards every 5 minutes, with a maximum of 100 coins per session. Your check-in streak and rank multiply coins earned from playing and watching only; they do not multiply collected page coins. Arcade Mahjong is a spending mode that costs 1 coin per minute and does not award gameplay coins.',
+    },
+    {
       question: 'Can I play these retro games online?',
       answer:
         'Yes. Open a game detail page and click play to start the game directly in your browser, with no emulator setup required.',

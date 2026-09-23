@@ -9,7 +9,6 @@ import { siteConfig } from '#/lib/site-config'
 import { useCurrentSiteTheme } from '#/lib/use-site-theme'
 import { calculateGameCoinAward } from '#/lib/game-session-coins'
 import { ARCADE_MAHJONG_COINS_PER_MINUTE, ARCADE_MAHJONG_FREE_TRIAL_MINUTES, isArcadeMahjongGame } from '#/lib/arcade-mahjong-games'
-import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
 import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
 import {
   addCoinReward,
@@ -95,7 +94,6 @@ function LocalizedPlayGamePage() {
   const labels = useMemo(() => getRecommendationLabels(lang), [lang])
   const playerRef = useRef<HTMLElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const globalCoins = useGlobalCoinBalance()
   const fullscreenLabel = lang === 'en' ? (isFullscreen ? 'Exit fullscreen' : 'Fullscreen')
     : lang === 'ja' ? (isFullscreen ? '全画面を終了' : '全画面')
     : lang === 'zh-TW' ? (isFullscreen ? '退出全螢幕' : '全螢幕')
@@ -361,11 +359,6 @@ function LocalizedPlayGamePage() {
         {fullscreenLabel}
       </button>
       </div>
-      {isMahjongCoinChargeGame ? (
-        <div className="fixed bottom-2 right-2 z-50 sm:bottom-3 sm:right-3">
-          <HomeCoinBag balance={globalCoins.balance} lang={lang} onOpen={globalCoins.showBalance} />
-        </div>
-      ) : null}
       <p
         aria-live="polite"
         className="game-loading-notice pointer-events-none absolute left-1/2 top-12 z-20 w-[min(90%,42rem)] -translate-x-1/2 text-center text-sm font-medium text-white/85 drop-shadow-md sm:top-16 sm:text-base"
