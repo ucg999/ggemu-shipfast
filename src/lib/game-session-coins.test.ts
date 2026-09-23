@@ -13,6 +13,6 @@ test('exit and repeated settlement do not re-award periodic rewards', () => {
 })
 test('normal and multiplier sessions respect reward caps', () => {
   assert.equal(calculateGameCoinAward(9_000_000, 1, 95, 95).additional, 5)
-  assert.equal(calculateGameCoinAward(9_000_000, 2, 190, 190).additional, 10)
-  assert.equal(calculateGameCoinAward(9_000_000, 2, 200, 200).additional, 0)
+  assert.equal(calculateGameCoinAward(9_000_000, 2, 95, 95).additional, 5)
+  assert.equal(calculateGameCoinAward(9_000_000, 2, 100, 100).additional, 0)
 })

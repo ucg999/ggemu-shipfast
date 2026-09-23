@@ -70,14 +70,29 @@ export function hasCoinRank(requiredRank: CoinRankId, balance = readCoinBalance(
   return requiredIndex >= 0 && currentIndex >= requiredIndex
 }
 
-export function addCoinReward(amount: number) {
+export function addCoinReward(amount: number, maximumAward = MAX_COIN_BALANCE) {
   const current = readCoinBalance()
   const rankMultiplier = getCoinRank(current).multiplier
   const checkInMultiplier = getDailyCheckInMultiplier()
   const multiplier = rankMultiplier * checkInMultiplier
-  const requested = Number.isFinite(amount) && amount > 0 ? Math.floor(amount) * multiplier : 0
+  const requested = calculateCappedCoinReward(amount, multiplier, maximumAward)
   const balance = requested > 0 ? addCoinBalance(requested) : current
   return { awarded: Math.max(0, balance - current), balance, checkInMultiplier, multiplier, rankMultiplier }
+}
+
+export function calculateCappedCoinReward(
+  amount: number,
+  multiplier: number,
+  maximumAward = MAX_COIN_BALANCE,
+) {
+  if (!Number.isFinite(amount) || amount <= 0) return 0
+  const safeMultiplier = Number.isFinite(multiplier)
+    ? Math.max(0, Math.floor(multiplier))
+    : 0
+  const rewardLimit = Number.isFinite(maximumAward)
+    ? Math.max(0, Math.floor(maximumAward))
+    : MAX_COIN_BALANCE
+  return Math.min(Math.floor(amount) * safeMultiplier, rewardLimit)
 }
 
 export function getDailyCheckInMultiplier() {

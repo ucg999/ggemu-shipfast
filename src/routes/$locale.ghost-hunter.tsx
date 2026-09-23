@@ -6,7 +6,7 @@ import { addCoinBalance, readCoinBalance } from '#/lib/coin-wallet'
 import type { PointerEvent } from 'react'
 import { SiteLayout } from '#/components/site-layout'
 import { normalizeLocale } from '#/lib/i18n'
-import { LEVELS, MODULES, geometry, canPlace, isLevelComplete, litGhosts } from '#/lib/ghost-hunter'
+import { GHOST_CLEAR_REWARD, LEVELS, MODULES, geometry, canPlace, isLevelComplete, litGhosts } from '#/lib/ghost-hunter'
 import type { Placement } from '#/lib/ghost-hunter'
 
 export const Route = createFileRoute('/$locale/ghost-hunter')({
@@ -256,9 +256,8 @@ function GhostHunterPage() {
     if (!won || gameOver) return
     if (!rewardedRef.current) {
       rewardedRef.current = true
-      const consecutiveClearReward = (cleared + 1) * 10
       const previousBalance = readCoinBalance()
-      const nextBalance = addCoinBalance(consecutiveClearReward)
+      const nextBalance = addCoinBalance(GHOST_CLEAR_REWARD)
       setCoinReward(Math.max(0, nextBalance - previousBalance))
       setCleared(value => value + 1)
       setLightning(value => value + 1)

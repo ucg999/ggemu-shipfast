@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { getCoinRank } from './coin-wallet.ts'
+import { calculateCappedCoinReward, getCoinRank } from './coin-wallet.ts'
 
 test('coin ranks cover every balance without gaps', () => {
   const cases = [
@@ -22,4 +22,10 @@ test('coin ranks cover every balance without gaps', () => {
     assert.equal(rank.id, id)
     assert.equal(rank.multiplier, multiplier)
   }
+})
+
+test('final gameplay rewards stay within the remaining session allowance', () => {
+  assert.equal(calculateCappedCoinReward(30, 2, 40), 40)
+  assert.equal(calculateCappedCoinReward(5, 20, 5), 5)
+  assert.equal(calculateCappedCoinReward(30, 2, 0), 0)
 })

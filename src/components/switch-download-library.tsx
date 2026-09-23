@@ -181,7 +181,9 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
           {games.length === 0 ? <p className="py-12 text-center text-base-content/60">{copy.empty}</p> : null}
           <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${platform === 'psp' ? 'sm:grid-cols-4 lg:grid-cols-7' : 'sm:grid-cols-3 lg:grid-cols-5'}`}>
             {visibleGames.map((game) => {
-              const pspCover = platform === 'psp' && 'boxCover' in game ? game.boxCover : undefined
+              const pspCover = platform === 'psp' && 'boxCover' in game && typeof game.boxCover === 'string'
+                ? game.boxCover
+                : undefined
               return (
               <Link className={`group ${platform === 'psp' ? 'psp-library-card' : 'overflow-hidden rounded-xl bg-base-100'}`} key={game.id} params={{ gameId: game.id, locale: lang }} to={platform === 'psp' ? '/$locale/platform/psp/$gameId' : '/$locale/platform/switch/$gameId'}>
                 <SwitchLibraryImage

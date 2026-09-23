@@ -47,10 +47,14 @@ export function scheduleInitialProModePreload() {
   if (typeof window === 'undefined') return () => {}
   let cancelled = false
   const run = () => { if (!cancelled) preloadProModeAssets('initial') }
-  if ('requestIdleCallback' in window) {
-    const id = window.requestIdleCallback(run, { timeout: 4000 })
-    return () => { cancelled = true; window.cancelIdleCallback(id) }
+  const idleWindow = window as Window & {
+    cancelIdleCallback?: (id: number) => void
+    requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number
   }
-  const id = window.setTimeout(run, 1800)
-  return () => { cancelled = true; window.clearTimeout(id) }
+  if (typeof idleWindow.requestIdleCallback === 'function') {
+    const id = idleWindow.requestIdleCallback(run, { timeout: 4000 })
+    return () => { cancelled = true; idleWindow.cancelIdleCallback?.(id) }
+  }
+  const id = globalThis.setTimeout(run, 1800)
+  return () => { cancelled = true; globalThis.clearTimeout(id) }
 }

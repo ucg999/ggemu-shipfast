@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert'
 import { test } from 'node:test'
-import { canPlace, geometry, isLevelComplete, litGhosts, LEVELS, MODULES } from './ghost-hunter.ts'
+import { canPlace, geometry, GHOST_CLEAR_REWARD, isLevelComplete, litGhosts, LEVELS, MODULES } from './ghost-hunter.ts'
 import type { Placement } from './ghost-hunter.ts'
 
 test('rotation preserves footprints and rotates both lights together', () => {
@@ -16,6 +16,10 @@ test('blue-border footprints reject overlap and edges but accept cutouts', () =>
   assert.equal(canPlace(4, { x: 1, y: 1, rotation: 0 }, placed), true)
   assert.equal(canPlace(4, { x: 3, y: 3, rotation: 0 }, placed), false)
   assert.equal(canPlace(0, placed[0]!, placed), true)
+})
+
+test('each cleared ghost level awards a fixed ten coins', () => {
+  assert.equal(GHOST_CLEAR_REWARD, 10)
 })
 
 test('all levels have a non-overlapping solution using all six modules', () => {

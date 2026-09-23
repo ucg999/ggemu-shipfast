@@ -1,5 +1,6 @@
 export type Cell = [number, number]
 export type Placement = { x: number; y: number; rotation: number }
+export const GHOST_CLEAR_REWARD = 10
 export const LEVELS = [
   { id: 31, image: '/ghost-hunter/level-31.webp', ghosts: [[0, 0], [1, 0], [2, 1], [0, 2], [2, 2], [3, 2]] },
   { id: 3, image: '/ghost-hunter/level-3.webp', ghosts: [[0, 0], [1, 0], [0, 2], [1, 2], [1, 3], [3, 3]] },
@@ -11,6 +12,10 @@ export const LEVELS = [
   { id: 58, image: '/ghost-hunter/level-58.webp', ghosts: [[0, 0], [1, 0], [1, 1], [3, 1], [0, 2], [2, 2]] },
   { id: 59, image: '/ghost-hunter/level-59.webp', ghosts: [[1, 0], [0, 1], [1, 2], [2, 2], [3, 2], [0, 3]] },
   { id: 60, image: '/ghost-hunter/level-60.webp', ghosts: [[2, 0], [0, 1], [1, 1], [2, 2], [1, 3], [3, 3]] },
+  { id: 7, image: '/ghost-hunter/level-7.jpg', ghosts: [[1, 0], [3, 0], [0, 1], [0, 3], [1, 3], [2, 3]] },
+  { id: 8, image: '/ghost-hunter/level-8.jpg', ghosts: [[0, 0], [3, 0], [0, 1], [1, 1], [3, 2], [3, 3]] },
+  { id: 9, image: '/ghost-hunter/level-9.jpg', ghosts: [[0, 0], [1, 1], [3, 1], [0, 3], [1, 3], [2, 3]] },
+  { id: 10, image: '/ghost-hunter/level-10.jpg', ghosts: [[0, 0], [3, 0], [0, 1], [2, 1], [1, 3], [2, 3]] },
 ] as const satisfies ReadonlyArray<{ id: number; image: string; ghosts: ReadonlyArray<Cell> }>
 
 export const GHOSTS: ReadonlyArray<Cell> = LEVELS[0].ghosts

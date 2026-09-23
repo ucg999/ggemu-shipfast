@@ -7,7 +7,7 @@ import { normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { siteConfig } from '#/lib/site-config'
 import { useCurrentSiteTheme } from '#/lib/use-site-theme'
-import { calculateGameCoinAward } from '#/lib/game-session-coins'
+import { calculateGameCoinAward, GAME_SESSION_COIN_CAP } from '#/lib/game-session-coins'
 import { ARCADE_MAHJONG_COINS_PER_MINUTE, ARCADE_MAHJONG_FREE_TRIAL_MINUTES, isArcadeMahjongGame } from '#/lib/arcade-mahjong-games'
 import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
 import {
@@ -232,7 +232,10 @@ function LocalizedPlayGamePage() {
     awardedCoinsRef.current = earnedCoins
 
     if (newCoins > 0) {
-      sessionCoinsRef.current += addStoredGameCoins(newCoins)
+      sessionCoinsRef.current += addStoredGameCoins(
+        newCoins,
+        GAME_SESSION_COIN_CAP - sessionCoinsRef.current,
+      )
     }
 
     return {
@@ -705,8 +708,8 @@ function getCurrentActivePlayTime(accumulatedTime: number, startedAt: number | n
   return accumulatedTime + (startedAt === null ? 0 : Date.now() - startedAt)
 }
 
-function addStoredGameCoins(amount: number) {
-  return addCoinReward(amount).awarded
+function addStoredGameCoins(amount: number, maximumAward: number) {
+  return addCoinReward(amount, maximumAward).awarded
 }
 
 function getRecommendationLabels(locale: Locale) {

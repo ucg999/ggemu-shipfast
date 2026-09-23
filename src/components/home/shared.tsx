@@ -366,7 +366,7 @@ export function SearchForm({
               <li><Link params={{ locale: lang }} to="/$locale/original-games">{getOriginalGamesTitle(lang)}</Link></li>
             </ul>
             <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
-              <li><Link params={{ locale: lang }} to="/$locale/all-games">{getI18n(lang).layout.allGames}</Link></li>
+              <li><Link params={{ locale: lang }} search={{ page: 1 }} to="/$locale/all-games">{getI18n(lang).layout.allGames}</Link></li>
               <li>
                 <Link params={{ locale: lang }} search={{ platform: undefined }} title={lang === 'en' ? 'A beautiful visual guide to classic game consoles' : lang === 'zh-TW' ? '各種遊戲機的精美圖鑑' : '各种游戏机的精美图鉴'} to="/$locale/PRO">
                   {lang === 'zh-CN' ? '所有平台' : lang === 'zh-TW' ? '所有平台' : lang === 'ja' ? 'すべてのプラットフォーム' : 'All Platforms'}
