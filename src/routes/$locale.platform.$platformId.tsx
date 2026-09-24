@@ -157,10 +157,10 @@ function getModeCopy(locale: Locale, modeId: PlatformModeId | undefined) {
 }
 
 function getMahjongModeCopy(locale: Locale) {
-  if (locale === 'zh-TW') return { description: '精選經典街機麻將與電子基盤等遊戲。遊玩每分鐘扣除1個金幣；金幣用完後遊戲會自動退出，金幣隨處可以得到。', seoTitle: '街機麻將遊戲｜懷舊遊戲廳', subtitle: '明星三缺一、幸運滿貫、雙龍搶珠、天降神兵等經典作品；每分鐘扣1個幣。', title: '街機麻將' }
-  if (locale === 'en') return { description: 'A curated collection of classic arcade mahjong, electronic board, and related games. Play costs 1 coin per minute; the game closes automatically when your balance reaches zero, and coins can be earned throughout the site.', seoTitle: 'Arcade Mahjong | Retro Game Hall', subtitle: 'Classic titles including Mahjong Sisters, Lucky Grand Slam, and more; costs 1 coin per minute.', title: 'Arcade Mahjong' }
-  if (locale === 'ja') return { description: 'クラシックなアーケード麻雀や電子基盤などのゲームを厳選。1分につき1コインを消費し、残高がなくなると自動終了します。コインはサイト内のさまざまな場所で獲得できます。', seoTitle: 'アーケード麻雀｜懐かしゲームセンター', subtitle: 'クラシック作品を収録。1分につき1コインを消費します。', title: 'アーケード麻雀' }
-  return { description: '精选经典街机麻将与电子基盘等游戏。游玩每分钟扣除1个金币；金币用完后游戏会自动退出，金币随处可以得到。', seoTitle: '街机麻将游戏｜怀旧游戏厅', subtitle: '明星三缺一、幸运满贯、双龙抢珠、天降神兵等经典作品；每分钟扣1个币。', title: '街机麻将' }
+  if (locale === 'zh-TW') return { description: '匯集明星三缺一、幸運滿貫、電子基盤等經典街機麻將與休閒棋牌作品。無需金幣，點擊遊戲卡片即可免費遊玩，重溫街機廳裡熟悉的樂趣。', seoTitle: '街機麻將遊戲｜懷舊遊戲廳', subtitle: '精選街機麻將、電子基盤與經典休閒棋牌遊戲，全部免費遊玩。', title: '街機麻將' }
+  if (locale === 'en') return { description: 'A hand-picked collection of classic arcade mahjong, electronic board, and casual tabletop games. No coins are required—choose a game and play free.', seoTitle: 'Arcade Mahjong | Retro Game Hall', subtitle: 'Classic arcade mahjong and casual tabletop games, all free to play.', title: 'Arcade Mahjong' }
+  if (locale === 'ja') return { description: '定番のアーケード麻雀、電子基盤、カジュアルテーブルゲームを集めました。コインは不要で、ゲームカードを選ぶだけで無料で遊べます。', seoTitle: 'アーケード麻雀｜懐かしゲームセンター', subtitle: 'アーケード麻雀と定番テーブルゲームをすべて無料で楽しめます。', title: 'アーケード麻雀' }
+  return { description: '汇集明星三缺一、幸运满贯、电子基盘等经典街机麻将与休闲棋牌作品。无需金币，点击游戏卡片即可免费游玩，重温街机厅里的熟悉乐趣。', seoTitle: '街机麻将游戏｜怀旧游戏厅', subtitle: '精选街机麻将、电子基盘与经典休闲棋牌游戏，全部免费游玩。', title: '街机麻将' }
 }
 
 function getSwitchLibraryCopy(locale: Locale) {
