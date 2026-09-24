@@ -5,7 +5,7 @@ import { cloudflare } from '@cloudflare/vite-plugin'
 import viteReact from '@vitejs/plugin-react'
 import { libraryUpdatesPlugin } from './scripts/library-updates.mjs'
 
-function cloudflareWorkersClientShim(): Plugin {
+function cloudflareWorkersClientShim(localPreview = false): Plugin {
   const moduleId = '\0cloudflare-workers-client-shim'
 
   return {
@@ -14,7 +14,7 @@ function cloudflareWorkersClientShim(): Plugin {
     resolveId(id: string) {
       if (
         id === 'cloudflare:workers' &&
-        this.environment?.name !== 'ssr'
+        (localPreview || this.environment?.name !== 'ssr')
       ) {
         return moduleId
       }
@@ -31,8 +31,8 @@ const config = defineConfig(({ mode }) => ({
   resolve: { tsconfigPaths: true },
   plugins: [
     libraryUpdatesPlugin(),
-    cloudflareWorkersClientShim(),
-    ...(mode === 'test' ? [] : [cloudflare({ viteEnvironment: { name: 'ssr' } })]),
+    cloudflareWorkersClientShim(mode === 'local-preview'),
+    ...(['test', 'local-preview'].includes(mode) ? [] : [cloudflare({ viteEnvironment: { name: 'ssr' } })]),
     tanstackStart(),
     tailwindcss(),
     viteReact(),

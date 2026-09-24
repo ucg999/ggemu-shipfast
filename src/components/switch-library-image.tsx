@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getLibraryImage } from '#/lib/library-image'
 
 type SwitchLibraryImageProps = {
   alt: string
@@ -37,7 +38,7 @@ export function SwitchLibraryImage({ alt, className = '', eager = false, src, tr
         loading={eager ? 'eager' : 'lazy'}
         onError={() => setFailed(true)}
         onLoad={() => setLoaded(true)}
-        src={src}
+        src={getLibraryImage(src)}
       />
     </span>
   )

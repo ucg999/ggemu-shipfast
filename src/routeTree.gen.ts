@@ -9,69 +9,49 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as LocaleRouteImport } from './routes/$locale'
-import { Route as ManifestDotwebmanifestRouteImport } from './routes/manifest[.]webmanifest'
-import { Route as RandomRouteImport } from './routes/random'
-import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as XRouteImport } from './routes/x'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as RandomRouteImport } from './routes/random'
+import { Route as ManifestDotwebmanifestRouteImport } from './routes/manifest[.]webmanifest'
+import { Route as LocaleRouteImport } from './routes/$locale'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as LocaleIndexRouteImport } from './routes/$locale.index'
-import { Route as LocalePRORouteImport } from './routes/$locale.PRO'
-import { Route as LocaleAboutRouteImport } from './routes/$locale.about'
-import { Route as LocaleAllGamesRouteImport } from './routes/$locale.all-games'
-import { Route as LocaleArcadeRouteImport } from './routes/$locale.arcade'
-import { Route as LocaleBlogRouteImport } from './routes/$locale.blog'
-import { Route as LocaleCoinChallengeRouteImport } from './routes/$locale.coin-challenge'
-import { Route as LocaleDealsRouteImport } from './routes/$locale.deals'
-import { Route as LocaleGhostHunterRouteImport } from './routes/$locale.ghost-hunter'
-import { Route as LocaleLiveRouteImport } from './routes/$locale.live'
-import { Route as LocaleOriginalGamesRouteImport } from './routes/$locale.original-games'
-import { Route as LocalePlayMyRomRouteImport } from './routes/$locale.play-my-rom'
-import { Route as LocalePrivacyPolicyRouteImport } from './routes/$locale.privacy-policy'
-import { Route as LocaleRandomRouteImport } from './routes/$locale.random'
-import { Route as LocaleSearchRouteImport } from './routes/$locale.search'
-import { Route as LocaleTermsOfServiceRouteImport } from './routes/$locale.terms-of-service'
-import { Route as LocaleThemeModeRouteImport } from './routes/$locale.theme-mode'
-import { Route as ApiLocaleSuggestionRouteImport } from './routes/api/locale-suggestion'
-import { Route as ApiShareImageRouteImport } from './routes/api/share-image'
 import { Route as GamesGameIdRouteImport } from './routes/games/$gameId'
-import { Route as LocaleBlogBlogIdRouteImport } from './routes/$locale.blog.$blogId'
-import { Route as LocaleCollectionsCollectionIdRouteImport } from './routes/$locale.collections.$collectionId'
-import { Route as LocaleGamesGameIdRouteImport } from './routes/$locale.games.$gameId'
-import { Route as LocalePlatformPlatformIdRouteImport } from './routes/$locale.platform.$platformId'
-import { Route as LocaleRankingsRankingIdRouteImport } from './routes/$locale.rankings.$rankingId'
-import { Route as UsernameArticleStatusidRouteImport } from './routes/$username/article/$statusid'
-import { Route as UsernameStatusStatusidRouteImport } from './routes/$username/status/$statusid'
+import { Route as ApiShareImageRouteImport } from './routes/api/share-image'
+import { Route as ApiLocaleSuggestionRouteImport } from './routes/api/locale-suggestion'
+import { Route as LocaleThemeModeRouteImport } from './routes/$locale.theme-mode'
+import { Route as LocaleTermsOfServiceRouteImport } from './routes/$locale.terms-of-service'
+import { Route as LocaleSearchRouteImport } from './routes/$locale.search'
+import { Route as LocaleRandomRouteImport } from './routes/$locale.random'
+import { Route as LocalePrivacyPolicyRouteImport } from './routes/$locale.privacy-policy'
+import { Route as LocalePlayMyRomRouteImport } from './routes/$locale.play-my-rom'
+import { Route as LocaleOriginalGamesRouteImport } from './routes/$locale.original-games'
+import { Route as LocaleLiveRouteImport } from './routes/$locale.live'
+import { Route as LocaleGhostHunterRouteImport } from './routes/$locale.ghost-hunter'
+import { Route as LocaleDealsRouteImport } from './routes/$locale.deals'
+import { Route as LocaleCoinChallengeRouteImport } from './routes/$locale.coin-challenge'
+import { Route as LocaleBlogRouteImport } from './routes/$locale.blog'
+import { Route as LocaleArcadeRouteImport } from './routes/$locale.arcade'
+import { Route as LocaleAllGamesRouteImport } from './routes/$locale.all-games'
+import { Route as LocaleAboutRouteImport } from './routes/$locale.about'
+import { Route as LocalePRORouteImport } from './routes/$locale.PRO'
 import { Route as GamesGameIdPlayRouteImport } from './routes/games/$gameId/play'
-import { Route as LocaleDealsSteamSteamAppIdRouteImport } from './routes/$locale.deals_.steam.$steamAppId'
-import { Route as LocaleGamesGameIdPlayRouteImport } from './routes/$locale.games.$gameId.play'
-import { Route as LocalePlatformPspGameIdRouteImport } from './routes/$locale.platform.psp.$gameId'
+import { Route as UsernameStatusStatusidRouteImport } from './routes/$username/status/$statusid'
+import { Route as UsernameArticleStatusidRouteImport } from './routes/$username/article/$statusid'
+import { Route as LocaleRankingsRankingIdRouteImport } from './routes/$locale.rankings.$rankingId'
+import { Route as LocalePlatformPlatformIdRouteImport } from './routes/$locale.platform.$platformId'
+import { Route as LocaleGamesGameIdRouteImport } from './routes/$locale.games.$gameId'
+import { Route as LocaleCollectionsCollectionIdRouteImport } from './routes/$locale.collections.$collectionId'
+import { Route as LocaleBlogBlogIdRouteImport } from './routes/$locale.blog.$blogId'
 import { Route as LocalePlatformSwitchGameIdRouteImport } from './routes/$locale.platform.switch.$gameId'
+import { Route as LocalePlatformPspGameIdRouteImport } from './routes/$locale.platform.psp.$gameId'
+import { Route as LocaleGamesGameIdPlayRouteImport } from './routes/$locale.games.$gameId.play'
+import { Route as LocaleDealsSteamSteamAppIdRouteImport } from './routes/$locale.deals_.steam.$steamAppId'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LocaleRoute = LocaleRouteImport.update({
-  id: '/$locale',
-  path: '/$locale',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ManifestDotwebmanifestRoute = ManifestDotwebmanifestRouteImport.update({
-  id: '/manifest.webmanifest',
-  path: '/manifest.webmanifest',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RandomRoute = RandomRouteImport.update({
-  id: '/random',
-  path: '/random',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
-  id: '/robots.txt',
-  path: '/robots.txt',
+const XRoute = XRouteImport.update({
+  id: '/x',
+  path: '/x',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -79,9 +59,29 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
-const XRoute = XRouteImport.update({
-  id: '/x',
-  path: '/x',
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RandomRoute = RandomRouteImport.update({
+  id: '/random',
+  path: '/random',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManifestDotwebmanifestRoute = ManifestDotwebmanifestRouteImport.update({
+  id: '/manifest.webmanifest',
+  path: '/manifest.webmanifest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaleRoute = LocaleRouteImport.update({
+  id: '/$locale',
+  path: '/$locale',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LocaleIndexRoute = LocaleIndexRouteImport.update({
@@ -89,89 +89,9 @@ const LocaleIndexRoute = LocaleIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LocaleRoute,
 } as any)
-const LocalePRORoute = LocalePRORouteImport.update({
-  id: '/PRO',
-  path: '/PRO',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocaleAboutRoute = LocaleAboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocaleAllGamesRoute = LocaleAllGamesRouteImport.update({
-  id: '/all-games',
-  path: '/all-games',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocaleArcadeRoute = LocaleArcadeRouteImport.update({
-  id: '/arcade',
-  path: '/arcade',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocaleBlogRoute = LocaleBlogRouteImport.update({
-  id: '/blog',
-  path: '/blog',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocaleCoinChallengeRoute = LocaleCoinChallengeRouteImport.update({
-  id: '/coin-challenge',
-  path: '/coin-challenge',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocaleDealsRoute = LocaleDealsRouteImport.update({
-  id: '/deals',
-  path: '/deals',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocaleGhostHunterRoute = LocaleGhostHunterRouteImport.update({
-  id: '/ghost-hunter',
-  path: '/ghost-hunter',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocaleLiveRoute = LocaleLiveRouteImport.update({
-  id: '/live',
-  path: '/live',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocaleOriginalGamesRoute = LocaleOriginalGamesRouteImport.update({
-  id: '/original-games',
-  path: '/original-games',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocalePlayMyRomRoute = LocalePlayMyRomRouteImport.update({
-  id: '/play-my-rom',
-  path: '/play-my-rom',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocalePrivacyPolicyRoute = LocalePrivacyPolicyRouteImport.update({
-  id: '/privacy-policy',
-  path: '/privacy-policy',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocaleRandomRoute = LocaleRandomRouteImport.update({
-  id: '/random',
-  path: '/random',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocaleSearchRoute = LocaleSearchRouteImport.update({
-  id: '/search',
-  path: '/search',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocaleTermsOfServiceRoute = LocaleTermsOfServiceRouteImport.update({
-  id: '/terms-of-service',
-  path: '/terms-of-service',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const LocaleThemeModeRoute = LocaleThemeModeRouteImport.update({
-  id: '/theme-mode',
-  path: '/theme-mode',
-  getParentRoute: () => LocaleRoute,
-} as any)
-const ApiLocaleSuggestionRoute = ApiLocaleSuggestionRouteImport.update({
-  id: '/api/locale-suggestion',
-  path: '/api/locale-suggestion',
+const GamesGameIdRoute = GamesGameIdRouteImport.update({
+  id: '/games/$gameId',
+  path: '/games/$gameId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiShareImageRoute = ApiShareImageRouteImport.update({
@@ -179,25 +99,109 @@ const ApiShareImageRoute = ApiShareImageRouteImport.update({
   path: '/api/share-image',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GamesGameIdRoute = GamesGameIdRouteImport.update({
-  id: '/games/$gameId',
-  path: '/games/$gameId',
+const ApiLocaleSuggestionRoute = ApiLocaleSuggestionRouteImport.update({
+  id: '/api/locale-suggestion',
+  path: '/api/locale-suggestion',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LocaleBlogBlogIdRoute = LocaleBlogBlogIdRouteImport.update({
-  id: '/$blogId',
-  path: '/$blogId',
-  getParentRoute: () => LocaleBlogRoute,
+const LocaleThemeModeRoute = LocaleThemeModeRouteImport.update({
+  id: '/theme-mode',
+  path: '/theme-mode',
+  getParentRoute: () => LocaleRoute,
 } as any)
-const LocaleCollectionsCollectionIdRoute =
-  LocaleCollectionsCollectionIdRouteImport.update({
-    id: '/collections/$collectionId',
-    path: '/collections/$collectionId',
-    getParentRoute: () => LocaleRoute,
-  } as any)
-const LocaleGamesGameIdRoute = LocaleGamesGameIdRouteImport.update({
-  id: '/games/$gameId',
-  path: '/games/$gameId',
+const LocaleTermsOfServiceRoute = LocaleTermsOfServiceRouteImport.update({
+  id: '/terms-of-service',
+  path: '/terms-of-service',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleSearchRoute = LocaleSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleRandomRoute = LocaleRandomRouteImport.update({
+  id: '/random',
+  path: '/random',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocalePrivacyPolicyRoute = LocalePrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocalePlayMyRomRoute = LocalePlayMyRomRouteImport.update({
+  id: '/play-my-rom',
+  path: '/play-my-rom',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleOriginalGamesRoute = LocaleOriginalGamesRouteImport.update({
+  id: '/original-games',
+  path: '/original-games',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleLiveRoute = LocaleLiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleGhostHunterRoute = LocaleGhostHunterRouteImport.update({
+  id: '/ghost-hunter',
+  path: '/ghost-hunter',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleDealsRoute = LocaleDealsRouteImport.update({
+  id: '/deals',
+  path: '/deals',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleCoinChallengeRoute = LocaleCoinChallengeRouteImport.update({
+  id: '/coin-challenge',
+  path: '/coin-challenge',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleBlogRoute = LocaleBlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleArcadeRoute = LocaleArcadeRouteImport.update({
+  id: '/arcade',
+  path: '/arcade',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleAllGamesRoute = LocaleAllGamesRouteImport.update({
+  id: '/all-games',
+  path: '/all-games',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleAboutRoute = LocaleAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocalePRORoute = LocalePRORouteImport.update({
+  id: '/PRO',
+  path: '/PRO',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const GamesGameIdPlayRoute = GamesGameIdPlayRouteImport.update({
+  id: '/play',
+  path: '/play',
+  getParentRoute: () => GamesGameIdRoute,
+} as any)
+const UsernameStatusStatusidRoute = UsernameStatusStatusidRouteImport.update({
+  id: '/$username/status/$statusid',
+  path: '/$username/status/$statusid',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsernameArticleStatusidRoute = UsernameArticleStatusidRouteImport.update({
+  id: '/$username/article/$statusid',
+  path: '/$username/article/$statusid',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaleRankingsRankingIdRoute = LocaleRankingsRankingIdRouteImport.update({
+  id: '/rankings/$rankingId',
+  path: '/rankings/$rankingId',
   getParentRoute: () => LocaleRoute,
 } as any)
 const LocalePlatformPlatformIdRoute =
@@ -206,46 +210,42 @@ const LocalePlatformPlatformIdRoute =
     path: '/platform/$platformId',
     getParentRoute: () => LocaleRoute,
   } as any)
-const LocaleRankingsRankingIdRoute = LocaleRankingsRankingIdRouteImport.update({
-  id: '/rankings/$rankingId',
-  path: '/rankings/$rankingId',
+const LocaleGamesGameIdRoute = LocaleGamesGameIdRouteImport.update({
+  id: '/games/$gameId',
+  path: '/games/$gameId',
   getParentRoute: () => LocaleRoute,
 } as any)
-const UsernameArticleStatusidRoute = UsernameArticleStatusidRouteImport.update({
-  id: '/$username/article/$statusid',
-  path: '/$username/article/$statusid',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UsernameStatusStatusidRoute = UsernameStatusStatusidRouteImport.update({
-  id: '/$username/status/$statusid',
-  path: '/$username/status/$statusid',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GamesGameIdPlayRoute = GamesGameIdPlayRouteImport.update({
-  id: '/play',
-  path: '/play',
-  getParentRoute: () => GamesGameIdRoute,
-} as any)
-const LocaleDealsSteamSteamAppIdRoute =
-  LocaleDealsSteamSteamAppIdRouteImport.update({
-    id: '/deals_/steam/$steamAppId',
-    path: '/deals/steam/$steamAppId',
+const LocaleCollectionsCollectionIdRoute =
+  LocaleCollectionsCollectionIdRouteImport.update({
+    id: '/collections/$collectionId',
+    path: '/collections/$collectionId',
     getParentRoute: () => LocaleRoute,
   } as any)
-const LocaleGamesGameIdPlayRoute = LocaleGamesGameIdPlayRouteImport.update({
-  id: '/play',
-  path: '/play',
-  getParentRoute: () => LocaleGamesGameIdRoute,
-} as any)
-const LocalePlatformPspGameIdRoute = LocalePlatformPspGameIdRouteImport.update({
-  id: '/platform/psp/$gameId',
-  path: '/platform/psp/$gameId',
-  getParentRoute: () => LocaleRoute,
+const LocaleBlogBlogIdRoute = LocaleBlogBlogIdRouteImport.update({
+  id: '/$blogId',
+  path: '/$blogId',
+  getParentRoute: () => LocaleBlogRoute,
 } as any)
 const LocalePlatformSwitchGameIdRoute =
   LocalePlatformSwitchGameIdRouteImport.update({
     id: '/platform/switch/$gameId',
     path: '/platform/switch/$gameId',
+    getParentRoute: () => LocaleRoute,
+  } as any)
+const LocalePlatformPspGameIdRoute = LocalePlatformPspGameIdRouteImport.update({
+  id: '/platform/psp/$gameId',
+  path: '/platform/psp/$gameId',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleGamesGameIdPlayRoute = LocaleGamesGameIdPlayRouteImport.update({
+  id: '/play',
+  path: '/play',
+  getParentRoute: () => LocaleGamesGameIdRoute,
+} as any)
+const LocaleDealsSteamSteamAppIdRoute =
+  LocaleDealsSteamSteamAppIdRouteImport.update({
+    id: '/deals_/steam/$steamAppId',
+    path: '/deals/steam/$steamAppId',
     getParentRoute: () => LocaleRoute,
   } as any)
 
@@ -514,39 +514,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/$locale': {
-      id: '/$locale'
-      path: '/$locale'
-      fullPath: '/$locale'
-      preLoaderRoute: typeof LocaleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/manifest.webmanifest': {
-      id: '/manifest.webmanifest'
-      path: '/manifest.webmanifest'
-      fullPath: '/manifest.webmanifest'
-      preLoaderRoute: typeof ManifestDotwebmanifestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/random': {
-      id: '/random'
-      path: '/random'
-      fullPath: '/random'
-      preLoaderRoute: typeof RandomRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/robots.txt': {
-      id: '/robots.txt'
-      path: '/robots.txt'
-      fullPath: '/robots.txt'
-      preLoaderRoute: typeof RobotsDottxtRouteImport
+    '/x': {
+      id: '/x'
+      path: '/x'
+      fullPath: '/x'
+      preLoaderRoute: typeof XRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -556,11 +528,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/x': {
-      id: '/x'
-      path: '/x'
-      fullPath: '/x'
-      preLoaderRoute: typeof XRouteImport
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/random': {
+      id: '/random'
+      path: '/random'
+      fullPath: '/random'
+      preLoaderRoute: typeof RandomRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manifest.webmanifest': {
+      id: '/manifest.webmanifest'
+      path: '/manifest.webmanifest'
+      fullPath: '/manifest.webmanifest'
+      preLoaderRoute: typeof ManifestDotwebmanifestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale': {
+      id: '/$locale'
+      path: '/$locale'
+      fullPath: '/$locale'
+      preLoaderRoute: typeof LocaleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$locale/': {
@@ -570,123 +570,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleIndexRouteImport
       parentRoute: typeof LocaleRoute
     }
-    '/$locale/PRO': {
-      id: '/$locale/PRO'
-      path: '/PRO'
-      fullPath: '/$locale/PRO'
-      preLoaderRoute: typeof LocalePRORouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/about': {
-      id: '/$locale/about'
-      path: '/about'
-      fullPath: '/$locale/about'
-      preLoaderRoute: typeof LocaleAboutRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/all-games': {
-      id: '/$locale/all-games'
-      path: '/all-games'
-      fullPath: '/$locale/all-games'
-      preLoaderRoute: typeof LocaleAllGamesRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/arcade': {
-      id: '/$locale/arcade'
-      path: '/arcade'
-      fullPath: '/$locale/arcade'
-      preLoaderRoute: typeof LocaleArcadeRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/blog': {
-      id: '/$locale/blog'
-      path: '/blog'
-      fullPath: '/$locale/blog'
-      preLoaderRoute: typeof LocaleBlogRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/coin-challenge': {
-      id: '/$locale/coin-challenge'
-      path: '/coin-challenge'
-      fullPath: '/$locale/coin-challenge'
-      preLoaderRoute: typeof LocaleCoinChallengeRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/deals': {
-      id: '/$locale/deals'
-      path: '/deals'
-      fullPath: '/$locale/deals'
-      preLoaderRoute: typeof LocaleDealsRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/ghost-hunter': {
-      id: '/$locale/ghost-hunter'
-      path: '/ghost-hunter'
-      fullPath: '/$locale/ghost-hunter'
-      preLoaderRoute: typeof LocaleGhostHunterRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/live': {
-      id: '/$locale/live'
-      path: '/live'
-      fullPath: '/$locale/live'
-      preLoaderRoute: typeof LocaleLiveRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/original-games': {
-      id: '/$locale/original-games'
-      path: '/original-games'
-      fullPath: '/$locale/original-games'
-      preLoaderRoute: typeof LocaleOriginalGamesRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/play-my-rom': {
-      id: '/$locale/play-my-rom'
-      path: '/play-my-rom'
-      fullPath: '/$locale/play-my-rom'
-      preLoaderRoute: typeof LocalePlayMyRomRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/privacy-policy': {
-      id: '/$locale/privacy-policy'
-      path: '/privacy-policy'
-      fullPath: '/$locale/privacy-policy'
-      preLoaderRoute: typeof LocalePrivacyPolicyRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/random': {
-      id: '/$locale/random'
-      path: '/random'
-      fullPath: '/$locale/random'
-      preLoaderRoute: typeof LocaleRandomRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/search': {
-      id: '/$locale/search'
-      path: '/search'
-      fullPath: '/$locale/search'
-      preLoaderRoute: typeof LocaleSearchRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/terms-of-service': {
-      id: '/$locale/terms-of-service'
-      path: '/terms-of-service'
-      fullPath: '/$locale/terms-of-service'
-      preLoaderRoute: typeof LocaleTermsOfServiceRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/theme-mode': {
-      id: '/$locale/theme-mode'
-      path: '/theme-mode'
-      fullPath: '/$locale/theme-mode'
-      preLoaderRoute: typeof LocaleThemeModeRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/api/locale-suggestion': {
-      id: '/api/locale-suggestion'
-      path: '/api/locale-suggestion'
-      fullPath: '/api/locale-suggestion'
-      preLoaderRoute: typeof ApiLocaleSuggestionRouteImport
+    '/games/$gameId': {
+      id: '/games/$gameId'
+      path: '/games/$gameId'
+      fullPath: '/games/$gameId'
+      preLoaderRoute: typeof GamesGameIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/share-image': {
@@ -696,32 +584,151 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiShareImageRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/games/$gameId': {
-      id: '/games/$gameId'
-      path: '/games/$gameId'
-      fullPath: '/games/$gameId'
-      preLoaderRoute: typeof GamesGameIdRouteImport
+    '/api/locale-suggestion': {
+      id: '/api/locale-suggestion'
+      path: '/api/locale-suggestion'
+      fullPath: '/api/locale-suggestion'
+      preLoaderRoute: typeof ApiLocaleSuggestionRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/$locale/blog/$blogId': {
-      id: '/$locale/blog/$blogId'
-      path: '/$blogId'
-      fullPath: '/$locale/blog/$blogId'
-      preLoaderRoute: typeof LocaleBlogBlogIdRouteImport
-      parentRoute: typeof LocaleBlogRoute
-    }
-    '/$locale/collections/$collectionId': {
-      id: '/$locale/collections/$collectionId'
-      path: '/collections/$collectionId'
-      fullPath: '/$locale/collections/$collectionId'
-      preLoaderRoute: typeof LocaleCollectionsCollectionIdRouteImport
+    '/$locale/theme-mode': {
+      id: '/$locale/theme-mode'
+      path: '/theme-mode'
+      fullPath: '/$locale/theme-mode'
+      preLoaderRoute: typeof LocaleThemeModeRouteImport
       parentRoute: typeof LocaleRoute
     }
-    '/$locale/games/$gameId': {
-      id: '/$locale/games/$gameId'
-      path: '/games/$gameId'
-      fullPath: '/$locale/games/$gameId'
-      preLoaderRoute: typeof LocaleGamesGameIdRouteImport
+    '/$locale/terms-of-service': {
+      id: '/$locale/terms-of-service'
+      path: '/terms-of-service'
+      fullPath: '/$locale/terms-of-service'
+      preLoaderRoute: typeof LocaleTermsOfServiceRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/search': {
+      id: '/$locale/search'
+      path: '/search'
+      fullPath: '/$locale/search'
+      preLoaderRoute: typeof LocaleSearchRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/random': {
+      id: '/$locale/random'
+      path: '/random'
+      fullPath: '/$locale/random'
+      preLoaderRoute: typeof LocaleRandomRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/privacy-policy': {
+      id: '/$locale/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/$locale/privacy-policy'
+      preLoaderRoute: typeof LocalePrivacyPolicyRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/play-my-rom': {
+      id: '/$locale/play-my-rom'
+      path: '/play-my-rom'
+      fullPath: '/$locale/play-my-rom'
+      preLoaderRoute: typeof LocalePlayMyRomRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/original-games': {
+      id: '/$locale/original-games'
+      path: '/original-games'
+      fullPath: '/$locale/original-games'
+      preLoaderRoute: typeof LocaleOriginalGamesRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/live': {
+      id: '/$locale/live'
+      path: '/live'
+      fullPath: '/$locale/live'
+      preLoaderRoute: typeof LocaleLiveRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/ghost-hunter': {
+      id: '/$locale/ghost-hunter'
+      path: '/ghost-hunter'
+      fullPath: '/$locale/ghost-hunter'
+      preLoaderRoute: typeof LocaleGhostHunterRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/deals': {
+      id: '/$locale/deals'
+      path: '/deals'
+      fullPath: '/$locale/deals'
+      preLoaderRoute: typeof LocaleDealsRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/coin-challenge': {
+      id: '/$locale/coin-challenge'
+      path: '/coin-challenge'
+      fullPath: '/$locale/coin-challenge'
+      preLoaderRoute: typeof LocaleCoinChallengeRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/blog': {
+      id: '/$locale/blog'
+      path: '/blog'
+      fullPath: '/$locale/blog'
+      preLoaderRoute: typeof LocaleBlogRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/arcade': {
+      id: '/$locale/arcade'
+      path: '/arcade'
+      fullPath: '/$locale/arcade'
+      preLoaderRoute: typeof LocaleArcadeRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/all-games': {
+      id: '/$locale/all-games'
+      path: '/all-games'
+      fullPath: '/$locale/all-games'
+      preLoaderRoute: typeof LocaleAllGamesRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/about': {
+      id: '/$locale/about'
+      path: '/about'
+      fullPath: '/$locale/about'
+      preLoaderRoute: typeof LocaleAboutRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/PRO': {
+      id: '/$locale/PRO'
+      path: '/PRO'
+      fullPath: '/$locale/PRO'
+      preLoaderRoute: typeof LocalePRORouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/games/$gameId/play': {
+      id: '/games/$gameId/play'
+      path: '/play'
+      fullPath: '/games/$gameId/play'
+      preLoaderRoute: typeof GamesGameIdPlayRouteImport
+      parentRoute: typeof GamesGameIdRoute
+    }
+    '/$username/status/$statusid': {
+      id: '/$username/status/$statusid'
+      path: '/$username/status/$statusid'
+      fullPath: '/$username/status/$statusid'
+      preLoaderRoute: typeof UsernameStatusStatusidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$username/article/$statusid': {
+      id: '/$username/article/$statusid'
+      path: '/$username/article/$statusid'
+      fullPath: '/$username/article/$statusid'
+      preLoaderRoute: typeof UsernameArticleStatusidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale/rankings/$rankingId': {
+      id: '/$locale/rankings/$rankingId'
+      path: '/rankings/$rankingId'
+      fullPath: '/$locale/rankings/$rankingId'
+      preLoaderRoute: typeof LocaleRankingsRankingIdRouteImport
       parentRoute: typeof LocaleRoute
     }
     '/$locale/platform/$platformId': {
@@ -731,39 +738,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocalePlatformPlatformIdRouteImport
       parentRoute: typeof LocaleRoute
     }
-    '/$locale/rankings/$rankingId': {
-      id: '/$locale/rankings/$rankingId'
-      path: '/rankings/$rankingId'
-      fullPath: '/$locale/rankings/$rankingId'
-      preLoaderRoute: typeof LocaleRankingsRankingIdRouteImport
+    '/$locale/games/$gameId': {
+      id: '/$locale/games/$gameId'
+      path: '/games/$gameId'
+      fullPath: '/$locale/games/$gameId'
+      preLoaderRoute: typeof LocaleGamesGameIdRouteImport
       parentRoute: typeof LocaleRoute
     }
-    '/$username/article/$statusid': {
-      id: '/$username/article/$statusid'
-      path: '/$username/article/$statusid'
-      fullPath: '/$username/article/$statusid'
-      preLoaderRoute: typeof UsernameArticleStatusidRouteImport
-      parentRoute: typeof rootRouteImport
+    '/$locale/collections/$collectionId': {
+      id: '/$locale/collections/$collectionId'
+      path: '/collections/$collectionId'
+      fullPath: '/$locale/collections/$collectionId'
+      preLoaderRoute: typeof LocaleCollectionsCollectionIdRouteImport
+      parentRoute: typeof LocaleRoute
     }
-    '/$username/status/$statusid': {
-      id: '/$username/status/$statusid'
-      path: '/$username/status/$statusid'
-      fullPath: '/$username/status/$statusid'
-      preLoaderRoute: typeof UsernameStatusStatusidRouteImport
-      parentRoute: typeof rootRouteImport
+    '/$locale/blog/$blogId': {
+      id: '/$locale/blog/$blogId'
+      path: '/$blogId'
+      fullPath: '/$locale/blog/$blogId'
+      preLoaderRoute: typeof LocaleBlogBlogIdRouteImport
+      parentRoute: typeof LocaleBlogRoute
     }
-    '/games/$gameId/play': {
-      id: '/games/$gameId/play'
-      path: '/play'
-      fullPath: '/games/$gameId/play'
-      preLoaderRoute: typeof GamesGameIdPlayRouteImport
-      parentRoute: typeof GamesGameIdRoute
+    '/$locale/platform/switch/$gameId': {
+      id: '/$locale/platform/switch/$gameId'
+      path: '/platform/switch/$gameId'
+      fullPath: '/$locale/platform/switch/$gameId'
+      preLoaderRoute: typeof LocalePlatformSwitchGameIdRouteImport
+      parentRoute: typeof LocaleRoute
     }
-    '/$locale/deals_/steam/$steamAppId': {
-      id: '/$locale/deals_/steam/$steamAppId'
-      path: '/deals/steam/$steamAppId'
-      fullPath: '/$locale/deals/steam/$steamAppId'
-      preLoaderRoute: typeof LocaleDealsSteamSteamAppIdRouteImport
+    '/$locale/platform/psp/$gameId': {
+      id: '/$locale/platform/psp/$gameId'
+      path: '/platform/psp/$gameId'
+      fullPath: '/$locale/platform/psp/$gameId'
+      preLoaderRoute: typeof LocalePlatformPspGameIdRouteImport
       parentRoute: typeof LocaleRoute
     }
     '/$locale/games/$gameId/play': {
@@ -773,18 +780,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleGamesGameIdPlayRouteImport
       parentRoute: typeof LocaleGamesGameIdRoute
     }
-    '/$locale/platform/psp/$gameId': {
-      id: '/$locale/platform/psp/$gameId'
-      path: '/platform/psp/$gameId'
-      fullPath: '/$locale/platform/psp/$gameId'
-      preLoaderRoute: typeof LocalePlatformPspGameIdRouteImport
-      parentRoute: typeof LocaleRoute
-    }
-    '/$locale/platform/switch/$gameId': {
-      id: '/$locale/platform/switch/$gameId'
-      path: '/platform/switch/$gameId'
-      fullPath: '/$locale/platform/switch/$gameId'
-      preLoaderRoute: typeof LocalePlatformSwitchGameIdRouteImport
+    '/$locale/deals_/steam/$steamAppId': {
+      id: '/$locale/deals_/steam/$steamAppId'
+      path: '/deals/steam/$steamAppId'
+      fullPath: '/$locale/deals/steam/$steamAppId'
+      preLoaderRoute: typeof LocaleDealsSteamSteamAppIdRouteImport
       parentRoute: typeof LocaleRoute
     }
   }

@@ -15,7 +15,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
   const platformName = platform === 'psp' ? 'PSP' : 'Switch'
   const library = platform === 'psp' ? PSP_LIBRARY_GAMES : SWITCH_LIBRARY_GAMES
   const copy = { ...getCopy(lang), title: getCopy(lang).title.replace('Switch', platformName) }
-  const [sortField, setSortField] = useState<'random' | 'popular' | 'updatedAt' | 'releaseDate'>('releaseDate')
+  const [sortField, setSortField] = useState<'random' | 'popular' | 'updatedAt' | 'releaseDate' | 'name'>('releaseDate')
   const [searchField, setSearchField] = useState<'genre' | 'publisher' | null>(null)
   const [draftField, setDraftField] = useState<'genre' | 'publisher' | null>(null)
   const [reverse, setReverse] = useState(false)
@@ -56,6 +56,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
       let result = 0
       if (sortField === 'random') result = randomIds.indexOf(a.id) - randomIds.indexOf(b.id)
       else if (sortField === 'popular') result = (b.popularity ?? 0) - (a.popularity ?? 0)
+      else if (sortField === 'name') result = a.title.localeCompare(b.title, lang, { numeric: true, sensitivity: 'base' })
       else if (sortField === 'releaseDate') result = b.releaseDate.localeCompare(a.releaseDate)
       else {
         const timestamps = updates as Record<string, { updatedAt?: string | null }>
@@ -64,10 +65,11 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
       }
       return reverse ? -result : result
     })
-  }, [sortField, reverse, randomIds, searchQuery, searchField, library, platform, platformName])
+  }, [sortField, reverse, randomIds, searchQuery, searchField, library, platform, platformName, lang])
   const pageCount = Math.max(1, Math.ceil(games.length / 20))
   const visibleGames = games.slice((page - 1) * 20, page * 20)
   const filters = [
+    ...(platform === 'psp' ? [{ field: 'name' as const, label: copy.gameName }] : []),
     { field: 'random' as const, label: copy.random },
     { field: 'popular' as const, label: copy.popular },
     { field: 'updatedAt' as const, label: copy.updatedAt },
@@ -110,7 +112,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                 </a>
               ) : null}
             </div>
-            <div className="flex min-w-0 max-w-full flex-nowrap items-center justify-end gap-1 overflow-x-auto max-sm:w-full max-sm:justify-center max-sm:gap-0 max-sm:[&>.btn]:h-7 max-sm:[&>.btn]:min-h-7 max-sm:[&>.btn]:min-w-0 max-sm:[&>.btn]:shrink max-sm:[&>.btn]:gap-0.5 max-sm:[&>.btn]:px-1 max-sm:[&>.btn]:text-[clamp(11px,3vw,13px)] max-sm:[&>.btn]:whitespace-nowrap max-sm:[&>.btn-square]:w-7 max-sm:[&>.btn-square]:shrink-0 max-sm:[&>.btn>i]:text-sm">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-1 max-sm:w-full max-sm:justify-center max-sm:gap-0 max-sm:[&>.btn]:h-7 max-sm:[&>.btn]:min-h-7 max-sm:[&>.btn]:min-w-0 max-sm:[&>.btn]:shrink max-sm:[&>.btn]:gap-0.5 max-sm:[&>.btn]:px-1 max-sm:[&>.btn]:text-[clamp(11px,3vw,13px)] max-sm:[&>.btn]:whitespace-nowrap max-sm:[&>.btn-square]:w-7 max-sm:[&>.btn-square]:shrink-0 max-sm:[&>.btn>i]:text-sm">
               {filters.map(({ field, label }) => (
                 <button
                   className={`btn btn-ghost btn-sm shrink-0 px-2 text-sm font-medium ${sortField === field || (searchField === field && searchQuery) ? 'text-error' : ''}`}
@@ -139,44 +141,42 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                   }}
                 >
                   {label}
-                  {sortField === field && field !== 'random' ? <span aria-hidden="true">{reverse ? '↑' : '↓'}</span> : null}
+                  {sortField === field && field !== 'random' ? <span aria-hidden="true">{(sortField === 'name' ? !reverse : reverse) ? '↑' : '↓'}</span> : null}
                 </button>
               ))}
               <button data-switch-search-trigger="" className="btn btn-ghost btn-sm btn-square shrink-0" type="button" aria-label={copy.search} aria-expanded={isSearchOpen && draftField === null} onClick={() => { setDraftField(null); setDraftQuery(searchField === null ? searchQuery : ''); setIsSearchOpen(!isSearchOpen || draftField !== null) }}>
                 <i className="ri-search-line text-lg" aria-hidden="true" />
               </button>
+              {isSearchOpen ? (
+                <form
+                  ref={searchFormRef}
+                  className="ml-1 flex h-8 w-64 max-w-full items-center gap-1 rounded-lg bg-base-100 px-1 shadow-sm max-sm:mt-1 max-sm:basis-full"
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    setSearchQuery(draftQuery)
+                    setSearchField(draftField)
+                    setPage(1)
+                    setIsSearchOpen(false)
+                  }}
+                >
+                  <input
+                    key={draftField ?? 'all'}
+                    autoFocus
+                    className="h-7 min-w-0 flex-1 appearance-none border-0 bg-transparent px-2 text-sm text-base-content shadow-none outline-none placeholder:text-base-content/45 focus:outline-none"
+                    type="search"
+                    aria-label={draftField ? `${copy.search} · ${copy[draftField]}` : lang === 'en' ? 'Enter a game title or keyword' : '输入游戏名称、关键词'}
+                    value={draftQuery}
+                    onChange={(event) => setDraftQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229)) event.preventDefault()
+                    }}
+                    placeholder={draftField ? `${copy.search} · ${copy[draftField]}` : lang === 'en' ? 'Enter a game title or keyword' : '输入游戏名称、关键词'}
+                  />
+                  <button className="btn btn-error btn-xs shrink-0 text-white" type="submit">{copy.confirm}</button>
+                </form>
+              ) : null}
             </div>
           </div>
-          {isSearchOpen ? (
-            <form
-              ref={searchFormRef}
-              className="fixed right-3 top-3 z-[60] flex w-[calc(100vw-11rem)] items-center gap-1 sm:left-1/2 sm:right-auto sm:w-[min(460px,calc(100vw-20rem))] sm:-translate-x-1/2 sm:gap-2"
-              onSubmit={(event) => {
-                event.preventDefault()
-                setSearchQuery(draftQuery)
-                setSearchField(draftField)
-                setPage(1)
-                setIsSearchOpen(false)
-              }}
-            >
-              <input
-                key={draftField ?? 'all'}
-                autoFocus
-                className="h-8 min-w-0 flex-1 appearance-none border-0 bg-transparent px-2 text-sm text-white shadow-none outline-none placeholder:text-white/70 focus:outline-none"
-                type="search"
-                aria-label={draftField ? `${copy.search} · ${copy[draftField]}` : lang === 'en' ? 'Enter a game title or keyword' : '输入游戏名称、关键词'}
-                value={draftQuery}
-                onChange={(event) => setDraftQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' && (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229)) {
-                    event.preventDefault()
-                  }
-                }}
-                placeholder={draftField ? `${copy.search} · ${copy[draftField]}` : lang === 'en' ? 'Enter a game title or keyword' : '输入游戏名称、关键词'}
-              />
-              <button className="h-8 shrink-0 border-0 bg-transparent px-2 text-sm text-white shadow-none" type="submit">{copy.confirm}</button>
-            </form>
-          ) : null}
           {searchQuery ? <button className="btn btn-ghost btn-sm mb-3" onClick={() => { setSearchQuery(''); setDraftQuery(''); setPage(1) }}>{copy.clear}: {searchQuery} ×</button> : null}
           {games.length === 0 ? <p className="py-12 text-center text-base-content/60">{copy.empty}</p> : null}
           <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${platform === 'psp' ? 'sm:grid-cols-4 lg:grid-cols-7' : 'sm:grid-cols-3 lg:grid-cols-5'}`}>
@@ -196,7 +196,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                 <div className={platform === 'psp' ? 'psp-library-info bg-base-100 p-2 sm:py-2.5' : 'p-2.5 sm:py-4'}>
                   <h2 className={`truncate font-semibold text-base-content ${platform === 'psp' ? 'text-xs sm:text-sm' : 'text-sm sm:text-lg'}`} title={game.title}>{game.title}</h2>
                   <div className={`overflow-hidden text-ellipsis whitespace-nowrap text-base-content/55 ${platform === 'psp' ? 'mt-1 text-[8px] sm:text-[10px]' : 'mt-1.5 text-[9px] sm:mt-2 sm:text-xs'}`}>
-                    <span>{platformName}</span>{' · '}<span>{getCardLanguage('cardLanguage' in game ? String(game.cardLanguage ?? game.language) : game.language, lang)}</span>{' · '}<span>{game.genre.split('、')[0]}</span>{' · '}<time>{game.releaseDate}</time>
+                    <span>{platformName}</span>{' · '}<span>{getCardLanguage('cardLanguage' in game ? String(game.cardLanguage ?? game.language) : game.language, lang)}</span>{' · '}<span>{'cardGenre' in game ? String(game.cardGenre ?? game.genre.split('、')[0]) : game.genre.split('、')[0]}</span>{' · '}<time>{game.releaseDate}</time>
                   </div>
                 </div>
               </Link>
@@ -225,8 +225,8 @@ function getCardLanguage(language: string, lang: Locale) {
 }
 
 function getCopy(lang: Locale) {
-  if (lang === 'zh-TW') return { random: '隨機', popular: '最受歡迎', updatedAt: '更新時間', clear: '清除搜尋', empty: '沒有找到相關遊戲', pagination: '分頁', previous: '上一頁', next: '下一頁', title: 'Switch 遊戲庫', gameCount: (count: number) => `共 ${count} 款遊戲`, genre: '遊戲類型', publisher: '遊戲廠商', releaseDate: '發行日期', search: '搜尋', confirm: '確認' }
-  if (lang === 'en') return { random: 'Random', popular: 'Most popular', updatedAt: 'Last updated', clear: 'Clear search', empty: 'No games found', pagination: 'Pagination', previous: 'Previous', next: 'Next', title: 'Switch Game Library', gameCount: (count: number) => `${count} games`, genre: 'Game genre', publisher: 'Publisher', releaseDate: 'Release date', search: 'Search ', confirm: 'Confirm' }
-  if (lang === 'ja') return { random: 'ランダム', popular: '人気順', updatedAt: '更新日時', clear: '検索をクリア', empty: 'ゲームが見つかりません', pagination: 'ページ', previous: '前へ', next: '次へ', title: 'Switch ゲームライブラリ', gameCount: (count: number) => `${count}本`, genre: 'ジャンル', publisher: 'メーカー', releaseDate: '発売日', search: '検索：', confirm: '確認' }
-  return { random: '随机', popular: '最受欢迎', updatedAt: '更新时间', clear: '清除搜索', empty: '没有找到相关游戏', pagination: '分页', previous: '上一页', next: '下一页', title: 'Switch游戏库', gameCount: (count: number) => `共 ${count} 款游戏`, genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', search: '搜索', confirm: '确认' }
+  if (lang === 'zh-TW') return { gameName: '遊戲名稱', random: '隨機', popular: '最受歡迎', updatedAt: '更新時間', clear: '清除搜尋', empty: '沒有找到相關遊戲', pagination: '分頁', previous: '上一頁', next: '下一頁', title: 'Switch 遊戲庫', gameCount: (count: number) => `共 ${count} 款遊戲`, genre: '遊戲類型', publisher: '遊戲廠商', releaseDate: '發行日期', search: '搜尋', confirm: '確認' }
+  if (lang === 'en') return { gameName: 'Game name', random: 'Random', popular: 'Most popular', updatedAt: 'Last updated', clear: 'Clear search', empty: 'No games found', pagination: 'Pagination', previous: 'Previous', next: 'Next', title: 'Switch Game Library', gameCount: (count: number) => `${count} games`, genre: 'Game genre', publisher: 'Publisher', releaseDate: 'Release date', search: 'Search ', confirm: 'Confirm' }
+  if (lang === 'ja') return { gameName: 'ゲーム名', random: 'ランダム', popular: '人気順', updatedAt: '更新日時', clear: '検索をクリア', empty: 'ゲームが見つかりません', pagination: 'ページ', previous: '前へ', next: '次へ', title: 'Switch ゲームライブラリ', gameCount: (count: number) => `${count}本`, genre: 'ジャンル', publisher: 'メーカー', releaseDate: '発売日', search: '検索：', confirm: '確認' }
+  return { gameName: '游戏名称', random: '随机', popular: '最受欢迎', updatedAt: '更新时间', clear: '清除搜索', empty: '没有找到相关游戏', pagination: '分页', previous: '上一页', next: '下一页', title: 'Switch游戏库', gameCount: (count: number) => `共 ${count} 款游戏`, genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', search: '搜索', confirm: '确认' }
 }

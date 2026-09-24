@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import ts from 'typescript'
+import { optimizeLibraryImages } from './optimize-library-images.mjs'
 
 const manifestPath = new URL('../src/lib/library-updates.json', import.meta.url)
 const root = new URL('../', import.meta.url)
@@ -35,9 +36,13 @@ export async function syncLibraryUpdates() {
 export function libraryUpdatesPlugin() {
   return {
     name: 'library-content-updates',
-    buildStart: syncLibraryUpdates,
+    async buildStart() {
+      await optimizeLibraryImages()
+      await syncLibraryUpdates()
+    },
     async handleHotUpdate({ file }) {
       if (/(?:psp|switch)-library\.ts$/.test(file) || /public[\\/](?:psp|switch)-library[\\/]/.test(file)) {
+        await optimizeLibraryImages()
         await syncLibraryUpdates()
       }
     },

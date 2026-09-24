@@ -1,3 +1,4 @@
+import { getLibraryImage } from '#/lib/library-image'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
@@ -139,7 +140,7 @@ function ThemeMode() {
   const [inLibrary, setInLibrary] = useState(requestedLibraryIndex >= 0)
   const [page, setPage] = useState(1)
   const [query, setQuery] = useState('')
-  const [librarySort, setLibrarySort] = useState<'random' | 'popular' | 'updatedAt' | 'releaseDate'>('releaseDate')
+  const [librarySort, setLibrarySort] = useState<'random' | 'popular' | 'updatedAt' | 'releaseDate' | 'name'>('releaseDate')
   const [librarySortReverse, setLibrarySortReverse] = useState(false)
   const [librarySearchField, setLibrarySearchField] = useState<'all' | 'genre' | 'publisher'>('all')
   const [libraryRandomSeed, setLibraryRandomSeed] = useState(0)
@@ -333,7 +334,7 @@ function ThemeMode() {
       return
     }
     if (switchPlatform) {
-      const games = prepareThemeLibraryGames(SWITCH_LIBRARY_GAMES, 'switch', query, librarySearchField, librarySort, librarySortReverse, libraryRandomSeed).map(game => ({
+      const games = prepareThemeLibraryGames(SWITCH_LIBRARY_GAMES, 'switch', query, librarySearchField, librarySort, librarySortReverse, libraryRandomSeed, lang).map(game => ({
         _id: game.id,
         url_slug: game.id,
         name: game.title,
@@ -343,14 +344,14 @@ function ThemeMode() {
         platform: 'Nintendo Switch',
         categories: [game.genre],
         languages: [game.language],
-        game_cover: game.cover,
+        game_cover: getLibraryImage(game.cover),
       }))
       setResult({ games, pagination: { total: games.length, page: 1, limit: games.length || 1, pages: 1 } })
       setLoading(false)
       return
     }
     if (pspPlatform) {
-      const games = prepareThemeLibraryGames(PSP_LIBRARY_GAMES, 'psp', query, librarySearchField, librarySort, librarySortReverse, libraryRandomSeed).map(game => ({
+      const games = prepareThemeLibraryGames(PSP_LIBRARY_GAMES, 'psp', query, librarySearchField, librarySort, librarySortReverse, libraryRandomSeed, lang).map(game => ({
         _id: game.id,
         url_slug: game.id,
         name: game.title,
@@ -358,9 +359,9 @@ function ThemeMode() {
         developer: game.publisher,
         released_year: game.releaseDate,
         platform: 'PSP',
-        categories: [game.genre],
+        categories: [game.cardGenre ?? game.genre],
         languages: ['cardLanguage' in game ? String(game.cardLanguage ?? game.language) : game.language],
-        game_cover: ('boxCover' in game ? game.boxCover : undefined) ?? game.cover,
+        game_cover: getLibraryImage(('boxCover' in game ? game.boxCover : undefined) ?? game.cover),
       }))
       setResult({ games, pagination: { total: games.length, page: 1, limit: games.length || 1, pages: 1 } })
       setLoading(false)
@@ -567,7 +568,7 @@ function ThemeMode() {
               target="_blank"
             >{switchPlatform ? (english ? 'Complete Switch Game Archive' : lang === 'zh-TW' ? 'Switch全遊戲檔案' : 'Switch全游戏档案') : (english ? 'Complete PSP Game Archive' : lang === 'zh-TW' ? 'PSP全遊戲檔案' : 'PSP全游戏档案')}</a> : null}
             {(switchPlatform || pspPlatform) ? <div className="kt-library-filters">
-              {getThemeLibraryFilters(lang).map(filter => <button
+              {[...(pspPlatform ? [{ field: 'name' as const, label: lang === 'en' ? 'Game name' : lang === 'zh-TW' ? '遊戲名稱' : lang === 'ja' ? 'ゲーム名' : '游戏名称' }] : []), ...getThemeLibraryFilters(lang)].map(filter => <button
                 aria-pressed={filter.field === librarySearchField || filter.field === librarySort}
                 className={filter.field === librarySearchField || filter.field === librarySort ? 'is-active' : ''}
                 key={filter.field}
@@ -582,7 +583,7 @@ function ThemeMode() {
                   setPage(1)
                 }}
                 type="button"
-              >{filter.label}{filter.field === librarySort && filter.field !== 'random' ? <span aria-hidden="true">{librarySortReverse ? '↑' : '↓'}</span> : null}</button>)}
+              >{filter.label}{filter.field === librarySort && filter.field !== 'random' ? <span aria-hidden="true">{(librarySort === 'name' ? !librarySortReverse : librarySortReverse) ? '↑' : '↓'}</span> : null}</button>)}
             </div> : null}
             <input aria-label={english ? 'Search games' : '搜索游戏'} placeholder={getThemeLibrarySearchPlaceholder(lang, librarySearchField)} value={query} onChange={event => { setQuery(event.target.value); setPage(1) }} />
           </div>
@@ -693,9 +694,10 @@ function prepareThemeLibraryGames<T extends ThemeLibraryGame>(
   platform: 'switch' | 'psp',
   query: string,
   searchField: 'all' | 'genre' | 'publisher',
-  sort: 'random' | 'popular' | 'updatedAt' | 'releaseDate',
+  sort: 'random' | 'popular' | 'updatedAt' | 'releaseDate' | 'name',
   reverse: boolean,
   randomSeed: number,
+  lang: ReturnType<typeof normalizeLocale>,
 ) {
   const normalizedQuery = query.trim().toLocaleLowerCase()
   const games = library.filter(game => {
@@ -709,7 +711,8 @@ function prepareThemeLibraryGames<T extends ThemeLibraryGame>(
   })
   return games.sort((left, right) => {
     let result = 0
-    if (sort === 'popular') result = (right.popularity || 0) - (left.popularity || 0)
+    if (sort === 'name') result = left.title.localeCompare(right.title, lang, { numeric: true, sensitivity: 'base' })
+    else if (sort === 'popular') result = (right.popularity || 0) - (left.popularity || 0)
     else if (sort === 'updatedAt') result = getThemeLibraryUpdateTime(platform, right) - getThemeLibraryUpdateTime(platform, left) || parseThemeLibraryDate(right.releaseDate) - parseThemeLibraryDate(left.releaseDate)
     else if (sort === 'random') return hashThemeLibraryId(`${left.id}:${randomSeed}`) - hashThemeLibraryId(`${right.id}:${randomSeed}`)
     else result = parseThemeLibraryDate(right.releaseDate) - parseThemeLibraryDate(left.releaseDate)

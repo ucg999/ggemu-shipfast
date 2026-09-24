@@ -32,11 +32,39 @@
     "updatedAt": "2026-09-16T08:03:44+00:00"
   },
   "psp/tales-of-phantasia-narikiri-dungeon-x": {
-    "fingerprint": "21c66b829d61b8e677238540f44c34655a56bcbb05c5e7ceb9111269c5ce76fe",
-    "updatedAt": "2026-09-22T04:35:34.594Z"
+    "fingerprint": "14a38ac165461b1fa871db98a9d7b05ee6a54afb15db63386b5487dcf24afb6d",
+    "updatedAt": "2026-09-24T16:14:19.992Z"
   },
   "psp/ridge-racer": {
     "fingerprint": "81dbb4cb905f55e98b9607b2f73f35e8ef69cf2ef30faf1795628975284396ff",
     "updatedAt": "2026-09-08T14:29:05.778Z"
+  },
+  "psp/monster-hunter-portable": {
+    "fingerprint": "a078f20c81614569aff972de0f82bdeefb6531c9c357d9732d12cb1d56f2c881",
+    "updatedAt": "2026-09-24T16:14:20.003Z"
+  },
+  "psp/monster-hunter-portable-2nd": {
+    "fingerprint": "5ace88ac6b9f403700996d52f3802ad4345e1e277e7b338ee2240a966ffa4667",
+    "updatedAt": "2026-09-24T16:14:20.012Z"
+  },
+  "psp/monster-hunter-portable-2nd-g": {
+    "fingerprint": "e769427a174089756d4dbfaf206e2b593b352204c66aacec02346332e8d4a3d3",
+    "updatedAt": "2026-09-24T16:14:20.017Z"
+  },
+  "psp/djmax-portable-2": {
+    "fingerprint": "6a3a528b10d35777802f68268a515c23f97ba218be978c7548a9ad92d7fa943f",
+    "updatedAt": "2026-09-24T15:58:00.768Z"
+  },
+  "psp/djmax-clazziquai-edition": {
+    "fingerprint": "f6aa1b0af0f5683069cee50672835f466fe0e5de621f1be2804efe1aa24eabf4",
+    "updatedAt": "2026-09-24T15:58:00.776Z"
+  },
+  "psp/nba-ballers-rebound": {
+    "fingerprint": "01113445ff8e81d3f5920becc3a383187e5d561e0bbebf9bef64ae60505d07ee",
+    "updatedAt": "2026-09-24T16:21:16.738Z"
+  },
+  "psp/valkyrie-profile-lenneth": {
+    "fingerprint": "ca3b58094237eb5b081e225feb3d6594684d16052b25dcf7198547effce97f6d",
+    "updatedAt": "2026-09-24T15:58:00.788Z"
   }
 }
