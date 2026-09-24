@@ -306,31 +306,31 @@ function CoinChallengePage() {
     }
     window.addEventListener('pagehide', cashOutOnExit)
     coinDropAudioRef.current = new Audio('/coin-challenge-drop.mp3')
-    coinDropAudioRef.current.preload = 'none'
+    coinDropAudioRef.current.preload = 'auto'
     mainSpinAudioRef.current = new Audio('/coin-challenge-spin-main.mp3')
     mainSpinAudioRef.current.preload = 'auto'
     mainSpinAudioRef.current.volume = 1
     withdrawAudioRef.current = new Audio('/coin-challenge-withdraw.mp3')
-    withdrawAudioRef.current.preload = 'none'
+    withdrawAudioRef.current.preload = 'auto'
     winAudioRef.current = new Audio('/coin-challenge-win.mp3')
-    winAudioRef.current.preload = 'none'
+    winAudioRef.current.preload = 'auto'
     winAudioAltRef.current = new Audio('/coin-challenge-win-alt.mp3')
-    winAudioAltRef.current.preload = 'none'
+    winAudioAltRef.current.preload = 'auto'
     luckyAudioRef.current = new Audio('/coin-challenge-lucky.mp3')
-    luckyAudioRef.current.preload = 'none'
+    luckyAudioRef.current.preload = 'auto'
     luckyAudioRef.current.volume = 1
     penaltyAudioRef.current = new Audio('/coin-challenge-penalty.mp3')
-    penaltyAudioRef.current.preload = 'none'
+    penaltyAudioRef.current.preload = 'auto'
     penaltyAudioRef.current.volume = 1
     jackpotAudioRef.current = new Audio('/coin-challenge-jackpot.mp3')
-    jackpotAudioRef.current.preload = 'none'
+    jackpotAudioRef.current.preload = 'auto'
     jackpotAudioRef.current.volume = 1
     poolAudioRef.current = new Audio('/coin-challenge-pool.mp3')
-    poolAudioRef.current.preload = 'none'
+    poolAudioRef.current.preload = 'auto'
     modeEntryAudioRef.current = new Audio('/coin-challenge-mode-entry.mp3')
-    modeEntryAudioRef.current.preload = 'none'
+    modeEntryAudioRef.current.preload = 'auto'
     ghostEntryAudioRef.current = new Audio('/coin-challenge-ghost-entry.mp3')
-    ghostEntryAudioRef.current.preload = 'none'
+    ghostEntryAudioRef.current.preload = 'auto'
 
     return () => {
       window.removeEventListener('pagehide', cashOutOnExit)
@@ -652,6 +652,35 @@ function CoinChallengePage() {
       window.clearInterval(creditHoldIntervalRef.current)
       creditHoldIntervalRef.current = null
     }
+  }
+
+  function unlockGameAudio() {
+    safelyRunAudio(() => {
+      const AudioContextClass =
+        window.AudioContext ??
+        (window as typeof window & { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext
+      if (AudioContextClass) {
+        const context = audioContextRef.current ?? new AudioContextClass()
+        audioContextRef.current = context
+        if (context.state === 'suspended') void context.resume().catch(() => {})
+      }
+
+      for (const audio of [
+        coinDropAudioRef.current,
+        withdrawAudioRef.current,
+        winAudioRef.current,
+        winAudioAltRef.current,
+        luckyAudioRef.current,
+        penaltyAudioRef.current,
+        jackpotAudioRef.current,
+        poolAudioRef.current,
+        modeEntryAudioRef.current,
+        ghostEntryAudioRef.current,
+      ]) {
+        if (audio?.networkState === HTMLMediaElement.NETWORK_EMPTY) audio.load()
+      }
+    })
   }
 
   function handleInsertCreditHundred() {
@@ -1293,12 +1322,14 @@ function CoinChallengePage() {
       className="relative min-h-screen touch-manipulation overflow-hidden bg-black text-white sm:min-h-0 sm:w-full sm:max-w-[760px] sm:rounded-2xl sm:border sm:border-white/20 sm:shadow-2xl"
       onDoubleClick={(event) => event.preventDefault()}
       onPointerDownCapture={(event) => {
+        unlockGameAudio()
         if ((event.target as Element).closest('button, a')) stopCelebrationAudio()
       }}
       onClickCapture={(event) => {
         if ((event.target as Element).closest('button, a')) stopCelebrationAudio()
       }}
       onKeyDownCapture={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') unlockGameAudio()
         if ((event.key === 'Enter' || event.key === ' ') && (event.target as Element).closest('button, a')) stopCelebrationAudio()
       }}
     >
