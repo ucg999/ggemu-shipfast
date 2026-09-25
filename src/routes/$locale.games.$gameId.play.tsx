@@ -44,8 +44,12 @@ export const Route = createFileRoute('/$locale/games/$gameId/play')({
   }),
   loader: async ({ params }) => {
     const game = await getGameDetail({ data: { id: params.gameId } })
+    const trialGames = ['ghost', 'coin', 'arena'] as const
 
-    return { game, trialGame: Math.random() < 0.5 ? ('ghost' as const) : ('coin' as const) }
+    return {
+      game,
+      trialGame: trialGames[Math.floor(Math.random() * trialGames.length)],
+    }
   },
   headers: ({ loaderData }) => ({
     ...noindexHeaders,
@@ -77,7 +81,8 @@ function LocalizedPlayGamePage() {
   const [recommendations, setRecommendations] = useState<Array<PublicGame>>([])
   const [recommendationType, setRecommendationType] = useState<'series' | 'category'>('category')
   const [settlement, setSettlement] = useState<GameSessionSettlement | null>(null)
-  const [showLoadingTrial, setShowLoadingTrial] = useState(!loadingTrialDisabled)
+  const [showLoadingTrialPrompt, setShowLoadingTrialPrompt] = useState(!loadingTrialDisabled)
+  const [showLoadingTrial, setShowLoadingTrial] = useState(false)
   const [trialPosition, setTrialPosition] = useState<{ x: number; y: number } | null>(null)
   const loadGameRecommendations = useServerFn(searchGames)
   const activePlayTimeRef = useRef(0)
@@ -129,7 +134,8 @@ function LocalizedPlayGamePage() {
     setSettlement(null)
     exitingRef.current = false
     setReturnPending(false)
-    setShowLoadingTrial(!loadingTrialDisabled)
+    setShowLoadingTrialPrompt(!loadingTrialDisabled)
+    setShowLoadingTrial(false)
     setTrialPosition(null)
     activePlayTimeRef.current = 0
     awardedCoinsRef.current = 0
@@ -212,6 +218,7 @@ function LocalizedPlayGamePage() {
         if (currentBalance - deductedCoins <= 0 && !coinDepletedRef.current) {
           coinDepletedRef.current = true
           playStartedAtRef.current = null
+          setShowLoadingTrialPrompt(false)
           setShowLoadingTrial(false)
           window.setTimeout(() => {
             window.alert(labels.mahjongCoinsDepleted)
@@ -295,6 +302,7 @@ function LocalizedPlayGamePage() {
       playStartedAtRef.current = null
     }
     const summary = collectDueSessionCoins()
+    setShowLoadingTrialPrompt(false)
     setShowLoadingTrial(false)
     setReturnPending(true)
     setSettlement(summary)
@@ -393,9 +401,39 @@ function LocalizedPlayGamePage() {
       >
         设置
       </span>
+      {showLoadingTrialPrompt ? (
+        <section
+          aria-label={getLoadingTrialPromptLabels(lang).title}
+          className="fixed left-1/2 top-1/2 z-40 w-[min(18rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/20 bg-zinc-950/95 p-4 text-white shadow-2xl"
+          role="dialog"
+        >
+          <p className="text-center text-sm font-semibold leading-6">
+            {getLoadingTrialPromptLabels(lang).title}
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              className="rounded-lg bg-amber-400 px-3 py-2 text-sm font-bold text-black transition hover:bg-amber-300"
+              onClick={() => {
+                setShowLoadingTrialPrompt(false)
+                setShowLoadingTrial(true)
+              }}
+              type="button"
+            >
+              {getLoadingTrialPromptLabels(lang).yes}
+            </button>
+            <button
+              className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+              onClick={() => setShowLoadingTrialPrompt(false)}
+              type="button"
+            >
+              {getLoadingTrialPromptLabels(lang).no}
+            </button>
+          </div>
+        </section>
+      ) : null}
       {showLoadingTrial ? (
         <section
-          aria-label={`等待游戏加载时试玩${trialGame === 'ghost' ? '幽灵捕手' : '金币娱乐'}`}
+          aria-label={`等待游戏加载时试玩${getTrialGameName(trialGame, lang)}`}
           className="fixed right-2 top-16 z-40 w-[min(92vw,520px)] overflow-visible rounded-xl border border-white/25 bg-black shadow-2xl"
           role="region"
           style={{
@@ -451,8 +489,10 @@ function LocalizedPlayGamePage() {
             }}
             src={trialGame === 'ghost'
               ? `/${lang}/ghost-hunter?embed=1&trialLayout=3`
-              : `/${lang}/coin-challenge?embed=1`}
-            title={`${trialGame === 'ghost' ? '幽灵捕手' : '金币娱乐'}试玩`}
+              : trialGame === 'arena'
+                ? `/${lang}/red-blue-arena?embed=1`
+                : `/${lang}/coin-challenge?embed=1`}
+            title={`${getTrialGameName(trialGame, lang)}试玩`}
           />
         </section>
       ) : null}
@@ -472,6 +512,29 @@ function LocalizedPlayGamePage() {
       {returnPending ? <div className="fixed inset-0 z-40 bg-black/70" role="status"><p className="absolute inset-x-0 bottom-12 text-center text-sm text-white">{lang === 'en' ? 'Settlement complete. Returning…' : '金币已结算，正在返回 PRO 主页…'}</p></div> : null}
     </main>
   )
+}
+
+function getTrialGameName(trialGame: 'ghost' | 'coin' | 'arena', lang: Locale) {
+  if (trialGame === 'arena') {
+    return lang === 'en' ? 'Red vs Blue Arena' : lang === 'ja' ? '赤青アリーナ' : lang === 'zh-TW' ? '紅藍競技場' : '红蓝竞技场'
+  }
+  if (trialGame === 'ghost') {
+    return lang === 'en' ? 'Ghost Hunter' : lang === 'ja' ? 'ゴーストハンター' : lang === 'zh-TW' ? '幽靈捕手' : '幽灵捕手'
+  }
+  return lang === 'en' ? 'Coin Entertainment' : lang === 'ja' ? 'コインゲーム' : lang === 'zh-TW' ? '金幣娛樂' : '金币娱乐'
+}
+
+function getLoadingTrialPromptLabels(lang: Locale) {
+  if (lang === 'en') {
+    return { no: 'No', title: 'Play a mini game while you wait?', yes: 'Yes' }
+  }
+  if (lang === 'ja') {
+    return { no: 'いいえ', title: '待っている間にミニゲームで遊びますか？', yes: 'はい' }
+  }
+  if (lang === 'zh-TW') {
+    return { no: '不要', title: '等待過程中，玩個小遊戲吧', yes: '要' }
+  }
+  return { no: '不要', title: '等待过程中，玩个小游戏吧', yes: '要' }
 }
 
 type GameSessionSettlement = {

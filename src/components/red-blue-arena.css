@@ -1,0 +1,63 @@
+.arena-page { min-height: calc(100dvh - 80px); color: #fff; background: #000; }
+.arena-shell { width: min(100%, 860px); margin: auto; padding: 12px; }
+.arena-score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
+.arena-team { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; min-width: 0; }
+.arena-team:last-child { justify-content: flex-end; }
+.arena-orb { width: 24px; height: 24px; flex: none; border-radius: 50%; border: 2px solid #fff8; }
+.arena-orb-red { background: #ef233c; box-shadow: 0 0 14px #ef233c; }
+.arena-orb-blue { background: #3987ff; box-shadow: 0 0 14px #3987ff; }
+.arena-heart { color: #ff294d; filter: drop-shadow(0 0 3px #f43f5e); font-size: clamp(12px, 2.3vw, 20px); line-height: 1; }
+.arena-heart-blue { color: #4590ff; filter: drop-shadow(0 0 3px #3b82f6); }
+.arena-canvas-wrap { position: relative; width: min(100%, 650px); margin: 12px auto; aspect-ratio: 1; }
+.arena-canvas { width: 100%; height: 100%; display: block; touch-action: none; image-rendering: pixelated; filter: none; }
+.arena-overlay { position: absolute; inset: 10%; display: grid; place-items: center; text-align: center; pointer-events: none; }
+.arena-overlay-card { max-width: 86%; border: 1px solid #ffffff35; border-radius: 20px; background: #080713d9; padding: 18px 24px; box-shadow: 0 16px 50px #000b; backdrop-filter: blur(8px); }
+.arena-bet-panel { display: grid; gap: 10px; width: min(100%, 650px); margin: auto; border: 1px solid #ffffff20; border-radius: 18px; background: #11101cd9; padding: 14px; }
+.arena-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.arena-choice button, .arena-stakes button { border: 1px solid #ffffff30; border-radius: 12px; padding: 9px; font-weight: 800; transition: .16s; }
+.arena-choice button[data-active="true"] { transform: translateY(-2px); box-shadow: 0 0 0 2px #fff, 0 8px 22px currentColor; }
+.arena-red-btn { color: #fff; background: #ef233c; }
+.arena-blue-btn { color: #fff; background: #3987ff; }
+.arena-stakes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.arena-stakes button { background: #ffffff0b; color: #ddd; }
+.arena-stakes button[data-active="true"] { border-color: #facc15; background: #facc1525; color: #fde047; }
+.arena-start { border: 0; border-radius: 13px; padding: 12px 18px; background: linear-gradient(135deg,#facc15,#f97316); color: #271300; font-weight: 950; box-shadow: 0 8px 24px #f9731644; }
+.arena-start:disabled { filter: grayscale(1); opacity: .45; box-shadow: none; }
+.arena-live-note { text-align: center; font-size: 12px; color: #ffffff8c; }
+.arena-page-embed { min-height: 100dvh; height: 100dvh; overflow: auto; }
+.arena-page-embed .arena-shell { min-height: 100%; padding: 6px; }
+.arena-page-embed .arena-header { margin-bottom: 3px; }
+.arena-page-embed .arena-title { font-size: 16px; }
+.arena-page-embed .arena-canvas-wrap { width: min(100%, calc(100dvh - 270px), 420px); min-width: 210px; margin-block: 4px; }
+.arena-page-embed.arena-page-running .arena-canvas-wrap { width: min(100%, calc(100dvh - 105px), 500px); }
+.arena-page-embed .arena-bet-panel { gap: 6px; padding: 8px; }
+.arena-page-embed .arena-choice button, .arena-page-embed .arena-stakes button { padding: 6px 4px; }
+.arena-page-embed .arena-start { padding: 8px 12px; }
+@media (max-width: 639px) {
+  .arena-page { min-height: 100dvh; overflow-x: hidden; }
+  .arena-page:not(.arena-page-embed) { position: fixed; inset: 0; z-index: 100; height: 100dvh; overflow-y: auto; overscroll-behavior: contain; background: #000; }
+  .arena-shell { padding: 6px; }
+  .arena-header { margin-bottom: 3px; }
+  .arena-title { font-size: 17px; line-height: 1.1; }
+  .arena-back { font-size: 10px; }
+  .arena-balance { padding: 5px 7px; font-size: 12px; }
+  .arena-score { gap: 3px; }
+  .arena-team { gap: 1px; flex-wrap: nowrap; }
+  .arena-orb { width: 16px; height: 16px; }
+  .arena-heart { font-size: clamp(9px, 2.8vw, 13px); }
+  .arena-top-timer { padding: 2px 5px; font-size: 11px; }
+  .arena-canvas-wrap { width: min(100%, calc(100dvh - 280px)); min-width: 230px; margin-block: 5px; }
+  .arena-overlay-card { max-width: 90%; padding: 10px 12px; }
+  .arena-overlay-card strong { font-size: 15px; }
+  .arena-overlay-card p { margin-top: 4px; font-size: 10px; }
+  .arena-result-mark { margin-bottom: 2px; font-size: 22px; }
+  .arena-bet-panel { gap: 6px; padding: 7px; }
+  .arena-choice button, .arena-stakes button { padding: 6px 2px; font-size: 11px; }
+  .arena-bet-total { padding: 5px 7px; font-size: 10px; }
+  .arena-start { padding: 8px 10px; font-size: 12px; }
+}
+@media (max-height: 570px) {
+  .arena-page-embed .arena-header { display: none; }
+  .arena-page-embed .arena-canvas-wrap { width: min(100%, calc(100dvh - 225px)); min-width: 180px; }
+  .arena-page-embed.arena-page-running .arena-canvas-wrap { width: min(100%, calc(100dvh - 48px)); }
+}
