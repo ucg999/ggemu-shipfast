@@ -49,6 +49,17 @@ const SIDE_COPY: Record<ArenaSide, { name: string; color: string; emoji: string 
   red: { name: '小红', color: '#ef233c', emoji: '🔴' }, blue: { name: '小蓝', color: '#3987ff', emoji: '🔵' },
   yellow: { name: '小黄', color: '#f5d328', emoji: '🟡' }, green: { name: '小绿', color: '#35c96f', emoji: '🟢' },
 }
+const WEAPON_HELP = [
+  ['🗡️', '小刀：1伤害，持有时速度×2'], ['⚔️', '剑：2伤害，可组成双剑'],
+  ['🪓', '斧头：3伤害'], ['☠️', '死神刀：4伤害，持有时速度减半'],
+  ['🏹', '弓：射箭1伤害；冰箭可冰冻2秒'], ['🔥', '法杖：火线1伤害，3秒后再掉1血'],
+  ['🛡️', '盾：抵挡一次；火线/冰箭会造成伤害并碎盾'],
+  ['🪞', '反伤甲：反弹一次武器伤害'],
+] as const
+const ITEM_HELP = [
+  ['🍊', '果实：回复1格，可突破10血'], ['🟡', '黄药：速度×2，持续3秒'],
+  ['🔴', '红药：伤害×2，持续3秒'], ['⚡', '闪电柱：首次触碰掉1血、停顿并减速'],
+] as const
 
 function makeFighter(id: number, side: ArenaSide, x: number, y: number, vx: number, vy: number): Fighter {
   return { id, side, team: side, x, y, vx, vy, radius: .047, health: ARENA_MAX_HEALTH, angle: Math.atan2(vy, vx), cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, iceArrow: false, shield: false, armor: false, armorBumps: 0, speedBoost: 0, damageBoost: 0, stun: 0, iceStun: 0, burnTimer: 0, burnDamage: 0, burnSpread: false }
@@ -205,6 +216,7 @@ function RedBlueArenaPage() {
     <div className="arena-score gap-x-2 gap-y-1" style={{ gridTemplateColumns: `repeat(${mode === 'three' ? 3 : healthEntries.length <= 2 ? healthEntries.length : 2}, minmax(0, 1fr))` }}>{healthEntries.map((entry, index) => { const hearts = Math.max(ARENA_MAX_HEALTH, entry.value); return <div className="arena-team min-w-0 flex-nowrap" key={`${entry.side}-${index}`} style={{ justifyContent: 'flex-start' }} title={`${entry.label} ${entry.value}点血`}><i className={`arena-orb arena-orb-${entry.side} shrink-0 ${mode === 'three' ? '!h-3 !w-3' : '!h-4 !w-4'}`} style={{ background: entry.color }} /><span className={`flex min-w-0 flex-nowrap leading-none ${mode === 'three' ? 'text-[9px] sm:text-[12px]' : 'text-[11px] sm:text-[14px]'}`} style={{ color: entry.color }}>{Array.from({ length: hearts }, (_, heart) => <i className="not-italic drop-shadow-[0_0_3px_currentColor]" key={heart}>{heart < entry.value ? '♥' : '♡'}</i>)}</span></div> })}</div>
     <div className="whitespace-nowrap text-center font-mono text-xs font-black uppercase tracking-tight sm:text-base">{displayedSides.map((side, index) => <span key={side}><span style={{ color: SIDE_COPY[side].color }}>{SIDE_COPY[side].name}</span>{index < displayedSides.length - 1 ? <span className="mx-1 text-white/55">VS</span> : null}</span>)}</div>
     <div className="arena-canvas-wrap"><canvas ref={canvasRef} className="arena-canvas" aria-label="多球自动战斗的圆形竞技场" />{phase !== 'running' && <div className="arena-overlay"><div className="arena-overlay-card"><div className="arena-result-mark mb-2 text-4xl">{result === 'draw' ? '🤝' : result ? SIDE_COPY[result].emoji : '⚔️'}</div><strong className="text-xl">{result ? result === 'draw' ? '平局' : `${SIDE_COPY[result].name}胜利` : '等待开战'}</strong><p className="mt-2 text-sm text-white/65">{message}</p></div></div>}</div>
+    {phase === 'running' ? <aside className="mt-2 grid grid-cols-2 gap-2 text-white/70"><details className="rounded-lg border border-white/10 bg-white/[.04] p-2"><summary className="cursor-pointer select-none text-[11px] font-black text-yellow-300">⚔️ 武器说明</summary><div className="mt-2 grid gap-y-1 text-[9px] leading-tight sm:text-[10px]">{WEAPON_HELP.map(([icon, text]) => <span key={text}><b className="mr-1">{icon}</b>{text}</span>)}</div>{mode !== 'duel' ? <p className="mt-1 text-[9px] text-orange-300/80">🔥 火线烫伤可在碰撞时额外传给一个球。</p> : null}</details><details className="rounded-lg border border-white/10 bg-white/[.04] p-2"><summary className="cursor-pointer select-none text-[11px] font-black text-cyan-300">🎁 道具说明</summary><div className="mt-2 grid gap-y-1 text-[9px] leading-tight sm:text-[10px]">{ITEM_HELP.map(([icon, text]) => <span key={text}><b className="mr-1">{icon}</b>{text}</span>)}</div></details></aside> : null}
     {phase === 'betting' ? <><label className="mb-2 flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-black text-white"><span className="shrink-0 text-white/60">模式</span><select className="min-w-0 flex-1 bg-transparent text-right font-black text-yellow-300 outline-none" value={mode} onChange={event => { const value = event.currentTarget.value as ArenaMode; setMode(value); setBetSide(MODE_RULES[value].sides[0]); setStake(0); setHealth(createRound(value).fighters.map(() => 10)); setTime(MODE_RULES[value].seconds) }}>{(Object.keys(MODE_RULES) as ArenaMode[]).map(value => <option className="bg-black text-white" key={value} value={value}>{MODE_RULES[value].label} · {MODE_RULES[value].seconds}秒 · 最低{MODE_RULES[value].minBet} · 上限{MODE_RULES[value].maxBet} · 赔{MODE_RULES[value].profit}</option>)}</select></label><div className="arena-bet-panel arena-bet-layout"><div className="arena-bet-controls"><div className="arena-choice" style={{ gridTemplateColumns: `repeat(${displayedSides.length}, minmax(0, 1fr))` }}>{displayedSides.map(side => <button className="!px-1 text-[10px] sm:text-xs" key={side} style={{ backgroundColor: `${SIDE_COPY[side].color}cc` }} data-active={betSide === side} onClick={() => setBetSide(side)}>{SIDE_COPY[side].emoji} 投{SIDE_COPY[side].name}</button>)}</div><div className="arena-stakes">{ARENA_BET_OPTIONS.filter(value => value >= rules.minBet).map(value => <button key={value} data-active="false" disabled={stake + value > balance || stake + value > rules.maxBet} onClick={() => setStake(current => Math.min(rules.maxBet, current + value))}>+ 🪙 {value}</button>)}</div><div className="arena-bet-total flex items-center justify-between rounded-xl bg-black/25 px-3 py-2 text-sm"><strong className="text-yellow-300">累计投注：🪙 {stake} / {rules.maxBet}</strong><button className="text-white/60 underline" disabled={stake === 0} onClick={() => setStake(0)}>清空投注</button></div></div><button aria-label={stake < rules.minBet ? `最低投注 ${rules.minBet} 金币` : balance < stake ? '金币不足' : `投注 ${stake} 金币并开战`} className="arena-start arena-start-square" disabled={stake < rules.minBet || balance < stake} onClick={startRound}>开战</button></div></> : phase === 'result' ? <div className="arena-bet-panel"><button className="arena-start" onClick={resetBetting}>再来一局</button></div> : null}
     <CoinRewardPopup feedback={feedback} />
   </section></main>
@@ -308,6 +320,8 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       fighter.x = .5 + nx * .43; fighter.y = .5 + ny * .43
       const dot = fighter.vx * nx + fighter.vy * ny
       fighter.vx -= 2 * dot * nx; fighter.vy -= 2 * dot * ny
+      const wallTurn = (.012 + Math.min(.045, Math.abs(dot) * .035)) * (Math.random() < .5 ? -1 : 1)
+      fighter.vx += -ny * wallTurn; fighter.vy += nx * wallTurn
       fighter.vx *= 1.05; fighter.vy *= 1.05
       round.wallImpacts.push({ angle: Math.atan2(ny, nx), life: 1.05, strength: .01 + Math.abs(dot) * .02 })
       if (round.wallImpacts.length > ARENA_MAX_WALL_IMPACTS) round.wallImpacts.splice(0, round.wallImpacts.length - ARENA_MAX_WALL_IMPACTS)
@@ -326,6 +340,8 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       const dot = fighter.vx * nx + fighter.vy * ny
       if (dot < 0) {
         fighter.vx -= 2 * dot * nx; fighter.vy -= 2 * dot * ny
+        const pillarTurn = (.015 + Math.min(.04, Math.abs(dot) * .03)) * (Math.random() < .5 ? -1 : 1)
+        fighter.vx += -ny * pillarTurn; fighter.vy += nx * pillarTurn
         if (pillar.charged) {
           const hit = applyArenaShield(1, fighter.shield)
           fighter.shield = hit.shield; fighter.health = Math.max(0, fighter.health - hit.damage)
@@ -349,6 +365,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     if (relative < 0) {
       a.vx += relative * nx; a.vy += relative * ny
       b.vx -= relative * nx; b.vy -= relative * ny
+      addNaturalCollisionDeflection(a, b, nx, ny, relative)
       const strength = Math.min(1, Math.abs(relative) / 1.4)
       const impactX = (a.x + b.x) / 2; const impactY = (a.y + b.y) / 2
       round.collisionImpacts.push({ x: impactX, y: impactY, life: .38, strength })
@@ -418,6 +435,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     const relative = (right.vx - left.vx) * nx + (right.vy - left.vy) * ny
     if (relative < 0) {
       left.vx += relative * nx; left.vy += relative * ny; right.vx -= relative * nx; right.vy -= relative * ny
+      addNaturalCollisionDeflection(left, right, nx, ny, relative)
       round.collisionImpacts.push({ x: (left.x + right.x) / 2, y: (left.y + right.y) / 2, life: .38, strength: Math.min(1, Math.abs(relative) / 1.4) })
       audio?.play(left.weapon && right.weapon ? 'clash' : 'collision')
     }
@@ -548,6 +566,19 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
 // Equipped weapons, shields, armor and stored ice arrows live on Fighter and never count here.
 function groundItemCount(round: RoundState) {
   return round.pickups.length + round.foods.length + round.potions.length
+}
+
+function addNaturalCollisionDeflection(first: Fighter, second: Fighter, nx: number, ny: number, relativeSpeed: number) {
+  const impact = Math.min(1, Math.abs(relativeSpeed) / 1.4)
+  const tangentDifference = (second.vx - first.vx) * -ny + (second.vy - first.vy) * nx
+  const direction = Math.abs(tangentDifference) > .002 ? Math.sign(tangentDifference) : Math.random() < .5 ? -1 : 1
+  const turn = direction * (.025 + impact * .07)
+  const rotate = (fighter: Fighter, angle: number) => {
+    const cos = Math.cos(angle); const sin = Math.sin(angle); const vx = fighter.vx; const vy = fighter.vy
+    fighter.vx = vx * cos - vy * sin; fighter.vy = vx * sin + vy * cos
+  }
+  rotate(first, turn)
+  rotate(second, -turn)
 }
 
 function spreadBurnOnCollision(round: RoundState, first: Fighter, second: Fighter) {
