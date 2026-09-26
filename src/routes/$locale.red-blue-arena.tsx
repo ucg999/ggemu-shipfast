@@ -19,10 +19,10 @@ export const Route = createFileRoute('/$locale/red-blue-arena')({
 
 type WeaponKind = 'sword' | 'blade' | 'axe' | 'reaper' | 'bow' | 'staff'
 type ArenaMode = 'duel' | 'three' | 'four' | 'team'
-type Fighter = { id: number; side: ArenaSide; team: ArenaSide; x: number; y: number; vx: number; vy: number; radius: number; health: number; angle: number; cooldown: number; weapon: WeaponKind | null; weaponCount: number; weaponTimer: number; iceArrow: boolean; shield: boolean; armor: boolean; armorBumps: number; speedBoost: number; damageBoost: number; stun: number; iceStun: number; burnTimer: number; burnDamage: number; burnSpread: boolean }
-type Pickup = { id: number; x: number; y: number; kind: WeaponKind | 'shield' | 'armor' | 'pillar' | 'ice-arrow'; life: number }
+type Fighter = { id: number; side: ArenaSide; team: ArenaSide; x: number; y: number; vx: number; vy: number; radius: number; health: number; angle: number; cooldown: number; weapon: WeaponKind | null; weaponCount: number; weaponTimer: number; iceArrow: boolean; electricArrow: boolean; shield: boolean; armor: boolean; armorBumps: number; speedBoost: number; damageBoost: number; stun: number; iceStun: number; burnTimer: number; burnDamage: number; burnSpread: boolean }
+type Pickup = { id: number; x: number; y: number; kind: WeaponKind | 'shield' | 'armor' | 'pillar' | 'ice-arrow' | 'electric-arrow'; life: number }
 type Food = { id: number; x: number; y: number; life: number }
-type Projectile = { id: number; owner: number; ownerTeam: ArenaSide; kind: 'arrow' | 'ice' | 'fire'; x: number; y: number; vx: number; vy: number; life: number; damage: number; bounced: boolean }
+type Projectile = { id: number; owner: number; ownerTeam: ArenaSide; kind: 'arrow' | 'ice' | 'electric' | 'fire'; x: number; y: number; vx: number; vy: number; life: number; damage: number; bounced: boolean }
 type Potion = { id: number; x: number; y: number; kind: 'speed' | 'power'; life: number }
 type Pillar = { id: number; x: number; y: number; radius: number; hits: number; charged: boolean }
 type Particle = { x: number; y: number; vx: number; vy: number; life: number; color: string }
@@ -52,7 +52,7 @@ const SIDE_COPY: Record<ArenaSide, { name: string; color: string; emoji: string 
 const WEAPON_HELP = [
   ['🗡️', '小刀：1伤害，持有时速度×2'], ['⚔️', '剑：2伤害，可组成双剑'],
   ['🪓', '斧头：3伤害'], ['☠️', '死神刀：4伤害，持有时速度减半'],
-  ['🏹', '弓：射箭1伤害；冰箭可冰冻2秒'], ['🔥', '法杖：火线1伤害，3秒后再掉1血'],
+  ['🏹', '弓：射箭1伤害；冰箭冰冻2秒；电箭对防具双倍伤害'], ['🔥', '法杖：火线1伤害，3秒后再掉1血'],
   ['🛡️', '盾：抵挡一次；火线/冰箭会造成伤害并碎盾'],
   ['🪞', '反伤甲：反弹一次武器伤害'],
 ] as const
@@ -62,7 +62,7 @@ const ITEM_HELP = [
 ] as const
 
 function makeFighter(id: number, side: ArenaSide, x: number, y: number, vx: number, vy: number): Fighter {
-  return { id, side, team: side, x, y, vx, vy, radius: .047, health: ARENA_MAX_HEALTH, angle: Math.atan2(vy, vx), cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, iceArrow: false, shield: false, armor: false, armorBumps: 0, speedBoost: 0, damageBoost: 0, stun: 0, iceStun: 0, burnTimer: 0, burnDamage: 0, burnSpread: false }
+  return { id, side, team: side, x, y, vx, vy, radius: .047, health: ARENA_MAX_HEALTH, angle: Math.atan2(vy, vx), cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, iceArrow: false, electricArrow: false, shield: false, armor: false, armorBumps: 0, speedBoost: 0, damageBoost: 0, stun: 0, iceStun: 0, burnTimer: 0, burnDamage: 0, burnSpread: false }
 }
 
 function createRound(mode: ArenaMode = 'duel'): RoundState {
@@ -251,7 +251,6 @@ function equipWeapon(fighter: Fighter, weapon: WeaponKind) {
 
 function consumeWeapon(fighter: Fighter) {
   removeWeaponSpeedEffect(fighter)
-  if (fighter.weapon === 'bow') fighter.iceArrow = false
   fighter.weapon = null
   fighter.weaponCount = 0
   fighter.weaponTimer = 0
@@ -302,8 +301,10 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       const target = round.fighters.filter(candidate => candidate.team !== fighter.team && candidate.health > 0).sort((left, right) => Math.hypot(left.x - fighter.x, left.y - fighter.y) - Math.hypot(right.x - fighter.x, right.y - fighter.y))[0]
       if (!target) continue
       const dx = target.x - fighter.x; const dy = target.y - fighter.y; const distance = Math.hypot(dx, dy) || 1
-      const projectileKind: Projectile['kind'] = fighter.weapon === 'staff' ? 'fire' : fighter.iceArrow ? 'ice' : 'arrow'; const speed = projectileKind === 'fire' ? .82 : .95
+      const projectileKind: Projectile['kind'] = fighter.weapon === 'staff' ? 'fire' : fighter.electricArrow ? 'electric' : fighter.iceArrow ? 'ice' : 'arrow'; const speed = projectileKind === 'fire' ? .82 : .95
       round.projectiles.push({ id: Date.now() + Math.random(), owner: fighter.id, ownerTeam: fighter.team, kind: projectileKind, x: fighter.x, y: fighter.y, vx: dx / distance * speed, vy: dy / distance * speed, life: ARENA_ROUND_SECONDS, damage: arenaWeaponDamage(projectileKind === 'fire' ? 'staff' : 'bow') * (fighter.damageBoost > 0 ? 2 : 1), bounced: false })
+      if (projectileKind === 'electric') fighter.electricArrow = false
+      if (projectileKind === 'ice') fighter.iceArrow = false
       consumeWeapon(fighter)
       burst(round, fighter.x, fighter.y, '#ffffff', 6)
     }
@@ -451,23 +452,24 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   }
   if (round.nextPickup <= 0 && groundItemCount(round) < MODE_RULES[round.mode].itemLimit) {
     const angle = Math.random() * TWO_PI; const radius = Math.sqrt(Math.random()) * .29
-    const kinds: Pickup['kind'][] = ['sword', 'blade', 'axe', 'reaper', 'bow', 'staff', 'sword', 'blade', 'axe', 'bow', 'staff', 'ice-arrow', 'shield', 'armor', 'pillar']
+    const kinds: Pickup['kind'][] = ['sword', 'blade', 'axe', 'reaper', 'bow', 'staff', 'sword', 'blade', 'axe', 'bow', 'staff', 'ice-arrow', 'electric-arrow', 'shield', 'armor', 'pillar']
     round.pickups.push({ id: Date.now() + Math.random(), x: .5 + Math.cos(angle) * radius, y: .5 + Math.sin(angle) * radius, kind: kinds[Math.floor(Math.random() * kinds.length)], life: 12 + Math.random() * 8 })
     round.nextPickup = 1.2 + Math.random() * 3.8
   }
   const collected = new Set<number>()
   for (const pickup of round.pickups) {
     pickup.life -= dt
-    for (const fighter of round.fighters) if (fighter.health > 0 && Math.hypot(fighter.x - pickup.x, fighter.y - pickup.y) < .08 && (pickup.kind !== 'shield' || !fighter.shield) && (pickup.kind !== 'armor' || !fighter.armor) && (pickup.kind !== 'ice-arrow' || !fighter.iceArrow)) {
+    for (const fighter of round.fighters) if (fighter.health > 0 && Math.hypot(fighter.x - pickup.x, fighter.y - pickup.y) < .08 && (pickup.kind !== 'shield' || !fighter.shield) && (pickup.kind !== 'armor' || !fighter.armor) && (pickup.kind !== 'ice-arrow' || !fighter.iceArrow) && (pickup.kind !== 'electric-arrow' || !fighter.electricArrow)) {
       if (pickup.kind === 'shield') fighter.shield = true
       else if (pickup.kind === 'armor') { fighter.armor = true; fighter.armorBumps = 0 }
       else if (pickup.kind === 'ice-arrow') fighter.iceArrow = true
+      else if (pickup.kind === 'electric-arrow') fighter.electricArrow = true
       else if (pickup.kind === 'pillar') {
         const angle = Math.random() * TWO_PI; const radius = .1 + Math.random() * .2
         round.pillars.push({ id: Date.now() + Math.random(), x: .5 + Math.cos(angle) * radius, y: .5 + Math.sin(angle) * radius, radius: .038, hits: 3, charged: true })
       }
       else equipWeapon(fighter, pickup.kind)
-      collected.add(pickup.id); burst(round, pickup.x, pickup.y, pickup.kind === 'shield' || pickup.kind === 'ice-arrow' ? '#8fe7ff' : pickup.kind === 'armor' ? '#ffb82e' : pickup.kind === 'pillar' ? '#d7e0e5' : '#fde047', 14); break
+      collected.add(pickup.id); burst(round, pickup.x, pickup.y, pickup.kind === 'electric-arrow' ? '#ffe34b' : pickup.kind === 'shield' || pickup.kind === 'ice-arrow' ? '#8fe7ff' : pickup.kind === 'armor' ? '#ffb82e' : pickup.kind === 'pillar' ? '#d7e0e5' : '#fde047', 14); break
     }
   }
   round.pickups = round.pickups.filter(pickup => pickup.life > 0 && !collected.has(pickup.id))
@@ -526,7 +528,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       const dot = arrow.vx * nx + arrow.vy * ny
       if (dot < 0) { arrow.vx -= 2 * dot * nx; arrow.vy -= 2 * dot * ny }
       arrow.bounced = true; pillar.hits -= 1
-      burst(round, pillar.x + nx * pillar.radius, pillar.y + ny * pillar.radius, arrow.kind === 'fire' ? '#ff681d' : arrow.kind === 'ice' ? '#70dcff' : '#eaf4ff', pillar.hits > 0 ? 12 : 28)
+      burst(round, pillar.x + nx * pillar.radius, pillar.y + ny * pillar.radius, arrow.kind === 'fire' ? '#ff681d' : arrow.kind === 'ice' ? '#70dcff' : arrow.kind === 'electric' ? '#ffe34b' : '#eaf4ff', pillar.hits > 0 ? 12 : 28)
       audio?.play('wall')
       if (pillar.hits <= 0) projectileBrokenPillars.add(pillar.id)
       break
@@ -535,18 +537,22 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     for (const target of targets) {
       if (Math.hypot(arrow.x - target.x, arrow.y - target.y) < target.radius + (arrow.kind === 'fire' ? .026 : .018)) {
         const owner = round.fighters.find(fighter => fighter.id === arrow.owner)
-        const reflected = target.armor && arrow.damage > 0
+        const electricDefenseHit = arrow.kind === 'electric' && (target.shield || target.armor)
+        const effectiveDamage = electricDefenseHit ? arrow.damage * 2 : arrow.damage
+        const reflected = arrow.kind !== 'electric' && target.armor && arrow.damage > 0
         if (reflected) { target.armor = false; target.armorBumps = 0; if (owner) owner.health = Math.max(0, owner.health - arrow.damage); burst(round, target.x, target.y, '#ffb82e', 26) }
-        const bypassesShield = arrow.kind === 'fire' || arrow.kind === 'ice'
+        if (electricDefenseHit && target.armor) { target.armor = false; target.armorBumps = 0; burst(round, target.x, target.y, '#ffe34b', 26) }
+        const bypassesShield = arrow.kind === 'fire' || arrow.kind === 'ice' || arrow.kind === 'electric'
         const breaksShield = bypassesShield && !reflected && target.shield
-        const hit = bypassesShield ? { damage: reflected ? 0 : arrow.damage, shield: breaksShield ? false : target.shield } : applyArenaShield(reflected ? 0 : arrow.damage, target.shield)
+        const hit = bypassesShield ? { damage: reflected ? 0 : effectiveDamage, shield: breaksShield ? false : target.shield } : applyArenaShield(reflected ? 0 : effectiveDamage, target.shield)
         target.shield = hit.shield; target.health = Math.max(0, target.health - hit.damage)
         if (breaksShield) burst(round, target.x, target.y, '#b9f3ff', 24)
         if (hit.damage > 0) { target.vx *= .82; target.vy *= .82 }
         if (hit.damage > 0 && arrow.kind === 'fire') { target.burnTimer = 3; target.burnDamage = arrow.damage; target.burnSpread = round.mode !== 'duel' }
         if (hit.damage > 0 && arrow.kind === 'ice') target.iceStun = Math.max(target.iceStun, 2)
-        burst(round, target.x, target.y, arrow.kind === 'ice' && hit.damage ? '#70dcff' : hit.damage ? SIDE_COPY[target.side].color : '#8fe7ff', 18)
-        audio?.play(arrow.kind === 'fire' ? 'weapon' : arrow.kind === 'ice' ? 'shock' : 'collision')
+        if (hit.damage > 0 && arrow.kind === 'electric') target.stun = Math.max(target.stun, 1)
+        burst(round, target.x, target.y, arrow.kind === 'ice' && hit.damage ? '#70dcff' : arrow.kind === 'electric' && hit.damage ? '#ffe34b' : hit.damage ? SIDE_COPY[target.side].color : '#8fe7ff', 18)
+        audio?.play(arrow.kind === 'fire' ? 'weapon' : arrow.kind === 'ice' || arrow.kind === 'electric' ? 'shock' : 'collision')
         spentProjectiles.add(arrow.id); break
       }
     }
@@ -662,6 +668,7 @@ function drawRound(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rou
     else if (pickup.kind === 'armor') drawPixelArmor(ctx, pickup.x * s, pickup.y * s, s * .07)
     else if (pickup.kind === 'pillar') drawPixelLightning(ctx, pickup.x * s, pickup.y * s, s * .052)
     else if (pickup.kind === 'ice-arrow') drawPixelIceArrow(ctx, pickup.x * s, pickup.y * s, s * .075)
+    else if (pickup.kind === 'electric-arrow') drawPixelElectricArrow(ctx, pickup.x * s, pickup.y * s, s * .075)
     else drawPixelWeapon(ctx, pickup.kind, pickup.x * s, pickup.y * s, -.7, s * .07)
   }
   for (const food of round.foods) drawPixelFood(ctx, food, s)
@@ -673,7 +680,7 @@ function drawRound(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rou
       ctx.shadowColor = '#ff210d'; ctx.shadowBlur = s * .025; ctx.lineCap = 'round'; ctx.strokeStyle = '#ff2d17'; ctx.lineWidth = Math.max(5, s * .018); ctx.beginPath(); ctx.moveTo(-s * .105, 0); ctx.lineTo(s * .035, 0); ctx.stroke()
       ctx.shadowBlur = 0; ctx.strokeStyle = '#ffb125'; ctx.lineWidth = Math.max(2, s * .007); ctx.beginPath(); ctx.moveTo(-s * .095, 0); ctx.lineTo(s * .04, 0); ctx.stroke()
     } else {
-      ctx.strokeStyle = arrow.kind === 'ice' ? '#7de3ff' : '#fff'; ctx.shadowColor = arrow.kind === 'ice' ? '#32c9ff' : 'transparent'; ctx.shadowBlur = arrow.kind === 'ice' ? s * .018 : 0; ctx.lineWidth = Math.max(2, s * .005); ctx.beginPath(); ctx.moveTo(-s * .025, 0); ctx.lineTo(s * .025, 0); ctx.stroke(); ctx.beginPath(); ctx.moveTo(s * .025, 0); ctx.lineTo(s * .012, -s * .01); ctx.moveTo(s * .025, 0); ctx.lineTo(s * .012, s * .01); ctx.stroke(); ctx.shadowBlur = 0
+      ctx.strokeStyle = arrow.kind === 'ice' ? '#7de3ff' : arrow.kind === 'electric' ? '#ffe34b' : '#fff'; ctx.shadowColor = arrow.kind === 'ice' ? '#32c9ff' : arrow.kind === 'electric' ? '#ffd400' : 'transparent'; ctx.shadowBlur = arrow.kind === 'ice' || arrow.kind === 'electric' ? s * .018 : 0; ctx.lineWidth = Math.max(2, s * .005); ctx.beginPath(); ctx.moveTo(-s * .025, 0); ctx.lineTo(-s * .008, -s * .006); ctx.lineTo(s * .006, s * .006); ctx.lineTo(s * .025, 0); ctx.stroke(); ctx.beginPath(); ctx.moveTo(s * .025, 0); ctx.lineTo(s * .012, -s * .01); ctx.moveTo(s * .025, 0); ctx.lineTo(s * .012, s * .01); ctx.stroke(); ctx.shadowBlur = 0
     }
     ctx.restore()
   }
@@ -745,6 +752,13 @@ function drawPixelIceArrow(ctx: CanvasRenderingContext2D, x: number, y: number, 
   ctx.strokeStyle = '#8be7ff'; ctx.lineWidth = Math.max(2, size * .1); ctx.beginPath(); ctx.moveTo(-size * .42, 0); ctx.lineTo(size * .34, 0); ctx.stroke()
   ctx.fillStyle = '#d9f8ff'; ctx.beginPath(); ctx.moveTo(size * .48, 0); ctx.lineTo(size * .2, -size * .18); ctx.lineTo(size * .25, 0); ctx.lineTo(size * .2, size * .18); ctx.closePath(); ctx.fill()
   ctx.strokeStyle = '#62d8ff'; ctx.beginPath(); ctx.moveTo(-size * .3, 0); ctx.lineTo(-size * .44, -size * .16); ctx.moveTo(-size * .3, 0); ctx.lineTo(-size * .44, size * .16); ctx.stroke(); ctx.restore()
+}
+
+function drawPixelElectricArrow(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(-Math.PI / 4); ctx.shadowColor = '#ffd400'; ctx.shadowBlur = size * .4
+  ctx.strokeStyle = '#ffe34b'; ctx.lineWidth = Math.max(2, size * .1); ctx.beginPath(); ctx.moveTo(-size * .42, 0); ctx.lineTo(-size * .15, -size * .08); ctx.lineTo(size * .04, size * .08); ctx.lineTo(size * .34, 0); ctx.stroke()
+  ctx.fillStyle = '#fff6a6'; ctx.beginPath(); ctx.moveTo(size * .48, 0); ctx.lineTo(size * .2, -size * .18); ctx.lineTo(size * .25, 0); ctx.lineTo(size * .2, size * .18); ctx.closePath(); ctx.fill()
+  ctx.strokeStyle = '#ffd400'; ctx.beginPath(); ctx.moveTo(-size * .3, 0); ctx.lineTo(-size * .44, -size * .16); ctx.moveTo(-size * .3, 0); ctx.lineTo(-size * .44, size * .16); ctx.stroke(); ctx.restore()
 }
 
 function drawPixelArmor(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
@@ -836,7 +850,9 @@ function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter, s: number) {
     drawPixelWeapon(ctx, f.weapon, x + cos * forward - sin * side, y + sin * forward + cos * side, f.angle + .14, r * 1.5)
     drawPixelWeapon(ctx, f.weapon, x + cos * forward + sin * side, y + sin * forward - cos * side, f.angle - .14, r * 1.5)
   } else if (f.weapon) drawPixelWeapon(ctx, f.weapon, x + Math.cos(f.angle) * r * 1.3, y + Math.sin(f.angle) * r * 1.3, f.angle, r * 1.5)
-  if (f.weapon === 'bow' && f.iceArrow) drawPixelIceArrow(ctx, x + Math.cos(f.angle) * r * 1.55, y + Math.sin(f.angle) * r * 1.55, r * .8)
+  if (f.weapon === 'bow' && f.electricArrow) drawPixelElectricArrow(ctx, x + Math.cos(f.angle) * r * 1.55, y + Math.sin(f.angle) * r * 1.55, r * .8)
+  else if (f.weapon === 'bow' && f.iceArrow) drawPixelIceArrow(ctx, x + Math.cos(f.angle) * r * 1.55, y + Math.sin(f.angle) * r * 1.55, r * .8)
+  else if (f.electricArrow) drawPixelElectricArrow(ctx, x, y - r * 1.55, r * .68)
   else if (f.iceArrow) drawPixelIceArrow(ctx, x, y - r * 1.55, r * .68)
   ctx.restore()
 }
