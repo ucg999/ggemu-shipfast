@@ -20,21 +20,23 @@ test('result uses remaining health', () => {
 test('body collisions only hurt a fighter when the opponent has a weapon', () => {
   assert.deepEqual(weaponCollisionDamage(null, null), { red: 0, blue: 0 })
   assert.deepEqual(weaponCollisionDamage('sword', null), { red: 0, blue: 2 })
-  assert.deepEqual(weaponCollisionDamage('gun', 'blade'), { red: 1, blue: 3 })
+  assert.deepEqual(weaponCollisionDamage('axe', 'blade'), { red: 1, blue: 3 })
+  assert.deepEqual(weaponCollisionDamage('reaper', null), { red: 0, blue: 4 })
   assert.deepEqual(weaponCollisionDamage('staff', null), { red: 0, blue: 0 })
 })
 
 test('weapons use their configured base damage', () => {
-  assert.equal(arenaWeaponDamage('gun'), 3)
+  assert.equal(arenaWeaponDamage('axe'), 3)
+  assert.equal(arenaWeaponDamage('reaper'), 4)
   assert.equal(arenaWeaponDamage('sword'), 2)
   assert.equal(arenaWeaponDamage('blade'), 1)
   assert.equal(arenaWeaponDamage('bow'), 1)
   assert.equal(arenaWeaponDamage('staff'), 1)
 })
 
-test('food heals exactly one heart without exceeding the maximum', () => {
+test('food heals exactly one heart and can exceed starting health', () => {
   assert.equal(healArenaHealth(4), 5)
-  assert.equal(healArenaHealth(ARENA_MAX_HEALTH), ARENA_MAX_HEALTH)
+  assert.equal(healArenaHealth(ARENA_MAX_HEALTH), ARENA_MAX_HEALTH + 1)
 })
 
 test('shield blocks one hit and is then consumed', () => {

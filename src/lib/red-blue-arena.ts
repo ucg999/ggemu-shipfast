@@ -20,7 +20,8 @@ export function arenaResult(redHealth: number, blueHealth: number): ArenaResult 
 
 export function arenaWeaponDamage(kind: string | null) {
   if (!kind) return 0
-  if (kind === 'gun') return 3
+  if (kind === 'reaper') return 4
+  if (kind === 'axe') return 3
   if (kind === 'sword') return 2
   return 1
 }
@@ -33,7 +34,7 @@ export function weaponCollisionDamage(redWeapon: string | null, blueWeapon: stri
 }
 
 export function healArenaHealth(health: number) {
-  return Math.min(ARENA_MAX_HEALTH, Math.max(0, Math.floor(health)) + 1)
+  return Math.max(0, Math.floor(health)) + 1
 }
 
 export function applyArenaShield(damage: number, shield: boolean) {

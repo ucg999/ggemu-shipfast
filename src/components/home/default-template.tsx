@@ -322,7 +322,7 @@ export function DefaultHomeTemplate(
         />
         <HomeLatestGamesRow games={visibleLatestGames} lang={lang} />
         <HomeLatestGamesRow games={rankingRows.weekly} lang={lang} title={t.weeklyPopularGames} pinnedCoin />
-        <HomeLatestGamesRow games={rankingRows.rising} lang={lang} title={t.fastestGrowingGames} />
+        <HomeLatestGamesRow games={rankingRows.rising} lang={lang} title={t.fastestGrowingGames} pinnedArena />
       </div>
 
       <nav

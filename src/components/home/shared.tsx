@@ -14,6 +14,7 @@ import { setDailyGameCoinMultiplier } from '#/lib/coin-wallet'
 import { getOriginalGamesTitle } from '#/lib/original-games'
 import { CardScrollRow } from './card-scroll-row'
 import { CoinFruitCard } from '#/components/coin-fruit-card'
+import { RedBlueArenaCard } from '#/components/red-blue-arena-card'
 
 export const HOME_BLOG_POST_LIMIT = 4
 
@@ -23,22 +24,25 @@ export function HomeLatestGamesRow({
   title,
   pinnedCoin = false,
   pinnedCoinPosition = 0,
+  pinnedArena = false,
 }: {
   games: Array<PublicGame>
   lang: Locale
   title?: string
   pinnedCoin?: boolean
   pinnedCoinPosition?: number
+  pinnedArena?: boolean
 }) {
-  const items = games.slice(0, 20)
+  const items = games.slice(0, pinnedArena ? 19 : 20)
   const t = getI18n(lang).home
 
-  if (items.length === 0 && !pinnedCoin) return null
+  if (items.length === 0 && !pinnedCoin && !pinnedArena) return null
 
   return (
     <section className="bg-base-100 px-3 py-1 sm:px-4 lg:px-8">
       <h2 className="mb-1 text-left text-sm lg:text-lg font-semibold text-base-content">{title ?? t.latestGamesSection}</h2>
       <CardScrollRow lang={lang}>
+              {pinnedArena ? <div className="w-[72px] shrink-0 sm:w-[88px] lg:w-48"><RedBlueArenaCard lang={lang} /></div> : null}
               {pinnedCoin && items.length === 0 ? <div className="w-[72px] shrink-0 sm:w-[88px] lg:w-48"><CoinFruitCard lang={lang} hideTitle /></div> : null}
               {items.map((game, index) => (
                 <Fragment key={game.url_slug || game._id}>

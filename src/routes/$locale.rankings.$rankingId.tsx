@@ -2,6 +2,7 @@ import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 
 import { SiteLayout } from '#/components/site-layout'
 import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
+import { RedBlueArenaCard } from '#/components/red-blue-arena-card'
 import { type GameSearchSort, type Locale, type PublicGame, searchGames } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
@@ -76,8 +77,14 @@ function RankingPage() {
       </header>
 
       <main className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 sm:p-5 lg:grid-cols-5 xl:grid-cols-7">
+        {rankingId === 'rising' ? (
+          <div className="relative min-w-0">
+            <RedBlueArenaCard lang={lang} />
+            <span className="pointer-events-none absolute left-2 top-2 grid h-7 min-w-7 place-items-center rounded-full bg-black/75 px-2 text-xs font-bold text-white">1</span>
+          </div>
+        ) : null}
         {games.map((game, index) => (
-          <RankingGameCard game={game} index={index} key={game.url_slug || game._id} lang={lang} />
+          <RankingGameCard game={game} index={index + (rankingId === 'rising' ? 1 : 0)} key={game.url_slug || game._id} lang={lang} />
         ))}
       </main>
     </SiteLayout>

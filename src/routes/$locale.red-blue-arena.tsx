@@ -7,6 +7,7 @@ import { addCoinBalance, readCoinBalance, spendCoinBalance } from '#/lib/coin-wa
 import { normalizeLocale } from '#/lib/i18n'
 import { ARENA_BET_OPTIONS, ARENA_MAX_BET, ARENA_MAX_HEALTH, ARENA_ROUND_SECONDS, applyArenaShield, arenaPayout, arenaResult, arenaWeaponDamage, healArenaHealth, weaponCollisionDamage } from '#/lib/red-blue-arena'
 import type { ArenaResult, ArenaSide } from '#/lib/red-blue-arena'
+import type { ArenaAudio } from '#/lib/red-blue-arena-audio'
 
 export const Route = createFileRoute('/$locale/red-blue-arena')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -16,29 +17,34 @@ export const Route = createFileRoute('/$locale/red-blue-arena')({
   component: RedBlueArenaPage,
 })
 
-type WeaponKind = 'sword' | 'blade' | 'gun' | 'bow' | 'staff'
-type Fighter = { side: ArenaSide; x: number; y: number; vx: number; vy: number; radius: number; health: number; angle: number; cooldown: number; weapon: WeaponKind | null; weaponTimer: number; shield: boolean; speedBoost: number; damageBoost: number; stun: number; burnTimer: number; burnDamage: number }
-type Pickup = { id: number; x: number; y: number; kind: WeaponKind | 'shield' | 'pillar'; life: number }
+type WeaponKind = 'sword' | 'blade' | 'axe' | 'reaper' | 'bow' | 'staff'
+type Fighter = { side: ArenaSide; x: number; y: number; vx: number; vy: number; radius: number; health: number; angle: number; cooldown: number; weapon: WeaponKind | null; weaponCount: number; weaponTimer: number; iceArrow: boolean; shield: boolean; armor: boolean; armorBumps: number; speedBoost: number; damageBoost: number; stun: number; iceStun: number; burnTimer: number; burnDamage: number }
+type Pickup = { id: number; x: number; y: number; kind: WeaponKind | 'shield' | 'armor' | 'pillar' | 'ice-arrow'; life: number }
 type Food = { id: number; x: number; y: number; life: number }
-type Projectile = { id: number; owner: ArenaSide; kind: 'arrow' | 'fire'; x: number; y: number; vx: number; vy: number; life: number; damage: number; bounced: boolean }
+type Projectile = { id: number; owner: ArenaSide; kind: 'arrow' | 'ice' | 'fire'; x: number; y: number; vx: number; vy: number; life: number; damage: number; bounced: boolean }
 type Potion = { id: number; x: number; y: number; kind: 'speed' | 'power'; life: number }
 type Pillar = { id: number; x: number; y: number; radius: number; hits: number; charged: boolean }
 type Particle = { x: number; y: number; vx: number; vy: number; life: number; color: string }
 type WallImpact = { angle: number; life: number; strength: number }
 type CollisionImpact = { x: number; y: number; life: number; strength: number }
-type RoundState = { fighters: [Fighter, Fighter]; pickups: Pickup[]; foods: Food[]; potions: Potion[]; pillars: Pillar[]; projectiles: Projectile[]; particles: Particle[]; wallImpacts: WallImpact[]; collisionImpacts: CollisionImpact[]; time: number; nextPickup: number; nextFood: number; nextPotion: number; running: boolean }
+type ReaperSpin = { owner: ArenaSide; life: number; startAngle: number }
+type RoundState = { fighters: [Fighter, Fighter]; pickups: Pickup[]; foods: Food[]; potions: Potion[]; pillars: Pillar[]; projectiles: Projectile[]; particles: Particle[]; wallImpacts: WallImpact[]; collisionImpacts: CollisionImpact[]; reaperSpins: ReaperSpin[]; time: number; nextPickup: number; nextFood: number; nextPotion: number; running: boolean; deathAnimation: number | null; finalRush: boolean }
 
 const TWO_PI = Math.PI * 2
-const WEAPON_IMAGE_SOURCES: Record<WeaponKind, string> = { sword: '/images/red-blue-arena/weapons/sword.png', blade: '/images/red-blue-arena/weapons/knife.png', gun: '/images/red-blue-arena/weapons/spear.png', bow: '/images/red-blue-arena/weapons/bow.png', staff: '/images/red-blue-arena/weapons/staff.png' }
+const ARENA_SAFE_MAX_SPEED = 3.2
+const ARENA_MAX_PARTICLES = 520
+const ARENA_MAX_WALL_IMPACTS = 24
+const ARENA_MAX_COLLISION_IMPACTS = 18
+const WEAPON_IMAGE_SOURCES: Record<WeaponKind, string> = { sword: '/images/red-blue-arena/weapons/sword.png', blade: '/images/red-blue-arena/weapons/knife.png', axe: '/images/red-blue-arena/weapons/axe.png', reaper: '/images/red-blue-arena/weapons/reaper.png', bow: '/images/red-blue-arena/weapons/bow.png', staff: '/images/red-blue-arena/weapons/staff.png' }
 const weaponImageCache = new Map<WeaponKind, HTMLImageElement>()
 
 function createRound(): RoundState {
   return {
     fighters: [
-      { side: 'red', x: .35, y: .63, vx: .36, vy: -.27, radius: .047, health: ARENA_MAX_HEALTH, angle: 0, cooldown: 0, weapon: null, weaponTimer: 0, shield: false, speedBoost: 0, damageBoost: 0, stun: 0, burnTimer: 0, burnDamage: 0 },
-      { side: 'blue', x: .65, y: .37, vx: -.34, vy: .3, radius: .047, health: ARENA_MAX_HEALTH, angle: Math.PI, cooldown: 0, weapon: null, weaponTimer: 0, shield: false, speedBoost: 0, damageBoost: 0, stun: 0, burnTimer: 0, burnDamage: 0 },
+      { side: 'red', x: .35, y: .63, vx: .36, vy: -.27, radius: .047, health: ARENA_MAX_HEALTH, angle: 0, cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, iceArrow: false, shield: false, armor: false, armorBumps: 0, speedBoost: 0, damageBoost: 0, stun: 0, iceStun: 0, burnTimer: 0, burnDamage: 0 },
+      { side: 'blue', x: .65, y: .37, vx: -.34, vy: .3, radius: .047, health: ARENA_MAX_HEALTH, angle: Math.PI, cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, iceArrow: false, shield: false, armor: false, armorBumps: 0, speedBoost: 0, damageBoost: 0, stun: 0, iceStun: 0, burnTimer: 0, burnDamage: 0 },
     ],
-    pickups: [], foods: [], potions: [], pillars: [], projectiles: [], particles: [], wallImpacts: [], collisionImpacts: [], time: ARENA_ROUND_SECONDS, nextPickup: .8 + Math.random() * 1.5, nextFood: 9 + Math.random() * 7, nextPotion: 3 + Math.random() * 5, running: true,
+    pickups: [], foods: [], potions: [], pillars: [], projectiles: [], particles: [], wallImpacts: [], collisionImpacts: [], reaperSpins: [], time: ARENA_ROUND_SECONDS, nextPickup: .8 + Math.random() * 1.5, nextFood: 9 + Math.random() * 7, nextPotion: 3 + Math.random() * 5, running: true, deathAnimation: null, finalRush: false,
   }
 }
 
@@ -47,6 +53,7 @@ function RedBlueArenaPage() {
   const { embed } = Route.useSearch()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const roundRef = useRef<RoundState | null>(null)
+  const audioRef = useRef<ArenaAudio | null>(null)
   const settledRef = useRef(false)
   const [betSide, setBetSide] = useState<ArenaSide>('red')
   const [stake, setStake] = useState(0)
@@ -59,6 +66,15 @@ function RedBlueArenaPage() {
   const [feedback, setFeedback] = useState<{ amount: number; id: number; prefix: '+' | '×' } | null>(null)
 
   useEffect(() => setBalance(readCoinBalance()), [])
+
+  useEffect(() => {
+    let cancelled = false
+    void import('#/lib/red-blue-arena-audio').then(({ createArenaAudio }) => {
+      const audio = createArenaAudio()
+      if (cancelled) audio.dispose(); else audioRef.current = audio
+    }).catch(() => {})
+    return () => { cancelled = true; audioRef.current?.dispose(); audioRef.current = null }
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -98,7 +114,9 @@ function RedBlueArenaPage() {
       if (!round?.running) return
       const dt = Math.min(.025, (now - last) / 1000)
       last = now
-      updateRound(round, dt)
+      updateRound(round, dt, audioRef.current)
+      const [red, blue] = round.fighters
+      if (round.deathAnimation === null && round.time > 0 && (red.health <= 0 || blue.health <= 0)) startDeathAnimation(round, audioRef.current)
       drawRound(canvas, context, round)
       uiClock += dt
       if (uiClock > .12) {
@@ -106,8 +124,7 @@ function RedBlueArenaPage() {
         setHealth([Math.max(0, round.fighters[0].health), Math.max(0, round.fighters[1].health)])
         setTime(Math.max(0, Math.ceil(round.time)))
       }
-      const [red, blue] = round.fighters
-      if (red.health <= 0 || blue.health <= 0 || round.time <= 0) {
+      if ((round.deathAnimation !== null && round.deathAnimation <= 0) || (round.deathAnimation === null && round.time <= 0)) {
         const finalRedHealth = Math.max(0, red.health); const finalBlueHealth = Math.max(0, blue.health)
         setHealth([finalRedHealth, finalBlueHealth])
         settle(arenaResult(finalRedHealth, finalBlueHealth))
@@ -133,6 +150,7 @@ function RedBlueArenaPage() {
       return
     }
     settledRef.current = false
+    void audioRef.current?.start().then(() => audioRef.current?.play('start')).catch(() => {})
     roundRef.current = createRound()
     setBalance(readCoinBalance())
     setHealth([ARENA_MAX_HEALTH, ARENA_MAX_HEALTH])
@@ -155,10 +173,10 @@ function RedBlueArenaPage() {
 
   const content = <main className={`arena-page arena-page-${phase}${embed === '1' ? ' arena-page-embed' : ''}`}><section className="arena-shell">
     <div className="arena-header mb-2 flex items-center justify-between gap-3"><div>{embed !== '1' ? <Link to="/$locale/original-games" params={{ locale: lang }} className="arena-back text-xs text-white/55">← 原创游戏（内测版）</Link> : null}<h1 className="arena-title text-xl font-black sm:text-3xl">红蓝竞技场</h1></div><div className="arena-balance rounded-full border border-yellow-300/30 bg-yellow-300/10 px-3 py-2 text-sm font-black text-yellow-300">🪙 {balance}</div></div>
-    <div className="arena-score"><div className="arena-team"><i className="arena-orb arena-orb-red" />{Array.from({ length: ARENA_MAX_HEALTH }, (_, i) => <span key={i} className="arena-heart">{i < health[0] ? '♥' : '♡'}</span>)}</div><strong className="arena-top-timer rounded-full bg-white/10 px-3 py-1 tabular-nums">{time}s</strong><div className="arena-team">{Array.from({ length: ARENA_MAX_HEALTH }, (_, i) => <span key={i} className="arena-heart arena-heart-blue">{i >= ARENA_MAX_HEALTH - health[1] ? '♥' : '♡'}</span>)}<i className="arena-orb arena-orb-blue" /></div></div>
+    <div className="arena-score"><div className="arena-team"><i className="arena-orb arena-orb-red" />{Array.from({ length: Math.max(ARENA_MAX_HEALTH, health[0]) }, (_, i) => <span key={i} className="arena-heart">{i < health[0] ? '♥' : '♡'}</span>)}</div><strong className="arena-top-timer rounded-full bg-white/10 px-3 py-1 tabular-nums">{time}s</strong><div className="arena-team">{Array.from({ length: Math.max(ARENA_MAX_HEALTH, health[1]) }, (_, i) => <span key={i} className="arena-heart arena-heart-blue">{i >= Math.max(ARENA_MAX_HEALTH, health[1]) - health[1] ? '♥' : '♡'}</span>)}<i className="arena-orb arena-orb-blue" /></div></div>
     <div className="text-center font-mono text-xl font-black uppercase tracking-widest sm:text-2xl"><span className="text-red-400">Red</span><span className="mx-3 text-white/75">VS</span><span className="text-blue-400">Blue</span></div>
     <div className="arena-canvas-wrap"><canvas ref={canvasRef} className="arena-canvas" aria-label="红蓝双方自动战斗的圆形竞技场" />{phase !== 'running' && <div className="arena-overlay"><div className="arena-overlay-card"><div className="arena-result-mark mb-2 text-4xl">{result === 'red' ? '🔴' : result === 'blue' ? '🔵' : result === 'draw' ? '🤝' : '⚔️'}</div><strong className="text-xl">{result ? result === 'draw' ? '平局' : `${result === 'red' ? '红方' : '蓝方'}胜利` : '等待开战'}</strong><p className="mt-2 text-sm text-white/65">{message}</p></div></div>}</div>
-    {phase === 'betting' ? <div className="arena-bet-panel"><div className="arena-choice"><button className="arena-red-btn" data-active={betSide === 'red'} onClick={() => setBetSide('red')}>🔴 投小红</button><button className="arena-blue-btn" data-active={betSide === 'blue'} onClick={() => setBetSide('blue')}>🔵 投小蓝</button></div><div className="arena-stakes">{ARENA_BET_OPTIONS.map(value => <button key={value} data-active="false" disabled={stake + value > balance || stake + value > ARENA_MAX_BET} onClick={() => setStake(current => Math.min(ARENA_MAX_BET, current + value))}>+ 🪙 {value}</button>)}</div><div className="arena-bet-total flex items-center justify-between rounded-xl bg-black/25 px-3 py-2 text-sm"><strong className="text-yellow-300">累计投注：🪙 {stake} / {ARENA_MAX_BET}</strong><button className="text-white/60 underline" disabled={stake === 0} onClick={() => setStake(0)}>清空投注</button></div><button className="arena-start" disabled={stake < 1 || balance < stake} onClick={startRound}>{stake < 1 ? '请选择投注额' : balance < stake ? '金币不足' : `投注 ${stake} 金币并开始`}</button></div> : phase === 'result' ? <div className="arena-bet-panel"><button className="arena-start" onClick={resetBetting}>再来一局</button></div> : null}
+    {phase === 'betting' ? <div className="arena-bet-panel arena-bet-layout"><div className="arena-bet-controls"><div className="arena-choice"><button className="arena-red-btn" data-active={betSide === 'red'} onClick={() => setBetSide('red')}>🔴 投小红</button><button className="arena-blue-btn" data-active={betSide === 'blue'} onClick={() => setBetSide('blue')}>🔵 投小蓝</button></div><div className="arena-stakes">{ARENA_BET_OPTIONS.map(value => <button key={value} data-active="false" disabled={stake + value > balance || stake + value > ARENA_MAX_BET} onClick={() => setStake(current => Math.min(ARENA_MAX_BET, current + value))}>+ 🪙 {value}</button>)}</div><div className="arena-bet-total flex items-center justify-between rounded-xl bg-black/25 px-3 py-2 text-sm"><strong className="text-yellow-300">累计投注：🪙 {stake} / {ARENA_MAX_BET}</strong><button className="text-white/60 underline" disabled={stake === 0} onClick={() => setStake(0)}>清空投注</button></div></div><button aria-label={stake < 1 ? '请先选择投注额' : balance < stake ? '金币不足' : `投注 ${stake} 金币并开战`} className="arena-start arena-start-square" disabled={stake < 1 || balance < stake} onClick={startRound}>开战</button></div> : phase === 'result' ? <div className="arena-bet-panel"><button className="arena-start" onClick={resetBetting}>再来一局</button></div> : null}
     <CoinRewardPopup feedback={feedback} />
   </section></main>
 
@@ -171,20 +189,46 @@ function resizeCanvas(canvas: HTMLCanvasElement) {
 }
 
 function equipWeapon(fighter: Fighter, weapon: WeaponKind) {
-  if (fighter.weapon === 'blade' && weapon !== 'blade') { fighter.vx *= .5; fighter.vy *= .5 }
-  if (fighter.weapon !== 'blade' && weapon === 'blade') { fighter.vx *= 2; fighter.vy *= 2 }
+  if (fighter.weapon === weapon && (weapon === 'sword' || weapon === 'blade')) {
+    fighter.weaponCount = 2
+    return
+  }
+  removeWeaponSpeedEffect(fighter)
   fighter.weapon = weapon
+  fighter.weaponCount = 1
+  applyWeaponSpeedEffect(fighter)
   fighter.weaponTimer = weapon === 'bow' ? .55 : weapon === 'staff' ? .7 : 0
 }
 
 function consumeWeapon(fighter: Fighter) {
-  if (fighter.weapon === 'blade') { fighter.vx *= .5; fighter.vy *= .5 }
+  removeWeaponSpeedEffect(fighter)
+  if (fighter.weapon === 'bow') fighter.iceArrow = false
   fighter.weapon = null
+  fighter.weaponCount = 0
   fighter.weaponTimer = 0
 }
 
-function updateRound(round: RoundState, dt: number) {
+function applyWeaponSpeedEffect(fighter: Fighter) {
+  if (fighter.weapon === 'blade') { fighter.vx *= 2; fighter.vy *= 2 }
+  if (fighter.weapon === 'reaper') { fighter.vx *= .5; fighter.vy *= .5 }
+}
+
+function removeWeaponSpeedEffect(fighter: Fighter) {
+  if (fighter.weapon === 'blade') { fighter.vx *= .5; fighter.vy *= .5 }
+  if (fighter.weapon === 'reaper') { fighter.vx *= 2; fighter.vy *= 2 }
+}
+
+function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
+  if (round.deathAnimation !== null) {
+    round.deathAnimation = Math.max(0, round.deathAnimation - dt)
+    updateArenaParticles(round, dt)
+    return
+  }
   round.time -= dt
+  if (!round.finalRush && round.time <= 30) {
+    round.finalRush = true
+    for (const fighter of round.fighters) { fighter.vx *= 2; fighter.vy *= 2 }
+  }
   round.nextPickup -= dt
   round.nextFood -= dt
   round.nextPotion -= dt
@@ -193,6 +237,7 @@ function updateRound(round: RoundState, dt: number) {
     fighter.cooldown = Math.max(0, fighter.cooldown - dt)
     fighter.weaponTimer = Math.max(0, fighter.weaponTimer - dt)
     fighter.stun = Math.max(0, fighter.stun - dt)
+    fighter.iceStun = Math.max(0, fighter.iceStun - dt)
     const previousBurnTimer = fighter.burnTimer
     fighter.burnTimer = Math.max(0, fighter.burnTimer - dt)
     if (previousBurnTimer > 0 && fighter.burnTimer === 0 && fighter.burnDamage > 0) {
@@ -206,17 +251,16 @@ function updateRound(round: RoundState, dt: number) {
     if ((fighter.weapon === 'bow' || fighter.weapon === 'staff') && fighter.weaponTimer <= 0) {
       const target = round.fighters[index === 0 ? 1 : 0]
       const dx = target.x - fighter.x; const dy = target.y - fighter.y; const distance = Math.hypot(dx, dy) || 1
-      const projectileKind = fighter.weapon === 'staff' ? 'fire' : 'arrow'; const speed = projectileKind === 'fire' ? .82 : .95
+      const projectileKind: Projectile['kind'] = fighter.weapon === 'staff' ? 'fire' : fighter.iceArrow ? 'ice' : 'arrow'; const speed = projectileKind === 'fire' ? .82 : .95
       round.projectiles.push({ id: Date.now() + Math.random(), owner: fighter.side, kind: projectileKind, x: fighter.x, y: fighter.y, vx: dx / distance * speed, vy: dy / distance * speed, life: ARENA_ROUND_SECONDS, damage: arenaWeaponDamage(projectileKind === 'fire' ? 'staff' : 'bow') * (fighter.damageBoost > 0 ? 2 : 1), bounced: false })
       consumeWeapon(fighter)
       burst(round, fighter.x, fighter.y, '#ffffff', 6)
     }
-    if (fighter.stun > 0) continue
+    if (fighter.stun > 0 || fighter.iceStun > 0) continue
     // Marble movement stays on one straight vector until a collision changes it.
     const speed = Math.hypot(fighter.vx, fighter.vy)
-    const maxSpeed = fighter.speedBoost > 0 ? 2.25 : 1.25
     const minSpeed = fighter.speedBoost > 0 ? .24 : .12
-    if (speed > maxSpeed) { fighter.vx *= maxSpeed / speed; fighter.vy *= maxSpeed / speed }
+    if (speed > ARENA_SAFE_MAX_SPEED) { fighter.vx *= ARENA_SAFE_MAX_SPEED / speed; fighter.vy *= ARENA_SAFE_MAX_SPEED / speed }
     else if (speed < minSpeed && speed > 0) { fighter.vx *= minSpeed / speed; fighter.vy *= minSpeed / speed }
     fighter.x += fighter.vx * dt; fighter.y += fighter.vy * dt; fighter.angle = Math.atan2(fighter.vy, fighter.vx)
     const cx = fighter.x - .5; const cy = fighter.y - .5; const edge = Math.hypot(cx, cy)
@@ -227,7 +271,9 @@ function updateRound(round: RoundState, dt: number) {
       fighter.vx -= 2 * dot * nx; fighter.vy -= 2 * dot * ny
       fighter.vx *= 1.05; fighter.vy *= 1.05
       round.wallImpacts.push({ angle: Math.atan2(ny, nx), life: 1.05, strength: .01 + Math.abs(dot) * .02 })
+      if (round.wallImpacts.length > ARENA_MAX_WALL_IMPACTS) round.wallImpacts.splice(0, round.wallImpacts.length - ARENA_MAX_WALL_IMPACTS)
       burst(round, fighter.x, fighter.y, '#ffffff', 9)
+      audio?.play('wall')
     }
   }
   const brokenPillars = new Set<number>()
@@ -244,8 +290,9 @@ function updateRound(round: RoundState, dt: number) {
         if (pillar.charged) {
           const hit = applyArenaShield(1, fighter.shield)
           fighter.shield = hit.shield; fighter.health = Math.max(0, fighter.health - hit.damage)
-          fighter.vx *= .5; fighter.vy *= .5; fighter.stun = .35; pillar.charged = false
+          fighter.vx *= .5; fighter.vy *= .5; fighter.stun = 1; pillar.charged = false
           burst(round, fighter.x, fighter.y, '#ffe54d', 24)
+          audio?.play('shock')
         }
         pillar.hits -= 1
         burst(round, pillar.x + nx * pillar.radius, pillar.y + ny * pillar.radius, '#d7e0e5', pillar.hits > 0 ? 10 : 28)
@@ -265,14 +312,41 @@ function updateRound(round: RoundState, dt: number) {
       const strength = Math.min(1, Math.abs(relative) / 1.4)
       const impactX = (a.x + b.x) / 2; const impactY = (a.y + b.y) / 2
       round.collisionImpacts.push({ x: impactX, y: impactY, life: .38, strength })
+      if (round.collisionImpacts.length > ARENA_MAX_COLLISION_IMPACTS) round.collisionImpacts.splice(0, round.collisionImpacts.length - ARENA_MAX_COLLISION_IMPACTS)
+      audio?.play(a.weapon && b.weapon ? 'clash' : 'collision')
       if (!a.weapon && !b.weapon) {
         burst(round, impactX - nx * .01, impactY - ny * .01, '#ff3655', 4 + Math.round(strength * 6))
         burst(round, impactX + nx * .01, impactY + ny * .01, '#4695ff', 4 + Math.round(strength * 6))
+        bumpReflectArmor(round, a)
+        bumpReflectArmor(round, b)
       }
     }
     if (a.cooldown <= 0 && b.cooldown <= 0) {
+      const isRanged = (weapon: WeaponKind | null) => weapon === 'bow' || weapon === 'staff'
+      const isSwordOrKnife = (weapon: WeaponKind | null) => weapon === 'sword' || weapon === 'blade'
+      const aRangedBreaks = isRanged(a.weapon) && isSwordOrKnife(b.weapon)
+      const bRangedBreaks = isRanged(b.weapon) && isSwordOrKnife(a.weapon)
+      if (aRangedBreaks || bRangedBreaks) {
+        if (aRangedBreaks) consumeWeapon(a)
+        if (bRangedBreaks) consumeWeapon(b)
+        a.cooldown = .7; b.cooldown = .7
+        burst(round, (a.x + b.x) / 2, (a.y + b.y) / 2, '#eaf4ff', 24)
+        audio?.play('clash')
+      } else {
       const baseDamage = weaponCollisionDamage(a.weapon, b.weapon)
-      const damage = { red: baseDamage.red * (b.damageBoost > 0 ? 2 : 1), blue: baseDamage.blue * (a.damageBoost > 0 ? 2 : 1) }
+      const incomingRed = baseDamage.red * Math.max(1, b.weaponCount) * (b.damageBoost > 0 ? 2 : 1)
+      const incomingBlue = baseDamage.blue * Math.max(1, a.weaponCount) * (a.damageBoost > 0 ? 2 : 1)
+      if (incomingBlue && a.weapon === 'reaper') { round.reaperSpins.push({ owner: a.side, life: .26, startAngle: a.angle }); audio?.play('reaper') }
+      else if (incomingBlue) audio?.play('weapon')
+      if (incomingRed && b.weapon === 'reaper') { round.reaperSpins.push({ owner: b.side, life: .26, startAngle: b.angle }); audio?.play('reaper') }
+      else if (incomingRed) audio?.play('weapon')
+      const redReflects = a.armor && incomingRed > 0; const blueReflects = b.armor && incomingBlue > 0
+      const damage = {
+        red: (redReflects ? 0 : incomingRed) + (blueReflects ? incomingBlue : 0),
+        blue: (blueReflects ? 0 : incomingBlue) + (redReflects ? incomingRed : 0),
+      }
+      if (redReflects) { a.armor = false; a.armorBumps = 0; burst(round, a.x, a.y, '#ffb82e', 26) }
+      if (blueReflects) { b.armor = false; b.armorBumps = 0; burst(round, b.x, b.y, '#ffb82e', 26) }
       if (damage.red || damage.blue) {
         const redHit = applyArenaShield(damage.red, a.shield); const blueHit = applyArenaShield(damage.blue, b.shield)
         a.shield = redHit.shield; b.shield = blueHit.shield
@@ -285,31 +359,35 @@ function updateRound(round: RoundState, dt: number) {
         if (damage.red) burst(round, a.x, a.y, redHit.damage ? '#ff294d' : '#8fe7ff', 16)
         if (damage.blue) burst(round, b.x, b.y, blueHit.damage ? '#4590ff' : '#8fe7ff', 16)
         // Every weapon is single-use and disappears after its first damaging hit.
-        if (damage.blue) consumeWeapon(a)
-        if (damage.red) consumeWeapon(b)
+        if (incomingBlue) consumeWeapon(a)
+        if (incomingRed) consumeWeapon(b)
+      }
       }
     }
   }
   if (round.nextPickup <= 0 && arenaItemCount(round) < 2) {
     const angle = Math.random() * TWO_PI; const radius = Math.sqrt(Math.random()) * .29
-    const kinds: Pickup['kind'][] = ['sword', 'blade', 'gun', 'bow', 'staff', 'sword', 'blade', 'gun', 'bow', 'staff', 'shield', 'pillar']
+    const kinds: Pickup['kind'][] = ['sword', 'blade', 'axe', 'reaper', 'bow', 'staff', 'sword', 'blade', 'axe', 'bow', 'staff', 'ice-arrow', 'shield', 'armor', 'pillar']
     round.pickups.push({ id: Date.now() + Math.random(), x: .5 + Math.cos(angle) * radius, y: .5 + Math.sin(angle) * radius, kind: kinds[Math.floor(Math.random() * kinds.length)], life: 12 + Math.random() * 8 })
     round.nextPickup = 1.2 + Math.random() * 3.8
   }
   const collected = new Set<number>()
   for (const pickup of round.pickups) {
     pickup.life -= dt
-    for (const fighter of round.fighters) if (Math.hypot(fighter.x - pickup.x, fighter.y - pickup.y) < .08 && (pickup.kind !== 'shield' || !fighter.shield)) {
+    for (const fighter of round.fighters) if (Math.hypot(fighter.x - pickup.x, fighter.y - pickup.y) < .08 && (pickup.kind !== 'shield' || !fighter.shield) && (pickup.kind !== 'armor' || !fighter.armor) && (pickup.kind !== 'ice-arrow' || !fighter.iceArrow)) {
       if (pickup.kind === 'shield') fighter.shield = true
+      else if (pickup.kind === 'armor') { fighter.armor = true; fighter.armorBumps = 0 }
+      else if (pickup.kind === 'ice-arrow') fighter.iceArrow = true
       else if (pickup.kind === 'pillar') {
         const angle = Math.random() * TWO_PI; const radius = .1 + Math.random() * .2
         round.pillars.push({ id: Date.now() + Math.random(), x: .5 + Math.cos(angle) * radius, y: .5 + Math.sin(angle) * radius, radius: .038, hits: 3, charged: true })
       }
       else equipWeapon(fighter, pickup.kind)
-      collected.add(pickup.id); burst(round, pickup.x, pickup.y, pickup.kind === 'shield' ? '#8fe7ff' : pickup.kind === 'pillar' ? '#d7e0e5' : '#fde047', 14); break
+      collected.add(pickup.id); burst(round, pickup.x, pickup.y, pickup.kind === 'shield' || pickup.kind === 'ice-arrow' ? '#8fe7ff' : pickup.kind === 'armor' ? '#ffb82e' : pickup.kind === 'pillar' ? '#d7e0e5' : '#fde047', 14); break
     }
   }
   round.pickups = round.pickups.filter(pickup => pickup.life > 0 && !collected.has(pickup.id))
+  if (collected.size > 0) audio?.play('pickup')
   if (round.nextFood <= 0 && arenaItemCount(round) < 2) {
     const angle = Math.random() * TWO_PI; const radius = Math.sqrt(Math.random()) * .27
     round.foods.push({ id: Date.now() + Math.random(), x: .5 + Math.cos(angle) * radius, y: .5 + Math.sin(angle) * radius, life: 14 })
@@ -318,11 +396,12 @@ function updateRound(round: RoundState, dt: number) {
   const eaten = new Set<number>()
   for (const food of round.foods) {
     food.life -= dt
-    for (const fighter of round.fighters) if (fighter.health < ARENA_MAX_HEALTH && Math.hypot(fighter.x - food.x, fighter.y - food.y) < .075) {
+    for (const fighter of round.fighters) if (Math.hypot(fighter.x - food.x, fighter.y - food.y) < .075) {
       fighter.health = healArenaHealth(fighter.health); eaten.add(food.id); burst(round, food.x, food.y, '#ff5a24', 16); break
     }
   }
   round.foods = round.foods.filter(food => food.life > 0 && !eaten.has(food.id))
+  if (eaten.size > 0) audio?.play('pickup')
   if (round.nextPotion <= 0 && arenaItemCount(round) < 2) {
     const angle = Math.random() * TWO_PI; const radius = Math.sqrt(Math.random()) * .27
     round.potions.push({ id: Date.now() + Math.random(), x: .5 + Math.cos(angle) * radius, y: .5 + Math.sin(angle) * radius, kind: Math.random() < .5 ? 'speed' : 'power', life: 14 })
@@ -334,13 +413,15 @@ function updateRound(round: RoundState, dt: number) {
     for (const fighter of round.fighters) if (Math.hypot(fighter.x - potion.x, fighter.y - potion.y) < .075) {
       if (potion.kind === 'speed') {
         if (fighter.speedBoost <= 0) { fighter.vx *= 2; fighter.vy *= 2 }
-        fighter.speedBoost = 6
-      } else fighter.damageBoost = 7
+        fighter.speedBoost = 3
+      } else fighter.damageBoost = 3
       usedPotions.add(potion.id); burst(round, potion.x, potion.y, potion.kind === 'speed' ? '#ffd84a' : '#ff4b55', 18); break
     }
   }
   round.potions = round.potions.filter(potion => potion.life > 0 && !usedPotions.has(potion.id))
+  if (usedPotions.size > 0) audio?.play('pickup')
   const spentProjectiles = new Set<number>()
+  const projectileBrokenPillars = new Set<number>()
   for (const arrow of round.projectiles) {
     arrow.x += arrow.vx * dt; arrow.y += arrow.vy * dt
     const cx = arrow.x - .5; const cy = arrow.y - .5; const edge = Math.hypot(cx, cy)
@@ -350,24 +431,51 @@ function updateRound(round: RoundState, dt: number) {
       arrow.bounced = true
       round.wallImpacts.push({ angle: Math.atan2(ny, nx), life: .65, strength: .01 })
     }
+    for (const pillar of round.pillars) {
+      if (projectileBrokenPillars.has(pillar.id)) continue
+      const px = arrow.x - pillar.x; const py = arrow.y - pillar.y
+      const pillarDistance = Math.hypot(px, py) || .001; const projectileRadius = arrow.kind === 'fire' ? .018 : .011
+      const minPillarDistance = pillar.radius + projectileRadius
+      if (pillarDistance >= minPillarDistance) continue
+      const nx = px / pillarDistance; const ny = py / pillarDistance
+      arrow.x = pillar.x + nx * minPillarDistance; arrow.y = pillar.y + ny * minPillarDistance
+      const dot = arrow.vx * nx + arrow.vy * ny
+      if (dot < 0) { arrow.vx -= 2 * dot * nx; arrow.vy -= 2 * dot * ny }
+      arrow.bounced = true; pillar.hits -= 1
+      burst(round, pillar.x + nx * pillar.radius, pillar.y + ny * pillar.radius, arrow.kind === 'fire' ? '#ff681d' : arrow.kind === 'ice' ? '#70dcff' : '#eaf4ff', pillar.hits > 0 ? 12 : 28)
+      audio?.play('wall')
+      if (pillar.hits <= 0) projectileBrokenPillars.add(pillar.id)
+      break
+    }
     const targets = arrow.bounced ? round.fighters : round.fighters.filter(fighter => fighter.side !== arrow.owner)
     for (const target of targets) {
       if (Math.hypot(arrow.x - target.x, arrow.y - target.y) < target.radius + (arrow.kind === 'fire' ? .026 : .018)) {
-        const hit = applyArenaShield(arrow.damage, target.shield); target.shield = hit.shield; target.health = Math.max(0, target.health - hit.damage)
+        const owner = round.fighters.find(fighter => fighter.side === arrow.owner)
+        const reflected = target.armor && arrow.damage > 0
+        if (reflected) { target.armor = false; target.armorBumps = 0; if (owner) owner.health = Math.max(0, owner.health - arrow.damage); burst(round, target.x, target.y, '#ffb82e', 26) }
+        const bypassesShield = arrow.kind === 'fire' || arrow.kind === 'ice'
+        const breaksShield = bypassesShield && !reflected && target.shield
+        const hit = bypassesShield ? { damage: reflected ? 0 : arrow.damage, shield: breaksShield ? false : target.shield } : applyArenaShield(reflected ? 0 : arrow.damage, target.shield)
+        target.shield = hit.shield; target.health = Math.max(0, target.health - hit.damage)
+        if (breaksShield) burst(round, target.x, target.y, '#b9f3ff', 24)
         if (hit.damage > 0) { target.vx *= .82; target.vy *= .82 }
         if (hit.damage > 0 && arrow.kind === 'fire') { target.burnTimer = 3; target.burnDamage = arrow.damage }
-        burst(round, target.x, target.y, hit.damage ? (target.side === 'red' ? '#ff294d' : '#4590ff') : '#8fe7ff', 18)
+        if (hit.damage > 0 && arrow.kind === 'ice') target.iceStun = Math.max(target.iceStun, 2)
+        burst(round, target.x, target.y, arrow.kind === 'ice' && hit.damage ? '#70dcff' : hit.damage ? (target.side === 'red' ? '#ff294d' : '#4590ff') : '#8fe7ff', 18)
+        audio?.play(arrow.kind === 'fire' ? 'weapon' : arrow.kind === 'ice' ? 'shock' : 'collision')
         spentProjectiles.add(arrow.id); break
       }
     }
   }
   round.projectiles = round.projectiles.filter(arrow => !spentProjectiles.has(arrow.id))
-  round.particles.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; p.vy += .12 * dt })
-  round.particles = round.particles.filter(p => p.life > 0)
+  round.pillars = round.pillars.filter(pillar => !projectileBrokenPillars.has(pillar.id))
+  updateArenaParticles(round, dt)
   round.wallImpacts.forEach(impact => { impact.life -= dt })
   round.wallImpacts = round.wallImpacts.filter(impact => impact.life > 0)
   round.collisionImpacts.forEach(impact => { impact.life -= dt })
   round.collisionImpacts = round.collisionImpacts.filter(impact => impact.life > 0)
+  round.reaperSpins.forEach(spin => { spin.life -= dt })
+  round.reaperSpins = round.reaperSpins.filter(spin => spin.life > 0)
 }
 
 function arenaItemCount(round: RoundState) {
@@ -375,7 +483,37 @@ function arenaItemCount(round: RoundState) {
 }
 
 function burst(round: RoundState, x: number, y: number, color: string, count: number) {
-  for (let i = 0; i < count; i++) { const angle = Math.random() * TWO_PI; const speed = .06 + Math.random() * .22; round.particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: .35 + Math.random() * .5, color }) }
+  const available = Math.max(0, ARENA_MAX_PARTICLES - round.particles.length)
+  for (let i = 0; i < Math.min(count, available); i++) { const angle = Math.random() * TWO_PI; const speed = .06 + Math.random() * .22; round.particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: .35 + Math.random() * .5, color }) }
+}
+
+function bumpReflectArmor(round: RoundState, fighter: Fighter) {
+  if (!fighter.armor) return
+  fighter.armorBumps += 1
+  if (fighter.armorBumps < 3) return
+  fighter.armor = false; fighter.armorBumps = 0
+  burst(round, fighter.x, fighter.y, '#ffb82e', 24)
+}
+
+function updateArenaParticles(round: RoundState, dt: number) {
+  round.particles.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; p.vy += .12 * dt })
+  round.particles = round.particles.filter(p => p.life > 0)
+}
+
+function startDeathAnimation(round: RoundState, audio?: ArenaAudio | null) {
+  round.deathAnimation = .9
+  audio?.play('shatter')
+  for (const fighter of round.fighters) {
+    if (fighter.health > 0) continue
+    fighter.vx = 0; fighter.vy = 0
+    const color = fighter.side === 'red' ? '#ef233c' : '#3987ff'
+    const fragmentCount = Math.min(72, Math.max(0, ARENA_MAX_PARTICLES - round.particles.length))
+    for (let i = 0; i < fragmentCount; i++) {
+      const angle = Math.random() * TWO_PI; const radius = Math.sqrt(Math.random()) * fighter.radius
+      const speed = .08 + Math.random() * .34
+      round.particles.push({ x: fighter.x + Math.cos(angle) * radius, y: fighter.y + Math.sin(angle) * radius, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: .55 + Math.random() * .42, color: Math.random() < .18 ? '#101414' : color })
+    }
+  }
 }
 
 function drawRound(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, round: RoundState) {
@@ -384,7 +522,7 @@ function drawRound(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rou
   ctx.fillStyle = '#000'; ctx.strokeStyle = '#f1f5f2'; ctx.lineWidth = Math.max(2, s * .006); ctx.lineJoin = 'miter'; ctx.beginPath()
   for (let i = 0; i <= segments; i++) {
     const angle = i / segments * TWO_PI
-    let radius = .455 + (Math.sin(i * 2.37) + Math.sin(i * 5.13)) * .0015
+    let radius = .455
     for (const impact of round.wallImpacts) {
       const delta = Math.atan2(Math.sin(angle - impact.angle), Math.cos(angle - impact.angle))
       const progress = 1 - impact.life / 1.05
@@ -407,7 +545,9 @@ function drawRound(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rou
   drawPixelNumber(ctx, String(Math.max(0, Math.ceil(round.time))).padStart(2, '0'), s * .5, s * .5, s)
   for (const pickup of round.pickups) {
     if (pickup.kind === 'shield') drawPixelShield(ctx, pickup.x * s, pickup.y * s, s * .065)
+    else if (pickup.kind === 'armor') drawPixelArmor(ctx, pickup.x * s, pickup.y * s, s * .07)
     else if (pickup.kind === 'pillar') drawPixelLightning(ctx, pickup.x * s, pickup.y * s, s * .052)
+    else if (pickup.kind === 'ice-arrow') drawPixelIceArrow(ctx, pickup.x * s, pickup.y * s, s * .075)
     else drawPixelWeapon(ctx, pickup.kind, pickup.x * s, pickup.y * s, -.7, s * .07)
   }
   for (const food of round.foods) drawPixelFood(ctx, food, s)
@@ -419,11 +559,12 @@ function drawRound(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rou
       ctx.shadowColor = '#ff210d'; ctx.shadowBlur = s * .025; ctx.lineCap = 'round'; ctx.strokeStyle = '#ff2d17'; ctx.lineWidth = Math.max(5, s * .018); ctx.beginPath(); ctx.moveTo(-s * .105, 0); ctx.lineTo(s * .035, 0); ctx.stroke()
       ctx.shadowBlur = 0; ctx.strokeStyle = '#ffb125'; ctx.lineWidth = Math.max(2, s * .007); ctx.beginPath(); ctx.moveTo(-s * .095, 0); ctx.lineTo(s * .04, 0); ctx.stroke()
     } else {
-      ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(2, s * .005); ctx.beginPath(); ctx.moveTo(-s * .025, 0); ctx.lineTo(s * .025, 0); ctx.stroke(); ctx.beginPath(); ctx.moveTo(s * .025, 0); ctx.lineTo(s * .012, -s * .01); ctx.moveTo(s * .025, 0); ctx.lineTo(s * .012, s * .01); ctx.stroke()
+      ctx.strokeStyle = arrow.kind === 'ice' ? '#7de3ff' : '#fff'; ctx.shadowColor = arrow.kind === 'ice' ? '#32c9ff' : 'transparent'; ctx.shadowBlur = arrow.kind === 'ice' ? s * .018 : 0; ctx.lineWidth = Math.max(2, s * .005); ctx.beginPath(); ctx.moveTo(-s * .025, 0); ctx.lineTo(s * .025, 0); ctx.stroke(); ctx.beginPath(); ctx.moveTo(s * .025, 0); ctx.lineTo(s * .012, -s * .01); ctx.moveTo(s * .025, 0); ctx.lineTo(s * .012, s * .01); ctx.stroke(); ctx.shadowBlur = 0
     }
     ctx.restore()
   }
-  for (const fighter of round.fighters) drawFighter(ctx, fighter, s)
+  for (const fighter of round.fighters) if (fighter.health > 0) drawFighter(ctx, fighter, s)
+  for (const spin of round.reaperSpins) drawReaperSpin(ctx, spin, round, s)
   for (const impact of round.collisionImpacts) drawCollisionImpact(ctx, impact, s)
   for (const p of round.particles) { ctx.globalAlpha = Math.min(1, p.life * 2); ctx.fillStyle = p.color; const size = Math.max(2, Math.round(s * .009)); ctx.fillRect(Math.round(p.x * s), Math.round(p.y * s), size, size) } ctx.globalAlpha = 1
 }
@@ -431,6 +572,20 @@ function drawRound(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rou
 function drawCollisionImpact(ctx: CanvasRenderingContext2D, impact: CollisionImpact, s: number) {
   const progress = 1 - impact.life / .38; const x = impact.x * s; const y = impact.y * s; const radius = s * (.018 + progress * .045) * (.55 + impact.strength)
   ctx.save(); ctx.globalAlpha = (1 - progress) * (.45 + impact.strength * .55); ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(2, s * .006 * impact.strength); ctx.beginPath(); ctx.arc(x, y, radius, 0, TWO_PI); ctx.stroke()
+  ctx.restore()
+}
+
+function drawReaperSpin(ctx: CanvasRenderingContext2D, spin: ReaperSpin, round: RoundState, s: number) {
+  const fighter = round.fighters.find(item => item.side === spin.owner)
+  if (!fighter) return
+  const progress = 1 - spin.life / .26
+  const angle = spin.startAngle + progress * TWO_PI
+  const radius = fighter.radius * s * 1.75
+  const x = fighter.x * s + Math.cos(angle) * radius
+  const y = fighter.y * s + Math.sin(angle) * radius
+  ctx.save(); ctx.globalAlpha = Math.min(1, spin.life * 8)
+  ctx.strokeStyle = spin.owner === 'red' ? '#ff4b61' : '#58a2ff'; ctx.lineWidth = Math.max(2, s * .006); ctx.beginPath(); ctx.arc(fighter.x * s, fighter.y * s, radius, spin.startAngle, angle); ctx.stroke()
+  drawPixelWeapon(ctx, 'reaper', x, y, angle + Math.PI / 2, fighter.radius * s * 1.5)
   ctx.restore()
 }
 
@@ -471,6 +626,23 @@ function drawPixelShield(ctx: CanvasRenderingContext2D, x: number, y: number, si
   ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.strokeStyle = '#b9f3ff'; ctx.fillStyle = '#4ac8e933'; ctx.lineWidth = Math.max(2, size * .1); ctx.beginPath(); ctx.moveTo(0, -size * .45); ctx.lineTo(size * .36, -size * .25); ctx.lineTo(size * .28, size * .25); ctx.lineTo(0, size * .48); ctx.lineTo(-size * .28, size * .25); ctx.lineTo(-size * .36, -size * .25); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore()
 }
 
+function drawPixelIceArrow(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(-Math.PI / 4); ctx.shadowColor = '#32c9ff'; ctx.shadowBlur = size * .35
+  ctx.strokeStyle = '#8be7ff'; ctx.lineWidth = Math.max(2, size * .1); ctx.beginPath(); ctx.moveTo(-size * .42, 0); ctx.lineTo(size * .34, 0); ctx.stroke()
+  ctx.fillStyle = '#d9f8ff'; ctx.beginPath(); ctx.moveTo(size * .48, 0); ctx.lineTo(size * .2, -size * .18); ctx.lineTo(size * .25, 0); ctx.lineTo(size * .2, size * .18); ctx.closePath(); ctx.fill()
+  ctx.strokeStyle = '#62d8ff'; ctx.beginPath(); ctx.moveTo(-size * .3, 0); ctx.lineTo(-size * .44, -size * .16); ctx.moveTo(-size * .3, 0); ctx.lineTo(-size * .44, size * .16); ctx.stroke(); ctx.restore()
+}
+
+function drawPixelArmor(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  const unit = Math.max(2, Math.round(size * .12)); const cx = Math.round(x); const cy = Math.round(y)
+  ctx.save(); ctx.imageSmoothingEnabled = false
+  ctx.fillStyle = '#2b1b19'; ctx.fillRect(cx - unit * 3, cy - unit * 3, unit * 6, unit * 6)
+  ctx.fillStyle = '#ffb82e'; ctx.fillRect(cx - unit * 2, cy - unit * 3, unit * 4, unit); ctx.fillRect(cx - unit * 3, cy - unit * 2, unit * 2, unit * 3); ctx.fillRect(cx + unit, cy - unit * 2, unit * 2, unit * 3); ctx.fillRect(cx - unit * 2, cy + unit, unit * 4, unit * 3)
+  ctx.fillStyle = '#fff09a'; ctx.fillRect(cx - unit, cy - unit * 2, unit * 2, unit * 3)
+  ctx.fillStyle = '#b7422d'; ctx.fillRect(cx - unit, cy + unit, unit * 2, unit * 2)
+  ctx.restore()
+}
+
 function drawPixelLightning(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
   ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.fillStyle = '#ffe13b'; ctx.shadowColor = '#ffd400'; ctx.shadowBlur = size * .42
   ctx.beginPath(); ctx.moveTo(size * .08, -size * .5); ctx.lineTo(-size * .34, size * .04); ctx.lineTo(-size * .05, size * .04); ctx.lineTo(-size * .18, size * .5); ctx.lineTo(size * .38, -size * .13); ctx.lineTo(size * .08, -size * .13); ctx.closePath(); ctx.fill()
@@ -505,10 +677,22 @@ function drawPixelPillar(ctx: CanvasRenderingContext2D, pillar: Pillar, s: numbe
 }
 
 function drawPixelPotion(ctx: CanvasRenderingContext2D, potion: Potion, s: number) {
-  const x = Math.round(potion.x * s); const y = Math.round(potion.y * s); const unit = Math.max(1.8, s * .006); const color = potion.kind === 'speed' ? '#ffd32f' : '#ff354d'
-  ctx.fillStyle = '#e8f4ff'; ctx.fillRect(x - unit, y - unit * 4, unit * 3, unit * 2)
-  ctx.fillStyle = color; ctx.fillRect(x - unit * 3, y - unit * 2, unit * 7, unit * 5); ctx.fillRect(x - unit * 2, y + unit * 3, unit * 5, unit)
-  ctx.fillStyle = '#ffffffaa'; ctx.fillRect(x - unit * 2, y - unit, unit, unit * 2)
+  const x = Math.round(potion.x * s); const y = Math.round(potion.y * s); const unit = Math.max(2, Math.round(s * .005)); const color = potion.kind === 'speed' ? '#ffd21f' : '#ef123c'
+  ctx.save(); ctx.imageSmoothingEnabled = false
+  ctx.fillStyle = '#11151d'
+  ctx.fillRect(x - unit * 2, y - unit * 6, unit * 4, unit)
+  ctx.fillRect(x - unit * 3, y - unit * 5, unit * 6, unit)
+  ctx.fillRect(x - unit * 2, y - unit * 4, unit * 4, unit * 2)
+  ctx.fillRect(x - unit * 3, y - unit * 2, unit * 6, unit)
+  ctx.fillRect(x - unit * 4, y - unit, unit * 8, unit * 6)
+  ctx.fillRect(x - unit * 3, y + unit * 5, unit * 6, unit)
+  ctx.fillStyle = '#dce7ee'; ctx.fillRect(x - unit, y - unit * 6, unit * 2, unit); ctx.fillRect(x - unit * 2, y - unit * 5, unit * 4, unit)
+  ctx.fillStyle = '#568cff'; ctx.fillRect(x - unit, y - unit * 4, unit * 2, unit * 2)
+  ctx.fillStyle = '#b9d8ff'; ctx.fillRect(x - unit * 2, y - unit, unit * 4, unit)
+  ctx.fillStyle = color; ctx.fillRect(x - unit * 3, y, unit * 6, unit * 5)
+  ctx.fillStyle = potion.kind === 'speed' ? '#fff06a' : '#ff4965'; ctx.fillRect(x - unit * 2, y, unit, unit * 2)
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(x - unit * 2, y - unit, unit, unit)
+  ctx.restore()
 }
 
 function drawFireRing(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, layers: number, baseRadius: number) {
@@ -529,8 +713,16 @@ function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter, s: number) {
   ctx.fillStyle = color; ctx.fillRect(Math.round(x - r * .35 + eyeShift), Math.round(y - r * .14), eyeSize, eyeSize); ctx.fillRect(Math.round(x + r * .18 + eyeShift), Math.round(y - r * .14), eyeSize, eyeSize)
   if (f.speedBoost > 0 || f.damageBoost > 0) { ctx.strokeStyle = f.damageBoost > 0 ? '#ff354d' : '#ffd32f'; ctx.lineWidth = Math.max(2, r * .1); ctx.globalAlpha = .65 + Math.sin(performance.now() / 100) * .25; ctx.beginPath(); ctx.arc(x, y, r * 1.18, 0, TWO_PI); ctx.stroke(); ctx.globalAlpha = 1 }
   if (f.stun > 0) { ctx.strokeStyle = '#ffe54d'; ctx.shadowColor = '#ffd400'; ctx.shadowBlur = r * .2; ctx.lineWidth = Math.max(2, r * .09); ctx.beginPath(); for (let i = 0; i <= 14; i++) { const angle = i / 14 * TWO_PI; const radius = r * (i % 2 ? 1.12 : 1.25); const px = x + Math.cos(angle) * radius; const py = y + Math.sin(angle) * radius; if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py) } ctx.closePath(); ctx.stroke(); ctx.shadowBlur = 0 }
+  if (f.iceStun > 0) { ctx.fillStyle = '#70dcff33'; ctx.strokeStyle = '#8be7ff'; ctx.shadowColor = '#32c9ff'; ctx.shadowBlur = r * .35; ctx.lineWidth = Math.max(2, r * .1); ctx.beginPath(); ctx.arc(x, y, r * 1.18, 0, TWO_PI); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0 }
   if (f.burnTimer > 0) drawFireRing(ctx, x, y, r, 2, 1.12)
   if (f.shield) { ctx.strokeStyle = '#b9f3ff'; ctx.lineWidth = Math.max(2, r * .12); ctx.setLineDash([r * .35, r * .18]); ctx.beginPath(); ctx.arc(x, y, r * 1.35, 0, TWO_PI); ctx.stroke(); ctx.setLineDash([]) }
-  if (f.weapon) drawPixelWeapon(ctx, f.weapon, x + Math.cos(f.angle) * r * 1.3, y + Math.sin(f.angle) * r * 1.3, f.angle, r * 1.5)
+  if (f.armor) { ctx.strokeStyle = '#ffb82e'; ctx.lineWidth = Math.max(3, r * .15); ctx.setLineDash([r * .42, r * .16]); ctx.beginPath(); ctx.arc(x, y, r * 1.3, -.4, Math.PI + .4); ctx.stroke(); ctx.setLineDash([]) }
+  if (f.weapon && f.weaponCount > 1 && (f.weapon === 'sword' || f.weapon === 'blade')) {
+    const forward = r * 1.2; const side = r * .62; const cos = Math.cos(f.angle); const sin = Math.sin(f.angle)
+    drawPixelWeapon(ctx, f.weapon, x + cos * forward - sin * side, y + sin * forward + cos * side, f.angle + .14, r * 1.5)
+    drawPixelWeapon(ctx, f.weapon, x + cos * forward + sin * side, y + sin * forward - cos * side, f.angle - .14, r * 1.5)
+  } else if (f.weapon) drawPixelWeapon(ctx, f.weapon, x + Math.cos(f.angle) * r * 1.3, y + Math.sin(f.angle) * r * 1.3, f.angle, r * 1.5)
+  if (f.weapon === 'bow' && f.iceArrow) drawPixelIceArrow(ctx, x + Math.cos(f.angle) * r * 1.55, y + Math.sin(f.angle) * r * 1.55, r * .8)
+  else if (f.iceArrow) drawPixelIceArrow(ctx, x, y - r * 1.55, r * .68)
   ctx.restore()
 }
