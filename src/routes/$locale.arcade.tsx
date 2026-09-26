@@ -2,6 +2,7 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 
 import { SiteLayout } from '#/components/site-layout'
+import { RedBlueArenaCard } from '#/components/red-blue-arena-card'
 import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
 import type { Locale, PublicGame } from '#/lib/ggemu'
 import { getCoinModeGameMinimumBalance, getCoinModeGameRequiredRank, searchGames } from '#/lib/ggemu'
@@ -84,12 +85,19 @@ export function PlatformModeContent({
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const totalGamesLabel = t.allGames
   const coinChallengeTitle = getCoinChallengeTitle(lang)
+  const redBlueArenaTitle = lang === 'en' ? 'Red vs Blue Arena' : lang === 'ja' ? '赤青アリーナ' : lang === 'zh-TW' ? '紅藍競技場' : '红蓝竞技场'
   const normalizedQuery = query.trim().toLocaleLowerCase(lang)
   const showCoinChallengeCard =
     showCoinChallenge &&
     letter === 'ALL' &&
     (!normalizedQuery ||
       coinChallengeTitle.toLocaleLowerCase(lang).includes(normalizedQuery))
+  const showRedBlueArenaCard =
+    showCoinChallenge &&
+    letter === 'ALL' &&
+    (!normalizedQuery ||
+      redBlueArenaTitle.toLocaleLowerCase(lang).includes(normalizedQuery) ||
+      'red blue 金币 投注 竞技'.includes(normalizedQuery))
   const visibleGames = useMemo(
     () => {
       const normalizedQuery = query.trim().toLocaleLowerCase(lang)
@@ -135,7 +143,7 @@ export function PlatformModeContent({
             <i className="ri-gamepad-line" />{lang === 'en' ? 'Console Mode' : lang === 'zh-TW' ? '主機模式' : '主机模式'}
           </Link> : null}
           <span className="text-base font-medium text-base-content/65 sm:text-lg">
-            {formatGameTotal(games.length + (showCoinChallenge ? 1 : 0), lang)}
+            {formatGameTotal(games.length + (showCoinChallenge ? 2 : 0), lang)}
           </span>
         </div>
         <p className="mt-3 text-lg font-medium leading-relaxed text-base-content/75">{description}</p>
@@ -178,8 +186,9 @@ export function PlatformModeContent({
       </nav>
 
       <section className="px-4 py-6 sm:px-6 lg:px-8">
-        {visibleGames.length > 0 || showCoinChallengeCard ? (
+        {visibleGames.length > 0 || showCoinChallengeCard || showRedBlueArenaCard ? (
           <div className={layout !== 'list' ? 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'flex flex-col gap-2'}>
+            {showRedBlueArenaCard ? <RedBlueArenaCard lang={lang} /> : null}
             {showCoinChallengeCard ? <CoinChallengeGameCard lang={lang} /> : null}
             {visibleGames.map((game) => layout === 'cards' ? (
               <CoinModeGameCard game={game} key={game.url_slug || game._id} lang={lang} />

@@ -18,17 +18,18 @@ export const Route = createFileRoute('/$locale/red-blue-arena')({
 })
 
 type WeaponKind = 'sword' | 'blade' | 'axe' | 'reaper' | 'bow' | 'staff'
-type Fighter = { side: ArenaSide; x: number; y: number; vx: number; vy: number; radius: number; health: number; angle: number; cooldown: number; weapon: WeaponKind | null; weaponCount: number; weaponTimer: number; iceArrow: boolean; shield: boolean; armor: boolean; armorBumps: number; speedBoost: number; damageBoost: number; stun: number; iceStun: number; burnTimer: number; burnDamage: number }
+type ArenaMode = 'duel' | 'three' | 'four' | 'team'
+type Fighter = { id: number; side: ArenaSide; team: ArenaSide; x: number; y: number; vx: number; vy: number; radius: number; health: number; angle: number; cooldown: number; weapon: WeaponKind | null; weaponCount: number; weaponTimer: number; iceArrow: boolean; shield: boolean; armor: boolean; armorBumps: number; speedBoost: number; damageBoost: number; stun: number; iceStun: number; burnTimer: number; burnDamage: number; burnSpread: boolean }
 type Pickup = { id: number; x: number; y: number; kind: WeaponKind | 'shield' | 'armor' | 'pillar' | 'ice-arrow'; life: number }
 type Food = { id: number; x: number; y: number; life: number }
-type Projectile = { id: number; owner: ArenaSide; kind: 'arrow' | 'ice' | 'fire'; x: number; y: number; vx: number; vy: number; life: number; damage: number; bounced: boolean }
+type Projectile = { id: number; owner: number; ownerTeam: ArenaSide; kind: 'arrow' | 'ice' | 'fire'; x: number; y: number; vx: number; vy: number; life: number; damage: number; bounced: boolean }
 type Potion = { id: number; x: number; y: number; kind: 'speed' | 'power'; life: number }
 type Pillar = { id: number; x: number; y: number; radius: number; hits: number; charged: boolean }
 type Particle = { x: number; y: number; vx: number; vy: number; life: number; color: string }
 type WallImpact = { angle: number; life: number; strength: number }
 type CollisionImpact = { x: number; y: number; life: number; strength: number }
-type ReaperSpin = { owner: ArenaSide; life: number; startAngle: number }
-type RoundState = { fighters: [Fighter, Fighter]; pickups: Pickup[]; foods: Food[]; potions: Potion[]; pillars: Pillar[]; projectiles: Projectile[]; particles: Particle[]; wallImpacts: WallImpact[]; collisionImpacts: CollisionImpact[]; reaperSpins: ReaperSpin[]; time: number; nextPickup: number; nextFood: number; nextPotion: number; running: boolean; deathAnimation: number | null; finalRush: boolean }
+type ReaperSpin = { owner: number; life: number; startAngle: number }
+type RoundState = { mode: ArenaMode; fighters: Fighter[]; pickups: Pickup[]; foods: Food[]; potions: Potion[]; pillars: Pillar[]; projectiles: Projectile[]; particles: Particle[]; wallImpacts: WallImpact[]; collisionImpacts: CollisionImpact[]; reaperSpins: ReaperSpin[]; time: number; nextPickup: number; nextFood: number; nextPotion: number; running: boolean; deathAnimation: number | null; finalRush: boolean }
 
 const TWO_PI = Math.PI * 2
 const ARENA_SAFE_MAX_SPEED = 3.2
@@ -38,13 +39,32 @@ const ARENA_MAX_COLLISION_IMPACTS = 18
 const WEAPON_IMAGE_SOURCES: Record<WeaponKind, string> = { sword: '/images/red-blue-arena/weapons/sword.png', blade: '/images/red-blue-arena/weapons/knife.png', axe: '/images/red-blue-arena/weapons/axe.png', reaper: '/images/red-blue-arena/weapons/reaper.png', bow: '/images/red-blue-arena/weapons/bow.png', staff: '/images/red-blue-arena/weapons/staff.png' }
 const weaponImageCache = new Map<WeaponKind, HTMLImageElement>()
 
-function createRound(): RoundState {
+const MODE_RULES: Record<ArenaMode, { label: string; minBet: number; maxBet: number; profit: number; seconds: number; itemLimit: number; sides: ArenaSide[] }> = {
+  duel: { label: '双球模式', minBet: 1, maxBet: 100, profit: 1, seconds: 60, itemLimit: 2, sides: ['red', 'blue'] },
+  three: { label: '三球模式', minBet: 10, maxBet: 200, profit: 2, seconds: 120, itemLimit: 3, sides: ['red', 'blue', 'yellow'] },
+  four: { label: '四球模式', minBet: 10, maxBet: 500, profit: 3, seconds: 180, itemLimit: 3, sides: ['red', 'blue', 'yellow', 'green'] },
+  team: { label: '2V2 红蓝', minBet: 10, maxBet: 1000, profit: 1, seconds: 120, itemLimit: 3, sides: ['red', 'blue'] },
+}
+const SIDE_COPY: Record<ArenaSide, { name: string; color: string; emoji: string }> = {
+  red: { name: '小红', color: '#ef233c', emoji: '🔴' }, blue: { name: '小蓝', color: '#3987ff', emoji: '🔵' },
+  yellow: { name: '小黄', color: '#f5d328', emoji: '🟡' }, green: { name: '小绿', color: '#35c96f', emoji: '🟢' },
+}
+
+function makeFighter(id: number, side: ArenaSide, x: number, y: number, vx: number, vy: number): Fighter {
+  return { id, side, team: side, x, y, vx, vy, radius: .047, health: ARENA_MAX_HEALTH, angle: Math.atan2(vy, vx), cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, iceArrow: false, shield: false, armor: false, armorBumps: 0, speedBoost: 0, damageBoost: 0, stun: 0, iceStun: 0, burnTimer: 0, burnDamage: 0, burnSpread: false }
+}
+
+function createRound(mode: ArenaMode = 'duel'): RoundState {
+  const fighters = mode === 'team'
+    ? [makeFighter(0, 'red', .3, .42, .36, -.27), makeFighter(1, 'blue', .7, .36, -.34, .3), makeFighter(2, 'red', .34, .68, .31, .3), makeFighter(3, 'blue', .66, .64, -.32, -.29)]
+    : MODE_RULES[mode].sides.map((side, index, sides) => { const angle = index / sides.length * TWO_PI + .35; return makeFighter(index, side, .5 + Math.cos(angle) * .2, .5 + Math.sin(angle) * .2, -Math.sin(angle) * .4, Math.cos(angle) * .4) })
+  for (const fighter of fighters) {
+    const dx = .5 - fighter.x; const dy = .5 - fighter.y; const distance = Math.hypot(dx, dy) || 1
+    fighter.vx = dx / distance * .44; fighter.vy = dy / distance * .44; fighter.angle = Math.atan2(fighter.vy, fighter.vx)
+  }
   return {
-    fighters: [
-      { side: 'red', x: .35, y: .63, vx: .36, vy: -.27, radius: .047, health: ARENA_MAX_HEALTH, angle: 0, cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, iceArrow: false, shield: false, armor: false, armorBumps: 0, speedBoost: 0, damageBoost: 0, stun: 0, iceStun: 0, burnTimer: 0, burnDamage: 0 },
-      { side: 'blue', x: .65, y: .37, vx: -.34, vy: .3, radius: .047, health: ARENA_MAX_HEALTH, angle: Math.PI, cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, iceArrow: false, shield: false, armor: false, armorBumps: 0, speedBoost: 0, damageBoost: 0, stun: 0, iceStun: 0, burnTimer: 0, burnDamage: 0 },
-    ],
-    pickups: [], foods: [], potions: [], pillars: [], projectiles: [], particles: [], wallImpacts: [], collisionImpacts: [], reaperSpins: [], time: ARENA_ROUND_SECONDS, nextPickup: .8 + Math.random() * 1.5, nextFood: 9 + Math.random() * 7, nextPotion: 3 + Math.random() * 5, running: true, deathAnimation: null, finalRush: false,
+    mode, fighters,
+    pickups: [], foods: [], potions: [], pillars: [], projectiles: [], particles: [], wallImpacts: [], collisionImpacts: [], reaperSpins: [], time: MODE_RULES[mode].seconds, nextPickup: .8 + Math.random() * 1.5, nextFood: 9 + Math.random() * 7, nextPotion: 3 + Math.random() * 5, running: true, deathAnimation: null, finalRush: false,
   }
 }
 
@@ -55,11 +75,12 @@ function RedBlueArenaPage() {
   const roundRef = useRef<RoundState | null>(null)
   const audioRef = useRef<ArenaAudio | null>(null)
   const settledRef = useRef(false)
+  const [mode, setMode] = useState<ArenaMode>('duel')
   const [betSide, setBetSide] = useState<ArenaSide>('red')
   const [stake, setStake] = useState(0)
   const [balance, setBalance] = useState(0)
-  const [health, setHealth] = useState<[number, number]>([ARENA_MAX_HEALTH, ARENA_MAX_HEALTH])
-  const [time, setTime] = useState(ARENA_ROUND_SECONDS)
+  const [health, setHealth] = useState<number[]>([ARENA_MAX_HEALTH, ARENA_MAX_HEALTH])
+  const [time, setTime] = useState(MODE_RULES.duel.seconds)
   const [phase, setPhase] = useState<'betting' | 'running' | 'result'>('betting')
   const [result, setResult] = useState<ArenaResult | null>(null)
   const [message, setMessage] = useState('选择阵营和投注额，见证自动对战！')
@@ -81,23 +102,23 @@ function RedBlueArenaPage() {
     const context = canvas?.getContext('2d')
     if (!canvas || !context || phase === 'running') return
     resizeCanvas(canvas)
-    drawRound(canvas, context, roundRef.current ?? createRound())
-  }, [phase])
+    drawRound(canvas, context, roundRef.current ?? createRound(mode))
+  }, [mode, phase])
 
   const settle = useCallback((finalResult: ArenaResult) => {
     if (settledRef.current) return
     settledRef.current = true
     if (roundRef.current) roundRef.current.running = false
-    const payout = arenaPayout(betSide, finalResult, stake)
+    const payout = arenaPayout(betSide, finalResult, stake, MODE_RULES[mode].profit)
     const nextBalance = payout > 0 ? addCoinBalance(payout) : readCoinBalance()
     setBalance(nextBalance)
     setResult(finalResult)
     setPhase('result')
     if (finalResult === 'draw') setMessage(`平局，退回 ${stake} 金币`)
     else if (finalResult === betSide) setMessage(`竞猜成功！赢得 ${payout - stake} 金币`)
-    else setMessage(`竞猜失败，${finalResult === 'red' ? '红方' : '蓝方'}获胜`)
+    else setMessage(`竞猜失败，${SIDE_COPY[finalResult].name}获胜`)
     if (payout > 0) setFeedback({ amount: payout, id: Date.now(), prefix: '+' })
-  }, [betSide, stake])
+  }, [betSide, mode, stake])
 
   useEffect(() => {
     if (phase !== 'running') return
@@ -115,19 +136,18 @@ function RedBlueArenaPage() {
       const dt = Math.min(.025, (now - last) / 1000)
       last = now
       updateRound(round, dt, audioRef.current)
-      const [red, blue] = round.fighters
-      if (round.deathAnimation === null && round.time > 0 && (red.health <= 0 || blue.health <= 0)) startDeathAnimation(round, audioRef.current)
+      const aliveTeams = new Set(round.fighters.filter(fighter => fighter.health > 0).map(fighter => fighter.team))
+      if (round.deathAnimation === null && round.time > 0 && aliveTeams.size <= 1) startDeathAnimation(round, audioRef.current)
       drawRound(canvas, context, round)
       uiClock += dt
       if (uiClock > .12) {
         uiClock = 0
-        setHealth([Math.max(0, round.fighters[0].health), Math.max(0, round.fighters[1].health)])
+        setHealth(round.fighters.map(fighter => Math.max(0, fighter.health)))
         setTime(Math.max(0, Math.ceil(round.time)))
       }
       if ((round.deathAnimation !== null && round.deathAnimation <= 0) || (round.deathAnimation === null && round.time <= 0)) {
-        const finalRedHealth = Math.max(0, red.health); const finalBlueHealth = Math.max(0, blue.health)
-        setHealth([finalRedHealth, finalBlueHealth])
-        settle(arenaResult(finalRedHealth, finalBlueHealth))
+        setHealth(round.fighters.map(fighter => Math.max(0, fighter.health)))
+        settle(getRoundResult(round))
         drawRound(canvas, context, round)
         return
       }
@@ -141,8 +161,8 @@ function RedBlueArenaPage() {
   }, [phase, settle])
 
   function startRound() {
-    if (stake < 1) {
-      setMessage('请先选择投注金币。')
+    if (stake < MODE_RULES[mode].minBet) {
+      setMessage(`本模式最低投注 ${MODE_RULES[mode].minBet} 金币。`)
       return
     }
     if (!spendCoinBalance(stake)) {
@@ -151,13 +171,13 @@ function RedBlueArenaPage() {
     }
     settledRef.current = false
     void audioRef.current?.start().then(() => audioRef.current?.play('start')).catch(() => {})
-    roundRef.current = createRound()
+    roundRef.current = createRound(mode)
     setBalance(readCoinBalance())
-    setHealth([ARENA_MAX_HEALTH, ARENA_MAX_HEALTH])
-    setTime(ARENA_ROUND_SECONDS)
+    setHealth(MODE_RULES[mode].sides.length === 2 && mode === 'team' ? [10, 10, 10, 10] : MODE_RULES[mode].sides.map(() => 10))
+    setTime(MODE_RULES[mode].seconds)
     setResult(null)
     setFeedback(null)
-    setMessage(`已投注 ${stake} 金币，支持${betSide === 'red' ? '红方' : '蓝方'}！`)
+    setMessage(`已投注 ${stake} 金币，支持${SIDE_COPY[betSide].name}！`)
     setPhase('running')
   }
 
@@ -166,21 +186,38 @@ function RedBlueArenaPage() {
     settledRef.current = false
     setPhase('betting')
     setResult(null)
-    setHealth([ARENA_MAX_HEALTH, ARENA_MAX_HEALTH])
-    setTime(ARENA_ROUND_SECONDS)
+    setHealth(MODE_RULES[mode].sides.length === 2 && mode === 'team' ? [10, 10, 10, 10] : MODE_RULES[mode].sides.map(() => 10))
+    setTime(MODE_RULES[mode].seconds)
     setMessage('选择阵营和投注额，开始下一局。')
   }
 
+  const rules = MODE_RULES[mode]
+  const displayedSides = rules.sides
+  const previewFighters = createRound(mode).fighters
+  const healthEntries = previewFighters.map((fighter, index) => ({
+    color: SIDE_COPY[fighter.side].color,
+    label: mode === 'team' ? `${SIDE_COPY[fighter.side].name}${previewFighters.slice(0, index + 1).filter(item => item.side === fighter.side).length}` : SIDE_COPY[fighter.side].name,
+    side: fighter.side,
+    value: health[index] ?? ARENA_MAX_HEALTH,
+  }))
   const content = <main className={`arena-page arena-page-${phase}${embed === '1' ? ' arena-page-embed' : ''}`}><section className="arena-shell">
     <div className="arena-header mb-2 flex items-center justify-between gap-3"><div>{embed !== '1' ? <Link to="/$locale/original-games" params={{ locale: lang }} className="arena-back text-xs text-white/55">← 原创游戏（内测版）</Link> : null}<h1 className="arena-title text-xl font-black sm:text-3xl">红蓝竞技场</h1></div><div className="arena-balance rounded-full border border-yellow-300/30 bg-yellow-300/10 px-3 py-2 text-sm font-black text-yellow-300">🪙 {balance}</div></div>
-    <div className="arena-score"><div className="arena-team"><i className="arena-orb arena-orb-red" />{Array.from({ length: Math.max(ARENA_MAX_HEALTH, health[0]) }, (_, i) => <span key={i} className="arena-heart">{i < health[0] ? '♥' : '♡'}</span>)}</div><strong className="arena-top-timer rounded-full bg-white/10 px-3 py-1 tabular-nums">{time}s</strong><div className="arena-team">{Array.from({ length: Math.max(ARENA_MAX_HEALTH, health[1]) }, (_, i) => <span key={i} className="arena-heart arena-heart-blue">{i >= Math.max(ARENA_MAX_HEALTH, health[1]) - health[1] ? '♥' : '♡'}</span>)}<i className="arena-orb arena-orb-blue" /></div></div>
-    <div className="text-center font-mono text-xl font-black uppercase tracking-widest sm:text-2xl"><span className="text-red-400">Red</span><span className="mx-3 text-white/75">VS</span><span className="text-blue-400">Blue</span></div>
-    <div className="arena-canvas-wrap"><canvas ref={canvasRef} className="arena-canvas" aria-label="红蓝双方自动战斗的圆形竞技场" />{phase !== 'running' && <div className="arena-overlay"><div className="arena-overlay-card"><div className="arena-result-mark mb-2 text-4xl">{result === 'red' ? '🔴' : result === 'blue' ? '🔵' : result === 'draw' ? '🤝' : '⚔️'}</div><strong className="text-xl">{result ? result === 'draw' ? '平局' : `${result === 'red' ? '红方' : '蓝方'}胜利` : '等待开战'}</strong><p className="mt-2 text-sm text-white/65">{message}</p></div></div>}</div>
-    {phase === 'betting' ? <div className="arena-bet-panel arena-bet-layout"><div className="arena-bet-controls"><div className="arena-choice"><button className="arena-red-btn" data-active={betSide === 'red'} onClick={() => setBetSide('red')}>🔴 投小红</button><button className="arena-blue-btn" data-active={betSide === 'blue'} onClick={() => setBetSide('blue')}>🔵 投小蓝</button></div><div className="arena-stakes">{ARENA_BET_OPTIONS.map(value => <button key={value} data-active="false" disabled={stake + value > balance || stake + value > ARENA_MAX_BET} onClick={() => setStake(current => Math.min(ARENA_MAX_BET, current + value))}>+ 🪙 {value}</button>)}</div><div className="arena-bet-total flex items-center justify-between rounded-xl bg-black/25 px-3 py-2 text-sm"><strong className="text-yellow-300">累计投注：🪙 {stake} / {ARENA_MAX_BET}</strong><button className="text-white/60 underline" disabled={stake === 0} onClick={() => setStake(0)}>清空投注</button></div></div><button aria-label={stake < 1 ? '请先选择投注额' : balance < stake ? '金币不足' : `投注 ${stake} 金币并开战`} className="arena-start arena-start-square" disabled={stake < 1 || balance < stake} onClick={startRound}>开战</button></div> : phase === 'result' ? <div className="arena-bet-panel"><button className="arena-start" onClick={resetBetting}>再来一局</button></div> : null}
+    <div className="arena-score gap-x-2 gap-y-1" style={{ gridTemplateColumns: `repeat(${mode === 'three' ? 3 : healthEntries.length <= 2 ? healthEntries.length : 2}, minmax(0, 1fr))` }}>{healthEntries.map((entry, index) => { const hearts = Math.max(ARENA_MAX_HEALTH, entry.value); return <div className="arena-team min-w-0 flex-nowrap" key={`${entry.side}-${index}`} style={{ justifyContent: 'flex-start' }} title={`${entry.label} ${entry.value}点血`}><i className={`arena-orb arena-orb-${entry.side} shrink-0 ${mode === 'three' ? '!h-3 !w-3' : '!h-4 !w-4'}`} style={{ background: entry.color }} /><span className={`flex min-w-0 flex-nowrap leading-none ${mode === 'three' ? 'text-[9px] sm:text-[12px]' : 'text-[11px] sm:text-[14px]'}`} style={{ color: entry.color }}>{Array.from({ length: hearts }, (_, heart) => <i className="not-italic drop-shadow-[0_0_3px_currentColor]" key={heart}>{heart < entry.value ? '♥' : '♡'}</i>)}</span></div> })}</div>
+    <div className="whitespace-nowrap text-center font-mono text-xs font-black uppercase tracking-tight sm:text-base">{displayedSides.map((side, index) => <span key={side}><span style={{ color: SIDE_COPY[side].color }}>{SIDE_COPY[side].name}</span>{index < displayedSides.length - 1 ? <span className="mx-1 text-white/55">VS</span> : null}</span>)}</div>
+    <div className="arena-canvas-wrap"><canvas ref={canvasRef} className="arena-canvas" aria-label="多球自动战斗的圆形竞技场" />{phase !== 'running' && <div className="arena-overlay"><div className="arena-overlay-card"><div className="arena-result-mark mb-2 text-4xl">{result === 'draw' ? '🤝' : result ? SIDE_COPY[result].emoji : '⚔️'}</div><strong className="text-xl">{result ? result === 'draw' ? '平局' : `${SIDE_COPY[result].name}胜利` : '等待开战'}</strong><p className="mt-2 text-sm text-white/65">{message}</p></div></div>}</div>
+    {phase === 'betting' ? <><label className="mb-2 flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-black text-white"><span className="shrink-0 text-white/60">模式</span><select className="min-w-0 flex-1 bg-transparent text-right font-black text-yellow-300 outline-none" value={mode} onChange={event => { const value = event.currentTarget.value as ArenaMode; setMode(value); setBetSide(MODE_RULES[value].sides[0]); setStake(0); setHealth(createRound(value).fighters.map(() => 10)); setTime(MODE_RULES[value].seconds) }}>{(Object.keys(MODE_RULES) as ArenaMode[]).map(value => <option className="bg-black text-white" key={value} value={value}>{MODE_RULES[value].label} · {MODE_RULES[value].seconds}秒 · 最低{MODE_RULES[value].minBet} · 上限{MODE_RULES[value].maxBet} · 赔{MODE_RULES[value].profit}</option>)}</select></label><div className="arena-bet-panel arena-bet-layout"><div className="arena-bet-controls"><div className="arena-choice" style={{ gridTemplateColumns: `repeat(${displayedSides.length}, minmax(0, 1fr))` }}>{displayedSides.map(side => <button className="!px-1 text-[10px] sm:text-xs" key={side} style={{ backgroundColor: `${SIDE_COPY[side].color}cc` }} data-active={betSide === side} onClick={() => setBetSide(side)}>{SIDE_COPY[side].emoji} 投{SIDE_COPY[side].name}</button>)}</div><div className="arena-stakes">{ARENA_BET_OPTIONS.filter(value => value >= rules.minBet).map(value => <button key={value} data-active="false" disabled={stake + value > balance || stake + value > rules.maxBet} onClick={() => setStake(current => Math.min(rules.maxBet, current + value))}>+ 🪙 {value}</button>)}</div><div className="arena-bet-total flex items-center justify-between rounded-xl bg-black/25 px-3 py-2 text-sm"><strong className="text-yellow-300">累计投注：🪙 {stake} / {rules.maxBet}</strong><button className="text-white/60 underline" disabled={stake === 0} onClick={() => setStake(0)}>清空投注</button></div></div><button aria-label={stake < rules.minBet ? `最低投注 ${rules.minBet} 金币` : balance < stake ? '金币不足' : `投注 ${stake} 金币并开战`} className="arena-start arena-start-square" disabled={stake < rules.minBet || balance < stake} onClick={startRound}>开战</button></div></> : phase === 'result' ? <div className="arena-bet-panel"><button className="arena-start" onClick={resetBetting}>再来一局</button></div> : null}
     <CoinRewardPopup feedback={feedback} />
   </section></main>
 
   return embed === '1' ? content : <SiteLayout locale={lang} hideFooter>{content}</SiteLayout>
+}
+
+function getRoundResult(round: RoundState): ArenaResult {
+  const totals = new Map<ArenaSide, number>()
+  for (const fighter of round.fighters) totals.set(fighter.team, (totals.get(fighter.team) ?? 0) + Math.max(0, fighter.health))
+  const ranked = [...totals.entries()].sort((left, right) => right[1] - left[1])
+  if (!ranked.length || (ranked[1] && ranked[0][1] === ranked[1][1])) return 'draw'
+  return ranked[0][0]
 }
 
 function resizeCanvas(canvas: HTMLCanvasElement) {
@@ -234,6 +271,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   round.nextPotion -= dt
   const [a, b] = round.fighters
   for (const [index, fighter] of round.fighters.entries()) {
+    if (fighter.health <= 0) { fighter.vx = 0; fighter.vy = 0; continue }
     fighter.cooldown = Math.max(0, fighter.cooldown - dt)
     fighter.weaponTimer = Math.max(0, fighter.weaponTimer - dt)
     fighter.stun = Math.max(0, fighter.stun - dt)
@@ -241,18 +279,19 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     const previousBurnTimer = fighter.burnTimer
     fighter.burnTimer = Math.max(0, fighter.burnTimer - dt)
     if (previousBurnTimer > 0 && fighter.burnTimer === 0 && fighter.burnDamage > 0) {
-      fighter.health = Math.max(0, fighter.health - fighter.burnDamage); fighter.burnDamage = 0
-      burst(round, fighter.x, fighter.y, fighter.side === 'red' ? '#ff294d' : '#4590ff', 16)
+      fighter.health = Math.max(0, fighter.health - fighter.burnDamage); fighter.burnDamage = 0; fighter.burnSpread = false
+      burst(round, fighter.x, fighter.y, SIDE_COPY[fighter.side].color, 16)
     }
     const previousSpeedBoost = fighter.speedBoost
     fighter.speedBoost = Math.max(0, fighter.speedBoost - dt)
     fighter.damageBoost = Math.max(0, fighter.damageBoost - dt)
     if (previousSpeedBoost > 0 && fighter.speedBoost === 0) { fighter.vx *= .5; fighter.vy *= .5 }
     if ((fighter.weapon === 'bow' || fighter.weapon === 'staff') && fighter.weaponTimer <= 0) {
-      const target = round.fighters[index === 0 ? 1 : 0]
+      const target = round.fighters.filter(candidate => candidate.team !== fighter.team && candidate.health > 0).sort((left, right) => Math.hypot(left.x - fighter.x, left.y - fighter.y) - Math.hypot(right.x - fighter.x, right.y - fighter.y))[0]
+      if (!target) continue
       const dx = target.x - fighter.x; const dy = target.y - fighter.y; const distance = Math.hypot(dx, dy) || 1
       const projectileKind: Projectile['kind'] = fighter.weapon === 'staff' ? 'fire' : fighter.iceArrow ? 'ice' : 'arrow'; const speed = projectileKind === 'fire' ? .82 : .95
-      round.projectiles.push({ id: Date.now() + Math.random(), owner: fighter.side, kind: projectileKind, x: fighter.x, y: fighter.y, vx: dx / distance * speed, vy: dy / distance * speed, life: ARENA_ROUND_SECONDS, damage: arenaWeaponDamage(projectileKind === 'fire' ? 'staff' : 'bow') * (fighter.damageBoost > 0 ? 2 : 1), bounced: false })
+      round.projectiles.push({ id: Date.now() + Math.random(), owner: fighter.id, ownerTeam: fighter.team, kind: projectileKind, x: fighter.x, y: fighter.y, vx: dx / distance * speed, vy: dy / distance * speed, life: ARENA_ROUND_SECONDS, damage: arenaWeaponDamage(projectileKind === 'fire' ? 'staff' : 'bow') * (fighter.damageBoost > 0 ? 2 : 1), bounced: false })
       consumeWeapon(fighter)
       burst(round, fighter.x, fighter.y, '#ffffff', 6)
     }
@@ -302,7 +341,8 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   }
   round.pillars = round.pillars.filter(pillar => !brokenPillars.has(pillar.id))
   const dx = b.x - a.x; const dy = b.y - a.y; const distance = Math.hypot(dx, dy) || .001
-  if (distance < a.radius + b.radius) {
+  if (a.health > 0 && b.health > 0 && distance < a.radius + b.radius) {
+    spreadBurnOnCollision(round, a, b)
     const nx = dx / distance; const ny = dy / distance; const overlap = a.radius + b.radius - distance
     a.x -= nx * overlap / 2; a.y -= ny * overlap / 2; b.x += nx * overlap / 2; b.y += ny * overlap / 2
     const relative = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny
@@ -336,9 +376,9 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       const baseDamage = weaponCollisionDamage(a.weapon, b.weapon)
       const incomingRed = baseDamage.red * Math.max(1, b.weaponCount) * (b.damageBoost > 0 ? 2 : 1)
       const incomingBlue = baseDamage.blue * Math.max(1, a.weaponCount) * (a.damageBoost > 0 ? 2 : 1)
-      if (incomingBlue && a.weapon === 'reaper') { round.reaperSpins.push({ owner: a.side, life: .26, startAngle: a.angle }); audio?.play('reaper') }
+      if (incomingBlue && a.weapon === 'reaper') { round.reaperSpins.push({ owner: a.id, life: .26, startAngle: a.angle }); audio?.play('reaper') }
       else if (incomingBlue) audio?.play('weapon')
-      if (incomingRed && b.weapon === 'reaper') { round.reaperSpins.push({ owner: b.side, life: .26, startAngle: b.angle }); audio?.play('reaper') }
+      if (incomingRed && b.weapon === 'reaper') { round.reaperSpins.push({ owner: b.id, life: .26, startAngle: b.angle }); audio?.play('reaper') }
       else if (incomingRed) audio?.play('weapon')
       const redReflects = a.armor && incomingRed > 0; const blueReflects = b.armor && incomingBlue > 0
       const damage = {
@@ -365,7 +405,33 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       }
     }
   }
-  if (round.nextPickup <= 0 && arenaItemCount(round) < 2) {
+  // Additional fighters use the same marble collision rules. Team-mates bounce but never hurt each other.
+  for (let leftIndex = 0; leftIndex < round.fighters.length; leftIndex++) for (let rightIndex = leftIndex + 1; rightIndex < round.fighters.length; rightIndex++) {
+    if (leftIndex === 0 && rightIndex === 1) continue
+    const left = round.fighters[leftIndex]; const right = round.fighters[rightIndex]
+    if (left.health <= 0 || right.health <= 0) continue
+    const pairDx = right.x - left.x; const pairDy = right.y - left.y; const pairDistance = Math.hypot(pairDx, pairDy) || .001
+    if (pairDistance >= left.radius + right.radius) continue
+    spreadBurnOnCollision(round, left, right)
+    const nx = pairDx / pairDistance; const ny = pairDy / pairDistance; const overlap = left.radius + right.radius - pairDistance
+    left.x -= nx * overlap / 2; left.y -= ny * overlap / 2; right.x += nx * overlap / 2; right.y += ny * overlap / 2
+    const relative = (right.vx - left.vx) * nx + (right.vy - left.vy) * ny
+    if (relative < 0) {
+      left.vx += relative * nx; left.vy += relative * ny; right.vx -= relative * nx; right.vy -= relative * ny
+      round.collisionImpacts.push({ x: (left.x + right.x) / 2, y: (left.y + right.y) / 2, life: .38, strength: Math.min(1, Math.abs(relative) / 1.4) })
+      audio?.play(left.weapon && right.weapon ? 'clash' : 'collision')
+    }
+    if (left.team === right.team || left.cooldown > 0 || right.cooldown > 0) continue
+    const leftDamage = arenaWeaponDamage(right.weapon) * Math.max(1, right.weaponCount) * (right.damageBoost > 0 ? 2 : 1)
+    const rightDamage = arenaWeaponDamage(left.weapon) * Math.max(1, left.weaponCount) * (left.damageBoost > 0 ? 2 : 1)
+    const leftHit = applyArenaShield(leftDamage, left.shield); const rightHit = applyArenaShield(rightDamage, right.shield)
+    left.shield = leftHit.shield; right.shield = rightHit.shield
+    left.health = Math.max(0, left.health - leftHit.damage); right.health = Math.max(0, right.health - rightHit.damage)
+    if (leftHit.damage) { left.vx *= .82; left.vy *= .82; burst(round, left.x, left.y, SIDE_COPY[left.side].color, 16); consumeWeapon(right) }
+    if (rightHit.damage) { right.vx *= .82; right.vy *= .82; burst(round, right.x, right.y, SIDE_COPY[right.side].color, 16); consumeWeapon(left) }
+    left.cooldown = .7; right.cooldown = .7
+  }
+  if (round.nextPickup <= 0 && groundItemCount(round) < MODE_RULES[round.mode].itemLimit) {
     const angle = Math.random() * TWO_PI; const radius = Math.sqrt(Math.random()) * .29
     const kinds: Pickup['kind'][] = ['sword', 'blade', 'axe', 'reaper', 'bow', 'staff', 'sword', 'blade', 'axe', 'bow', 'staff', 'ice-arrow', 'shield', 'armor', 'pillar']
     round.pickups.push({ id: Date.now() + Math.random(), x: .5 + Math.cos(angle) * radius, y: .5 + Math.sin(angle) * radius, kind: kinds[Math.floor(Math.random() * kinds.length)], life: 12 + Math.random() * 8 })
@@ -374,7 +440,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   const collected = new Set<number>()
   for (const pickup of round.pickups) {
     pickup.life -= dt
-    for (const fighter of round.fighters) if (Math.hypot(fighter.x - pickup.x, fighter.y - pickup.y) < .08 && (pickup.kind !== 'shield' || !fighter.shield) && (pickup.kind !== 'armor' || !fighter.armor) && (pickup.kind !== 'ice-arrow' || !fighter.iceArrow)) {
+    for (const fighter of round.fighters) if (fighter.health > 0 && Math.hypot(fighter.x - pickup.x, fighter.y - pickup.y) < .08 && (pickup.kind !== 'shield' || !fighter.shield) && (pickup.kind !== 'armor' || !fighter.armor) && (pickup.kind !== 'ice-arrow' || !fighter.iceArrow)) {
       if (pickup.kind === 'shield') fighter.shield = true
       else if (pickup.kind === 'armor') { fighter.armor = true; fighter.armorBumps = 0 }
       else if (pickup.kind === 'ice-arrow') fighter.iceArrow = true
@@ -387,8 +453,8 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     }
   }
   round.pickups = round.pickups.filter(pickup => pickup.life > 0 && !collected.has(pickup.id))
-  if (collected.size > 0) audio?.play('pickup')
-  if (round.nextFood <= 0 && arenaItemCount(round) < 2) {
+  if (collected.size > 0) { round.nextPickup = Math.min(round.nextPickup, .45); audio?.play('pickup') }
+  if (round.nextFood <= 0 && groundItemCount(round) < MODE_RULES[round.mode].itemLimit) {
     const angle = Math.random() * TWO_PI; const radius = Math.sqrt(Math.random()) * .27
     round.foods.push({ id: Date.now() + Math.random(), x: .5 + Math.cos(angle) * radius, y: .5 + Math.sin(angle) * radius, life: 14 })
     round.nextFood = 12 + Math.random() * 10
@@ -396,13 +462,13 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   const eaten = new Set<number>()
   for (const food of round.foods) {
     food.life -= dt
-    for (const fighter of round.fighters) if (Math.hypot(fighter.x - food.x, fighter.y - food.y) < .075) {
+    for (const fighter of round.fighters) if (fighter.health > 0 && Math.hypot(fighter.x - food.x, fighter.y - food.y) < .075) {
       fighter.health = healArenaHealth(fighter.health); eaten.add(food.id); burst(round, food.x, food.y, '#ff5a24', 16); break
     }
   }
   round.foods = round.foods.filter(food => food.life > 0 && !eaten.has(food.id))
-  if (eaten.size > 0) audio?.play('pickup')
-  if (round.nextPotion <= 0 && arenaItemCount(round) < 2) {
+  if (eaten.size > 0) { round.nextFood = Math.min(round.nextFood, 1.5); audio?.play('pickup') }
+  if (round.nextPotion <= 0 && groundItemCount(round) < MODE_RULES[round.mode].itemLimit) {
     const angle = Math.random() * TWO_PI; const radius = Math.sqrt(Math.random()) * .27
     round.potions.push({ id: Date.now() + Math.random(), x: .5 + Math.cos(angle) * radius, y: .5 + Math.sin(angle) * radius, kind: Math.random() < .5 ? 'speed' : 'power', life: 14 })
     round.nextPotion = 5 + Math.random() * 8
@@ -410,7 +476,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   const usedPotions = new Set<number>()
   for (const potion of round.potions) {
     potion.life -= dt
-    for (const fighter of round.fighters) if (Math.hypot(fighter.x - potion.x, fighter.y - potion.y) < .075) {
+    for (const fighter of round.fighters) if (fighter.health > 0 && Math.hypot(fighter.x - potion.x, fighter.y - potion.y) < .075) {
       if (potion.kind === 'speed') {
         if (fighter.speedBoost <= 0) { fighter.vx *= 2; fighter.vy *= 2 }
         fighter.speedBoost = 3
@@ -419,7 +485,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     }
   }
   round.potions = round.potions.filter(potion => potion.life > 0 && !usedPotions.has(potion.id))
-  if (usedPotions.size > 0) audio?.play('pickup')
+  if (usedPotions.size > 0) { round.nextPotion = Math.min(round.nextPotion, 1.2); audio?.play('pickup') }
   const spentProjectiles = new Set<number>()
   const projectileBrokenPillars = new Set<number>()
   for (const arrow of round.projectiles) {
@@ -447,10 +513,10 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       if (pillar.hits <= 0) projectileBrokenPillars.add(pillar.id)
       break
     }
-    const targets = arrow.bounced ? round.fighters : round.fighters.filter(fighter => fighter.side !== arrow.owner)
+    const targets = (arrow.bounced ? round.fighters : round.fighters.filter(fighter => fighter.team !== arrow.ownerTeam)).filter(fighter => fighter.health > 0)
     for (const target of targets) {
       if (Math.hypot(arrow.x - target.x, arrow.y - target.y) < target.radius + (arrow.kind === 'fire' ? .026 : .018)) {
-        const owner = round.fighters.find(fighter => fighter.side === arrow.owner)
+        const owner = round.fighters.find(fighter => fighter.id === arrow.owner)
         const reflected = target.armor && arrow.damage > 0
         if (reflected) { target.armor = false; target.armorBumps = 0; if (owner) owner.health = Math.max(0, owner.health - arrow.damage); burst(round, target.x, target.y, '#ffb82e', 26) }
         const bypassesShield = arrow.kind === 'fire' || arrow.kind === 'ice'
@@ -459,9 +525,9 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
         target.shield = hit.shield; target.health = Math.max(0, target.health - hit.damage)
         if (breaksShield) burst(round, target.x, target.y, '#b9f3ff', 24)
         if (hit.damage > 0) { target.vx *= .82; target.vy *= .82 }
-        if (hit.damage > 0 && arrow.kind === 'fire') { target.burnTimer = 3; target.burnDamage = arrow.damage }
+        if (hit.damage > 0 && arrow.kind === 'fire') { target.burnTimer = 3; target.burnDamage = arrow.damage; target.burnSpread = round.mode !== 'duel' }
         if (hit.damage > 0 && arrow.kind === 'ice') target.iceStun = Math.max(target.iceStun, 2)
-        burst(round, target.x, target.y, arrow.kind === 'ice' && hit.damage ? '#70dcff' : hit.damage ? (target.side === 'red' ? '#ff294d' : '#4590ff') : '#8fe7ff', 18)
+        burst(round, target.x, target.y, arrow.kind === 'ice' && hit.damage ? '#70dcff' : hit.damage ? SIDE_COPY[target.side].color : '#8fe7ff', 18)
         audio?.play(arrow.kind === 'fire' ? 'weapon' : arrow.kind === 'ice' ? 'shock' : 'collision')
         spentProjectiles.add(arrow.id); break
       }
@@ -478,8 +544,25 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   round.reaperSpins = round.reaperSpins.filter(spin => spin.life > 0)
 }
 
-function arenaItemCount(round: RoundState) {
+// Only objects still lying on the arena floor count toward the mode limit.
+// Equipped weapons, shields, armor and stored ice arrows live on Fighter and never count here.
+function groundItemCount(round: RoundState) {
   return round.pickups.length + round.foods.length + round.potions.length
+}
+
+function spreadBurnOnCollision(round: RoundState, first: Fighter, second: Fighter) {
+  if (round.mode === 'duel') return
+  const spread = (source: Fighter, target: Fighter) => {
+    if (!source.burnSpread || source.burnTimer <= 0 || target.burnTimer > 0 || target.health <= 0) return false
+    source.burnSpread = false
+    target.burnTimer = 3
+    target.burnDamage = Math.max(1, source.burnDamage)
+    target.burnSpread = false
+    burst(round, target.x, target.y, '#ff681d', 18)
+    return true
+  }
+  const firstSpread = spread(first, second)
+  if (!firstSpread) spread(second, first)
 }
 
 function burst(round: RoundState, x: number, y: number, color: string, count: number) {
@@ -506,7 +589,7 @@ function startDeathAnimation(round: RoundState, audio?: ArenaAudio | null) {
   for (const fighter of round.fighters) {
     if (fighter.health > 0) continue
     fighter.vx = 0; fighter.vy = 0
-    const color = fighter.side === 'red' ? '#ef233c' : '#3987ff'
+    const color = SIDE_COPY[fighter.side].color
     const fragmentCount = Math.min(72, Math.max(0, ARENA_MAX_PARTICLES - round.particles.length))
     for (let i = 0; i < fragmentCount; i++) {
       const angle = Math.random() * TWO_PI; const radius = Math.sqrt(Math.random()) * fighter.radius
@@ -576,7 +659,7 @@ function drawCollisionImpact(ctx: CanvasRenderingContext2D, impact: CollisionImp
 }
 
 function drawReaperSpin(ctx: CanvasRenderingContext2D, spin: ReaperSpin, round: RoundState, s: number) {
-  const fighter = round.fighters.find(item => item.side === spin.owner)
+  const fighter = round.fighters.find(item => item.id === spin.owner)
   if (!fighter) return
   const progress = 1 - spin.life / .26
   const angle = spin.startAngle + progress * TWO_PI
@@ -584,7 +667,7 @@ function drawReaperSpin(ctx: CanvasRenderingContext2D, spin: ReaperSpin, round: 
   const x = fighter.x * s + Math.cos(angle) * radius
   const y = fighter.y * s + Math.sin(angle) * radius
   ctx.save(); ctx.globalAlpha = Math.min(1, spin.life * 8)
-  ctx.strokeStyle = spin.owner === 'red' ? '#ff4b61' : '#58a2ff'; ctx.lineWidth = Math.max(2, s * .006); ctx.beginPath(); ctx.arc(fighter.x * s, fighter.y * s, radius, spin.startAngle, angle); ctx.stroke()
+  ctx.strokeStyle = SIDE_COPY[fighter.side].color; ctx.lineWidth = Math.max(2, s * .006); ctx.beginPath(); ctx.arc(fighter.x * s, fighter.y * s, radius, spin.startAngle, angle); ctx.stroke()
   drawPixelWeapon(ctx, 'reaper', x, y, angle + Math.PI / 2, fighter.radius * s * 1.5)
   ctx.restore()
 }
@@ -707,7 +790,7 @@ function drawFireRing(ctx: CanvasRenderingContext2D, x: number, y: number, radiu
 }
 
 function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter, s: number) {
-  const x = f.x * s; const y = f.y * s; const r = f.radius * s; const color = f.side === 'red' ? '#ef233c' : '#3987ff'
+  const x = f.x * s; const y = f.y * s; const r = f.radius * s; const color = SIDE_COPY[f.side].color
   ctx.save(); ctx.fillStyle = '#090c0c'; ctx.strokeStyle = color; ctx.lineWidth = Math.max(3, r * .18); ctx.beginPath(); ctx.arc(Math.round(x), Math.round(y), Math.round(r), 0, TWO_PI); ctx.fill(); ctx.stroke()
   const eyeSize = Math.max(2, Math.round(r * .18)); const eyeShift = Math.sin(performance.now() / 260 + (f.side === 'red' ? 0 : .8)) * r * .1
   ctx.fillStyle = color; ctx.fillRect(Math.round(x - r * .35 + eyeShift), Math.round(y - r * .14), eyeSize, eyeSize); ctx.fillRect(Math.round(x + r * .18 + eyeShift), Math.round(y - r * .14), eyeSize, eyeSize)

@@ -1,4 +1,4 @@
-export type ArenaSide = 'red' | 'blue'
+export type ArenaSide = 'red' | 'blue' | 'yellow' | 'green'
 export type ArenaResult = ArenaSide | 'draw'
 
 export const ARENA_MAX_HEALTH = 10
@@ -7,10 +7,10 @@ export const ARENA_MIN_BET = 1
 export const ARENA_MAX_BET = 100
 export const ARENA_BET_OPTIONS = [1, 10, 50, 100] as const
 
-export function arenaPayout(betSide: ArenaSide, result: ArenaResult, stake: number) {
+export function arenaPayout(betSide: ArenaSide, result: ArenaResult, stake: number, profitMultiplier = 1) {
   const safeStake = Math.max(0, Math.floor(stake))
   if (result === 'draw') return safeStake
-  return result === betSide ? safeStake * 2 : 0
+  return result === betSide ? safeStake * (Math.max(1, profitMultiplier) + 1) : 0
 }
 
 export function arenaResult(redHealth: number, blueHealth: number): ArenaResult {
