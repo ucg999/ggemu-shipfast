@@ -63,12 +63,12 @@ const WEAPON_HELP = [
   ['🔨', '晕锤：2伤害，旋转群攻并击飞周围球；10%概率打出圈外秒杀'],
   ['🏹', '弓：快速射箭；累计5发后停在原地完成连射'], ['🔮', '法杖：逐颗缓慢施放魔法球，武器会保留'],
   ['🛡️', '盾（防具）：抵挡一次近战伤害；无限反弹普通远程弹'],
-  ['🪞', '反伤甲（防具）：反伤近战，3次后碎；无限反弹普通远程弹'],
+  ['🪞', '反伤甲：近战反伤一次即碎；同伤对拼也碎；普通碰撞3次后消失'],
 ] as const
 const ITEM_HELP = [
   ['🍊', '果实：回复1格，并解除灼伤和中毒'], ['🔴', '红瓶：可预先累计一发火属性弹'],
   ['🔵', '蓝瓶：可预先累计一发水属性弹'], ['🟡', '黄瓶：可预先累计一发电属性弹'],
-  ['🟣', '紫瓶：可预先累计一发毒属性弹'], ['💥', '属性弹：命中时盾和反伤甲会一起碎掉'],
+  ['🟣', '紫瓶：可预先累计一发毒属性弹'], ['💥', '属性弹：基础1伤害；命中反伤甲翻倍，防具会碎掉'],
   ['⚪', '白瓶：普通箭或普通魔法球弹药＋3，可提前累计'],
   ['⚔️', '红色强化瓶：伤害×2，持续3秒'], ['💨', '黄色强化瓶：速度×2，持续3秒'],
   ['⚡', '闪电墙：首次触碰掉1血、停顿并减速'],
@@ -419,6 +419,8 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       if (!a.weapon && !b.weapon) {
         burst(round, impactX - nx * .01, impactY - ny * .01, '#ff3655', 4 + Math.round(strength * 6))
         burst(round, impactX + nx * .01, impactY + ny * .01, '#4695ff', 4 + Math.round(strength * 6))
+        bumpArmorOnNormalCollision(round, a)
+        bumpArmorOnNormalCollision(round, b)
       }
     }
     if (a.cooldown <= 0 && b.cooldown <= 0) {
@@ -434,6 +436,8 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       const contactDamage = meleeCollisionDamage(a, b)
       const incomingRed = contactDamage.first
       const incomingBlue = contactDamage.second
+      const equalMeleeClash = meleePower(a) > 0 && meleePower(a) === meleePower(b)
+      if (equalMeleeClash) { shatterArmor(round, a); shatterArmor(round, b) }
       if (incomingBlue && a.weapon === 'reaper') { round.reaperSpins.push({ owner: a.id, life: .26, startAngle: a.angle, kind: 'reaper' }); audio?.play('reaper') }
       else if (incomingBlue) audio?.play('weapon')
       if (incomingRed && b.weapon === 'reaper') { round.reaperSpins.push({ owner: b.id, life: .26, startAngle: b.angle, kind: 'reaper' }); audio?.play('reaper') }
@@ -481,6 +485,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       addNaturalCollisionDeflection(left, right, nx, ny, relative)
       round.collisionImpacts.push({ x: (left.x + right.x) / 2, y: (left.y + right.y) / 2, life: .38, strength: Math.min(1, Math.abs(relative) / 1.4) })
       audio?.play(left.weapon && right.weapon && left.stun <= 0 && right.stun <= 0 ? 'clash' : 'collision')
+      if (!left.weapon && !right.weapon) { bumpArmorOnNormalCollision(round, left); bumpArmorOnNormalCollision(round, right) }
     }
     if (left.team === right.team || left.cooldown > 0 || right.cooldown > 0) continue
     const leftRangedBreaks = isRangedWeapon(left.weapon) && isMeleeWeapon(right.weapon) && right.stun <= 0
@@ -496,6 +501,8 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     const contactDamage = meleeCollisionDamage(left, right)
     const leftDamage = contactDamage.first
     const rightDamage = contactDamage.second
+    const equalMeleeClash = meleePower(left) > 0 && meleePower(left) === meleePower(right)
+    if (equalMeleeClash) { shatterArmor(round, left); shatterArmor(round, right) }
     const leftReflects = left.armor && leftDamage > 0; const rightReflects = right.armor && rightDamage > 0
     const resolvedLeftDamage = (leftReflects ? 0 : leftDamage) + (rightReflects ? rightDamage : 0)
     const resolvedRightDamage = (rightReflects ? 0 : rightDamage) + (leftReflects ? leftDamage : 0)
@@ -610,8 +617,9 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       if (Math.hypot(arrow.x - target.x, arrow.y - target.y) < target.radius + (arrow.kind === 'magic' ? .026 : .018)) {
         const hasDefense = target.shield || target.armor
         if (hasDefense && arrow.element) {
+          const hitsReflectArmor = target.armor
           breakAllDefenses(target)
-          target.health = Math.max(0, target.health - 2)
+          target.health = Math.max(0, target.health - arrow.damage * (hitsReflectArmor ? 2 : 1))
           applyElementEffect(round, arrow.element, target)
           burst(round, target.x, target.y, ELEMENT_COLORS[arrow.element], 30)
           audio?.play('weapon'); spentProjectiles.add(arrow.id); break
@@ -787,8 +795,17 @@ function burst(round: RoundState, x: number, y: number, color: string, count: nu
 
 function useReflectArmor(round: RoundState, fighter: Fighter) {
   if (!fighter.armor) return
+  shatterArmor(round, fighter)
+}
+
+function bumpArmorOnNormalCollision(round: RoundState, fighter: Fighter) {
+  if (!fighter.armor) return
   fighter.armorBumps += 1
-  if (fighter.armorBumps < 3) return
+  if (fighter.armorBumps >= 3) shatterArmor(round, fighter)
+}
+
+function shatterArmor(round: RoundState, fighter: Fighter) {
+  if (!fighter.armor) return
   fighter.armor = false; fighter.armorBumps = 0
   burst(round, fighter.x, fighter.y, '#ffb82e', 24)
 }
