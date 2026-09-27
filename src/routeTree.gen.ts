@@ -26,6 +26,7 @@ import { Route as LocaleCoinChallengeRouteImport } from './routes/$locale.coin-c
 import { Route as LocaleDealsRouteImport } from './routes/$locale.deals'
 import { Route as LocaleGhostHunterRouteImport } from './routes/$locale.ghost-hunter'
 import { Route as LocaleLiveRouteImport } from './routes/$locale.live'
+import { Route as LocaleLuckyGrandSlamRouteImport } from './routes/$locale.lucky-grand-slam'
 import { Route as LocaleOriginalGamesRouteImport } from './routes/$locale.original-games'
 import { Route as LocalePlayMyRomRouteImport } from './routes/$locale.play-my-rom'
 import { Route as LocalePrivacyPolicyRouteImport } from './routes/$locale.privacy-policy'
@@ -133,6 +134,11 @@ const LocaleGhostHunterRoute = LocaleGhostHunterRouteImport.update({
 const LocaleLiveRoute = LocaleLiveRouteImport.update({
   id: '/live',
   path: '/live',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleLuckyGrandSlamRoute = LocaleLuckyGrandSlamRouteImport.update({
+  id: '/lucky-grand-slam',
+  path: '/lucky-grand-slam',
   getParentRoute: () => LocaleRoute,
 } as any)
 const LocaleOriginalGamesRoute = LocaleOriginalGamesRouteImport.update({
@@ -272,6 +278,7 @@ export interface FileRoutesByFullPath {
   '/$locale/deals': typeof LocaleDealsRoute
   '/$locale/ghost-hunter': typeof LocaleGhostHunterRoute
   '/$locale/live': typeof LocaleLiveRoute
+  '/$locale/lucky-grand-slam': typeof LocaleLuckyGrandSlamRoute
   '/$locale/original-games': typeof LocaleOriginalGamesRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
@@ -313,6 +320,7 @@ export interface FileRoutesByTo {
   '/$locale/deals': typeof LocaleDealsRoute
   '/$locale/ghost-hunter': typeof LocaleGhostHunterRoute
   '/$locale/live': typeof LocaleLiveRoute
+  '/$locale/lucky-grand-slam': typeof LocaleLuckyGrandSlamRoute
   '/$locale/original-games': typeof LocaleOriginalGamesRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
@@ -356,6 +364,7 @@ export interface FileRoutesById {
   '/$locale/deals': typeof LocaleDealsRoute
   '/$locale/ghost-hunter': typeof LocaleGhostHunterRoute
   '/$locale/live': typeof LocaleLiveRoute
+  '/$locale/lucky-grand-slam': typeof LocaleLuckyGrandSlamRoute
   '/$locale/original-games': typeof LocaleOriginalGamesRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
@@ -400,6 +409,7 @@ export interface FileRouteTypes {
     | '/$locale/deals'
     | '/$locale/ghost-hunter'
     | '/$locale/live'
+    | '/$locale/lucky-grand-slam'
     | '/$locale/original-games'
     | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
@@ -441,6 +451,7 @@ export interface FileRouteTypes {
     | '/$locale/deals'
     | '/$locale/ghost-hunter'
     | '/$locale/live'
+    | '/$locale/lucky-grand-slam'
     | '/$locale/original-games'
     | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
@@ -483,6 +494,7 @@ export interface FileRouteTypes {
     | '/$locale/deals'
     | '/$locale/ghost-hunter'
     | '/$locale/live'
+    | '/$locale/lucky-grand-slam'
     | '/$locale/original-games'
     | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
@@ -643,6 +655,13 @@ declare module '@tanstack/react-router' {
       path: '/live'
       fullPath: '/$locale/live'
       preLoaderRoute: typeof LocaleLiveRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/lucky-grand-slam': {
+      id: '/$locale/lucky-grand-slam'
+      path: '/lucky-grand-slam'
+      fullPath: '/$locale/lucky-grand-slam'
+      preLoaderRoute: typeof LocaleLuckyGrandSlamRouteImport
       parentRoute: typeof LocaleRoute
     }
     '/$locale/original-games': {
@@ -842,6 +861,7 @@ interface LocaleRouteChildren {
   LocaleDealsRoute: typeof LocaleDealsRoute
   LocaleGhostHunterRoute: typeof LocaleGhostHunterRoute
   LocaleLiveRoute: typeof LocaleLiveRoute
+  LocaleLuckyGrandSlamRoute: typeof LocaleLuckyGrandSlamRoute
   LocaleOriginalGamesRoute: typeof LocaleOriginalGamesRoute
   LocalePlayMyRomRoute: typeof LocalePlayMyRomRoute
   LocalePrivacyPolicyRoute: typeof LocalePrivacyPolicyRoute
@@ -870,6 +890,7 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleDealsRoute: LocaleDealsRoute,
   LocaleGhostHunterRoute: LocaleGhostHunterRoute,
   LocaleLiveRoute: LocaleLiveRoute,
+  LocaleLuckyGrandSlamRoute: LocaleLuckyGrandSlamRoute,
   LocaleOriginalGamesRoute: LocaleOriginalGamesRoute,
   LocalePlayMyRomRoute: LocalePlayMyRomRoute,
   LocalePrivacyPolicyRoute: LocalePrivacyPolicyRoute,
