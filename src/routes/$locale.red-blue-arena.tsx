@@ -19,9 +19,10 @@ export const Route = createFileRoute('/$locale/red-blue-arena')({
 
 type WeaponKind = 'sword' | 'blade' | 'axe' | 'reaper' | 'bow' | 'staff' | 'hammer'
 type ElementKind = 'fire' | 'water' | 'electric' | 'poison'
-type PotionKind = ElementKind | 'speed-boost' | 'damage-boost'
+type AmmoKind = ElementKind | 'normal'
+type PotionKind = ElementKind | 'normal-ammo' | 'speed-boost' | 'damage-boost'
 type ArenaMode = 'duel' | 'three' | 'four' | 'team'
-type Fighter = { id: number; side: ArenaSide; team: ArenaSide; x: number; y: number; vx: number; vy: number; radius: number; health: number; angle: number; cooldown: number; weapon: WeaponKind | null; weaponCount: number; weaponTimer: number; rangedFired: boolean; elementAmmo: ElementKind[]; shield: boolean; armor: boolean; armorBumps: number; speedBoost: number; damageBoost: number; slowTimer: number; stun: number; hammerBouncesRemaining: number; burnTimer: number; burnDamage: number; burnSpread: boolean; poisonTimer: number; poisonTicks: number }
+type Fighter = { id: number; side: ArenaSide; team: ArenaSide; x: number; y: number; vx: number; vy: number; radius: number; health: number; angle: number; cooldown: number; weapon: WeaponKind | null; weaponCount: number; weaponTimer: number; rangedFired: boolean; elementAmmo: AmmoKind[]; bowRapidFire: boolean; shield: boolean; armor: boolean; armorBumps: number; speedBoost: number; damageBoost: number; slowTimer: number; stun: number; hammerBouncesRemaining: number; knockoutTimer: number; knockoutBrokeWall: boolean; burnTimer: number; burnDamage: number; burnSpread: boolean; poisonTimer: number; poisonTicks: number }
 type Pickup = { id: number; x: number; y: number; kind: WeaponKind | 'shield' | 'armor' | 'pillar'; life: number }
 type Food = { id: number; x: number; y: number; life: number }
 type Projectile = { id: number; owner: number; ownerTeam: ArenaSide; kind: 'arrow' | 'magic'; element: ElementKind | null; x: number; y: number; vx: number; vy: number; life: number; damage: number; bounced: boolean }
@@ -29,9 +30,10 @@ type Potion = { id: number; x: number; y: number; kind: PotionKind; life: number
 type Pillar = { id: number; x: number; y: number; radius: number; hits: number; charged: boolean }
 type Particle = { x: number; y: number; vx: number; vy: number; life: number; color: string }
 type WallImpact = { angle: number; life: number; strength: number }
+type RingBreak = { angle: number; life: number }
 type CollisionImpact = { x: number; y: number; life: number; strength: number }
-type ReaperSpin = { owner: number; life: number; startAngle: number }
-type RoundState = { mode: ArenaMode; fighters: Fighter[]; pickups: Pickup[]; foods: Food[]; potions: Potion[]; pillars: Pillar[]; projectiles: Projectile[]; particles: Particle[]; wallImpacts: WallImpact[]; collisionImpacts: CollisionImpact[]; reaperSpins: ReaperSpin[]; time: number; nextPickup: number; nextFood: number; nextPotion: number; running: boolean; deathAnimation: number | null; finalRush: boolean }
+type ReaperSpin = { owner: number; life: number; startAngle: number; kind: 'reaper' | 'hammer' }
+type RoundState = { mode: ArenaMode; fighters: Fighter[]; pickups: Pickup[]; foods: Food[]; potions: Potion[]; pillars: Pillar[]; projectiles: Projectile[]; particles: Particle[]; wallImpacts: WallImpact[]; ringBreaks: RingBreak[]; collisionImpacts: CollisionImpact[]; reaperSpins: ReaperSpin[]; time: number; nextPickup: number; nextFood: number; nextPotion: number; running: boolean; deathAnimation: number | null; finalRush: boolean }
 
 const TWO_PI = Math.PI * 2
 const ARENA_BASE_SPEED = .44
@@ -53,25 +55,27 @@ const SIDE_COPY: Record<ArenaSide, { name: string; color: string; emoji: string 
   yellow: { name: '小黄', color: '#f5d328', emoji: '🟡' }, green: { name: '小绿', color: '#35c96f', emoji: '🟢' },
 }
 const ELEMENT_COLORS: Record<ElementKind, string> = { fire: '#ff354d', water: '#38bdf8', electric: '#ffe13b', poison: '#a855f7' }
-const POTION_COLORS: Record<PotionKind, string> = { ...ELEMENT_COLORS, 'speed-boost': '#ffc400', 'damage-boost': '#e51032' }
+const AMMO_COLORS: Record<AmmoKind, string> = { ...ELEMENT_COLORS, normal: '#ffffff' }
+const POTION_COLORS: Record<PotionKind, string> = { ...ELEMENT_COLORS, 'normal-ammo': '#ffffff', 'speed-boost': '#ffc400', 'damage-boost': '#e51032' }
 const WEAPON_HELP = [
   ['🗡️', '小刀：1伤害，持有时速度×2'], ['⚔️', '剑：2伤害，可组成双剑'],
   ['🪓', '斧头：3伤害'], ['☠️', '死神刀：4伤害，持有时速度减半'],
-  ['🔨', '晕锤：1伤害，速度减半；击飞撞外圈3次后晕2秒，10%概率秒杀'],
-  ['🏹', '弓：拿到时只射一发笔直白箭，武器会保留'], ['🔮', '法杖：拿到时只射一颗白色魔法球，武器会保留'],
+  ['🔨', '晕锤：2伤害，旋转群攻并击飞周围球；10%概率打出圈外秒杀'],
+  ['🏹', '弓：快速射箭；累计5发后停在原地完成连射'], ['🔮', '法杖：逐颗缓慢施放魔法球，武器会保留'],
   ['🛡️', '盾（防具）：抵挡一次近战伤害；无限反弹普通远程弹'],
   ['🪞', '反伤甲（防具）：反伤近战，3次后碎；无限反弹普通远程弹'],
 ] as const
 const ITEM_HELP = [
   ['🍊', '果实：回复1格，并解除灼伤和中毒'], ['🔴', '红瓶：可预先累计一发火属性弹'],
   ['🔵', '蓝瓶：可预先累计一发水属性弹'], ['🟡', '黄瓶：可预先累计一发电属性弹'],
-  ['🟣', '紫瓶：可预先累计一发毒属性弹'], ['💥', '属性弹：仅弓/法杖按拾取顺序发射；近战无效'],
+  ['🟣', '紫瓶：可预先累计一发毒属性弹'], ['💥', '属性弹：命中时盾和反伤甲会一起碎掉'],
+  ['⚪', '白瓶：普通箭或普通魔法球弹药＋3，可提前累计'],
   ['⚔️', '红色强化瓶：伤害×2，持续3秒'], ['💨', '黄色强化瓶：速度×2，持续3秒'],
   ['⚡', '闪电墙：首次触碰掉1血、停顿并减速'],
 ] as const
 
 function makeFighter(id: number, side: ArenaSide, x: number, y: number, vx: number, vy: number): Fighter {
-  return { id, side, team: side, x, y, vx, vy, radius: .047, health: ARENA_MAX_HEALTH, angle: Math.atan2(vy, vx), cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, rangedFired: false, elementAmmo: [], shield: false, armor: false, armorBumps: 0, speedBoost: 0, damageBoost: 0, slowTimer: 0, stun: 0, hammerBouncesRemaining: 0, burnTimer: 0, burnDamage: 0, burnSpread: false, poisonTimer: 0, poisonTicks: 0 }
+  return { id, side, team: side, x, y, vx, vy, radius: .047, health: ARENA_MAX_HEALTH, angle: Math.atan2(vy, vx), cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, rangedFired: false, elementAmmo: [], bowRapidFire: false, shield: false, armor: false, armorBumps: 0, speedBoost: 0, damageBoost: 0, slowTimer: 0, stun: 0, hammerBouncesRemaining: 0, knockoutTimer: 0, knockoutBrokeWall: false, burnTimer: 0, burnDamage: 0, burnSpread: false, poisonTimer: 0, poisonTicks: 0 }
 }
 
 function createRound(mode: ArenaMode = 'duel'): RoundState {
@@ -84,7 +88,7 @@ function createRound(mode: ArenaMode = 'duel'): RoundState {
   }
   return {
     mode, fighters,
-    pickups: [], foods: [], potions: [], pillars: [], projectiles: [], particles: [], wallImpacts: [], collisionImpacts: [], reaperSpins: [], time: MODE_RULES[mode].seconds, nextPickup: .8 + Math.random() * 1.5, nextFood: 9 + Math.random() * 7, nextPotion: 3 + Math.random() * 5, running: true, deathAnimation: null, finalRush: false,
+    pickups: [], foods: [], potions: [], pillars: [], projectiles: [], particles: [], wallImpacts: [], ringBreaks: [], collisionImpacts: [], reaperSpins: [], time: MODE_RULES[mode].seconds, nextPickup: .8 + Math.random() * 1.5, nextFood: 9 + Math.random() * 7, nextPotion: 3 + Math.random() * 5, running: true, deathAnimation: null, finalRush: false,
   }
 }
 
@@ -255,8 +259,9 @@ function equipWeapon(fighter: Fighter, weapon: WeaponKind) {
   fighter.weapon = weapon
   fighter.weaponCount = 1
   fighter.rangedFired = false
+  fighter.bowRapidFire = weapon === 'bow' && fighter.elementAmmo.length >= 5
   applyWeaponSpeedEffect(fighter)
-  fighter.weaponTimer = weapon === 'bow' ? .55 : weapon === 'staff' ? .7 : 0
+  fighter.weaponTimer = weapon === 'bow' ? .35 : weapon === 'staff' ? .85 : 0
 }
 
 function consumeWeapon(fighter: Fighter) {
@@ -294,6 +299,18 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   const [a, b] = round.fighters
   for (const [index, fighter] of round.fighters.entries()) {
     if (fighter.health <= 0) { fighter.vx = 0; fighter.vy = 0; continue }
+    if (fighter.knockoutTimer > 0) {
+      const previousEdge = Math.hypot(fighter.x - .5, fighter.y - .5)
+      fighter.knockoutTimer = Math.max(0, fighter.knockoutTimer - dt); fighter.x += fighter.vx * dt; fighter.y += fighter.vy * dt; fighter.angle = Math.atan2(fighter.vy, fighter.vx)
+      const edge = Math.hypot(fighter.x - .5, fighter.y - .5)
+      if (!fighter.knockoutBrokeWall && previousEdge <= .455 && edge > .455) {
+        const angle = Math.atan2(fighter.y - .5, fighter.x - .5); fighter.knockoutBrokeWall = true
+        round.ringBreaks.push({ angle, life: .75 }); round.wallImpacts.push({ angle, life: 1.05, strength: .12 })
+        burst(round, .5 + Math.cos(angle) * .455, .5 + Math.sin(angle) * .455, '#f1f5f2', 36); audio?.play('wall')
+      }
+      if (fighter.knockoutTimer === 0) { fighter.health = 0; burst(round, fighter.x, fighter.y, SIDE_COPY[fighter.side].color, 64) }
+      continue
+    }
     fighter.cooldown = Math.max(0, fighter.cooldown - dt)
     fighter.weaponTimer = Math.max(0, fighter.weaponTimer - dt)
     fighter.stun = Math.max(0, fighter.stun - dt)
@@ -317,17 +334,21 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     fighter.speedBoost = Math.max(0, fighter.speedBoost - dt)
     fighter.damageBoost = Math.max(0, fighter.damageBoost - dt)
     if (previousSpeedBoost > 0 && fighter.speedBoost === 0) { fighter.vx *= .5; fighter.vy *= .5 }
-    if ((fighter.weapon === 'bow' || fighter.weapon === 'staff') && (!fighter.rangedFired || fighter.elementAmmo.length > 0) && fighter.weaponTimer <= 0) {
+    if (fighter.stun <= 0 && (fighter.weapon === 'bow' || fighter.weapon === 'staff') && (!fighter.rangedFired || fighter.elementAmmo.length > 0) && fighter.weaponTimer <= 0) {
       const target = round.fighters.filter(candidate => candidate.team !== fighter.team && candidate.health > 0).sort((left, right) => Math.hypot(left.x - fighter.x, left.y - fighter.y) - Math.hypot(right.x - fighter.x, right.y - fighter.y))[0]
       if (!target) continue
       const dx = target.x - fighter.x; const dy = target.y - fighter.y; const distance = Math.hypot(dx, dy) || 1
       const projectileKind: Projectile['kind'] = fighter.weapon === 'staff' ? 'magic' : 'arrow'; const speed = projectileKind === 'magic' ? .82 : .95
-      const projectileElement = fighter.rangedFired ? fighter.elementAmmo.shift() ?? null : null
+      const queuedAmmo = fighter.rangedFired ? fighter.elementAmmo.shift() ?? null : null
+      const projectileElement = queuedAmmo && queuedAmmo !== 'normal' ? queuedAmmo : null
       round.projectiles.push({ id: Date.now() + Math.random(), owner: fighter.id, ownerTeam: fighter.team, kind: projectileKind, element: projectileElement, x: fighter.x, y: fighter.y, vx: dx / distance * speed, vy: dy / distance * speed, life: 8, damage: arenaWeaponDamage(fighter.weapon) * (fighter.damageBoost > 0 ? 2 : 1), bounced: false })
       if (round.projectiles.length > 24) round.projectiles.splice(0, round.projectiles.length - 24)
-      fighter.rangedFired = true; fighter.weaponTimer = fighter.elementAmmo.length > 0 ? .45 : 0
+      fighter.rangedFired = true
+      fighter.weaponTimer = fighter.elementAmmo.length > 0 ? fighter.weapon === 'bow' ? fighter.bowRapidFire ? .2 : .28 : .9 : 0
+      if (fighter.elementAmmo.length === 0) fighter.bowRapidFire = false
       burst(round, fighter.x, fighter.y, '#ffffff', 6)
     }
+    if (fighter.weapon === 'bow' && fighter.bowRapidFire) continue
     if (fighter.stun > 0) continue
     // Marble movement stays on one straight vector until a collision changes it.
     const speed = Math.hypot(fighter.vx, fighter.vy)
@@ -394,15 +415,15 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       const impactX = (a.x + b.x) / 2; const impactY = (a.y + b.y) / 2
       round.collisionImpacts.push({ x: impactX, y: impactY, life: .38, strength })
       if (round.collisionImpacts.length > ARENA_MAX_COLLISION_IMPACTS) round.collisionImpacts.splice(0, round.collisionImpacts.length - ARENA_MAX_COLLISION_IMPACTS)
-      audio?.play(a.weapon && b.weapon ? 'clash' : 'collision')
+      audio?.play(a.weapon && b.weapon && a.stun <= 0 && b.stun <= 0 ? 'clash' : 'collision')
       if (!a.weapon && !b.weapon) {
         burst(round, impactX - nx * .01, impactY - ny * .01, '#ff3655', 4 + Math.round(strength * 6))
         burst(round, impactX + nx * .01, impactY + ny * .01, '#4695ff', 4 + Math.round(strength * 6))
       }
     }
     if (a.cooldown <= 0 && b.cooldown <= 0) {
-      const aRangedBreaks = isRangedWeapon(a.weapon) && isMeleeWeapon(b.weapon)
-      const bRangedBreaks = isRangedWeapon(b.weapon) && isMeleeWeapon(a.weapon)
+      const aRangedBreaks = isRangedWeapon(a.weapon) && isMeleeWeapon(b.weapon) && b.stun <= 0
+      const bRangedBreaks = isRangedWeapon(b.weapon) && isMeleeWeapon(a.weapon) && a.stun <= 0
       if (aRangedBreaks || bRangedBreaks) {
         if (aRangedBreaks) consumeWeapon(a)
         if (bRangedBreaks) consumeWeapon(b)
@@ -413,9 +434,9 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       const contactDamage = meleeCollisionDamage(a, b)
       const incomingRed = contactDamage.first
       const incomingBlue = contactDamage.second
-      if (incomingBlue && a.weapon === 'reaper') { round.reaperSpins.push({ owner: a.id, life: .26, startAngle: a.angle }); audio?.play('reaper') }
+      if (incomingBlue && a.weapon === 'reaper') { round.reaperSpins.push({ owner: a.id, life: .26, startAngle: a.angle, kind: 'reaper' }); audio?.play('reaper') }
       else if (incomingBlue) audio?.play('weapon')
-      if (incomingRed && b.weapon === 'reaper') { round.reaperSpins.push({ owner: b.id, life: .26, startAngle: b.angle }); audio?.play('reaper') }
+      if (incomingRed && b.weapon === 'reaper') { round.reaperSpins.push({ owner: b.id, life: .26, startAngle: b.angle, kind: 'reaper' }); audio?.play('reaper') }
       else if (incomingRed) audio?.play('weapon')
       const redReflects = a.armor && incomingRed > 0; const blueReflects = b.armor && incomingBlue > 0
       const damage = {
@@ -436,9 +457,9 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
         if (damage.red) burst(round, a.x, a.y, redHit.damage ? '#ff294d' : '#8fe7ff', 16)
         if (damage.blue) burst(round, b.x, b.y, blueHit.damage ? '#4590ff' : '#8fe7ff', 16)
       }
-      if (isMeleeWeapon(a.weapon) || isMeleeWeapon(b.weapon)) {
-        if (isMeleeWeapon(a.weapon)) consumeWeapon(a)
-        if (isMeleeWeapon(b.weapon)) consumeWeapon(b)
+      if ((isMeleeWeapon(a.weapon) && a.stun <= 0) || (isMeleeWeapon(b.weapon) && b.stun <= 0)) {
+        if (isMeleeWeapon(a.weapon) && a.stun <= 0) consumeWeapon(a)
+        if (isMeleeWeapon(b.weapon) && b.stun <= 0) consumeWeapon(b)
         a.cooldown = .7; b.cooldown = .7
       }
       }
@@ -459,11 +480,11 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       left.vx += relative * nx; left.vy += relative * ny; right.vx -= relative * nx; right.vy -= relative * ny
       addNaturalCollisionDeflection(left, right, nx, ny, relative)
       round.collisionImpacts.push({ x: (left.x + right.x) / 2, y: (left.y + right.y) / 2, life: .38, strength: Math.min(1, Math.abs(relative) / 1.4) })
-      audio?.play(left.weapon && right.weapon ? 'clash' : 'collision')
+      audio?.play(left.weapon && right.weapon && left.stun <= 0 && right.stun <= 0 ? 'clash' : 'collision')
     }
     if (left.team === right.team || left.cooldown > 0 || right.cooldown > 0) continue
-    const leftRangedBreaks = isRangedWeapon(left.weapon) && isMeleeWeapon(right.weapon)
-    const rightRangedBreaks = isRangedWeapon(right.weapon) && isMeleeWeapon(left.weapon)
+    const leftRangedBreaks = isRangedWeapon(left.weapon) && isMeleeWeapon(right.weapon) && right.stun <= 0
+    const rightRangedBreaks = isRangedWeapon(right.weapon) && isMeleeWeapon(left.weapon) && left.stun <= 0
     if (leftRangedBreaks || rightRangedBreaks) {
       if (leftRangedBreaks) consumeWeapon(left)
       if (rightRangedBreaks) consumeWeapon(right)
@@ -487,8 +508,8 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     if (rightHit.damage && left.weapon === 'hammer') applyHammerHit(round, left, right)
     if (leftHit.damage) { left.vx *= .82; left.vy *= .82; burst(round, left.x, left.y, SIDE_COPY[left.side].color, 16) }
     if (rightHit.damage) { right.vx *= .82; right.vy *= .82; burst(round, right.x, right.y, SIDE_COPY[right.side].color, 16) }
-    if (isMeleeWeapon(left.weapon)) consumeWeapon(left)
-    if (isMeleeWeapon(right.weapon)) consumeWeapon(right)
+    if (isMeleeWeapon(left.weapon) && left.stun <= 0) consumeWeapon(left)
+    if (isMeleeWeapon(right.weapon) && right.stun <= 0) consumeWeapon(right)
     left.cooldown = .7; right.cooldown = .7
   }
   if (round.nextPickup <= 0 && groundItemCount(round) < MODE_RULES[round.mode].itemLimit) {
@@ -500,7 +521,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   const collected = new Set<number>()
   for (const pickup of round.pickups) {
     pickup.life -= dt
-    for (const fighter of round.fighters) if (fighter.health > 0 && Math.hypot(fighter.x - pickup.x, fighter.y - pickup.y) < .08 && (pickup.kind !== 'shield' || !fighter.shield) && (pickup.kind !== 'armor' || !fighter.armor)) {
+    for (const fighter of round.fighters) if (fighter.health > 0 && Math.hypot(fighter.x - pickup.x, fighter.y - pickup.y) < .08) {
       if (pickup.kind === 'shield') fighter.shield = true
       else if (pickup.kind === 'armor') { fighter.armor = true; fighter.armorBumps = 0 }
       else if (pickup.kind === 'pillar') {
@@ -530,7 +551,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   if (eaten.size > 0) { round.nextFood = Math.min(round.nextFood, 1.5); audio?.play('pickup') }
   if (round.nextPotion <= 0 && groundItemCount(round) < MODE_RULES[round.mode].itemLimit) {
     const angle = Math.random() * TWO_PI; const radius = Math.sqrt(Math.random()) * .27
-    const potionKinds: PotionKind[] = ['fire', 'water', 'electric', 'poison', 'speed-boost', 'damage-boost']
+    const potionKinds: PotionKind[] = ['fire', 'water', 'electric', 'poison', 'normal-ammo', 'speed-boost', 'damage-boost']
     round.potions.push({ id: Date.now() + Math.random(), x: .5 + Math.cos(angle) * radius, y: .5 + Math.sin(angle) * radius, kind: potionKinds[Math.floor(Math.random() * potionKinds.length)], life: 14 })
     round.nextPotion = 5 + Math.random() * 8
   }
@@ -543,8 +564,13 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
         fighter.speedBoost = 3
       } else if (potion.kind === 'damage-boost') fighter.damageBoost = 3
       else {
-        fighter.elementAmmo.push(potion.kind)
-        if (isRangedWeapon(fighter.weapon) && fighter.rangedFired) fighter.weaponTimer = Math.min(fighter.weaponTimer || .25, .25)
+        if (potion.kind === 'normal-ammo') fighter.elementAmmo.push('normal', 'normal', 'normal')
+        else fighter.elementAmmo.push(potion.kind)
+        if (fighter.weapon === 'bow' && fighter.elementAmmo.length >= 5) fighter.bowRapidFire = true
+        if (isRangedWeapon(fighter.weapon) && fighter.rangedFired) {
+          const pickupDelay = fighter.weapon === 'bow' ? .18 : .7
+          fighter.weaponTimer = Math.min(fighter.weaponTimer || pickupDelay, pickupDelay)
+        }
       }
       usedPotions.add(potion.id); burst(round, potion.x, potion.y, POTION_COLORS[potion.kind], 18); break
     }
@@ -584,7 +610,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       if (Math.hypot(arrow.x - target.x, arrow.y - target.y) < target.radius + (arrow.kind === 'magic' ? .026 : .018)) {
         const hasDefense = target.shield || target.armor
         if (hasDefense && arrow.element) {
-          breakOneDefense(target)
+          breakAllDefenses(target)
           target.health = Math.max(0, target.health - 2)
           applyElementEffect(round, arrow.element, target)
           burst(round, target.x, target.y, ELEMENT_COLORS[arrow.element], 30)
@@ -614,6 +640,8 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   updateArenaParticles(round, dt)
   round.wallImpacts.forEach(impact => { impact.life -= dt })
   round.wallImpacts = round.wallImpacts.filter(impact => impact.life > 0)
+  round.ringBreaks.forEach(impact => { impact.life -= dt })
+  round.ringBreaks = round.ringBreaks.filter(impact => impact.life > 0)
   round.collisionImpacts.forEach(impact => { impact.life -= dt })
   round.collisionImpacts = round.collisionImpacts.filter(impact => impact.life > 0)
   round.reaperSpins.forEach(spin => { spin.life -= dt })
@@ -635,7 +663,7 @@ function isMeleeWeapon(weapon: WeaponKind | null): weapon is Exclude<WeaponKind,
 }
 
 function meleePower(fighter: Fighter) {
-  if (!isMeleeWeapon(fighter.weapon)) return 0
+  if (!isMeleeWeapon(fighter.weapon) || fighter.stun > 0) return 0
   return arenaWeaponDamage(fighter.weapon) * Math.max(1, fighter.weaponCount) * (fighter.damageBoost > 0 ? 2 : 1)
 }
 
@@ -677,11 +705,27 @@ function addNaturalCollisionDeflection(first: Fighter, second: Fighter, nx: numb
 }
 
 function applyHammerHit(round: RoundState, attacker: Fighter, target: Fighter) {
+  round.reaperSpins.push({ owner: attacker.id, life: .26, startAngle: attacker.angle, kind: 'hammer' })
+  for (const candidate of round.fighters) {
+    if (candidate.id === attacker.id || candidate.health <= 0 || Math.hypot(candidate.x - attacker.x, candidate.y - attacker.y) > .24) continue
+    const isPrimary = candidate.id === target.id
+    if (!isPrimary && candidate.team !== attacker.team) {
+      if (candidate.armor) { attacker.health = Math.max(0, attacker.health - 2); useReflectArmor(round, candidate) }
+      else {
+        const hit = applyArenaShield(2, candidate.shield); candidate.shield = hit.shield; candidate.health = Math.max(0, candidate.health - hit.damage)
+      }
+    }
+    launchHammerTarget(round, attacker, candidate, candidate.team !== attacker.team)
+  }
+}
+
+function launchHammerTarget(round: RoundState, attacker: Fighter, target: Fighter, canKnockOut: boolean) {
   const dx = target.x - attacker.x; const dy = target.y - attacker.y; const distance = Math.hypot(dx, dy) || 1
   const nx = dx / distance; const ny = dy / distance
-  if (Math.random() < .1) {
-    target.x = .5 + nx * .52; target.y = .5 + ny * .52
-    target.vx = nx * 1.8; target.vy = ny * 1.8; target.health = 0; target.stun = 0; target.hammerBouncesRemaining = 0
+  if (canKnockOut && Math.random() < .1) {
+    const centerDx = target.x - .5; const centerDy = target.y - .5; const centerDistance = Math.hypot(centerDx, centerDy)
+    const outwardX = centerDistance > .02 ? centerDx / centerDistance : nx; const outwardY = centerDistance > .02 ? centerDy / centerDistance : ny
+    target.vx = outwardX * .72; target.vy = outwardY * .72; target.stun = 0; target.hammerBouncesRemaining = 0; target.knockoutTimer = .85; target.knockoutBrokeWall = false
     burst(round, target.x, target.y, SIDE_COPY[target.side].color, 48)
     return
   }
@@ -692,9 +736,10 @@ function applyHammerHit(round: RoundState, attacker: Fighter, target: Fighter) {
   burst(round, target.x, target.y, '#ffe56b', 28)
 }
 
-function breakOneDefense(fighter: Fighter) {
-  if (fighter.shield) fighter.shield = false
-  else if (fighter.armor) { fighter.armor = false; fighter.armorBumps = 0 }
+function breakAllDefenses(fighter: Fighter) {
+  fighter.shield = false
+  fighter.armor = false
+  fighter.armorBumps = 0
 }
 
 function reflectProjectileFromFighter(projectile: Projectile, fighter: Fighter) {
@@ -795,6 +840,13 @@ function drawRound(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rou
     if (i === 0) ctx.moveTo(Math.round(x), Math.round(y)); else ctx.lineTo(Math.round(x), Math.round(y))
   }
   ctx.closePath(); ctx.fill(); ctx.stroke()
+  for (const ringBreak of round.ringBreaks) {
+    const fade = Math.min(1, ringBreak.life * 3); const radius = .455 * s
+    ctx.save(); ctx.globalAlpha = fade; ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(7, s * .02); ctx.beginPath(); ctx.arc(s * .5, s * .5, radius, ringBreak.angle - .09, ringBreak.angle + .09); ctx.stroke()
+    ctx.strokeStyle = '#f1f5f2'; ctx.lineWidth = Math.max(2, s * .006)
+    for (const side of [-1, 1]) { const angle = ringBreak.angle + side * .1; const x = s * (.5 + Math.cos(angle) * .455); const y = s * (.5 + Math.sin(angle) * .455); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(angle + side * .7) * s * .025, y + Math.sin(angle + side * .7) * s * .025); ctx.stroke() }
+    ctx.restore()
+  }
   drawPixelNumber(ctx, String(Math.max(0, Math.ceil(round.time))).padStart(2, '0'), s * .5, s * .5, s)
   for (const pickup of round.pickups) {
     if (pickup.kind === 'shield') drawPixelShield(ctx, pickup.x * s, pickup.y * s, s * .065)
@@ -816,14 +868,7 @@ function drawRound(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rou
   }
   for (const fighter of round.fighters) if (fighter.health > 0) drawFighter(ctx, fighter, s)
   for (const spin of round.reaperSpins) drawReaperSpin(ctx, spin, round, s)
-  for (const impact of round.collisionImpacts) drawCollisionImpact(ctx, impact, s)
   for (const p of round.particles) { ctx.globalAlpha = Math.min(1, p.life * 2); ctx.fillStyle = p.color; const size = Math.max(2, Math.round(s * .009)); ctx.fillRect(Math.round(p.x * s), Math.round(p.y * s), size, size) } ctx.globalAlpha = 1
-}
-
-function drawCollisionImpact(ctx: CanvasRenderingContext2D, impact: CollisionImpact, s: number) {
-  const progress = 1 - impact.life / .38; const x = impact.x * s; const y = impact.y * s; const radius = s * (.018 + progress * .045) * (.55 + impact.strength)
-  ctx.save(); ctx.globalAlpha = (1 - progress) * (.45 + impact.strength * .55); ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(2, s * .006 * impact.strength); ctx.beginPath(); ctx.arc(x, y, radius, 0, TWO_PI); ctx.stroke()
-  ctx.restore()
 }
 
 function drawReaperSpin(ctx: CanvasRenderingContext2D, spin: ReaperSpin, round: RoundState, s: number) {
@@ -836,7 +881,7 @@ function drawReaperSpin(ctx: CanvasRenderingContext2D, spin: ReaperSpin, round: 
   const y = fighter.y * s + Math.sin(angle) * radius
   ctx.save(); ctx.globalAlpha = Math.min(1, spin.life * 8)
   ctx.strokeStyle = SIDE_COPY[fighter.side].color; ctx.lineWidth = Math.max(2, s * .006); ctx.beginPath(); ctx.arc(fighter.x * s, fighter.y * s, radius, spin.startAngle, angle); ctx.stroke()
-  drawPixelWeapon(ctx, 'reaper', x, y, angle + Math.PI / 2, fighter.radius * s * 1.5)
+  drawPixelWeapon(ctx, spin.kind, x, y, angle + Math.PI / 2, fighter.radius * s * 1.5)
   ctx.restore()
 }
 
@@ -962,7 +1007,7 @@ function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter, s: number) {
   const eyeSize = Math.max(2, Math.round(r * .18)); const eyeShift = Math.sin(performance.now() / 260 + (f.side === 'red' ? 0 : .8)) * r * .1
   ctx.fillStyle = color; ctx.fillRect(Math.round(x - r * .35 + eyeShift), Math.round(y - r * .14), eyeSize, eyeSize); ctx.fillRect(Math.round(x + r * .18 + eyeShift), Math.round(y - r * .14), eyeSize, eyeSize)
   if (f.speedBoost > 0 || f.damageBoost > 0) { ctx.strokeStyle = f.damageBoost > 0 ? '#ff354d' : '#ffd32f'; ctx.lineWidth = Math.max(2, r * .1); ctx.globalAlpha = .65 + Math.sin(performance.now() / 100) * .25; ctx.beginPath(); ctx.arc(x, y, r * 1.18, 0, TWO_PI); ctx.stroke(); ctx.globalAlpha = 1 }
-  if (f.elementAmmo.length > 0) { const nextElement = f.elementAmmo[0]; ctx.strokeStyle = ELEMENT_COLORS[nextElement]; ctx.shadowColor = ELEMENT_COLORS[nextElement]; ctx.shadowBlur = r * .28; ctx.lineWidth = Math.max(2, r * .09); ctx.beginPath(); ctx.arc(x, y, r * 1.16, 0, TWO_PI); ctx.stroke(); ctx.shadowBlur = 0; if (f.elementAmmo.length > 1) { ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.max(8, Math.round(r * .55))}px monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(`×${f.elementAmmo.length}`, x, y - r * 1.55) } }
+  if (f.elementAmmo.length > 0) { const nextElement = f.elementAmmo[0]; ctx.strokeStyle = AMMO_COLORS[nextElement]; ctx.shadowColor = AMMO_COLORS[nextElement]; ctx.shadowBlur = r * .28; ctx.lineWidth = Math.max(2, r * .09); ctx.beginPath(); ctx.arc(x, y, r * 1.16, 0, TWO_PI); ctx.stroke(); ctx.shadowBlur = 0; if (f.elementAmmo.length > 1) { ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.max(8, Math.round(r * .55))}px monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(`×${f.elementAmmo.length}`, x, y - r * 1.55) } }
   if (f.slowTimer > 0) { ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = Math.max(2, r * .08); ctx.beginPath(); ctx.arc(x, y, r * 1.24, 0, TWO_PI); ctx.stroke() }
   if (f.stun > 0) { ctx.strokeStyle = '#ffe54d'; ctx.shadowColor = '#ffd400'; ctx.shadowBlur = r * .2; ctx.lineWidth = Math.max(2, r * .09); ctx.beginPath(); for (let i = 0; i <= 14; i++) { const angle = i / 14 * TWO_PI; const radius = r * (i % 2 ? 1.12 : 1.25); const px = x + Math.cos(angle) * radius; const py = y + Math.sin(angle) * radius; if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py) } ctx.closePath(); ctx.stroke(); ctx.shadowBlur = 0 }
   if (f.burnTimer > 0) drawFireRing(ctx, x, y, r, 2, 1.12)

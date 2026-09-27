@@ -29,6 +29,7 @@ test('weapons use their configured base damage', () => {
   assert.equal(arenaWeaponDamage('axe'), 3)
   assert.equal(arenaWeaponDamage('reaper'), 4)
   assert.equal(arenaWeaponDamage('sword'), 2)
+  assert.equal(arenaWeaponDamage('hammer'), 2)
   assert.equal(arenaWeaponDamage('blade'), 1)
   assert.equal(arenaWeaponDamage('bow'), 1)
   assert.equal(arenaWeaponDamage('staff'), 1)

@@ -23,7 +23,7 @@ export function arenaWeaponDamage(kind: string | null) {
   if (kind === 'reaper') return 4
   if (kind === 'axe') return 3
   if (kind === 'sword') return 2
-  if (kind === 'hammer') return 1
+  if (kind === 'hammer') return 2
   return 1
 }
 
