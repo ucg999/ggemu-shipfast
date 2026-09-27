@@ -1,4 +1,4 @@
-export type ArenaSide = 'red' | 'blue' | 'yellow' | 'green'
+export type ArenaSide = 'red' | 'blue' | 'yellow' | 'green' | 'pink' | 'orange'
 export type ArenaResult = ArenaSide | 'draw'
 
 export const ARENA_MAX_HEALTH = 10

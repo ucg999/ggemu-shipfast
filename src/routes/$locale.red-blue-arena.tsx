@@ -21,11 +21,13 @@ type WeaponKind = 'sword' | 'blade' | 'axe' | 'reaper' | 'bow' | 'staff' | 'hamm
 type ElementKind = 'fire' | 'water' | 'electric' | 'poison'
 type AmmoKind = ElementKind | 'normal'
 type PotionKind = ElementKind | 'normal-ammo' | 'speed-boost' | 'damage-boost'
-type ArenaMode = 'duel' | 'three' | 'four' | 'team'
-type Fighter = { id: number; side: ArenaSide; team: ArenaSide; x: number; y: number; vx: number; vy: number; radius: number; health: number; angle: number; cooldown: number; weapon: WeaponKind | null; weaponCount: number; weaponTimer: number; rangedFired: boolean; elementAmmo: AmmoKind[]; bowRapidFire: boolean; shield: boolean; armor: boolean; armorBumps: number; speedBoost: number; damageBoost: number; slowTimer: number; stun: number; hammerBouncesRemaining: number; knockoutTimer: number; knockoutBrokeWall: boolean; burnTimer: number; burnDamage: number; burnSpread: boolean; poisonTimer: number; poisonTicks: number }
+type ArenaMode = 'duel' | 'three' | 'four' | 'team' | 'team3'
+type Fighter = { id: number; side: ArenaSide; team: ArenaSide; active: boolean; reinforcementCalled: boolean; x: number; y: number; vx: number; vy: number; radius: number; health: number; angle: number; cooldown: number; weapon: WeaponKind | null; weaponCount: number; weaponTimer: number; rangedFired: boolean; laserCharging: boolean; elementAmmo: AmmoKind[]; bowRapidFire: boolean; shield: boolean; armor: boolean; armorBumps: number; speedBoost: number; damageBoost: number; slowTimer: number; slowStacks: number; stun: number; hammerBouncesRemaining: number; knockoutTimer: number; knockoutBrokeWall: boolean; burnTimer: number; burnDamage: number; burnSpread: boolean; poisonTimer: number; poisonTicks: number }
 type Pickup = { id: number; x: number; y: number; kind: WeaponKind | 'shield' | 'armor' | 'pillar'; life: number }
 type Food = { id: number; x: number; y: number; life: number }
 type Projectile = { id: number; owner: number; ownerTeam: ArenaSide; kind: 'arrow' | 'magic'; element: ElementKind | null; x: number; y: number; vx: number; vy: number; life: number; damage: number; bounced: boolean }
+type LaserSegment = { x1: number; y1: number; x2: number; y2: number }
+type Laser = { id: number; segments: LaserSegment[]; life: number; color: string; width: number }
 type Potion = { id: number; x: number; y: number; kind: PotionKind; life: number }
 type Pillar = { id: number; x: number; y: number; radius: number; hits: number; charged: boolean }
 type Particle = { x: number; y: number; vx: number; vy: number; life: number; color: string }
@@ -33,11 +35,12 @@ type WallImpact = { angle: number; life: number; strength: number }
 type RingBreak = { angle: number; life: number }
 type CollisionImpact = { x: number; y: number; life: number; strength: number }
 type ReaperSpin = { owner: number; life: number; startAngle: number; kind: 'reaper' | 'hammer' }
-type RoundState = { mode: ArenaMode; fighters: Fighter[]; pickups: Pickup[]; foods: Food[]; potions: Potion[]; pillars: Pillar[]; projectiles: Projectile[]; particles: Particle[]; wallImpacts: WallImpact[]; ringBreaks: RingBreak[]; collisionImpacts: CollisionImpact[]; reaperSpins: ReaperSpin[]; time: number; nextPickup: number; nextFood: number; nextPotion: number; running: boolean; deathAnimation: number | null; finalRush: boolean }
+type RoundState = { mode: ArenaMode; fighters: Fighter[]; pickups: Pickup[]; foods: Food[]; potions: Potion[]; pillars: Pillar[]; projectiles: Projectile[]; lasers: Laser[]; particles: Particle[]; wallImpacts: WallImpact[]; ringBreaks: RingBreak[]; collisionImpacts: CollisionImpact[]; reaperSpins: ReaperSpin[]; reverseSweepTeams: ArenaSide[]; time: number; nextPickup: number; nextFood: number; nextPotion: number; running: boolean; deathAnimation: number | null; finalRush: boolean }
 
 const TWO_PI = Math.PI * 2
 const ARENA_BASE_SPEED = .44
 const ARENA_PRE_RUSH_MAX_SPEED = ARENA_BASE_SPEED * 3
+const ARENA_RUSH_MAX_SPEED = ARENA_BASE_SPEED * 6
 const ARENA_MAX_PARTICLES = 520
 const ARENA_MAX_WALL_IMPACTS = 24
 const ARENA_MAX_COLLISION_IMPACTS = 18
@@ -49,10 +52,12 @@ const MODE_RULES: Record<ArenaMode, { label: string; minBet: number; maxBet: num
   three: { label: '三球模式', minBet: 10, maxBet: 200, profit: 2, seconds: 120, itemLimit: 3, sides: ['red', 'blue', 'yellow'] },
   four: { label: '四球模式', minBet: 10, maxBet: 500, profit: 3, seconds: 180, itemLimit: 3, sides: ['red', 'blue', 'yellow', 'green'] },
   team: { label: '2V2 红蓝', minBet: 10, maxBet: 1000, profit: 1, seconds: 120, itemLimit: 3, sides: ['red', 'blue'] },
+  team3: { label: '3V3组队战', minBet: 10, maxBet: 1000, profit: 1, seconds: 60, itemLimit: 3, sides: ['red', 'blue'] },
 }
 const SIDE_COPY: Record<ArenaSide, { name: string; color: string; emoji: string }> = {
   red: { name: '小红', color: '#ef233c', emoji: '🔴' }, blue: { name: '小蓝', color: '#3987ff', emoji: '🔵' },
   yellow: { name: '小黄', color: '#f5d328', emoji: '🟡' }, green: { name: '小绿', color: '#35c96f', emoji: '🟢' },
+  pink: { name: '小粉', color: '#ff69b4', emoji: '🩷' }, orange: { name: '小橙', color: '#ff8a24', emoji: '🟠' },
 }
 const ELEMENT_COLORS: Record<ElementKind, string> = { fire: '#ff354d', water: '#38bdf8', electric: '#ffe13b', poison: '#a855f7' }
 const AMMO_COLORS: Record<AmmoKind, string> = { ...ELEMENT_COLORS, normal: '#ffffff' }
@@ -61,34 +66,42 @@ const WEAPON_HELP = [
   ['🗡️', '小刀：1伤害，持有时速度×2'], ['⚔️', '剑：2伤害，可组成双剑'],
   ['🪓', '斧头：3伤害'], ['☠️', '死神刀：4伤害，持有时速度减半'],
   ['🔨', '晕锤：2伤害，旋转群攻并击飞周围球；10%概率打出圈外秒杀'],
-  ['🏹', '弓：快速射箭；累计5发后停在原地完成连射'], ['🔮', '法杖：逐颗缓慢施放魔法球，武器会保留'],
+  ['🏹', '弓：快速射箭；累计5发后停在原地完成连射'], ['🔮', '法杖：累计5发释放穿柱激光，可被外圈反弹'],
   ['🛡️', '盾（防具）：抵挡一次近战伤害；无限反弹普通远程弹'],
-  ['🪞', '反伤甲：近战反伤一次即碎；同伤对拼也碎；普通碰撞3次后消失'],
+  ['🪞', '反伤甲：只反普通近战；属性伤害自己承受并碎甲；普通碰撞3次消失'],
 ] as const
 const ITEM_HELP = [
   ['🍊', '果实：回复1格，并解除灼伤和中毒'], ['🔴', '红瓶：可预先累计一发火属性弹'],
   ['🔵', '蓝瓶：可预先累计一发水属性弹'], ['🟡', '黄瓶：可预先累计一发电属性弹'],
   ['🟣', '紫瓶：可预先累计一发毒属性弹'], ['💥', '属性弹：基础1伤害；命中反伤甲翻倍，防具会碎掉'],
-  ['⚪', '白瓶：普通箭或普通魔法球弹药＋3，可提前累计'],
+  ['⚪', '白瓶：普通弹药＋3；白激光可被盾和反伤甲反弹'],
   ['⚔️', '红色强化瓶：伤害×2，持续3秒'], ['💨', '黄色强化瓶：速度×2，持续3秒'],
-  ['⚡', '闪电墙：首次触碰掉1血、停顿并减速'],
+  ['⚡', '闪电墙：首次触碰掉1血；反伤甲会碎掉但仍只掉1血'],
 ] as const
 
-function makeFighter(id: number, side: ArenaSide, x: number, y: number, vx: number, vy: number): Fighter {
-  return { id, side, team: side, x, y, vx, vy, radius: .047, health: ARENA_MAX_HEALTH, angle: Math.atan2(vy, vx), cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, rangedFired: false, elementAmmo: [], bowRapidFire: false, shield: false, armor: false, armorBumps: 0, speedBoost: 0, damageBoost: 0, slowTimer: 0, stun: 0, hammerBouncesRemaining: 0, knockoutTimer: 0, knockoutBrokeWall: false, burnTimer: 0, burnDamage: 0, burnSpread: false, poisonTimer: 0, poisonTicks: 0 }
+function contestantName(mode: ArenaMode, side: ArenaSide) {
+  if (mode === 'team3') return side === 'red' ? '红队' : '蓝队'
+  return SIDE_COPY[side].name
+}
+
+function makeFighter(id: number, side: ArenaSide, x: number, y: number, vx: number, vy: number, team: ArenaSide = side, active = true): Fighter {
+  return { id, side, team, active, reinforcementCalled: false, x, y, vx, vy, radius: .047, health: ARENA_MAX_HEALTH, angle: Math.atan2(vy, vx), cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, rangedFired: false, laserCharging: false, elementAmmo: [], bowRapidFire: false, shield: false, armor: false, armorBumps: 0, speedBoost: 0, damageBoost: 0, slowTimer: 0, slowStacks: 0, stun: 0, hammerBouncesRemaining: 0, knockoutTimer: 0, knockoutBrokeWall: false, burnTimer: 0, burnDamage: 0, burnSpread: false, poisonTimer: 0, poisonTicks: 0 }
 }
 
 function createRound(mode: ArenaMode = 'duel'): RoundState {
   const fighters = mode === 'team'
     ? [makeFighter(0, 'red', .3, .42, .36, -.27), makeFighter(1, 'blue', .7, .36, -.34, .3), makeFighter(2, 'red', .34, .68, .31, .3), makeFighter(3, 'blue', .66, .64, -.32, -.29)]
+    : mode === 'team3'
+      ? [makeFighter(0, 'red', .28, .5, .4, 0, 'red'), makeFighter(1, 'blue', .72, .5, -.4, 0, 'blue'), makeFighter(2, 'yellow', -.2, .42, 0, 0, 'red', false), makeFighter(3, 'green', 1.2, .42, 0, 0, 'blue', false), makeFighter(4, 'pink', -.2, .62, 0, 0, 'red', false), makeFighter(5, 'orange', 1.2, .62, 0, 0, 'blue', false)]
     : MODE_RULES[mode].sides.map((side, index, sides) => { const angle = index / sides.length * TWO_PI + .35; return makeFighter(index, side, .5 + Math.cos(angle) * .2, .5 + Math.sin(angle) * .2, -Math.sin(angle) * .4, Math.cos(angle) * .4) })
   for (const fighter of fighters) {
+    if (!fighter.active) continue
     const dx = .5 - fighter.x; const dy = .5 - fighter.y; const distance = Math.hypot(dx, dy) || 1
-    fighter.vx = dx / distance * ARENA_BASE_SPEED; fighter.vy = dy / distance * ARENA_BASE_SPEED; fighter.angle = Math.atan2(fighter.vy, fighter.vx)
+    fighter.vx = dx / distance * ARENA_BASE_SPEED * 2; fighter.vy = dy / distance * ARENA_BASE_SPEED * 2; fighter.angle = Math.atan2(fighter.vy, fighter.vx)
   }
   return {
     mode, fighters,
-    pickups: [], foods: [], potions: [], pillars: [], projectiles: [], particles: [], wallImpacts: [], ringBreaks: [], collisionImpacts: [], reaperSpins: [], time: MODE_RULES[mode].seconds, nextPickup: .8 + Math.random() * 1.5, nextFood: 9 + Math.random() * 7, nextPotion: 3 + Math.random() * 5, running: true, deathAnimation: null, finalRush: false,
+    pickups: [], foods: [], potions: [], pillars: [], projectiles: [], lasers: [], particles: [], wallImpacts: [], ringBreaks: [], collisionImpacts: [], reaperSpins: [], reverseSweepTeams: [], time: MODE_RULES[mode].seconds, nextPickup: .8 + Math.random() * 1.5, nextFood: 9 + Math.random() * 7, nextPotion: 3 + Math.random() * 5, running: true, deathAnimation: null, finalRush: false,
   }
 }
 
@@ -99,6 +112,7 @@ function RedBlueArenaPage() {
   const roundRef = useRef<RoundState | null>(null)
   const audioRef = useRef<ArenaAudio | null>(null)
   const settledRef = useRef(false)
+  const chargedDeathIdsRef = useRef(new Set<number>())
   const [mode, setMode] = useState<ArenaMode>('duel')
   const [betSide, setBetSide] = useState<ArenaSide>('red')
   const [stake, setStake] = useState(0)
@@ -133,14 +147,15 @@ function RedBlueArenaPage() {
     if (settledRef.current) return
     settledRef.current = true
     if (roundRef.current) roundRef.current.running = false
-    const payout = arenaPayout(betSide, finalResult, stake, MODE_RULES[mode].profit)
+    const profitMultiplier = mode === 'team3' && roundRef.current ? getTeam3ProfitMultiplier(roundRef.current, finalResult) : MODE_RULES[mode].profit
+    const payout = arenaPayout(betSide, finalResult, stake, profitMultiplier)
     const nextBalance = payout > 0 ? addCoinBalance(payout) : readCoinBalance()
     setBalance(nextBalance)
     setResult(finalResult)
     setPhase('result')
     if (finalResult === 'draw') setMessage(`平局，退回 ${stake} 金币`)
-    else if (finalResult === betSide) setMessage(`竞猜成功！赢得 ${payout - stake} 金币`)
-    else setMessage(`竞猜失败，${SIDE_COPY[finalResult].name}获胜`)
+    else if (finalResult === betSide) setMessage(`竞猜成功！${mode === 'team3' ? `${profitMultiplier}倍奖励，` : ''}赢得 ${payout - stake} 金币`)
+    else setMessage(`竞猜失败，${contestantName(mode, finalResult)}获胜`)
     if (payout > 0) setFeedback({ amount: payout, id: Date.now(), prefix: '+' })
   }, [betSide, mode, stake])
 
@@ -160,7 +175,15 @@ function RedBlueArenaPage() {
       const dt = Math.min(.025, (now - last) / 1000)
       last = now
       updateRound(round, dt, audioRef.current)
-      const aliveTeams = new Set(round.fighters.filter(fighter => fighter.health > 0).map(fighter => fighter.team))
+      if (round.mode === 'team3' && round.time <= 0) activateTimedTeam3Reinforcements(round)
+      if (round.mode === 'team' || round.mode === 'team3') {
+        for (const fighter of round.fighters) {
+          if (!fighter.active || fighter.team !== betSide || fighter.health > 0 || chargedDeathIdsRef.current.has(fighter.id)) continue
+          chargedDeathIdsRef.current.add(fighter.id)
+          if (spendCoinBalance(stake)) setBalance(readCoinBalance())
+        }
+      }
+      const aliveTeams = new Set(round.fighters.filter(fighter => fighter.active && fighter.health > 0).map(fighter => fighter.team))
       if (round.deathAnimation === null && round.time > 0 && aliveTeams.size <= 1) startDeathAnimation(round, audioRef.current)
       drawRound(canvas, context, round)
       uiClock += dt
@@ -182,7 +205,7 @@ function RedBlueArenaPage() {
     window.addEventListener('resize', handleResize, { passive: true })
     frame = requestAnimationFrame(loop)
     return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', handleResize) }
-  }, [phase, settle])
+  }, [betSide, phase, settle, stake])
 
   function startRound() {
     if (stake < MODE_RULES[mode].minBet) {
@@ -194,23 +217,25 @@ function RedBlueArenaPage() {
       return
     }
     settledRef.current = false
+    chargedDeathIdsRef.current.clear()
     void audioRef.current?.start().then(() => audioRef.current?.play('start')).catch(() => {})
     roundRef.current = createRound(mode)
     setBalance(readCoinBalance())
-    setHealth(MODE_RULES[mode].sides.length === 2 && mode === 'team' ? [10, 10, 10, 10] : MODE_RULES[mode].sides.map(() => 10))
+    setHealth(createRound(mode).fighters.map(() => 10))
     setTime(MODE_RULES[mode].seconds)
     setResult(null)
     setFeedback(null)
-    setMessage(`已投注 ${stake} 金币，支持${SIDE_COPY[betSide].name}！`)
+    setMessage(`已投注 ${stake} 金币，支持${contestantName(mode, betSide)}！`)
     setPhase('running')
   }
 
   function resetBetting() {
     roundRef.current = null
     settledRef.current = false
+    chargedDeathIdsRef.current.clear()
     setPhase('betting')
     setResult(null)
-    setHealth(MODE_RULES[mode].sides.length === 2 && mode === 'team' ? [10, 10, 10, 10] : MODE_RULES[mode].sides.map(() => 10))
+    setHealth(createRound(mode).fighters.map(() => 10))
     setTime(MODE_RULES[mode].seconds)
     setMessage('选择阵营和投注额，开始下一局。')
   }
@@ -222,15 +247,16 @@ function RedBlueArenaPage() {
     color: SIDE_COPY[fighter.side].color,
     label: mode === 'team' ? `${SIDE_COPY[fighter.side].name}${previewFighters.slice(0, index + 1).filter(item => item.side === fighter.side).length}` : SIDE_COPY[fighter.side].name,
     side: fighter.side,
+    alignRight: mode !== 'three' && (fighter.team === 'blue' || fighter.side === 'green' || fighter.side === 'orange'),
     value: health[index] ?? ARENA_MAX_HEALTH,
   }))
   const content = <main className={`arena-page arena-page-${phase}${embed === '1' ? ' arena-page-embed' : ''}`}><section className="arena-shell">
     <div className="arena-header mb-2 flex items-center justify-between gap-3"><div>{embed !== '1' ? <Link to="/$locale/original-games" params={{ locale: lang }} className="arena-back text-xs text-white/55">← 原创游戏（内测版）</Link> : null}<h1 className="arena-title text-xl font-black sm:text-3xl">红蓝竞技场</h1></div><div className="arena-balance rounded-full border border-yellow-300/30 bg-yellow-300/10 px-3 py-2 text-sm font-black text-yellow-300">🪙 {balance}</div></div>
-    <div className="arena-score gap-x-2 gap-y-1" style={{ gridTemplateColumns: `repeat(${mode === 'three' ? 3 : healthEntries.length <= 2 ? healthEntries.length : 2}, minmax(0, 1fr))` }}>{healthEntries.map((entry, index) => { const hearts = Math.max(ARENA_MAX_HEALTH, entry.value); return <div className="arena-team min-w-0 flex-nowrap" key={`${entry.side}-${index}`} style={{ justifyContent: 'flex-start' }} title={`${entry.label} ${entry.value}点血`}><i className={`arena-orb arena-orb-${entry.side} shrink-0 ${mode === 'three' ? '!h-3 !w-3' : '!h-4 !w-4'}`} style={{ background: entry.color }} /><span className={`flex min-w-0 flex-nowrap leading-none ${mode === 'three' ? 'text-[9px] sm:text-[12px]' : 'text-[11px] sm:text-[14px]'}`} style={{ color: entry.color }}>{Array.from({ length: hearts }, (_, heart) => <i className="not-italic drop-shadow-[0_0_3px_currentColor]" key={heart}>{heart < entry.value ? '♥' : '♡'}</i>)}</span></div> })}</div>
-    <div className="whitespace-nowrap text-center font-mono text-xs font-black uppercase tracking-tight sm:text-base">{displayedSides.map((side, index) => <span key={side}><span style={{ color: SIDE_COPY[side].color }}>{SIDE_COPY[side].name}</span>{index < displayedSides.length - 1 ? <span className="mx-1 text-white/55">VS</span> : null}</span>)}</div>
-    <div className="arena-canvas-wrap"><canvas ref={canvasRef} className="arena-canvas" aria-label="多球自动战斗的圆形竞技场" />{phase !== 'running' && <div className="arena-overlay"><div className="arena-overlay-card"><div className="arena-result-mark mb-2 text-4xl">{result === 'draw' ? '🤝' : result ? SIDE_COPY[result].emoji : '⚔️'}</div><strong className="text-xl">{result ? result === 'draw' ? '平局' : `${SIDE_COPY[result].name}胜利` : '等待开战'}</strong><p className="mt-2 text-sm text-white/65">{message}</p></div></div>}</div>
+    <div className="arena-score gap-x-2 gap-y-1" style={{ gridTemplateColumns: `repeat(${mode === 'three' ? 3 : healthEntries.length <= 2 ? healthEntries.length : 2}, minmax(0, 1fr))` }}>{healthEntries.map((entry, index) => { const hearts = Math.max(ARENA_MAX_HEALTH, entry.value); return <div className={`arena-team min-w-0 flex-nowrap ${entry.alignRight ? 'flex-row-reverse' : ''}`} key={`${entry.side}-${index}`} style={{ justifyContent: 'flex-start' }} title={`${entry.label} ${entry.value}点血`}><i className={`arena-orb arena-orb-${entry.side} shrink-0 ${mode === 'three' ? '!h-3 !w-3' : '!h-4 !w-4'}`} style={{ background: entry.color }} /><span className={`flex min-w-0 flex-nowrap leading-none ${mode === 'three' ? 'text-[9px] sm:text-[12px]' : 'text-[11px] sm:text-[14px]'}`} style={{ color: entry.color }}>{Array.from({ length: hearts }, (_, heart) => <i className="not-italic drop-shadow-[0_0_3px_currentColor]" key={heart}>{entry.alignRight ? heart >= hearts - entry.value ? '♥' : '♡' : heart < entry.value ? '♥' : '♡'}</i>)}</span></div> })}</div>
+    <div className="whitespace-nowrap text-center font-mono text-xs font-black uppercase tracking-tight sm:text-base">{displayedSides.map((side, index) => <span key={side}><span style={{ color: SIDE_COPY[side].color }}>{contestantName(mode, side)}</span>{index < displayedSides.length - 1 ? <span className="mx-1 text-white/55">VS</span> : null}</span>)}</div>
+    <div className="arena-canvas-wrap"><canvas ref={canvasRef} className="arena-canvas" aria-label="多球自动战斗的圆形竞技场" />{phase !== 'running' && <div className="arena-overlay"><div className="arena-overlay-card"><div className="arena-result-mark mb-2 text-4xl">{result === 'draw' ? '🤝' : result ? SIDE_COPY[result].emoji : '⚔️'}</div><strong className="text-xl">{result ? result === 'draw' ? '平局' : `${contestantName(mode, result)}胜利` : '等待开战'}</strong><p className="mt-2 text-sm text-white/65">{message}</p></div></div>}</div>
     {phase === 'running' ? <aside className="mt-2 grid grid-cols-2 gap-2 text-white/70"><details className="rounded-lg border border-white/10 bg-white/[.04] p-2"><summary className="cursor-pointer select-none text-[11px] font-black text-yellow-300">⚔️ 武器与防具</summary><div className="mt-2 grid gap-y-1 text-[9px] leading-tight sm:text-[10px]">{WEAPON_HELP.map(([icon, text]) => <span key={text}><b className="mr-1">{icon}</b>{text}</span>)}</div></details><details className="rounded-lg border border-white/10 bg-white/[.04] p-2"><summary className="cursor-pointer select-none text-[11px] font-black text-cyan-300">🎁 道具说明</summary><div className="mt-2 grid gap-y-1 text-[9px] leading-tight sm:text-[10px]">{ITEM_HELP.map(([icon, text]) => <span key={text}><b className="mr-1">{icon}</b>{text}</span>)}</div></details></aside> : null}
-    {phase === 'betting' ? <><label className="mb-2 flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-black text-white"><span className="shrink-0 text-white/60">模式</span><select className="min-w-0 flex-1 bg-transparent text-right font-black text-yellow-300 outline-none" value={mode} onChange={event => { const value = event.currentTarget.value as ArenaMode; setMode(value); setBetSide(MODE_RULES[value].sides[0]); setStake(0); setHealth(createRound(value).fighters.map(() => 10)); setTime(MODE_RULES[value].seconds) }}>{(Object.keys(MODE_RULES) as ArenaMode[]).map(value => <option className="bg-black text-white" key={value} value={value}>{MODE_RULES[value].label} · {MODE_RULES[value].seconds}秒 · 最低{MODE_RULES[value].minBet} · 上限{MODE_RULES[value].maxBet} · 赔{MODE_RULES[value].profit}</option>)}</select></label><div className="arena-bet-panel arena-bet-layout"><div className="arena-bet-controls"><div className="arena-choice" style={{ gridTemplateColumns: `repeat(${displayedSides.length}, minmax(0, 1fr))` }}>{displayedSides.map(side => <button className="!px-1 text-[10px] sm:text-xs" key={side} style={{ backgroundColor: `${SIDE_COPY[side].color}cc` }} data-active={betSide === side} onClick={() => setBetSide(side)}>{SIDE_COPY[side].emoji} 投{SIDE_COPY[side].name}</button>)}</div><div className="arena-stakes">{ARENA_BET_OPTIONS.filter(value => value >= rules.minBet).map(value => <button key={value} data-active="false" disabled={stake + value > balance || stake + value > rules.maxBet} onClick={() => setStake(current => Math.min(rules.maxBet, current + value))}>+ 🪙 {value}</button>)}</div><div className="arena-bet-total flex items-center justify-between rounded-xl bg-black/25 px-3 py-2 text-sm"><strong className="text-yellow-300">累计投注：🪙 {stake} / {rules.maxBet}</strong><button className="text-white/60 underline" disabled={stake === 0} onClick={() => setStake(0)}>清空投注</button></div></div><button aria-label={stake < rules.minBet ? `最低投注 ${rules.minBet} 金币` : balance < stake ? '金币不足' : `投注 ${stake} 金币并开战`} className="arena-start arena-start-square" disabled={stake < rules.minBet || balance < stake} onClick={startRound}>开战</button></div></> : phase === 'result' ? <div className="arena-bet-panel"><button className="arena-start" onClick={resetBetting}>再来一局</button></div> : null}
+    {phase === 'betting' ? <><label className="mb-2 flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-black text-white"><span className="shrink-0 text-white/60">模式</span><select className="min-w-0 flex-1 bg-transparent text-right font-black text-yellow-300 outline-none" value={mode} onChange={event => { const value = event.currentTarget.value as ArenaMode; setMode(value); setBetSide(MODE_RULES[value].sides[0]); setStake(0); setHealth(createRound(value).fighters.map(() => 10)); setTime(MODE_RULES[value].seconds) }}>{(Object.keys(MODE_RULES) as ArenaMode[]).map(value => <option className="bg-black text-white" key={value} value={value}>{MODE_RULES[value].label}</option>)}</select></label><div className="arena-bet-panel arena-bet-layout"><div className="arena-bet-controls"><div className="arena-choice" style={{ gridTemplateColumns: `repeat(${displayedSides.length}, minmax(0, 1fr))` }}>{displayedSides.map(side => <button className="!px-1 text-[10px] sm:text-xs" key={side} style={{ backgroundColor: `${SIDE_COPY[side].color}cc` }} data-active={betSide === side} onClick={() => setBetSide(side)}>{SIDE_COPY[side].emoji} 投{contestantName(mode, side)}</button>)}</div><div className="arena-stakes">{ARENA_BET_OPTIONS.filter(value => value >= rules.minBet).map(value => <button key={value} data-active="false" disabled={stake + value > balance || stake + value > rules.maxBet} onClick={() => setStake(current => Math.min(rules.maxBet, current + value))}>+ 🪙 {value}</button>)}</div><div className="arena-bet-total flex items-center justify-between rounded-xl bg-black/25 px-3 py-2 text-sm"><strong className="text-yellow-300">累计投注：🪙 {stake} / {rules.maxBet}　赔率：{mode === 'team3' ? '存活1-3倍，一挑三4倍，一反三5倍' : `1赔${rules.profit}`}</strong><button className="text-white/60 underline" disabled={stake === 0} onClick={() => setStake(0)}>清空投注</button></div></div><button aria-label={stake < rules.minBet ? `最低投注 ${rules.minBet} 金币` : balance < stake ? '金币不足' : `投注 ${stake} 金币并开战`} className="arena-start arena-start-square" disabled={stake < rules.minBet || balance < stake} onClick={startRound}>开战</button></div></> : phase === 'result' ? <div className="arena-bet-panel"><button className="arena-start" onClick={resetBetting}>再来一局</button></div> : null}
     <CoinRewardPopup feedback={feedback} />
   </section></main>
 
@@ -243,6 +269,21 @@ function getRoundResult(round: RoundState): ArenaResult {
   const ranked = [...totals.entries()].sort((left, right) => right[1] - left[1])
   if (!ranked.length || (ranked[1] && ranked[0][1] === ranked[1][1])) return 'draw'
   return ranked[0][0]
+}
+
+function getTeam3ProfitMultiplier(round: RoundState, result: ArenaResult) {
+  if (result === 'draw') return 1
+  const winner = result
+  const loser = winner === 'red' ? 'blue' : 'red'
+  const winnerMembers = round.fighters.filter(fighter => fighter.team === winner)
+  const loserMembers = round.fighters.filter(fighter => fighter.team === loser)
+  const isReverseSweep = round.reverseSweepTeams.includes(winner) && loserMembers.every(fighter => fighter.health <= 0)
+  if (isReverseSweep) return 5
+  const isOneAgainstThree = winnerMembers.filter(fighter => fighter.active).length === 1
+    && loserMembers.filter(fighter => fighter.active).length === 3
+    && loserMembers.every(fighter => fighter.health <= 0)
+  if (isOneAgainstThree) return 4
+  return Math.max(1, Math.min(3, winnerMembers.filter(fighter => fighter.health > 0).length))
 }
 
 function resizeCanvas(canvas: HTMLCanvasElement) {
@@ -259,9 +300,10 @@ function equipWeapon(fighter: Fighter, weapon: WeaponKind) {
   fighter.weapon = weapon
   fighter.weaponCount = 1
   fighter.rangedFired = false
+  fighter.laserCharging = weapon === 'staff' && fighter.elementAmmo.length >= 5
   fighter.bowRapidFire = weapon === 'bow' && fighter.elementAmmo.length >= 5
   applyWeaponSpeedEffect(fighter)
-  fighter.weaponTimer = weapon === 'bow' ? .35 : weapon === 'staff' ? .85 : 0
+  fighter.weaponTimer = fighter.laserCharging ? 1 : weapon === 'bow' ? .35 : weapon === 'staff' ? .85 : 0
 }
 
 function consumeWeapon(fighter: Fighter) {
@@ -270,6 +312,7 @@ function consumeWeapon(fighter: Fighter) {
   fighter.weaponCount = 0
   fighter.weaponTimer = 0
   fighter.rangedFired = false
+  fighter.laserCharging = false
 }
 
 function applyWeaponSpeedEffect(fighter: Fighter) {
@@ -291,13 +334,14 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   round.time -= dt
   if (!round.finalRush && round.time <= 10) {
     round.finalRush = true
-    for (const fighter of round.fighters) { fighter.vx *= 2; fighter.vy *= 2 }
+    for (const fighter of round.fighters) if (fighter.active) { fighter.vx *= 2; fighter.vy *= 2 }
   }
   round.nextPickup -= dt
   round.nextFood -= dt
   round.nextPotion -= dt
   const [a, b] = round.fighters
   for (const [index, fighter] of round.fighters.entries()) {
+    if (!fighter.active) continue
     if (fighter.health <= 0) { fighter.vx = 0; fighter.vy = 0; continue }
     if (fighter.knockoutTimer > 0) {
       const previousEdge = Math.hypot(fighter.x - .5, fighter.y - .5)
@@ -313,10 +357,17 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     }
     fighter.cooldown = Math.max(0, fighter.cooldown - dt)
     fighter.weaponTimer = Math.max(0, fighter.weaponTimer - dt)
+    if (fighter.weapon === 'staff' && fighter.elementAmmo.length >= 5 && !fighter.laserCharging) {
+      fighter.laserCharging = true
+      fighter.weaponTimer = Math.max(fighter.weaponTimer, 1)
+    }
     fighter.stun = Math.max(0, fighter.stun - dt)
     const previousSlowTimer = fighter.slowTimer
     fighter.slowTimer = Math.max(0, fighter.slowTimer - dt)
-    if (previousSlowTimer > 0 && fighter.slowTimer === 0) { fighter.vx *= 2; fighter.vy *= 2 }
+    if (previousSlowTimer > 0 && fighter.slowTimer === 0) {
+      const recovery = 2 ** fighter.slowStacks
+      fighter.vx *= recovery; fighter.vy *= recovery; fighter.slowStacks = 0
+    }
     const previousBurnTimer = fighter.burnTimer
     fighter.burnTimer = Math.max(0, fighter.burnTimer - dt)
     if (previousBurnTimer > 0 && fighter.burnTimer === 0 && fighter.burnDamage > 0) {
@@ -335,25 +386,32 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     fighter.damageBoost = Math.max(0, fighter.damageBoost - dt)
     if (previousSpeedBoost > 0 && fighter.speedBoost === 0) { fighter.vx *= .5; fighter.vy *= .5 }
     if (fighter.stun <= 0 && (fighter.weapon === 'bow' || fighter.weapon === 'staff') && (!fighter.rangedFired || fighter.elementAmmo.length > 0) && fighter.weaponTimer <= 0) {
-      const target = round.fighters.filter(candidate => candidate.team !== fighter.team && candidate.health > 0).sort((left, right) => Math.hypot(left.x - fighter.x, left.y - fighter.y) - Math.hypot(right.x - fighter.x, right.y - fighter.y))[0]
+      const target = round.fighters.filter(candidate => candidate.active && candidate.team !== fighter.team && candidate.health > 0).sort((left, right) => Math.hypot(left.x - fighter.x, left.y - fighter.y) - Math.hypot(right.x - fighter.x, right.y - fighter.y))[0]
       if (!target) continue
       const dx = target.x - fighter.x; const dy = target.y - fighter.y; const distance = Math.hypot(dx, dy) || 1
-      const projectileKind: Projectile['kind'] = fighter.weapon === 'staff' ? 'magic' : 'arrow'; const speed = projectileKind === 'magic' ? .82 : .95
-      const queuedAmmo = fighter.rangedFired ? fighter.elementAmmo.shift() ?? null : null
-      const projectileElement = queuedAmmo && queuedAmmo !== 'normal' ? queuedAmmo : null
-      round.projectiles.push({ id: Date.now() + Math.random(), owner: fighter.id, ownerTeam: fighter.team, kind: projectileKind, element: projectileElement, x: fighter.x, y: fighter.y, vx: dx / distance * speed, vy: dy / distance * speed, life: 8, damage: arenaWeaponDamage(fighter.weapon) * (fighter.damageBoost > 0 ? 2 : 1), bounced: false })
-      if (round.projectiles.length > 24) round.projectiles.splice(0, round.projectiles.length - 24)
-      fighter.rangedFired = true
-      fighter.weaponTimer = fighter.elementAmmo.length > 0 ? fighter.weapon === 'bow' ? fighter.bowRapidFire ? .2 : .28 : .9 : 0
-      if (fighter.elementAmmo.length === 0) fighter.bowRapidFire = false
-      burst(round, fighter.x, fighter.y, '#ffffff', 6)
+      if (fighter.weapon === 'staff' && fighter.elementAmmo.length >= 5) {
+        fireStaffLaser(round, fighter, dx / distance, dy / distance)
+        audio?.play('weapon')
+      } else {
+        const projectileKind: Projectile['kind'] = fighter.weapon === 'staff' ? 'magic' : 'arrow'; const speed = projectileKind === 'magic' ? .82 : .95
+        const queuedAmmo = fighter.rangedFired ? fighter.elementAmmo.shift() ?? null : null
+        const projectileElement = queuedAmmo && queuedAmmo !== 'normal' ? queuedAmmo : null
+        round.projectiles.push({ id: Date.now() + Math.random(), owner: fighter.id, ownerTeam: fighter.team, kind: projectileKind, element: projectileElement, x: fighter.x, y: fighter.y, vx: dx / distance * speed, vy: dy / distance * speed, life: 8, damage: arenaWeaponDamage(fighter.weapon) * (fighter.damageBoost > 0 ? 2 : 1), bounced: false })
+        if (round.projectiles.length > 24) round.projectiles.splice(0, round.projectiles.length - 24)
+        fighter.rangedFired = true
+        fighter.weaponTimer = fighter.elementAmmo.length > 0 ? fighter.weapon === 'bow' ? fighter.bowRapidFire ? .2 : .28 : .9 : 0
+        if (fighter.elementAmmo.length === 0) fighter.bowRapidFire = false
+        burst(round, fighter.x, fighter.y, '#ffffff', 6)
+      }
     }
     if (fighter.weapon === 'bow' && fighter.bowRapidFire) continue
+    if (fighter.weapon === 'staff' && fighter.elementAmmo.length >= 5) continue
     if (fighter.stun > 0) continue
     // Marble movement stays on one straight vector until a collision changes it.
     const speed = Math.hypot(fighter.vx, fighter.vy)
-    const minSpeed = fighter.speedBoost > 0 ? .24 : .12
-    if (!round.finalRush && speed > ARENA_PRE_RUSH_MAX_SPEED) { fighter.vx *= ARENA_PRE_RUSH_MAX_SPEED / speed; fighter.vy *= ARENA_PRE_RUSH_MAX_SPEED / speed }
+    const minSpeed = (fighter.speedBoost > 0 ? .24 : .12) / 2 ** fighter.slowStacks
+    const maximumSpeed = round.finalRush ? ARENA_RUSH_MAX_SPEED : ARENA_PRE_RUSH_MAX_SPEED
+    if (speed > maximumSpeed) { fighter.vx *= maximumSpeed / speed; fighter.vy *= maximumSpeed / speed }
     else if (speed < minSpeed && speed > 0) { fighter.vx *= minSpeed / speed; fighter.vy *= minSpeed / speed }
     fighter.x += fighter.vx * dt; fighter.y += fighter.vy * dt; fighter.angle = Math.atan2(fighter.vy, fighter.vx)
     const cx = fighter.x - .5; const cy = fighter.y - .5; const edge = Math.hypot(cx, cy)
@@ -377,6 +435,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   }
   const brokenPillars = new Set<number>()
   for (const fighter of round.fighters) {
+    if (!fighter.active) continue
     for (const pillar of round.pillars) {
       const collision = squareWallCollision(fighter.x, fighter.y, fighter.radius, pillar)
       if (!collision) continue
@@ -388,8 +447,8 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
         const pillarTurn = (.015 + Math.min(.04, Math.abs(dot) * .03)) * (Math.random() < .5 ? -1 : 1)
         fighter.vx += -ny * pillarTurn; fighter.vy += nx * pillarTurn
         if (pillar.charged) {
-          const hit = applyArenaShield(1, fighter.shield)
-          fighter.shield = hit.shield; fighter.health = Math.max(0, fighter.health - hit.damage)
+          if (fighter.shield || fighter.armor) breakAllDefenses(fighter)
+          fighter.health = Math.max(0, fighter.health - 1)
           fighter.vx *= .5; fighter.vy *= .5; fighter.stun = 1; pillar.charged = false
           burst(round, fighter.x, fighter.y, '#ffe54d', 24)
           audio?.play('shock')
@@ -402,7 +461,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   }
   round.pillars = round.pillars.filter(pillar => !brokenPillars.has(pillar.id))
   const dx = b.x - a.x; const dy = b.y - a.y; const distance = Math.hypot(dx, dy) || .001
-  if (a.health > 0 && b.health > 0 && distance < a.radius + b.radius) {
+  if (a.active && b.active && a.health > 0 && b.health > 0 && distance < a.radius + b.radius) {
     spreadBurnOnCollision(round, a, b)
     const nx = dx / distance; const ny = dy / distance; const overlap = a.radius + b.radius - distance
     a.x -= nx * overlap / 2; a.y -= ny * overlap / 2; b.x += nx * overlap / 2; b.y += ny * overlap / 2
@@ -473,7 +532,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   for (let leftIndex = 0; leftIndex < round.fighters.length; leftIndex++) for (let rightIndex = leftIndex + 1; rightIndex < round.fighters.length; rightIndex++) {
     if (leftIndex === 0 && rightIndex === 1) continue
     const left = round.fighters[leftIndex]; const right = round.fighters[rightIndex]
-    if (left.health <= 0 || right.health <= 0) continue
+    if (!left.active || !right.active || left.health <= 0 || right.health <= 0) continue
     const pairDx = right.x - left.x; const pairDy = right.y - left.y; const pairDistance = Math.hypot(pairDx, pairDy) || .001
     if (pairDistance >= left.radius + right.radius) continue
     spreadBurnOnCollision(round, left, right)
@@ -528,7 +587,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   const collected = new Set<number>()
   for (const pickup of round.pickups) {
     pickup.life -= dt
-    for (const fighter of round.fighters) if (fighter.health > 0 && Math.hypot(fighter.x - pickup.x, fighter.y - pickup.y) < .08) {
+    for (const fighter of round.fighters) if (fighter.active && fighter.health > 0 && Math.hypot(fighter.x - pickup.x, fighter.y - pickup.y) < .08) {
       if (pickup.kind === 'shield') fighter.shield = true
       else if (pickup.kind === 'armor') { fighter.armor = true; fighter.armorBumps = 0 }
       else if (pickup.kind === 'pillar') {
@@ -549,7 +608,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   const eaten = new Set<number>()
   for (const food of round.foods) {
     food.life -= dt
-    for (const fighter of round.fighters) if (fighter.health > 0 && Math.hypot(fighter.x - food.x, fighter.y - food.y) < .075) {
+    for (const fighter of round.fighters) if (fighter.active && fighter.health > 0 && Math.hypot(fighter.x - food.x, fighter.y - food.y) < .075) {
       fighter.health = healArenaHealth(fighter.health); fighter.burnTimer = 0; fighter.burnDamage = 0; fighter.burnSpread = false; fighter.poisonTimer = 0; fighter.poisonTicks = 0
       eaten.add(food.id); burst(round, food.x, food.y, '#ff5a24', 16); break
     }
@@ -565,7 +624,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   const usedPotions = new Set<number>()
   for (const potion of round.potions) {
     potion.life -= dt
-    for (const fighter of round.fighters) if (fighter.health > 0 && Math.hypot(fighter.x - potion.x, fighter.y - potion.y) < .075) {
+    for (const fighter of round.fighters) if (fighter.active && fighter.health > 0 && Math.hypot(fighter.x - potion.x, fighter.y - potion.y) < .075) {
       if (potion.kind === 'speed-boost') {
         if (fighter.speedBoost <= 0) { fighter.vx *= 2; fighter.vy *= 2 }
         fighter.speedBoost = 3
@@ -612,7 +671,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       if (pillar.hits <= 0) projectileBrokenPillars.add(pillar.id)
       break
     }
-    const targets = (arrow.bounced ? round.fighters : round.fighters.filter(fighter => fighter.team !== arrow.ownerTeam)).filter(fighter => fighter.health > 0)
+    const targets = (arrow.bounced ? round.fighters : round.fighters.filter(fighter => fighter.team !== arrow.ownerTeam)).filter(fighter => fighter.active && fighter.health > 0)
     for (const target of targets) {
       if (Math.hypot(arrow.x - target.x, arrow.y - target.y) < target.radius + (arrow.kind === 'magic' ? .026 : .018)) {
         const hasDefense = target.shield || target.armor
@@ -640,10 +699,15 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     }
   }
   round.projectiles = round.projectiles.filter(arrow => arrow.life > 0 && !spentProjectiles.has(arrow.id))
+  round.lasers.forEach(laser => { laser.life -= dt })
+  round.lasers = round.lasers.filter(laser => laser.life > 0)
   round.pillars = round.pillars.filter(pillar => !projectileBrokenPillars.has(pillar.id))
-  if (!round.finalRush) for (const fighter of round.fighters) {
+  activateTeam3Reinforcements(round)
+  for (const fighter of round.fighters) {
+    if (!fighter.active) continue
     const speed = Math.hypot(fighter.vx, fighter.vy)
-    if (speed > ARENA_PRE_RUSH_MAX_SPEED) { fighter.vx *= ARENA_PRE_RUSH_MAX_SPEED / speed; fighter.vy *= ARENA_PRE_RUSH_MAX_SPEED / speed }
+    const maximumSpeed = round.finalRush ? ARENA_RUSH_MAX_SPEED : ARENA_PRE_RUSH_MAX_SPEED
+    if (speed > maximumSpeed) { fighter.vx *= maximumSpeed / speed; fighter.vy *= maximumSpeed / speed }
   }
   updateArenaParticles(round, dt)
   round.wallImpacts.forEach(impact => { impact.life -= dt })
@@ -660,6 +724,51 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
 // Equipped weapons, shields and armor live on Fighter and never count here.
 function groundItemCount(round: RoundState) {
   return round.pickups.length + round.foods.length + round.potions.length
+}
+
+function activateTeam3Reinforcements(round: RoundState) {
+  if (round.mode !== 'team3') return
+  for (const team of ['red', 'blue'] as const) {
+    const activeMembers = round.fighters.filter(fighter => fighter.team === team && fighter.active)
+    const reinforcement = round.fighters.find(fighter => fighter.team === team && !fighter.active)
+    if (!reinforcement) continue
+    const readyForReinforcement = activeMembers.length === 1
+      ? activeMembers[0].health <= 1
+      : activeMembers.every(fighter => fighter.health <= 1)
+    if (!readyForReinforcement) continue
+    activeMembers.forEach(fighter => { fighter.reinforcementCalled = true })
+    reinforcement.active = true
+    reinforcement.x = team === 'red' ? .22 : .78
+    reinforcement.y = reinforcement.id >= 4 ? .66 : .34
+    const dx = .5 - reinforcement.x; const dy = .5 - reinforcement.y; const distance = Math.hypot(dx, dy) || 1
+    reinforcement.vx = dx / distance * ARENA_BASE_SPEED; reinforcement.vy = dy / distance * ARENA_BASE_SPEED; reinforcement.angle = Math.atan2(reinforcement.vy, reinforcement.vx)
+    round.time = MODE_RULES.team3.seconds; round.finalRush = false
+    burst(round, reinforcement.x, reinforcement.y, SIDE_COPY[reinforcement.side].color, 32)
+  }
+  for (const team of ['red', 'blue'] as const) {
+    if (round.reverseSweepTeams.includes(team)) continue
+    const members = round.fighters.filter(fighter => fighter.team === team)
+    const opposingTeam = team === 'red' ? 'blue' : 'red'
+    const opponents = round.fighters.filter(fighter => fighter.team === opposingTeam)
+    if (members.length === 3 && members[2].active && members[2].health > 0 && members[0].health <= 0 && members[1].health <= 0
+      && opponents.length === 3 && opponents.every(fighter => fighter.health > 0)) round.reverseSweepTeams.push(team)
+  }
+}
+
+function activateTimedTeam3Reinforcements(round: RoundState) {
+  let activated = false
+  for (const team of ['red', 'blue'] as const) {
+    const reinforcement = round.fighters.find(fighter => fighter.team === team && !fighter.active)
+    if (!reinforcement) continue
+    reinforcement.active = true
+    reinforcement.x = team === 'red' ? .22 : .78
+    reinforcement.y = reinforcement.id >= 4 ? .66 : .34
+    const dx = .5 - reinforcement.x; const dy = .5 - reinforcement.y; const distance = Math.hypot(dx, dy) || 1
+    reinforcement.vx = dx / distance * ARENA_BASE_SPEED; reinforcement.vy = dy / distance * ARENA_BASE_SPEED; reinforcement.angle = Math.atan2(reinforcement.vy, reinforcement.vx)
+    burst(round, reinforcement.x, reinforcement.y, SIDE_COPY[reinforcement.side].color, 32)
+    activated = true
+  }
+  if (activated) { round.time = MODE_RULES.team3.seconds; round.finalRush = false }
 }
 
 function isRangedWeapon(weapon: WeaponKind | null) {
@@ -712,10 +821,69 @@ function addNaturalCollisionDeflection(first: Fighter, second: Fighter, nx: numb
   rotate(second, -turn)
 }
 
+function fireStaffLaser(round: RoundState, attacker: Fighter, directionX: number, directionY: number) {
+  const ammoCount = attacker.elementAmmo.length
+  const lastAmmo = attacker.elementAmmo[ammoCount - 1] ?? 'normal'
+  const element = lastAmmo === 'normal' ? null : lastAmmo
+  const laserWidth = Math.min(3, .7 + ammoCount * .16)
+  const hitRadius = .008 + Math.min(.05, ammoCount * .003)
+  let remaining = Math.min(2.6, .45 + ammoCount * .07)
+  let x = attacker.x; let y = attacker.y; let dx = directionX; let dy = directionY; let reflected = false
+  const segments: LaserSegment[] = []; const hitFighters = new Set<number>()
+  for (let step = 0; step < 18 && remaining > .002; step++) {
+    const wallDistance = rayCircleExitDistance(x, y, dx, dy, .455)
+    let eventDistance = Math.min(remaining, wallDistance); let hitTarget: Fighter | null = null
+    for (const target of round.fighters) {
+      if (!target.active || target.health <= 0 || hitFighters.has(target.id) || (!reflected && target.id === attacker.id)) continue
+      const hitDistance = rayCircleEntryDistance(x, y, dx, dy, target.x, target.y, target.radius + hitRadius)
+      if (hitDistance !== null && hitDistance < eventDistance) { eventDistance = hitDistance; hitTarget = target }
+    }
+    const endX = x + dx * eventDistance; const endY = y + dy * eventDistance
+    segments.push({ x1: x, y1: y, x2: endX, y2: endY }); remaining -= eventDistance
+    if (hitTarget) {
+      hitFighters.add(hitTarget.id)
+      const hasDefense = hitTarget.shield || hitTarget.armor
+      const canReflect = hitTarget.shield || (hitTarget.armor && !element)
+      if (canReflect) {
+        burst(round, hitTarget.x, hitTarget.y, '#eaf4ff', 24); dx *= -1; dy *= -1; reflected = true
+      } else {
+        if (hasDefense && element) breakAllDefenses(hitTarget)
+        hitTarget.health = Math.max(0, hitTarget.health - ammoCount)
+        if (element) applyElementEffect(round, element, hitTarget)
+        burst(round, hitTarget.x, hitTarget.y, element ? ELEMENT_COLORS[element] : SIDE_COPY[hitTarget.side].color, 28)
+      }
+      x = endX + dx * .002; y = endY + dy * .002; remaining -= .002; continue
+    }
+    break
+  }
+  round.lasers.push({ id: Date.now() + Math.random(), segments, life: .38, color: AMMO_COLORS[lastAmmo], width: laserWidth })
+  attacker.elementAmmo = []
+  attacker.rangedFired = true
+  attacker.laserCharging = false
+  attacker.weaponTimer = 0
+  burst(round, attacker.x, attacker.y, AMMO_COLORS[lastAmmo], 18)
+}
+
+function rayCircleExitDistance(x: number, y: number, dx: number, dy: number, radius: number) {
+  const ox = x - .5; const oy = y - .5; const projection = ox * dx + oy * dy
+  const discriminant = projection * projection - (ox * ox + oy * oy - radius * radius)
+  if (discriminant <= 0) return Number.POSITIVE_INFINITY
+  const first = -projection - Math.sqrt(discriminant); const second = -projection + Math.sqrt(discriminant)
+  return first > .001 ? first : second > .001 ? second : Number.POSITIVE_INFINITY
+}
+
+function rayCircleEntryDistance(x: number, y: number, dx: number, dy: number, cx: number, cy: number, radius: number) {
+  const ox = x - cx; const oy = y - cy; const projection = ox * dx + oy * dy
+  const discriminant = projection * projection - (ox * ox + oy * oy - radius * radius)
+  if (discriminant < 0) return null
+  const distance = -projection - Math.sqrt(discriminant)
+  return distance > .003 ? distance : null
+}
+
 function applyHammerHit(round: RoundState, attacker: Fighter, target: Fighter) {
   round.reaperSpins.push({ owner: attacker.id, life: .26, startAngle: attacker.angle, kind: 'hammer' })
   for (const candidate of round.fighters) {
-    if (candidate.id === attacker.id || candidate.health <= 0 || Math.hypot(candidate.x - attacker.x, candidate.y - attacker.y) > .24) continue
+    if (!candidate.active || candidate.id === attacker.id || candidate.health <= 0 || Math.hypot(candidate.x - attacker.x, candidate.y - attacker.y) > .24) continue
     const isPrimary = candidate.id === target.id
     if (!isPrimary && candidate.team !== attacker.team) {
       if (candidate.armor) { attacker.health = Math.max(0, attacker.health - 2); useReflectArmor(round, candidate) }
@@ -766,7 +934,7 @@ function reflectProjectileFromFighter(projectile: Projectile, fighter: Fighter) 
 function applyElementEffect(round: RoundState, element: ElementKind, target: Fighter) {
   if (element === 'fire') { target.burnTimer = 3; target.burnDamage = 1; target.burnSpread = false }
   else if (element === 'water') {
-    if (target.slowTimer <= 0) { target.vx *= .5; target.vy *= .5 }
+    target.vx *= .5; target.vy *= .5; target.slowStacks += 1
     target.slowTimer = 3
   } else if (element === 'electric') target.stun = Math.max(target.stun, 1)
   else { target.poisonTicks = 3; target.poisonTimer = 5 }
@@ -883,7 +1051,15 @@ function drawRound(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rou
     }
     ctx.restore()
   }
-  for (const fighter of round.fighters) if (fighter.health > 0) drawFighter(ctx, fighter, s)
+  for (const laser of round.lasers) {
+    const fade = Math.min(1, laser.life * 6)
+    ctx.save(); ctx.globalAlpha = fade; ctx.lineCap = 'butt'; ctx.shadowColor = laser.color; ctx.shadowBlur = s * .035 * laser.width; ctx.strokeStyle = laser.color; ctx.lineWidth = Math.max(7, s * .02) * laser.width; ctx.beginPath()
+    for (const segment of laser.segments) { ctx.moveTo(segment.x1 * s, segment.y1 * s); ctx.lineTo(segment.x2 * s, segment.y2 * s) }
+    ctx.stroke(); ctx.shadowBlur = 0; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(2, s * .006) * Math.min(1.8, .75 + laser.width * .35); ctx.beginPath()
+    for (const segment of laser.segments) { ctx.moveTo(segment.x1 * s, segment.y1 * s); ctx.lineTo(segment.x2 * s, segment.y2 * s) }
+    ctx.stroke(); ctx.restore()
+  }
+  for (const fighter of round.fighters) if (fighter.active && fighter.health > 0) drawFighter(ctx, fighter, s)
   for (const spin of round.reaperSpins) drawReaperSpin(ctx, spin, round, s)
   for (const p of round.particles) { ctx.globalAlpha = Math.min(1, p.life * 2); ctx.fillStyle = p.color; const size = Math.max(2, Math.round(s * .009)); ctx.fillRect(Math.round(p.x * s), Math.round(p.y * s), size, size) } ctx.globalAlpha = 1
 }
