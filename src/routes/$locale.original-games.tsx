@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import { SiteLayout } from '#/components/site-layout'
 import { CoinFruitCard } from '#/components/coin-fruit-card'
 import { GhostHunterCard } from '#/components/ghost-hunter-card'
-import { LuckyGrandSlamCard } from '#/components/lucky-grand-slam-card'
 import { RedBlueArenaCard } from '#/components/red-blue-arena-card'
 import { normalizeLocale } from '#/lib/i18n'
 import { getOriginalGamesTitle } from '#/lib/original-games'
@@ -24,7 +23,6 @@ function OriginalGamesPage() {
           <RedBlueArenaCard lang={lang} />
           <GhostHunterCard lang={lang} />
           <CoinFruitCard lang={lang} />
-          <LuckyGrandSlamCard lang={lang} />
         </div>
       </section>
     </SiteLayout>
