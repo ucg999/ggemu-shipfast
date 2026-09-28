@@ -389,6 +389,13 @@ body {
     margin-top: 36px;
   }
 
+  .awwwards-home .desktop-home-best-grid-eight {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .awwwards-home .desktop-home-latest-section,
+  .awwwards-home .desktop-home-popular-section,
   .awwwards-home .desktop-home-mahjong-section {
     margin-top: 92px;
   }

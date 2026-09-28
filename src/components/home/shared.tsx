@@ -398,6 +398,8 @@ export function SearchForm({
         <div className="tooltip tooltip-bottom" data-tip={lang === 'zh-TW' ? '經典的麻將遊戲' : lang === 'en' ? 'Classic mahjong games' : lang === 'ja' ? 'クラシック麻雀ゲーム' : '经典的麻将游戏'}>
           <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'mahjong' }} to="/$locale/platform/$platformId">{lang === 'zh-TW' ? '街機麻將' : lang === 'en' ? 'Arcade Mahjong' : lang === 'ja' ? 'アーケード麻雀' : '街机麻将'}</Link>
         </div>
+        <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
+        <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
         <div className="flex h-9 min-w-40 flex-1 items-center rounded-full border border-rose-200 bg-rose-50 shadow-sm transition focus-within:border-rose-300 focus-within:bg-white lg:max-w-md">
           <label className="flex h-full min-w-0 flex-1 items-center gap-2 pl-3">
             <i className="ri-search-line text-lg text-gray-500" />

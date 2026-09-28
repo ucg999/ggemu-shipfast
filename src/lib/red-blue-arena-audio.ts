@@ -13,7 +13,7 @@ export function createArenaAudio(): ArenaAudio {
   const tone = new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: .003, decay: .08, sustain: 0, release: .08 } }).connect(output)
   const impact = new Tone.MembraneSynth({ pitchDecay: .025, octaves: 3, envelope: { attack: .001, decay: .12, sustain: 0, release: .08 } }).connect(output)
   const metal = new Tone.FMSynth({ harmonicity: 4, modulationIndex: 12, envelope: { attack: .002, decay: .12, sustain: 0, release: .1 }, modulationEnvelope: { attack: .001, decay: .08, sustain: 0, release: .05 } }).connect(output)
-  const clash = new Tone.MetalSynth({ frequency: 260, harmonicity: 5.1, modulationIndex: 28, resonance: 4200, octaves: 1.8, envelope: { attack: .001, decay: .18, release: .12 } }).connect(output)
+  const clash = new Tone.MetalSynth({ harmonicity: 5.1, modulationIndex: 28, resonance: 4200, octaves: 1.8, envelope: { attack: .001, decay: .18, release: .12 } }).connect(output)
   const noise = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: .001, decay: .11, sustain: 0, release: .04 } }).connect(output)
   const lastPlayed = new Map<ArenaSound, number>()
   let active = false

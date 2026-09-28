@@ -887,6 +887,8 @@ function DesktopUnifiedHeaderNavigation({
       ) : null}
       <Link className={linkClass} params={{ locale, platformId: 'coin' }} to="/$locale/platform/$platformId">{getGameModeLabels(locale).coin}</Link>
       <Link className={linkClass} params={{ locale, platformId: 'mahjong' }} title={getMahjongChargeTip(locale)} to="/$locale/platform/$platformId">{getGameModeLabels(locale).mahjong}</Link>
+      <Link className={linkClass} params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
+      <Link className={linkClass} params={{ locale, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
       <div className="ml-1 flex h-9 min-w-48 max-w-md flex-1 items-center rounded-full border border-black/30 text-xs text-black/60">
         <Link className="flex min-w-0 flex-1 items-center gap-2 px-3" params={{ locale }} search={{ q: '' }} to="/$locale/search">
           <i className="ri-search-line text-lg" />

@@ -20,6 +20,7 @@ import { confirmResourceDownload, unlockPaidResource } from '#/lib/paid-resource
 import { useServerFn } from '@tanstack/react-start'
 import { readHomeCards, saveHomeCards } from '#/lib/home-card-cache'
 import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
+import { RedBlueArenaCard } from '#/components/red-blue-arena-card'
 import { preloadProModeAssets, scheduleInitialProModePreload } from '#/lib/pro-asset-preload'
 
 export function DefaultHomeTemplate(
@@ -69,7 +70,7 @@ export function DefaultHomeTemplate(
     visibleMostPlayedGames.slice(0, 6),
   )
   const [dailyBestGames, setDailyBestGames] = useState(() =>
-    visibleMostPlayedGames.slice(0, 3),
+    visibleMostPlayedGames.slice(0, 7),
   )
   const [homeMahjongGames, setHomeMahjongGames] = useState<PublicGame[]>(() =>
     readHomeCards<PublicGame[]>(`${lang}:home-mahjong`) ?? [],
@@ -107,7 +108,7 @@ export function DefaultHomeTemplate(
   }, [lang, visibleMostPlayedGames])
 
   useEffect(() => {
-    if (visibleMostPlayedGames.length > 0) setDailyBestGames(selectDailyBestGames(visibleMostPlayedGames, 3))
+    if (visibleMostPlayedGames.length > 0) setDailyBestGames(selectDailyBestGames(visibleMostPlayedGames, 7))
   }, [visibleMostPlayedGames])
 
   useEffect(() => {
@@ -273,7 +274,8 @@ export function DefaultHomeTemplate(
               <p className="desktop-home-game-caption">
                 {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
               </p>
-              <div className="desktop-home-best-grid">
+              <div className="desktop-home-best-grid desktop-home-best-grid-eight">
+                <RedBlueArenaCard lang={lang} />
                 {dailyBestGames.map((game) => {
                   const gameId = game.url_slug || game._id || ''
                   return (
@@ -284,6 +286,42 @@ export function DefaultHomeTemplate(
                   )
                 })}
               </div>
+              <section className="desktop-home-latest-section">
+                <p className="desktop-home-tagline">{getI18n(lang).layout.siteSlogan}</p>
+                <h2 className="desktop-home-best-title">{getI18n(lang).layout.latestGames}</h2>
+                <p className="desktop-home-game-caption">
+                  {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
+                </p>
+                <div className="desktop-home-best-grid desktop-home-best-grid-eight">
+                  {visibleLatestGames.slice(0, 8).map((game) => {
+                    const gameId = getGameId(game)
+                    return (
+                      <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} key={`latest-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
+                        <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} />
+                        <GameCardPreviewVideo src={game.game_video} />
+                      </Link>
+                    )
+                  })}
+                </div>
+              </section>
+              <section className="desktop-home-popular-section">
+                <p className="desktop-home-tagline">{getI18n(lang).layout.siteSlogan}</p>
+                <h2 className="desktop-home-best-title">{getI18n(lang).layout.mostPopularGames}</h2>
+                <p className="desktop-home-game-caption">
+                  {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
+                </p>
+                <div className="desktop-home-best-grid desktop-home-best-grid-eight">
+                  {visibleHomeGames.slice(0, 8).map((game) => {
+                    const gameId = getGameId(game)
+                    return (
+                      <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} key={`popular-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
+                        <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} />
+                        <GameCardPreviewVideo src={game.game_video} />
+                      </Link>
+                    )
+                  })}
+                </div>
+              </section>
               <section className="desktop-home-mahjong-section">
                 <p className="desktop-home-tagline">{getI18n(lang).layout.siteSlogan}</p>
                 <h2 className="desktop-home-best-title">
@@ -292,8 +330,8 @@ export function DefaultHomeTemplate(
                 <p className="desktop-home-game-caption">
                   {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
                 </p>
-                <div className="desktop-home-best-grid">
-                  {homeMahjongGames.map((game) => {
+                <div className="desktop-home-best-grid desktop-home-best-grid-eight">
+                  {homeMahjongGames.slice(0, 8).map((game) => {
                     const gameId = getGameId(game)
                     return (
                       <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} key={`mahjong-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
@@ -428,6 +466,11 @@ const HOME_MAHJONG_GAMES = [
   { query: '超级大满贯', aliases: ['超级大满贯2', '超级大满贯'] },
   { query: '泰山闯天关2', aliases: ['泰山闯天关2', '泰山闯天关'] },
   { query: '电子基盘', aliases: ['电子基盘'] },
+  { query: '明星三缺一', aliases: ['明星三缺一'] },
+  { query: '幸运满贯', aliases: ['幸运满贯', '幸運滿貫'] },
+  { query: '双龙抢珠', aliases: ['双龙抢珠', '雙龍搶珠'] },
+  { query: '天降神兵', aliases: ['天降神兵'] },
+  { query: '龙虎榜', aliases: ['龙虎榜2', '龙虎榜', '龍虎榜'] },
 ] as const
 
 function normalizeHomeGameName(value: string | undefined) {
