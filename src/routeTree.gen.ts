@@ -14,6 +14,10 @@ import { Route as LocaleRouteImport } from './routes/$locale'
 import { Route as ManifestDotwebmanifestRouteImport } from './routes/manifest[.]webmanifest'
 import { Route as RandomRouteImport } from './routes/random'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SitemapContentDotxmlRouteImport } from './routes/sitemap-content[.]xml'
+import { Route as SitemapGames1DotxmlRouteImport } from './routes/sitemap-games-1[.]xml'
+import { Route as SitemapGames2DotxmlRouteImport } from './routes/sitemap-games-2[.]xml'
+import { Route as SitemapPagesDotxmlRouteImport } from './routes/sitemap-pages[.]xml'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as XRouteImport } from './routes/x'
 import { Route as LocaleIndexRouteImport } from './routes/$locale.index'
@@ -73,6 +77,26 @@ const RandomRoute = RandomRouteImport.update({
 const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
   id: '/robots.txt',
   path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapContentDotxmlRoute = SitemapContentDotxmlRouteImport.update({
+  id: '/sitemap-content.xml',
+  path: '/sitemap-content.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapGames1DotxmlRoute = SitemapGames1DotxmlRouteImport.update({
+  id: '/sitemap-games-1.xml',
+  path: '/sitemap-games-1.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapGames2DotxmlRoute = SitemapGames2DotxmlRouteImport.update({
+  id: '/sitemap-games-2.xml',
+  path: '/sitemap-games-2.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapPagesDotxmlRoute = SitemapPagesDotxmlRouteImport.update({
+  id: '/sitemap-pages.xml',
+  path: '/sitemap-pages.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -261,6 +285,10 @@ export interface FileRoutesByFullPath {
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/random': typeof RandomRoute
   '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap-content.xml': typeof SitemapContentDotxmlRoute
+  '/sitemap-games-1.xml': typeof SitemapGames1DotxmlRoute
+  '/sitemap-games-2.xml': typeof SitemapGames2DotxmlRoute
+  '/sitemap-pages.xml': typeof SitemapPagesDotxmlRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/x': typeof XRoute
   '/$locale/PRO': typeof LocalePRORoute
@@ -302,6 +330,10 @@ export interface FileRoutesByTo {
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/random': typeof RandomRoute
   '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap-content.xml': typeof SitemapContentDotxmlRoute
+  '/sitemap-games-1.xml': typeof SitemapGames1DotxmlRoute
+  '/sitemap-games-2.xml': typeof SitemapGames2DotxmlRoute
+  '/sitemap-pages.xml': typeof SitemapPagesDotxmlRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/x': typeof XRoute
   '/$locale/PRO': typeof LocalePRORoute
@@ -345,6 +377,10 @@ export interface FileRoutesById {
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/random': typeof RandomRoute
   '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap-content.xml': typeof SitemapContentDotxmlRoute
+  '/sitemap-games-1.xml': typeof SitemapGames1DotxmlRoute
+  '/sitemap-games-2.xml': typeof SitemapGames2DotxmlRoute
+  '/sitemap-pages.xml': typeof SitemapPagesDotxmlRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/x': typeof XRoute
   '/$locale/PRO': typeof LocalePRORoute
@@ -389,6 +425,10 @@ export interface FileRouteTypes {
     | '/manifest.webmanifest'
     | '/random'
     | '/robots.txt'
+    | '/sitemap-content.xml'
+    | '/sitemap-games-1.xml'
+    | '/sitemap-games-2.xml'
+    | '/sitemap-pages.xml'
     | '/sitemap.xml'
     | '/x'
     | '/$locale/PRO'
@@ -430,6 +470,10 @@ export interface FileRouteTypes {
     | '/manifest.webmanifest'
     | '/random'
     | '/robots.txt'
+    | '/sitemap-content.xml'
+    | '/sitemap-games-1.xml'
+    | '/sitemap-games-2.xml'
+    | '/sitemap-pages.xml'
     | '/sitemap.xml'
     | '/x'
     | '/$locale/PRO'
@@ -472,6 +516,10 @@ export interface FileRouteTypes {
     | '/manifest.webmanifest'
     | '/random'
     | '/robots.txt'
+    | '/sitemap-content.xml'
+    | '/sitemap-games-1.xml'
+    | '/sitemap-games-2.xml'
+    | '/sitemap-pages.xml'
     | '/sitemap.xml'
     | '/x'
     | '/$locale/PRO'
@@ -515,6 +563,10 @@ export interface RootRouteChildren {
   ManifestDotwebmanifestRoute: typeof ManifestDotwebmanifestRoute
   RandomRoute: typeof RandomRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SitemapContentDotxmlRoute: typeof SitemapContentDotxmlRoute
+  SitemapGames1DotxmlRoute: typeof SitemapGames1DotxmlRoute
+  SitemapGames2DotxmlRoute: typeof SitemapGames2DotxmlRoute
+  SitemapPagesDotxmlRoute: typeof SitemapPagesDotxmlRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   XRoute: typeof XRoute
   ApiLocaleSuggestionRoute: typeof ApiLocaleSuggestionRoute
@@ -559,6 +611,34 @@ declare module '@tanstack/react-router' {
       path: '/robots.txt'
       fullPath: '/robots.txt'
       preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap-content.xml': {
+      id: '/sitemap-content.xml'
+      path: '/sitemap-content.xml'
+      fullPath: '/sitemap-content.xml'
+      preLoaderRoute: typeof SitemapContentDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap-games-1.xml': {
+      id: '/sitemap-games-1.xml'
+      path: '/sitemap-games-1.xml'
+      fullPath: '/sitemap-games-1.xml'
+      preLoaderRoute: typeof SitemapGames1DotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap-games-2.xml': {
+      id: '/sitemap-games-2.xml'
+      path: '/sitemap-games-2.xml'
+      fullPath: '/sitemap-games-2.xml'
+      preLoaderRoute: typeof SitemapGames2DotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap-pages.xml': {
+      id: '/sitemap-pages.xml'
+      path: '/sitemap-pages.xml'
+      fullPath: '/sitemap-pages.xml'
+      preLoaderRoute: typeof SitemapPagesDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -909,6 +989,10 @@ const rootRouteChildren: RootRouteChildren = {
   ManifestDotwebmanifestRoute: ManifestDotwebmanifestRoute,
   RandomRoute: RandomRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
+  SitemapContentDotxmlRoute: SitemapContentDotxmlRoute,
+  SitemapGames1DotxmlRoute: SitemapGames1DotxmlRoute,
+  SitemapGames2DotxmlRoute: SitemapGames2DotxmlRoute,
+  SitemapPagesDotxmlRoute: SitemapPagesDotxmlRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   XRoute: XRoute,
   ApiLocaleSuggestionRoute: ApiLocaleSuggestionRoute,

@@ -11,13 +11,34 @@ import { SWITCH_LIBRARY_GAMES } from '#/lib/switch-library'
 const GGEMU_API_BASE_URL = 'https://ggemu.com'
 const SITEMAP_PAGE_SIZE = 100
 const SITEMAP_MAX_PAGES = 50
+const SITEMAP_FETCH_CONCURRENCY = 8
 const SITEMAP_CACHE_TTL_MS = 1000 * 60 * 60 * 24
-const locales = ['zh-CN', 'zh-TW', 'en', 'ja'] as const satisfies ReadonlyArray<Locale>
+const locales = ['zh-CN', 'en'] as const satisfies ReadonlyArray<Locale>
+const sitemapFiles = [
+  '/sitemap-pages.xml',
+  '/sitemap-games-1.xml',
+  '/sitemap-games-2.xml',
+  '/sitemap-content.xml',
+] as const
 
-let sitemapCache: {
+const sitemapCache = new Map<SitemapSection, {
   expiresAt: number
   xml: string
+}>()
+
+let sourceCache: {
+  expiresAt: number
+  value: SitemapSources
 } | null = null
+
+export type SitemapSection = 'content' | 'games-1' | 'games-2' | 'pages'
+
+type SitemapSources = {
+  blogPosts: Array<BlogPost>
+  dealSteamAppIds: Array<number>
+  dealsUpdatedAt?: string
+  games: Array<PublicGame>
+}
 
 type SitemapEntry = {
   locale: Locale
@@ -49,7 +70,7 @@ export const Route = createFileRoute('/sitemap.xml')({
     handlers: {
       GET: async ({ request }) => {
         const origin = new URL(request.url).origin
-        const xml = await getSitemapXml(origin)
+        const xml = buildSitemapIndex(origin)
 
         return new Response(xml, {
           headers: {
@@ -62,53 +83,68 @@ export const Route = createFileRoute('/sitemap.xml')({
   },
 })
 
-async function getSitemapXml(origin: string) {
-  if (sitemapCache && sitemapCache.expiresAt > Date.now()) {
-    return sitemapCache.xml
+export async function getSitemapSectionXml(origin: string, section: SitemapSection) {
+  const cached = sitemapCache.get(section)
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.xml
   }
 
-  let games: Array<PublicGame> = []
-  let blogPosts: Array<BlogPost> = []
-  const dealsPromise = fetchGameDeals('en', DEFAULT_DEAL_REGION).catch(() => null)
-
-  try {
-    ;[games, blogPosts] = await Promise.all([
-      fetchSitemapGames(),
-      fetchSitemapBlogPosts(),
-    ])
-  } catch {
-    if (sitemapCache) {
-      return sitemapCache.xml
-    }
-  }
-
-  const dealsResult = await dealsPromise
-  const entries = buildSitemapEntries(
+  const sources: SitemapSources = section === 'pages'
+    ? { blogPosts: [], dealSteamAppIds: [], games: [] }
+    : await getSitemapSources()
+  const allEntries = buildSitemapEntries(
     origin,
-    games,
-    blogPosts,
-    dealsResult?.deals.map((deal) => deal.steamAppId) ?? [],
-    dealsResult?.updatedAt,
+    sources.games,
+    sources.blogPosts,
+    sources.dealSteamAppIds,
+    sources.dealsUpdatedAt,
   )
+  const gameEntries = allEntries.filter((entry) => entry.path.startsWith('/games/'))
+  const midpoint = Math.ceil(gameEntries.length / 2)
+  const entries = section === 'games-1'
+    ? gameEntries.slice(0, midpoint)
+    : section === 'games-2'
+      ? gameEntries.slice(midpoint)
+      : section === 'content'
+        ? allEntries.filter((entry) => entry.path.startsWith('/blog/') || entry.path.startsWith('/collections/') || entry.path.startsWith('/deals/steam/') || entry.path.startsWith('/platform/psp/') || entry.path.startsWith('/platform/switch/'))
+        : allEntries.filter((entry) => !entry.path.startsWith('/games/') && !entry.path.startsWith('/blog/') && !entry.path.startsWith('/collections/') && !entry.path.startsWith('/deals/steam/') && !entry.path.startsWith('/platform/psp/') && !entry.path.startsWith('/platform/switch/'))
   const xml = buildSitemapXml(entries)
 
-  sitemapCache = {
+  sitemapCache.set(section, {
     expiresAt: Date.now() + SITEMAP_CACHE_TTL_MS,
     xml,
-  }
+  })
 
   return xml
+}
+
+async function getSitemapSources(): Promise<SitemapSources> {
+  if (sourceCache && sourceCache.expiresAt > Date.now()) return sourceCache.value
+
+  try {
+    const [games, blogPosts, dealsResult] = await Promise.all([
+      fetchSitemapGames(),
+      fetchSitemapBlogPosts(),
+      fetchGameDeals('en', DEFAULT_DEAL_REGION).catch(() => null),
+    ])
+    const value = {
+      blogPosts,
+      dealSteamAppIds: dealsResult?.deals.map((deal) => deal.steamAppId) ?? [],
+      dealsUpdatedAt: dealsResult?.updatedAt,
+      games,
+    }
+    sourceCache = { expiresAt: Date.now() + SITEMAP_CACHE_TTL_MS, value }
+    return value
+  } catch {
+    return sourceCache?.value ?? { blogPosts: [], dealSteamAppIds: [], games: [] }
+  }
 }
 
 async function fetchSitemapGames() {
   const firstPage = await fetchGamesPage(1)
   const pageCount = Math.min(firstPage.pagination.pages, SITEMAP_MAX_PAGES)
-  const games = [...firstPage.data]
-
-  for (let page = 2; page <= pageCount; page += 1) {
-    const result = await fetchGamesPage(page)
-    games.push(...result.data)
-  }
+  const remainingPages = await fetchPagesInBatches(pageCount, fetchGamesPage)
+  const games = [firstPage, ...remainingPages].flatMap((result) => result.data)
 
   return dedupeGames(games)
 }
@@ -134,14 +170,24 @@ async function fetchGamesPage(page: number) {
 async function fetchSitemapBlogPosts() {
   const firstPage = await fetchBlogPostsPage(1)
   const pageCount = Math.min(firstPage.pagination.pages, SITEMAP_MAX_PAGES)
-  const blogPosts = [...firstPage.blogPosts]
-
-  for (let page = 2; page <= pageCount; page += 1) {
-    const result = await fetchBlogPostsPage(page)
-    blogPosts.push(...result.blogPosts)
-  }
+  const remainingPages = await fetchPagesInBatches(pageCount, fetchBlogPostsPage)
+  const blogPosts = [firstPage, ...remainingPages].flatMap((result) => result.blogPosts)
 
   return dedupeBlogPosts(blogPosts)
+}
+
+async function fetchPagesInBatches<T>(pageCount: number, fetchPage: (page: number) => Promise<T>) {
+  const results: Array<T> = []
+
+  for (let firstPage = 2; firstPage <= pageCount; firstPage += SITEMAP_FETCH_CONCURRENCY) {
+    const pages = Array.from(
+      { length: Math.min(SITEMAP_FETCH_CONCURRENCY, pageCount - firstPage + 1) },
+      (_, index) => firstPage + index,
+    )
+    results.push(...await Promise.all(pages.map(fetchPage)))
+  }
+
+  return results
 }
 
 async function fetchBlogPostsPage(page: number) {
@@ -320,6 +366,11 @@ function buildSitemapXml(entries: Array<SitemapEntry>) {
 ${urls.join('\n')}
 </urlset>
 `
+}
+
+function buildSitemapIndex(origin: string) {
+  const sitemaps = sitemapFiles.map((path) => `  <sitemap>\n    <loc>${escapeXml(`${origin}${path}`)}</loc>\n  </sitemap>`)
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemaps.join('\n')}\n</sitemapindex>\n`
 }
 
 function formatSitemapAlternateLinks(entry: SitemapEntry) {

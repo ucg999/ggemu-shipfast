@@ -34,6 +34,7 @@ import type { Filters, HomeLoaderData } from '#/components/home/types'
 import { TwoColumnHomeTemplate } from '#/components/home/two-column-template'
 import { SiteLayout } from '#/components/site-layout'
 import {
+  type BlogPost,
   type GameSearchSort,
   type GameSearchResult,
   type Locale,
@@ -141,14 +142,15 @@ export const Route = createFileRoute('/$locale/')({
 
       return {
         ...newArrival,
+        games: newArrival.games.map(compactGameCard),
         featureSections: getFeatureSections({
           newArrival: newArrival.games,
           platformGames: platformResults,
-        }),
+        }).map((section) => ({ ...section, games: section.games.map(compactGameCard) })),
         filterOptions,
         layoutSeed: getPokiDailyLayoutSeed(),
         latestBlogPosts,
-        latestGames: latestGamesResult.games.slice(0, 20),
+        latestGames: latestGamesResult.games.slice(0, 20).map(compactGameCard),
         mostPlayedGames: mostPlayedGames.games,
         videoLoadFailed: mostPlayedGames.loadFailed,
         seoOrigin,
@@ -174,10 +176,11 @@ export const Route = createFileRoute('/$locale/')({
 
     return {
       ...result,
+      games: result.games.map(compactGameCard),
       filterOptions,
       layoutSeed: getPokiDailyLayoutSeed(),
       latestBlogPosts,
-      latestGames: latestGamesResult.games.slice(0, 20),
+      latestGames: latestGamesResult.games.slice(0, 20).map(compactGameCard),
       mostPlayedGames: mostPlayedGames.games,
       videoLoadFailed: mostPlayedGames.loadFailed,
       seoOrigin,
@@ -528,7 +531,9 @@ async function loadLatestBlogPosts(locale: Locale) {
       ),
   )
 
-  return [...localPosts, ...remotePosts].slice(0, HOME_BLOG_POST_LIMIT)
+  return [...localPosts, ...remotePosts]
+    .slice(0, HOME_BLOG_POST_LIMIT)
+    .map(compactBlogPost)
 }
 
 async function loadGameFilterOptions() {
@@ -619,8 +624,34 @@ async function loadMostPlayedVideoGames(locale: Locale) {
     })
 
   return {
-    games: [...uniqueGames.values()],
+    games: [...uniqueGames.values()].slice(0, 32).map(compactGameCard),
     loadFailed: results.some((result) => result.status === 'rejected'),
+  }
+}
+
+function compactGameCard(game: PublicGame): PublicGame {
+  return {
+    _id: game._id,
+    game_cover: game.game_cover,
+    game_video: game.game_video,
+    name: game.name,
+    platform: game.platform,
+    plays_count: game.plays_count,
+    url_slug: game.url_slug,
+    views_count: game.views_count,
+  }
+}
+
+function compactBlogPost(post: BlogPost): BlogPost {
+  return {
+    _id: post._id,
+    cover_image_url: post.cover_image_url,
+    created_at: post.created_at,
+    excerpt: post.excerpt,
+    href: post.href,
+    slug: post.slug,
+    title: post.title,
+    updated_at: post.updated_at,
   }
 }
 

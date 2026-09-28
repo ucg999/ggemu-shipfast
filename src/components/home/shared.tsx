@@ -166,12 +166,12 @@ export function HomeMostPlayedGamesSection({
 }
 
 export function LazyAutoplayVideo({ className, poster, src }: { className: string; poster?: string; src?: string }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const mediaRef = useRef<HTMLImageElement | HTMLVideoElement>(null)
   const [isNearViewport, setIsNearViewport] = useState(false)
 
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
+    const media = mediaRef.current
+    if (!media) return
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -179,22 +179,34 @@ export function LazyAutoplayVideo({ className, poster, src }: { className: strin
       },
       { rootMargin: '200px' },
     )
-    observer.observe(video)
+    observer.observe(media)
     return () => observer.disconnect()
   }, [])
 
   return (
-    <video
-      autoPlay={isNearViewport}
-      className={className}
-      loop
-      muted
-      playsInline
-      poster={poster}
-      preload="none"
-      ref={videoRef}
-      src={isNearViewport ? src : undefined}
-    />
+    isNearViewport && src ? (
+      <video
+        autoPlay
+        className={className}
+        loop
+        muted
+        playsInline
+        poster={poster}
+        preload="metadata"
+        ref={(node) => { mediaRef.current = node }}
+        src={src}
+      />
+    ) : (
+      <img
+        alt=""
+        aria-hidden="true"
+        className={className}
+        decoding="async"
+        loading="lazy"
+        ref={(node) => { mediaRef.current = node }}
+        src={poster}
+      />
+    )
   )
 }
 
@@ -404,6 +416,7 @@ export function SearchForm({
           <label className="flex h-full min-w-0 flex-1 items-center gap-2 pl-3">
             <i className="ri-search-line text-lg text-gray-500" />
             <input
+              aria-label={lang === 'en' ? 'Search games' : lang === 'ja' ? 'ゲームを検索' : '搜索游戏'}
               className="h-full min-w-0 flex-1 bg-transparent text-xs text-black caret-black outline-none placeholder:text-gray-500"
               onFocus={() => window.location.assign(`/${lang}/search`)}
               onChange={(event) => onQueryChange(event.currentTarget.value)}

@@ -1,4 +1,5 @@
 import type { FocusEvent, MouseEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const previewVideoSelector = '[data-game-card-preview-video]'
 
@@ -39,9 +40,36 @@ export function GameCardPreviewVideo({
     return null
   }
 
+  return <DeferredPreviewVideo className={className} src={src} />
+}
+
+function DeferredPreviewVideo({ className, src }: { className: string; src: string }) {
+  const containerRef = useRef<HTMLSpanElement>(null)
+  const [active, setActive] = useState(false)
+
+  useEffect(() => {
+    const parent = containerRef.current?.parentElement
+    if (!parent) return
+
+    const activate = () => setActive(true)
+    const deactivate = () => setActive(false)
+    parent.addEventListener('pointerenter', activate)
+    parent.addEventListener('pointerleave', deactivate)
+    parent.addEventListener('focusin', activate)
+    parent.addEventListener('focusout', deactivate)
+
+    return () => {
+      parent.removeEventListener('pointerenter', activate)
+      parent.removeEventListener('pointerleave', deactivate)
+      parent.removeEventListener('focusin', activate)
+      parent.removeEventListener('focusout', deactivate)
+    }
+  }, [])
+
   return (
-    <span className="pointer-events-none absolute inset-0 block overflow-hidden opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
-      <video
+    <span ref={containerRef} className="pointer-events-none absolute inset-0 block overflow-hidden opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
+      {active ? <video
+        autoPlay
         className={`block h-full max-h-full w-full max-w-full object-cover ${className}`}
         data-game-card-preview-video
         loop
@@ -49,7 +77,7 @@ export function GameCardPreviewVideo({
         playsInline
         preload="none"
         src={src}
-      />
+      /> : null}
     </span>
   )
 }
