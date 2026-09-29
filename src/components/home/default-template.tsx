@@ -6,7 +6,6 @@ import {
   GamesSection,
   HomeLatestGamesRow,
   HomeMostPlayedGamesSection,
-  LazyAutoplayVideo,
 } from './shared'
 import { useRecentPlayedGames } from './recent-played-games'
 import type { HomeTemplateProps } from './types'
@@ -253,17 +252,21 @@ export function DefaultHomeTemplate(
                 const gameId = game.url_slug || game._id || ''
                 return (
                   <Link
-                    className="desktop-daily-video-card group"
+                    className="desktop-daily-video-card group relative isolate"
+                    {...gameCardPreviewHandlers}
                     key={gameId}
                     params={{ gameId, locale: lang }}
                     search={{}}
                     to="/$locale/games/$gameId"
                   >
-                    <LazyAutoplayVideo
+                    <img
+                      alt={game.name || ''}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                      poster={game.game_cover}
-                      src={game.game_video}
+                      decoding="async"
+                      fetchPriority="high"
+                      src={game.game_cover}
                     />
+                    <GameCardPreviewVideo src={game.game_video} />
                   </Link>
                 )
               })}
