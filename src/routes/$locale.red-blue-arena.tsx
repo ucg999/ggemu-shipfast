@@ -22,7 +22,7 @@ type ElementKind = 'fire' | 'water' | 'electric' | 'poison'
 type AmmoKind = ElementKind | 'normal'
 type PotionKind = ElementKind | 'normal-ammo' | 'speed-boost' | 'damage-boost'
 type ArenaMode = 'duel' | 'three' | 'four' | 'team' | 'team3' | 'billiards'
-type Fighter = { id: number; side: ArenaSide; team: ArenaSide; active: boolean; reinforcementCalled: boolean; x: number; y: number; vx: number; vy: number; radius: number; health: number; respawnTimer: number; angle: number; cooldown: number; weapon: WeaponKind | null; weaponCount: number; weaponTimer: number; rangedFired: boolean; laserCharging: boolean; elementAmmo: AmmoKind[]; bowRapidFire: boolean; shield: boolean; shieldBumps: number; shieldArrowHits: number; armor: boolean; speedBoost: number; damageBoost: number; slowTimer: number; slowStacks: number; stun: number; hammerBouncesRemaining: number; knockoutTimer: number; knockoutBrokeWall: boolean; burnTimer: number; burnDamage: number; burnSpread: boolean; poisonTimer: number; poisonTicks: number }
+type Fighter = { id: number; side: ArenaSide; team: ArenaSide; active: boolean; reinforcementCalled: boolean; x: number; y: number; vx: number; vy: number; radius: number; health: number; respawnTimer: number; angle: number; cooldown: number; weapon: WeaponKind | null; weaponCount: number; weaponTimer: number; rangedFired: boolean; laserCharging: boolean; elementAmmo: AmmoKind[]; bowRapidFire: boolean; shield: boolean; shieldBumps: number; shieldArrowHits: number; armor: boolean; speedBoost: number; damageBoost: number; slowTimer: number; slowStacks: number; stun: number; clashLaunchTimer: number; hammerBouncesRemaining: number; knockoutTimer: number; knockoutBrokeWall: boolean; burnTimer: number; burnDamage: number; burnSpread: boolean; poisonTimer: number; poisonTicks: number }
 type Pickup = { id: number; x: number; y: number; kind: WeaponKind | 'shield' | 'armor' | 'pillar'; life: number; pocketReward?: boolean }
 type Food = { id: number; x: number; y: number; life: number; pocketReward?: boolean }
 type Projectile = { id: number; owner: number; ownerTeam: ArenaSide; kind: 'arrow' | 'magic'; element: ElementKind | null; x: number; y: number; vx: number; vy: number; life: number; damage: number; bounced: boolean }
@@ -33,10 +33,11 @@ type Pillar = { id: number; x: number; y: number; radius: number; hits: number; 
 type Particle = { x: number; y: number; vx: number; vy: number; life: number; color: string }
 type WallImpact = { angle: number; life: number; strength: number }
 type RingBreak = { angle: number; life: number }
-type CollisionImpact = { x: number; y: number; life: number; strength: number }
-type ReaperSpin = { owner: number; life: number; startAngle: number; kind: 'reaper' | 'hammer' | 'sword' }
-type BilliardBall = { id: number; number: number; x: number; y: number; vx: number; vy: number; radius: number; active: boolean; lastHitTeam: ArenaSide | null; unstoppable: boolean }
-type RoundState = { mode: ArenaMode; fighters: Fighter[]; billiards: BilliardBall[]; billiardScores: Record<'red' | 'blue', number>; nextBilliardNumber: number; billiardWinner: ArenaSide | null; pickups: Pickup[]; foods: Food[]; potions: Potion[]; pillars: Pillar[]; projectiles: Projectile[]; lasers: Laser[]; particles: Particle[]; wallImpacts: WallImpact[]; ringBreaks: RingBreak[]; collisionImpacts: CollisionImpact[]; reaperSpins: ReaperSpin[]; reverseSweepTeams: ArenaSide[]; time: number; nextPickup: number; nextFood: number; nextPotion: number; running: boolean; deathAnimation: number | null; finalRush: boolean }
+type CollisionImpact = { x: number; y: number; life: number; strength: number; clash?: boolean }
+type ReaperSpin = { owner: number; life: number; startAngle: number; kind: WeaponKind }
+type WeaponClash = { firstId: number; secondId: number; winnerId: number; loserId: number; time: number; duration: number; damage: number; winnerWeapon: WeaponKind; loserWeapon: WeaponKind; firstVx: number; firstVy: number; secondVx: number; secondVy: number }
+type BilliardBall = { id: number; number: number; x: number; y: number; vx: number; vy: number; radius: number; active: boolean; lastHitTeam: ArenaSide | null; lastHitFighterId: number | null; unstoppable: boolean }
+type RoundState = { mode: ArenaMode; fighters: Fighter[]; billiards: BilliardBall[]; billiardScores: Record<'red' | 'blue', number>; nextBilliardNumber: number; billiardWinner: ArenaSide | null; pickups: Pickup[]; foods: Food[]; potions: Potion[]; pillars: Pillar[]; projectiles: Projectile[]; lasers: Laser[]; particles: Particle[]; wallImpacts: WallImpact[]; ringBreaks: RingBreak[]; collisionImpacts: CollisionImpact[]; reaperSpins: ReaperSpin[]; weaponClashes: WeaponClash[]; reverseSweepTeams: ArenaSide[]; time: number; nextPickup: number; nextFood: number; nextPotion: number; running: boolean; deathAnimation: number | null; finalRush: boolean }
 
 const TWO_PI = Math.PI * 2
 const ARENA_BASE_SPEED = .44
@@ -69,11 +70,12 @@ const ELEMENT_COLORS: Record<ElementKind, string> = { fire: '#ff354d', water: '#
 const AMMO_COLORS: Record<AmmoKind, string> = { ...ELEMENT_COLORS, normal: '#ffffff' }
 const POTION_COLORS: Record<PotionKind, string> = { ...ELEMENT_COLORS, 'normal-ammo': '#ffffff', 'speed-boost': '#ffc400', 'damage-boost': '#e51032' }
 const WEAPON_HELP = [
+  ['💥', '近战对拼：高伤武器1秒取胜并造成差值伤害；同伤武器对拼2秒后随机决胜'],
   ['🗡️', '小刀：1伤害，持有时速度×2'], ['⚔️', '剑：2伤害，可组成双剑'],
   ['🪓', '斧头：3伤害'], ['☠️', '死神刀：4总伤害，旋转群攻并由范围内敌人平分，持有时速度减半'],
-  ['🔨', '晕锤：1伤害，旋转群攻并击飞周围球；10%概率打出圈外秒杀'],
+  ['🔨', '晕锤：与任何近战武器均为50%胜率；获胜保留眩晕与10%出圈秒杀，失败不会被击退'],
   ['⚔️', '剑可停下挥动，击碎靠近的箭'],
-  ['🏹', '弓：快速射箭；累计5发后停在原地完成连射'], ['🔮', '法杖：累计5发释放穿柱激光，可被外圈反弹'],
+  ['🏹', '弓：快速射箭；累计5发后停在原地完成连射；被近战碰到会碎裂受伤并击退'], ['🔮', '法杖：累计5发释放穿柱激光；被近战碰到会碎裂受伤并击退'],
   ['🛡️', '盾：反击并挡1次近战；挡3箭；反弹魔法球；反激光后碎；空手碰撞3次碎'],
   ['🪞', '铠甲：挡1次近战；白箭无伤且不碎甲；属性箭碎甲受伤；魔法球双倍伤害'],
 ] as const
@@ -93,14 +95,14 @@ function contestantName(mode: ArenaMode, side: ArenaSide) {
 }
 
 function makeFighter(id: number, side: ArenaSide, x: number, y: number, vx: number, vy: number, team: ArenaSide = side, active = true): Fighter {
-  return { id, side, team, active, reinforcementCalled: false, x, y, vx, vy, radius: .047, health: ARENA_MAX_HEALTH, respawnTimer: 0, angle: Math.atan2(vy, vx), cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, rangedFired: false, laserCharging: false, elementAmmo: [], bowRapidFire: false, shield: false, shieldBumps: 0, shieldArrowHits: 0, armor: false, speedBoost: 0, damageBoost: 0, slowTimer: 0, slowStacks: 0, stun: 0, hammerBouncesRemaining: 0, knockoutTimer: 0, knockoutBrokeWall: false, burnTimer: 0, burnDamage: 0, burnSpread: false, poisonTimer: 0, poisonTicks: 0 }
+  return { id, side, team, active, reinforcementCalled: false, x, y, vx, vy, radius: .047, health: ARENA_MAX_HEALTH, respawnTimer: 0, angle: Math.atan2(vy, vx), cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, rangedFired: false, laserCharging: false, elementAmmo: [], bowRapidFire: false, shield: false, shieldBumps: 0, shieldArrowHits: 0, armor: false, speedBoost: 0, damageBoost: 0, slowTimer: 0, slowStacks: 0, stun: 0, clashLaunchTimer: 0, hammerBouncesRemaining: 0, knockoutTimer: 0, knockoutBrokeWall: false, burnTimer: 0, burnDamage: 0, burnSpread: false, poisonTimer: 0, poisonTicks: 0 }
 }
 
 function createNineBallRack(): BilliardBall[] {
   const positions = [
     [.5, .24], [.472, .292], [.528, .292], [.444, .344], [.5, .344], [.556, .344], [.472, .396], [.528, .396], [.5, .448],
   ]
-  return positions.map(([x, y], index) => ({ id: index + 1, number: index + 1, x, y, vx: 0, vy: 0, radius: .024, active: true, lastHitTeam: null, unstoppable: false }))
+  return positions.map(([x, y], index) => ({ id: index + 1, number: index + 1, x, y, vx: 0, vy: 0, radius: .024, active: true, lastHitTeam: null, lastHitFighterId: null, unstoppable: false }))
 }
 
 function BilliardScoreBall({ number }: { number: number }) {
@@ -126,7 +128,7 @@ function createRound(mode: ArenaMode = 'duel'): RoundState {
   }
   return {
     mode, fighters, billiards: mode === 'billiards' ? createNineBallRack() : [], billiardScores: { red: 0, blue: 0 }, nextBilliardNumber: 1, billiardWinner: null,
-    pickups: [], foods: [], potions: [], pillars: [], projectiles: [], lasers: [], particles: [], wallImpacts: [], ringBreaks: [], collisionImpacts: [], reaperSpins: [], reverseSweepTeams: [], time: MODE_RULES[mode].seconds, nextPickup: .8 + Math.random() * 1.5, nextFood: 9 + Math.random() * 7, nextPotion: 3 + Math.random() * 5, running: true, deathAnimation: null, finalRush: false,
+    pickups: [], foods: [], potions: [], pillars: [], projectiles: [], lasers: [], particles: [], wallImpacts: [], ringBreaks: [], collisionImpacts: [], reaperSpins: [], weaponClashes: [], reverseSweepTeams: [], time: MODE_RULES[mode].seconds, nextPickup: .8 + Math.random() * 1.5, nextFood: 9 + Math.random() * 7, nextPotion: 3 + Math.random() * 5, running: true, deathAnimation: null, finalRush: false,
   }
 }
 
@@ -403,6 +405,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     return
   }
   if (round.mode !== 'billiards') round.time -= dt
+  updateWeaponClashes(round, dt, audio)
   if (!round.finalRush && round.time <= 10) {
     round.finalRush = true
     for (const fighter of round.fighters) if (fighter.active) { fighter.vx *= 2; fighter.vy *= 2 }
@@ -422,6 +425,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       }
       continue
     }
+    if (fighterInWeaponClash(round, fighter.id)) { fighter.vx = 0; fighter.vy = 0; continue }
     if (fighter.knockoutTimer > 0) {
       const previousEdge = Math.hypot(fighter.x - .5, fighter.y - .5)
       fighter.knockoutTimer = Math.max(0, fighter.knockoutTimer - dt); fighter.x += fighter.vx * dt; fighter.y += fighter.vy * dt; fighter.angle = Math.atan2(fighter.vy, fighter.vx)
@@ -435,6 +439,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       continue
     }
     fighter.cooldown = Math.max(0, fighter.cooldown - dt)
+    fighter.clashLaunchTimer = Math.max(0, fighter.clashLaunchTimer - dt)
     fighter.weaponTimer = Math.max(0, fighter.weaponTimer - dt)
     if (fighter.weapon === 'staff' && fighter.elementAmmo.length >= 5 && !fighter.laserCharging) {
       fighter.laserCharging = true
@@ -492,9 +497,14 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     const speed = Math.hypot(fighter.vx, fighter.vy)
     const minSpeed = (fighter.speedBoost > 0 ? .24 : .12) / 2 ** fighter.slowStacks
     const maximumSpeed = round.mode === 'billiards' ? ARENA_BASE_SPEED * (round.finalRush ? 7 : 5) : round.finalRush ? ARENA_RUSH_MAX_SPEED : ARENA_PRE_RUSH_MAX_SPEED
-    if (speed > maximumSpeed) { fighter.vx *= maximumSpeed / speed; fighter.vy *= maximumSpeed / speed }
-    else if (speed < minSpeed && speed > 0) { fighter.vx *= minSpeed / speed; fighter.vy *= minSpeed / speed }
+    if (fighter.clashLaunchTimer <= 0 && speed > maximumSpeed) { fighter.vx *= maximumSpeed / speed; fighter.vy *= maximumSpeed / speed }
+    else if (speed < minSpeed && speed > .0001) { fighter.vx *= minSpeed / speed; fighter.vy *= minSpeed / speed }
+    else if (speed <= .0001) {
+      const restartAngle = Number.isFinite(fighter.angle) ? fighter.angle + (fighter.id % 2 ? .18 : -.18) : Math.random() * TWO_PI
+      fighter.vx = Math.cos(restartAngle) * minSpeed; fighter.vy = Math.sin(restartAngle) * minSpeed
+    }
     fighter.x += fighter.vx * dt; fighter.y += fighter.vy * dt; fighter.angle = Math.atan2(fighter.vy, fighter.vx)
+    if (fighter.clashLaunchTimer > 0 && Math.random() < dt * 30) burst(round, fighter.x - fighter.vx * .018, fighter.y - fighter.vy * .018, SIDE_COPY[fighter.side].color, 2)
     const cx = fighter.x - .5; const cy = fighter.y - .5; const edge = Math.hypot(cx, cy)
     if (round.mode === 'billiards') {
       let hitRail = false
@@ -502,7 +512,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       else if (fighter.x > TABLE_RIGHT - fighter.radius) { fighter.x = TABLE_RIGHT - fighter.radius; fighter.vx = -Math.abs(fighter.vx); hitRail = true }
       if (fighter.y < TABLE_TOP + fighter.radius) { fighter.y = TABLE_TOP + fighter.radius; fighter.vy = Math.abs(fighter.vy); hitRail = true }
       else if (fighter.y > TABLE_BOTTOM - fighter.radius) { fighter.y = TABLE_BOTTOM - fighter.radius; fighter.vy = -Math.abs(fighter.vy); hitRail = true }
-      if (hitRail) { fighter.vx *= 1.07; fighter.vy *= 1.07; burst(round, fighter.x, fighter.y, '#f8fafc', 7); audio?.play('wall') }
+      if (hitRail) { fighter.vx *= 1.07; fighter.vy *= 1.07; fighter.clashLaunchTimer = Math.min(fighter.clashLaunchTimer, .18); burst(round, fighter.x, fighter.y, '#f8fafc', 7); audio?.play('wall') }
     } else if (edge > .43) {
       const nx = cx / edge; const ny = cy / edge
       fighter.x = .5 + nx * .43; fighter.y = .5 + ny * .43
@@ -511,6 +521,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       const wallTurn = (.012 + Math.min(.045, Math.abs(dot) * .035)) * (Math.random() < .5 ? -1 : 1)
       fighter.vx += -ny * wallTurn; fighter.vy += nx * wallTurn
       fighter.vx *= 1.05; fighter.vy *= 1.05
+      fighter.clashLaunchTimer = Math.min(fighter.clashLaunchTimer, .18)
       if (fighter.hammerBouncesRemaining > 0) {
         fighter.hammerBouncesRemaining -= 1
         if (fighter.hammerBouncesRemaining === 0) fighter.stun = Math.max(fighter.stun, 2)
@@ -572,6 +583,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
         bumpShieldOnNormalCollision(round, b)
       }
     }
+    if (a.cooldown <= 0 && b.cooldown <= 0) handleArmedCollision(round, a, b, audio)
     if (a.cooldown <= 0 && b.cooldown <= 0) {
       const aRangedBreaks = isRangedWeapon(a.weapon) && isMeleeWeapon(b.weapon) && b.stun <= 0
       const bRangedBreaks = isRangedWeapon(b.weapon) && isMeleeWeapon(a.weapon) && a.stun <= 0
@@ -630,6 +642,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       if (!left.weapon && !right.weapon) { bumpShieldOnNormalCollision(round, left); bumpShieldOnNormalCollision(round, right) }
     }
     if (left.team === right.team || left.cooldown > 0 || right.cooldown > 0) continue
+    if (handleArmedCollision(round, left, right, audio)) continue
     const leftRangedBreaks = isRangedWeapon(left.weapon) && isMeleeWeapon(right.weapon) && right.stun <= 0
     const rightRangedBreaks = isRangedWeapon(right.weapon) && isMeleeWeapon(left.weapon) && left.stun <= 0
     if (leftRangedBreaks || rightRangedBreaks) {
@@ -760,15 +773,19 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       break
     }
     if (round.mode === 'billiards') {
-      const nineBall = round.billiards.find(ball => ball.active && ball.number === 9 && Math.hypot(arrow.x - ball.x, arrow.y - ball.y) < ball.radius + (arrow.kind === 'magic' ? .018 : .011))
-      if (nineBall) {
-        if (arrow.element === 'electric') nineBall.unstoppable = false
+      const hitBall = round.billiards.find(ball => ball.active && (arrow.kind === 'arrow' || ball.number === 9) && Math.hypot(arrow.x - ball.x, arrow.y - ball.y) < ball.radius + (arrow.kind === 'magic' ? .018 : .011))
+      if (hitBall) {
+        const owner = round.fighters.find(fighter => fighter.id === arrow.owner)
+        if (owner) { hitBall.lastHitTeam = owner.team; hitBall.lastHitFighterId = owner.id }
+        if (hitBall.number === 9 && arrow.element === 'electric') hitBall.unstoppable = false
         else {
           const speed = Math.hypot(arrow.vx, arrow.vy) || 1
-          nineBall.vx = arrow.vx / speed * ARENA_BASE_SPEED * 4; nineBall.vy = arrow.vy / speed * ARENA_BASE_SPEED * 4; nineBall.unstoppable = true
+          const multiplier = hitBall.number === 9 ? 4 : 2.8
+          hitBall.vx = arrow.vx / speed * ARENA_BASE_SPEED * multiplier; hitBall.vy = arrow.vy / speed * ARENA_BASE_SPEED * multiplier
+          if (hitBall.number === 9) hitBall.unstoppable = true
         }
         spentProjectiles.add(arrow.id)
-        burst(round, nineBall.x, nineBall.y, arrow.element ? ELEMENT_COLORS[arrow.element] : '#ffffff', 24); audio?.play(arrow.element === 'electric' ? 'shock' : 'weapon')
+        burst(round, hitBall.x, hitBall.y, arrow.element ? ELEMENT_COLORS[arrow.element] : '#ffffff', 24); audio?.play(arrow.element === 'electric' ? 'shock' : 'weapon')
         continue
       }
     }
@@ -895,7 +912,12 @@ function updateBilliards(round: RoundState, dt: number, audio?: ArenaAudio | nul
         ball.active = false
         round.billiardScores[ball.lastHitTeam as 'red' | 'blue'] += 1
         round.nextBilliardNumber += 1
-        if (ball.number === 9) { round.billiardWinner = ball.lastHitTeam; round.time = 0 }
+        if (ball.number === 9) {
+          const scorer = round.fighters.find(fighter => fighter.id === ball.lastHitFighterId)
+            ?? round.fighters.find(fighter => fighter.active && fighter.team === ball.lastHitTeam)
+          if (scorer) scorer.elementAmmo.push('normal')
+          round.billiardWinner = ball.lastHitTeam; round.time = 0
+        }
         audio?.play('pickup')
       } else {
         respotBilliardBall(round, ball)
@@ -925,13 +947,14 @@ function updateBilliards(round: RoundState, dt: number, audio?: ArenaAudio | nul
     if (relative < 0) {
       const firstTowardSecond = first.vx * nx + first.vy * ny
       const secondTowardFirst = -(second.vx * nx + second.vy * ny)
-      if (firstTowardSecond >= secondTowardFirst && first.lastHitTeam) second.lastHitTeam = first.lastHitTeam
-      else if (second.lastHitTeam) first.lastHitTeam = second.lastHitTeam
+      if (firstTowardSecond >= secondTowardFirst && first.lastHitTeam) { second.lastHitTeam = first.lastHitTeam; second.lastHitFighterId = first.lastHitFighterId }
+      else if (second.lastHitTeam) { first.lastHitTeam = second.lastHitTeam; first.lastHitFighterId = second.lastHitFighterId }
       first.vx += relative * nx; first.vy += relative * ny; second.vx -= relative * nx; second.vy -= relative * ny
     }
     if (firstLockedSpeed > 0) preserveBilliardSpeed(first, firstLockedSpeed, firstDirection)
     if (secondLockedSpeed > 0) preserveBilliardSpeed(second, secondLockedSpeed, secondDirection)
   }
+  const onlyNineRemains = activeBalls.length === 1 && activeBalls[0].number === 9
   for (const fighter of round.fighters) for (const ball of activeBalls) {
     if (!fighter.active || fighter.health <= 0 || !ball.active) continue
     const dx = ball.x - fighter.x; const dy = ball.y - fighter.y; const distance = Math.hypot(dx, dy) || .001
@@ -943,7 +966,23 @@ function updateBilliards(round: RoundState, dt: number, audio?: ArenaAudio | nul
     const strike = Math.max(.25, fighter.vx * nx + fighter.vy * ny)
     const force = 1.3 + Math.min(.65, fighterSpeed * .22)
     ball.vx += nx * strike * force; ball.vy += ny * strike * force
-    ball.lastHitTeam = fighter.team
+    ball.lastHitTeam = fighter.team; ball.lastHitFighterId = fighter.id
+    if (onlyNineRemains && ball.number === 9) {
+      const boostedSpeed = Math.max(ARENA_BASE_SPEED, fighterSpeed) * 1.15
+      const fighterDirection = Math.atan2(fighter.vy, fighter.vx)
+      fighter.vx = Math.cos(fighterDirection) * boostedSpeed; fighter.vy = Math.sin(fighterDirection) * boostedSpeed
+      burst(round, fighter.x, fighter.y, SIDE_COPY[fighter.side].color, 18)
+    }
+    const weaponStrike = fighter.weapon && (ball.number === round.nextBilliardNumber || ball.number === 9) && fighter.cooldown <= 0
+    if (weaponStrike && fighter.weapon) {
+      fighter.angle = Math.atan2(dy, dx)
+      round.reaperSpins.push({ owner: fighter.id, life: .26, startAngle: fighter.angle - .6, kind: fighter.weapon })
+      const attackSpeed = ARENA_BASE_SPEED * (ball.number === 9 ? 3.6 : 3.15)
+      ball.vx = nx * attackSpeed; ball.vy = ny * attackSpeed
+      fighter.vx -= nx * .18; fighter.vy -= ny * .18; fighter.cooldown = .42
+      round.collisionImpacts.push({ x: ball.x, y: ball.y, life: .48, strength: .8 })
+      burst(round, ball.x, ball.y, billiardColor(ball.number), 28); audio?.play('weapon')
+    }
     if (ball.number === 9) {
       ball.unstoppable = true
       const speed = Math.hypot(ball.vx, ball.vy) || 1
@@ -960,7 +999,7 @@ function updateBilliards(round: RoundState, dt: number, audio?: ArenaAudio | nul
       fighter.cooldown = .65
     }
     fighter.vx -= nx * strike * .18; fighter.vy -= ny * strike * .18
-    burst(round, ball.x, ball.y, billiardColor(ball.number), 8); audio?.play('collision')
+    burst(round, ball.x, ball.y, billiardColor(ball.number), weaponStrike ? 18 : 8); audio?.play(weaponStrike ? 'weapon' : 'collision')
   }
   const brokenPillars = new Set<number>()
   for (const ball of activeBalls) for (const pillar of round.pillars) {
@@ -988,7 +1027,7 @@ function preserveBilliardSpeed(ball: BilliardBall, speed: number, fallbackAngle:
 function respotBilliardBall(round: RoundState, ball: BilliardBall) {
   const candidates = [[.5, .18], [.44, .18], [.56, .18], [.5, .13], [.5, .23]] as const
   const spot = candidates.find(([x, y]) => round.billiards.every(other => other === ball || !other.active || Math.hypot(other.x - x, other.y - y) > ball.radius + other.radius + .012)) ?? [.5, .18]
-  ball.x = spot[0]; ball.y = spot[1]; ball.vx = 0; ball.vy = 0; ball.active = true; ball.lastHitTeam = null; ball.unstoppable = false
+  ball.x = spot[0]; ball.y = spot[1]; ball.vx = 0; ball.vy = 0; ball.active = true; ball.lastHitTeam = null; ball.lastHitFighterId = null; ball.unstoppable = false
 }
 
 function respawnBilliardsFighter(fighter: Fighter) {
@@ -1068,6 +1107,80 @@ function activateTimedTeam3Reinforcements(round: RoundState) {
 
 function isRangedWeapon(weapon: WeaponKind | null) {
   return weapon === 'bow' || weapon === 'staff'
+}
+
+function fighterInWeaponClash(round: RoundState, fighterId: number) {
+  return round.weaponClashes.some(clash => clash.firstId === fighterId || clash.secondId === fighterId)
+}
+
+function handleArmedCollision(round: RoundState, first: Fighter, second: Fighter, audio?: ArenaAudio | null) {
+  if (fighterInWeaponClash(round, first.id) || fighterInWeaponClash(round, second.id) || first.stun > 0 || second.stun > 0) return false
+  const firstMelee = isMeleeWeapon(first.weapon); const secondMelee = isMeleeWeapon(second.weapon)
+  const firstRanged = isRangedWeapon(first.weapon); const secondRanged = isRangedWeapon(second.weapon)
+  if ((firstRanged && secondMelee) || (secondRanged && firstMelee)) {
+    const ranged = firstRanged ? first : second; const melee = firstRanged ? second : first
+    const damage = meleePower(melee)
+    const defense = resolveMeleeDefense(round, ranged, damage)
+    ranged.health = Math.max(0, ranged.health - defense.damage); melee.health = Math.max(0, melee.health - defense.reflected)
+    const dx = ranged.x - melee.x; const dy = ranged.y - melee.y; const distance = Math.hypot(dx, dy) || 1; const nx = dx / distance; const ny = dy / distance
+    ranged.x += nx * .045; ranged.y += ny * .045
+    ranged.vx = nx * 2.2; ranged.vy = ny * 2.2; ranged.clashLaunchTimer = .8
+    melee.vx = 0; melee.vy = 0; melee.clashLaunchTimer = 0
+    if (melee.weapon === 'hammer' && defense.damage > 0) applyHammerHit(round, melee, ranged)
+    melee.stun = Math.max(melee.stun, .5)
+    consumeWeapon(ranged); first.cooldown = .75; second.cooldown = .75
+    round.collisionImpacts.push({ x: (first.x + second.x) / 2, y: (first.y + second.y) / 2, life: .55, strength: 1, clash: true })
+    burst(round, (first.x + second.x) / 2, (first.y + second.y) / 2, '#ffffff', 52); audio?.play('clash')
+    return true
+  }
+  if (!firstMelee || !secondMelee || !first.weapon || !second.weapon) return false
+  const firstPower = meleePower(first); const secondPower = meleePower(second)
+  const hammerContest = first.weapon === 'hammer' || second.weapon === 'hammer'
+  const equalPower = firstPower === secondPower
+  const firstWins = hammerContest || equalPower ? Math.random() < .5 : firstPower > secondPower
+  const winner = firstWins ? first : second; const loser = firstWins ? second : first
+  const duration = equalPower && !hammerContest ? 2 : 1
+  const damage = hammerContest || equalPower ? meleePower(winner) : Math.abs(firstPower - secondPower)
+  round.weaponClashes.push({ firstId: first.id, secondId: second.id, winnerId: winner.id, loserId: loser.id, time: duration, duration, damage, winnerWeapon: winner.weapon, loserWeapon: loser.weapon, firstVx: first.vx, firstVy: first.vy, secondVx: second.vx, secondVy: second.vy })
+  first.vx = 0; first.vy = 0; second.vx = 0; second.vy = 0; first.cooldown = duration + .35; second.cooldown = duration + .35
+  burst(round, (first.x + second.x) / 2, (first.y + second.y) / 2, '#fff4b8', 24); audio?.play('clash')
+  return true
+}
+
+function updateWeaponClashes(round: RoundState, dt: number, audio?: ArenaAudio | null) {
+  const remaining: WeaponClash[] = []
+  for (const clash of round.weaponClashes) {
+    const first = round.fighters.find(fighter => fighter.id === clash.firstId); const second = round.fighters.find(fighter => fighter.id === clash.secondId)
+    const winner = round.fighters.find(fighter => fighter.id === clash.winnerId); const loser = round.fighters.find(fighter => fighter.id === clash.loserId)
+    if (!first || !second || !winner || !loser || first.health <= 0 || second.health <= 0) continue
+    clash.time = Math.max(0, clash.time - dt)
+    first.vx = 0; first.vy = 0; second.vx = 0; second.vy = 0
+    first.angle = Math.atan2(second.y - first.y, second.x - first.x)
+    second.angle = Math.atan2(first.y - second.y, first.x - second.x)
+    if (Math.random() < dt * 12) burst(round, (first.x + second.x) / 2, (first.y + second.y) / 2, Math.random() < .5 ? '#ffffff' : '#ffd84a', 3)
+    if (clash.time > 0) { remaining.push(clash); continue }
+    const dx = loser.x - winner.x; const dy = loser.y - winner.y; const distance = Math.hypot(dx, dy) || 1; const nx = dx / distance; const ny = dy / distance
+    const defense = resolveMeleeDefense(round, loser, clash.damage)
+    loser.health = Math.max(0, loser.health - defense.damage); winner.health = Math.max(0, winner.health - defense.reflected)
+    loser.x += nx * .045; loser.y += ny * .045
+    const winnerStoredVx = winner.id === clash.firstId ? clash.firstVx : clash.secondVx; const winnerStoredVy = winner.id === clash.firstId ? clash.firstVy : clash.secondVy
+    const winnerStoredSpeed = Math.hypot(winnerStoredVx, winnerStoredVy) || 1
+    winner.vx = winnerStoredVx / winnerStoredSpeed * ARENA_BASE_SPEED; winner.vy = winnerStoredVy / winnerStoredSpeed * ARENA_BASE_SPEED; winner.clashLaunchTimer = 0
+    if (clash.loserWeapon !== 'hammer') { loser.vx = nx * 2.35; loser.vy = ny * 2.35; loser.clashLaunchTimer = .9 }
+    else {
+      const loserStoredVx = loser.id === clash.firstId ? clash.firstVx : clash.secondVx; const loserStoredVy = loser.id === clash.firstId ? clash.firstVy : clash.secondVy
+      const loserStoredSpeed = Math.hypot(loserStoredVx, loserStoredVy) || 1
+      loser.vx = loserStoredVx / loserStoredSpeed * ARENA_BASE_SPEED; loser.vy = loserStoredVy / loserStoredSpeed * ARENA_BASE_SPEED; loser.clashLaunchTimer = 0
+    }
+    if (clash.winnerWeapon === 'hammer' && clash.loserWeapon !== 'hammer' && defense.damage > 0) applyHammerHit(round, winner, loser)
+    winner.stun = Math.max(winner.stun, .5)
+    consumeWeapon(winner); consumeWeapon(loser)
+    round.collisionImpacts.push({ x: (winner.x + loser.x) / 2, y: (winner.y + loser.y) / 2, life: .62, strength: 1, clash: true })
+    if (round.collisionImpacts.length > ARENA_MAX_COLLISION_IMPACTS) round.collisionImpacts.splice(0, round.collisionImpacts.length - ARENA_MAX_COLLISION_IMPACTS)
+    burst(round, loser.x, loser.y, defense.damage > 0 ? SIDE_COPY[loser.side].color : '#8fe7ff', 58)
+    burst(round, (winner.x + loser.x) / 2, (winner.y + loser.y) / 2, '#fff4b8', 36); audio?.play('weapon')
+  }
+  round.weaponClashes = remaining
 }
 
 function isMeleeWeapon(weapon: WeaponKind | null): weapon is Exclude<WeaponKind, 'bow' | 'staff'> {
@@ -1435,9 +1548,40 @@ function drawRound(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rou
     for (const segment of laser.segments) { ctx.moveTo(segment.x1 * s, segment.y1 * s); ctx.lineTo(segment.x2 * s, segment.y2 * s) }
     ctx.stroke(); ctx.restore()
   }
-  for (const fighter of round.fighters) if (fighter.active && fighter.health > 0) drawFighter(ctx, fighter, s)
+  for (const impact of round.collisionImpacts) if (impact.clash) {
+    const fade = Math.min(1, impact.life * 3); const progress = 1 - impact.life / .62; const radius = s * (.025 + progress * .095)
+    ctx.save(); ctx.translate(impact.x * s, impact.y * s); ctx.globalAlpha = fade; ctx.strokeStyle = '#ffd84a'; ctx.shadowColor = '#ff7a18'; ctx.shadowBlur = s * .025; ctx.lineWidth = Math.max(3, s * .011)
+    for (let ray = 0; ray < 8; ray++) { const angle = ray / 8 * TWO_PI + progress * .4; ctx.beginPath(); ctx.moveTo(Math.cos(angle) * radius * .35, Math.sin(angle) * radius * .35); ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius); ctx.stroke() }
+    ctx.restore()
+  }
+  for (const fighter of round.fighters) if (fighter.active && fighter.health > 0) drawFighter(ctx, fighter, s, !fighterInWeaponClash(round, fighter.id))
+  drawWeaponClashes(ctx, round, s)
   for (const spin of round.reaperSpins) drawReaperSpin(ctx, spin, round, s)
   for (const p of round.particles) { ctx.globalAlpha = Math.min(1, p.life * 2); ctx.fillStyle = p.color; const size = Math.max(2, Math.round(s * .009)); ctx.fillRect(Math.round(p.x * s), Math.round(p.y * s), size, size) } ctx.globalAlpha = 1
+}
+
+function drawWeaponClashes(ctx: CanvasRenderingContext2D, round: RoundState, s: number) {
+  for (const clash of round.weaponClashes) {
+    const first = round.fighters.find(fighter => fighter.id === clash.firstId); const second = round.fighters.find(fighter => fighter.id === clash.secondId)
+    if (!first || !second) continue
+    const progress = 1 - clash.time / clash.duration
+    const pulse = Math.sin(progress * Math.PI * 8)
+    const firstBase = Math.atan2(second.y - first.y, second.x - first.x)
+    const secondBase = firstBase + Math.PI
+    drawClashSwing(ctx, first, clash.firstId === clash.winnerId ? clash.winnerWeapon : clash.loserWeapon, firstBase, pulse * .42, SIDE_COPY[first.side].color, s)
+    drawClashSwing(ctx, second, clash.secondId === clash.winnerId ? clash.winnerWeapon : clash.loserWeapon, secondBase, -pulse * .42, SIDE_COPY[second.side].color, s)
+    const centerX = (first.x + second.x) * s / 2; const centerY = (first.y + second.y) * s / 2
+    ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(progress * Math.PI * 5); ctx.globalAlpha = .65 + Math.abs(pulse) * .35; ctx.strokeStyle = '#fff7c2'; ctx.lineWidth = Math.max(2, s * .006)
+    ctx.beginPath(); ctx.moveTo(-s * .022, 0); ctx.lineTo(s * .022, 0); ctx.moveTo(0, -s * .022); ctx.lineTo(0, s * .022); ctx.stroke(); ctx.restore()
+  }
+}
+
+function drawClashSwing(ctx: CanvasRenderingContext2D, fighter: Fighter, weapon: WeaponKind, baseAngle: number, swing: number, color: string, s: number) {
+  const radius = fighter.radius * s * 1.35; const angle = baseAngle + swing
+  const x = fighter.x * s + Math.cos(angle) * radius; const y = fighter.y * s + Math.sin(angle) * radius
+  ctx.save(); ctx.globalAlpha = .78; ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = s * .018; ctx.lineWidth = Math.max(2, s * .009); ctx.beginPath(); ctx.arc(fighter.x * s, fighter.y * s, radius * 1.18, baseAngle - .52, baseAngle + .52); ctx.stroke(); ctx.shadowBlur = 0
+  ctx.globalAlpha = .34; ctx.lineWidth = Math.max(2, s * .004); ctx.beginPath(); ctx.arc(fighter.x * s, fighter.y * s, radius * 1.48, baseAngle - .42, baseAngle + .42); ctx.stroke(); ctx.restore()
+  drawPixelWeapon(ctx, weapon, x, y, angle, fighter.radius * s * 1.38)
 }
 
 function drawReaperSpin(ctx: CanvasRenderingContext2D, spin: ReaperSpin, round: RoundState, s: number) {
@@ -1570,7 +1714,7 @@ function drawFireRing(ctx: CanvasRenderingContext2D, x: number, y: number, radiu
   ctx.globalAlpha = 1; ctx.shadowBlur = 0; ctx.restore()
 }
 
-function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter, s: number) {
+function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter, s: number, showWeapon = true) {
   const x = f.x * s; const y = f.y * s; const r = f.radius * s; const color = SIDE_COPY[f.side].color
   ctx.save(); ctx.fillStyle = '#090c0c'; ctx.strokeStyle = color; ctx.lineWidth = Math.max(3, r * .18); ctx.beginPath(); ctx.arc(Math.round(x), Math.round(y), Math.round(r), 0, TWO_PI); ctx.fill(); ctx.stroke()
   const eyeSize = Math.max(2, Math.round(r * .18)); const eyeShift = Math.sin(performance.now() / 260 + (f.side === 'red' ? 0 : .8)) * r * .1
@@ -1583,10 +1727,10 @@ function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter, s: number) {
   if (f.poisonTicks !== 0) { ctx.strokeStyle = '#a855f7'; ctx.setLineDash([r * .16, r * .22]); ctx.lineWidth = Math.max(2, r * .1); ctx.beginPath(); ctx.arc(x, y, r * 1.22, 0, TWO_PI); ctx.stroke(); ctx.setLineDash([]) }
   if (f.shield) { ctx.strokeStyle = '#b9f3ff'; ctx.lineWidth = Math.max(3, r * .15); ctx.setLineDash([r * .42, r * .16]); ctx.beginPath(); ctx.arc(x, y, r * 1.35, f.angle - Math.PI / 3, f.angle + Math.PI / 3); ctx.stroke(); ctx.setLineDash([]) }
   if (f.armor) { ctx.strokeStyle = '#ffb82e'; ctx.lineWidth = Math.max(2, r * .12); ctx.setLineDash([r * .35, r * .18]); ctx.beginPath(); ctx.arc(x, y, r * 1.3, 0, TWO_PI); ctx.stroke(); ctx.setLineDash([]) }
-  if (f.weapon && f.weaponCount > 1 && (f.weapon === 'sword' || f.weapon === 'blade')) {
+  if (showWeapon && f.weapon && f.weaponCount > 1 && (f.weapon === 'sword' || f.weapon === 'blade')) {
     const forward = r * 1.2; const side = r * .62; const cos = Math.cos(f.angle); const sin = Math.sin(f.angle)
     drawPixelWeapon(ctx, f.weapon, x + cos * forward - sin * side, y + sin * forward + cos * side, f.angle + .14, r * 1.5)
     drawPixelWeapon(ctx, f.weapon, x + cos * forward + sin * side, y + sin * forward - cos * side, f.angle - .14, r * 1.5)
-  } else if (f.weapon) drawPixelWeapon(ctx, f.weapon, x + Math.cos(f.angle) * r * 1.3, y + Math.sin(f.angle) * r * 1.3, f.angle, r * 1.5)
+  } else if (showWeapon && f.weapon) drawPixelWeapon(ctx, f.weapon, x + Math.cos(f.angle) * r * 1.3, y + Math.sin(f.angle) * r * 1.3, f.angle, r * 1.5)
   ctx.restore()
 }
