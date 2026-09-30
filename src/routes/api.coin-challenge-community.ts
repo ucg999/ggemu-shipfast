@@ -12,7 +12,8 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        if (new URL(request.url).searchParams.get('round') === '1') {
+        const searchParams = new URL(request.url).searchParams
+        if (searchParams.get('round') === '1') {
           const sharedRound = await memberDb().prepare(`
             SELECT round_token, starts_at_ms, target_index, award_member_id, award_amount, competition_round, competition_jackpot FROM coin_challenge_shared_rounds WHERE room_id = '1'
           `).first<SharedRoundRow>()
@@ -23,14 +24,34 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
           })
         }
         const member = await getMemberFromRequest(request)
-        if (member) {
-          await memberDb().prepare(`
-            INSERT INTO coin_challenge_presence (member_id, display_name, last_seen_at)
-            VALUES (?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(member_id) DO UPDATE SET display_name = excluded.display_name, last_seen_at = CURRENT_TIMESTAMP
-          `).bind(member.id, member.displayName).run()
+        if (searchParams.get('room') === '1') {
+          const [onlineResult, sharedRound, competition] = await Promise.all([
+            memberDb().prepare(`
+              SELECT member_id, display_name, bets_json, game_mode, credits, room_id, room_seat, last_seen_at
+              FROM coin_challenge_presence WHERE last_seen_at >= datetime('now', '-20 seconds')
+              ORDER BY last_seen_at DESC LIMIT 30
+            `).all<PresenceRow>(),
+            memberDb().prepare(`SELECT round_token, starts_at_ms, target_index, award_member_id, award_amount, competition_round, competition_jackpot FROM coin_challenge_shared_rounds WHERE room_id = '1'`).first<SharedRoundRow>(),
+            memberDb().prepare(`SELECT round_number, jackpot, win_counts_json, last_round_token FROM coin_challenge_room_competitions WHERE room_id = '1'`).first<CompetitionRow>(),
+          ])
+          const now = Date.now()
+          return Response.json({
+            online: onlineResult.results.length,
+            winCounts: parseWinCounts(competition?.win_counts_json),
+            sharedRound: sharedRound && sharedRound.starts_at_ms >= now - 2_000 ? sharedRoundView(sharedRound) : null,
+            room: {
+              joined: Boolean(member && onlineResult.results.some(row => row.member_id === member.id && row.room_id === '1')),
+              count: onlineResult.results.filter(row => row.room_id === '1').length,
+              capacity: 4,
+            },
+            players: onlineResult.results.map(row => ({
+              memberId: row.member_id, displayName: row.display_name, bets: parseBets(row.bets_json),
+              mode: row.game_mode, credits: Math.max(0, Number(row.credits) || 0),
+              inRoom: row.room_id === '1', seat: row.room_seat,
+            })),
+          })
         }
-        const [chatResult, rankResult, onlineResult, sharedRound] = await Promise.all([
+        const [chatResult, rankResult, onlineResult, sharedRound, competition] = await Promise.all([
           memberDb().prepare(`SELECT id, member_id, display_name, message, created_at FROM coin_challenge_chat_messages ORDER BY id DESC LIMIT 50`).all<ChatRow>(),
           memberDb().prepare(`
             SELECT p.nickname AS display_name, s.score, s.updated_at
@@ -44,6 +65,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             ORDER BY last_seen_at DESC LIMIT 30
           `).all<PresenceRow>(),
           memberDb().prepare(`SELECT round_token, starts_at_ms, target_index, award_member_id, award_amount, competition_round, competition_jackpot FROM coin_challenge_shared_rounds WHERE room_id = '1'`).first<SharedRoundRow>(),
+          memberDb().prepare(`SELECT round_number, jackpot, win_counts_json, last_round_token FROM coin_challenge_room_competitions WHERE room_id = '1'`).first<CompetitionRow>(),
         ])
         const now = Date.now()
         return Response.json({
@@ -51,13 +73,14 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
           leaderboard: rankResult.results.map((row: RankRow, index: number) => ({ rank: index + 1, displayName: row.display_name, score: row.score, updatedAt: row.updated_at })),
           member,
           online: onlineResult.results.length,
+          winCounts: parseWinCounts(competition?.win_counts_json),
           sharedRound: sharedRound && sharedRound.starts_at_ms >= now - 2_000
             ? sharedRoundView(sharedRound)
             : null,
           room: {
             joined: Boolean(member && onlineResult.results.some((row: PresenceRow) => row.member_id === member.id && row.room_id === '1')),
             count: onlineResult.results.filter((row: PresenceRow) => row.room_id === '1').length,
-            capacity: 6,
+            capacity: 4,
           },
           players: onlineResult.results.map((row: PresenceRow) => ({
             memberId: row.member_id,
@@ -98,8 +121,8 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
               SELECT room_seat FROM coin_challenge_presence
               WHERE room_id = '1' AND last_seen_at >= datetime('now', '-20 seconds')
             `).all<{ room_seat: number | null }>()
-            const occupied = new Set(room.results.map(row => Number(row.room_seat)).filter(seat => seat >= 1 && seat <= 6))
-            const seat = [1, 2, 3, 4, 5, 6].find(value => !occupied.has(value))
+            const occupied = new Set(room.results.map(row => Number(row.room_seat)).filter(seat => seat >= 1 && seat <= 4))
+            const seat = [1, 2, 3, 4].find(value => !occupied.has(value))
             if (!seat) return jsonError('1号房间已满，请稍后再试', 409)
             await memberDb().prepare(`
               INSERT INTO coin_challenge_presence (member_id, display_name, room_id, room_seat, last_seen_at)
@@ -110,7 +133,10 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             return Response.json({ ok: true, joined: true, seat })
           }
           if (body.action === 'room-leave') {
-            await memberDb().prepare(`UPDATE coin_challenge_presence SET room_id = NULL, room_seat = NULL, last_seen_at = CURRENT_TIMESTAMP WHERE member_id = ?`).bind(member.id).run()
+            await memberDb().batch([
+              memberDb().prepare(`UPDATE coin_challenge_presence SET room_id = NULL, room_seat = NULL, bets_json = '[0,0,0,0,0,0,0,0]', last_seen_at = CURRENT_TIMESTAMP WHERE member_id = ?`).bind(member.id),
+              memberDb().prepare('DELETE FROM coin_challenge_chat_messages'),
+            ])
             return Response.json({ ok: true, joined: false })
           }
           if (body.action === 'round-start') {
@@ -138,16 +164,19 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
               ORDER BY room_seat ASC
             `).all<PresenceRow>()
             const competition = await settleCompetition(token, target, roomPlayers.results)
-            await memberDb().prepare(`
-              INSERT INTO coin_challenge_shared_rounds
+            await memberDb().batch([
+              memberDb().prepare(`
+                INSERT INTO coin_challenge_shared_rounds
                 (room_id, round_token, starts_at_ms, target_index, award_member_id, award_amount, competition_round, competition_jackpot, created_at)
-              VALUES ('1', ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-              ON CONFLICT(room_id) DO UPDATE SET round_token = excluded.round_token,
+                VALUES ('1', ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(room_id) DO UPDATE SET round_token = excluded.round_token,
                 starts_at_ms = excluded.starts_at_ms, target_index = excluded.target_index,
                 award_member_id = excluded.award_member_id, award_amount = excluded.award_amount,
                 competition_round = excluded.competition_round, competition_jackpot = excluded.competition_jackpot,
                 created_at = CURRENT_TIMESTAMP
-            `).bind(token, startsAt, target, competition.awardMemberId, competition.awardAmount, competition.round, competition.jackpot).run()
+              `).bind(token, startsAt, target, competition.awardMemberId, competition.awardAmount, competition.round, competition.jackpot),
+              memberDb().prepare(`UPDATE coin_challenge_presence SET bets_json = '[0,0,0,0,0,0,0,0]' WHERE room_id = '1'`),
+            ])
             return Response.json({ ok: true, shared: true, round: { token, startsAt, target, ...competition } })
           }
           if (body.action === 'chat') {
@@ -156,6 +185,10 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             const recent = await memberDb().prepare(`SELECT created_at FROM coin_challenge_chat_messages WHERE member_id = ? ORDER BY id DESC LIMIT 1`).bind(member.id).first<{ created_at: string }>()
             if (recent && Date.now() - Date.parse(`${recent.created_at.replace(' ', 'T')}Z`) < 2_000) return jsonError('发送太快了，请稍等一下', 429)
             await memberDb().prepare(`INSERT INTO coin_challenge_chat_messages (member_id, display_name, message) VALUES (?, ?, ?)`).bind(member.id, member.displayName, message).run()
+            return Response.json({ ok: true })
+          }
+          if (body.action === 'chat-clear') {
+            await memberDb().prepare('DELETE FROM coin_challenge_chat_messages').run()
             return Response.json({ ok: true })
           }
 
@@ -238,15 +271,15 @@ async function settleCompetition(token: string, target: number, players: Array<P
     else lostCoins += total
   }
   const round = (previous?.round_number ?? 0) + 1
-  const jackpot = Math.min(99_999, (previous?.jackpot ?? 0) + lostCoins)
+  // Every multiplayer round contributes five house coins in addition to the
+  // wagers that were not won. This guarantees a visible five-round prize.
+  const jackpot = Math.min(99_999, (previous?.jackpot ?? 0) + lostCoins + 5)
   let awardMemberId: string | null = null
   let awardAmount = 0
   const highestWins = Math.max(0, ...players.map(player => counts[player.member_id] ?? 0))
-  if (round >= 5 && jackpot > 0 && highestWins > 0) {
-    awardMemberId = [...players].sort((left, right) =>
-      (counts[right.member_id] ?? 0) - (counts[left.member_id] ?? 0) ||
-      (left.room_seat ?? 99) - (right.room_seat ?? 99),
-    )[0]?.member_id ?? null
+  if (round >= 5 && jackpot > 0) {
+    const finalists = players.filter(player => (counts[player.member_id] ?? 0) === highestWins)
+    awardMemberId = finalists[Math.floor(Math.random() * finalists.length)]?.member_id ?? null
     awardAmount = awardMemberId ? jackpot : 0
   }
   await memberDb().prepare(`

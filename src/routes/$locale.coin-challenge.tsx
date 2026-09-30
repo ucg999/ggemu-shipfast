@@ -176,6 +176,8 @@ function CoinChallengePage() {
   const [roomPlayers, setRoomPlayers] = useState<Array<CoinChallengeRoomPlayer>>([])
   const [sharedJackpot, setSharedJackpot] = useState(0)
   const [sharedCompetitionRound, setSharedCompetitionRound] = useState(0)
+  const [sharedWinnerSeat, setSharedWinnerSeat] = useState<number | null>(null)
+  const [sharedAwardRemaining, setSharedAwardRemaining] = useState(0)
   const [communityOpen, setCommunityOpen] = useState(false)
   const joinedRoomRef = useRef(false)
   const handledSharedRoundRef = useRef<string | null>(null)
@@ -184,6 +186,7 @@ function CoinChallengePage() {
   const pendingSharedLaunchRef = useRef(false)
   const pendingSharedAwardRef = useRef<{ token: string; memberId: string | null; amount: number } | null>(null)
   const sharedStartTimerRef = useRef<number | null>(null)
+  const sharedAwardTimerRef = useRef<number | null>(null)
   const handleStartRef = useRef<(skipSharedWaiting?: boolean, forcedTarget?: number) => boolean>(() => false)
   const [modeRounds, setModeRounds] = useState(0)
   const [luckyLitLights, setLuckyLitLights] = useState<Array<number>>([])
@@ -308,6 +311,10 @@ function CoinChallengePage() {
       if (comparePreviewTimerRef.current !== null) {
         window.clearInterval(comparePreviewTimerRef.current)
         comparePreviewTimerRef.current = null
+      }
+      if (sharedAwardTimerRef.current !== null) {
+        window.clearInterval(sharedAwardTimerRef.current)
+        sharedAwardTimerRef.current = null
       }
       stopCreditHold()
       const current = machineRef.current
@@ -903,6 +910,9 @@ function CoinChallengePage() {
   function handleBet(index: number) {
     if (gameMode !== 'normal') return
     if (isSpinning || compareMode || poolTransferDisplay || creditTransferDisplay) return
+    if (joinedRoom && roomPlayers.some(player =>
+      player.memberId !== member?.id && (player.bets[index] ?? 0) > 0
+    )) return
     const resetAllBets = shouldResetAllBetsRef.current
     const currentMachine = machineRef.current
     if (joinedRoom && !resetAllBets && currentMachine.bets.some((value, itemIndex) => itemIndex !== index && value > 0)) return
@@ -1015,6 +1025,11 @@ function CoinChallengePage() {
       if (handleStartRef.current(true, round.target)) {
         launchedSharedRoundRef.current = round.token
         pendingSharedLaunchRef.current = false
+        updateMachine((current) => ({
+          ...current,
+          bets: Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0),
+        }))
+        setShouldResetAllBets(false)
         return
       }
       // A transfer/animation can briefly overlap the deadline. Keep the
@@ -1023,6 +1038,29 @@ function CoinChallengePage() {
       sharedStartTimerRef.current = window.setTimeout(launchRound, 150)
     }
     sharedStartTimerRef.current = window.setTimeout(launchRound, Math.max(0, round.startsAt - Date.now()))
+  }
+
+  function animateSharedAward(memberId: string | null, amount: number) {
+    if (amount < 1 || !memberId) return
+    if (sharedAwardTimerRef.current !== null) window.clearInterval(sharedAwardTimerRef.current)
+    const winnerSeat = roomPlayers.find(player => player.memberId === memberId)?.seat ?? null
+    const isWinner = memberId === member?.id
+    let remaining = amount
+    setSharedWinnerSeat(winnerSeat)
+    setSharedAwardRemaining(amount)
+    setSharedJackpot(amount)
+    sharedAwardTimerRef.current = window.setInterval(() => {
+      const step = Math.min(remaining, Math.max(1, Math.ceil(amount / 80)))
+      remaining -= step
+      if (isWinner) addCoinBalance(step)
+      setSharedAwardRemaining(remaining)
+      setSharedJackpot(remaining)
+      if (remaining > 0) return
+      if (sharedAwardTimerRef.current !== null) window.clearInterval(sharedAwardTimerRef.current)
+      sharedAwardTimerRef.current = null
+      setSharedCompetitionRound(0)
+      window.setTimeout(() => setSharedWinnerSeat(null), 2200)
+    }, 90)
   }
 
   useEffect(() => {
@@ -1041,7 +1079,7 @@ function CoinChallengePage() {
       }
     }
     void poll()
-    const timer = window.setInterval(() => void poll(), 500)
+    const timer = window.setInterval(() => void poll(), 1_000)
     return () => { stopped = true; window.clearInterval(timer) }
   }, [member?.id, joinedRoom, gameMode])
 
@@ -1287,17 +1325,8 @@ function CoinChallengePage() {
       const adjustedPayout = gameMode === 'gold' ? payout * 2 : payout
       const sharedAward = pendingSharedAwardRef.current
       if (joinedRoom && sharedAward?.token === handledSharedRoundRef.current) {
-        if (sharedAward.amount > 0 && sharedAward.memberId === member?.id) {
-          updateMachine(current => ({
-            ...current,
-            credits: Math.min(MAX_MACHINE_CREDITS, current.credits + sharedAward.amount),
-          }))
-        }
+        if (sharedAward.amount > 0) animateSharedAward(sharedAward.memberId, sharedAward.amount)
         pendingSharedAwardRef.current = null
-        if (sharedAward.amount > 0) {
-          setSharedJackpot(0)
-          setSharedCompetitionRound(0)
-        }
       }
       if (gameMode === 'ghost' && adjustedPayout > 0) {
         let remaining = adjustedPayout
@@ -1515,6 +1544,24 @@ function CoinChallengePage() {
         />
       </div>
       <CoinChallengeCommunity bets={machine.bets} credits={machine.credits} gameMode={gameMode} onOpenChange={setCommunityOpen} onRoomChange={handleRoomChange} onRoomPlayers={setRoomPlayers} recentWins={rankableWins} />
+      {sharedWinnerSeat !== null ? (
+        <>
+          <style>{`@keyframes sharedPrizeFly{0%{transform:translate(0,0) scale(.7);opacity:0}15%{opacity:1}100%{transform:translate(58vw,-38vh) scale(.25);opacity:0}}`}</style>
+          <div className="pointer-events-none absolute inset-x-0 top-[17%] z-40 text-center">
+            <span className="inline-block animate-pulse rounded-full bg-amber-300 px-5 py-2 text-base font-black text-black shadow-[0_0_28px_rgba(253,224,71,.95)]">
+              {sharedWinnerSeat}P 胜利 · 奖池 {sharedAwardRemaining}
+            </span>
+          </div>
+          {Array.from({ length: 7 }, (_, index) => (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute left-[29%] top-[12%] z-50 h-3 w-3 rounded-full border border-amber-100 bg-amber-400 shadow-[0_0_8px_#fde047]"
+              key={index}
+              style={{ animation: `sharedPrizeFly 1.15s ${index * 0.12}s linear infinite` }}
+            />
+          ))}
+        </>
+      ) : null}
 
       <h1 className="sr-only sm:not-sr-only sm:absolute sm:left-16 sm:top-5 sm:text-base sm:font-bold">{title}</h1>
       {embed !== '1' ? <CoinMachineWelcome lang={lang} /> : null}
@@ -1568,7 +1615,7 @@ function CoinChallengePage() {
 
         <button
           aria-label={copy.collectPrize}
-          className="absolute left-[19%] top-[8%] h-[5.35%] w-[20.5%] cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 disabled:cursor-not-allowed sm:left-[17.17%]"
+          className={`absolute left-[19%] top-[8%] h-[5.35%] w-[20.5%] cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 disabled:cursor-not-allowed sm:left-[17.17%] ${sharedWinnerSeat !== null ? 'animate-pulse shadow-[0_0_24px_8px_rgba(250,204,21,.9)]' : ''}`}
           disabled={isSpinning || isWithdrawing || compareMode || Boolean(poolTransferDisplay) || collectibleWin < 1}
           onClick={handleCollectPrize}
           title={copy.collectPrize}
@@ -1576,9 +1623,9 @@ function CoinChallengePage() {
         >
           <SevenSegmentNumber
             digits={4}
-            value={creditTransferDisplay?.pool ?? poolTransferDisplay?.pool ?? (joinedRoom && roomPlayers.filter(player => !player.isBot).length >= 2 ? sharedJackpot : machine.bonusWin)}
+            value={creditTransferDisplay?.pool ?? poolTransferDisplay?.pool ?? (joinedRoom && roomPlayers.length >= 2 ? sharedJackpot : machine.bonusWin)}
           />
-          {joinedRoom && roomPlayers.filter(player => !player.isBot).length >= 2 ? (
+          {joinedRoom && roomPlayers.length >= 2 ? (
             <span className="pointer-events-none absolute left-1/2 top-full mt-0.5 -translate-x-1/2 whitespace-nowrap rounded bg-black/75 px-1.5 py-0.5 text-[7px] font-bold text-amber-300 sm:text-[8px]">
               五局奖池 · 第 {sharedCompetitionRound} 局
             </span>
@@ -1671,8 +1718,8 @@ function CoinChallengePage() {
           {BOTTOM_OPTION_ORDER.map((optionIndex, displayIndex) => (
             <button
               aria-label={copy.addBet(optionIndex + 1)}
-              className="group relative min-w-0 cursor-pointer rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
-              disabled={gameMode !== 'normal' || isSpinning || compareMode || Boolean(poolTransferDisplay) || Boolean(creditTransferDisplay)}
+              className="group relative min-w-0 cursor-pointer rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 disabled:cursor-not-allowed"
+              disabled={gameMode !== 'normal' || isSpinning || compareMode || Boolean(poolTransferDisplay) || Boolean(creditTransferDisplay) || (joinedRoom && roomPlayers.some(player => player.memberId !== member?.id && (player.bets[optionIndex] ?? 0) > 0))}
               key={optionIndex}
               onClick={() => handleBet(optionIndex)}
               onPointerDown={(event) => {
@@ -1696,7 +1743,7 @@ function CoinChallengePage() {
                     .sort((left, right) => (left.seat ?? 99) - (right.seat ?? 99))
                     .map(player => (
                       <span className="rounded-sm bg-black/80 px-1 py-px text-[7px] font-black leading-none text-amber-300 shadow-sm sm:text-[8px]" key={player.memberId}>
-                        {player.isBot ? 'AI' : `${player.seat ?? '?'}P`}×{player.bets[optionIndex]}
+                        {player.seat ?? '?'}P×{player.bets[optionIndex]}
                       </span>
                     ))}
                 </span>

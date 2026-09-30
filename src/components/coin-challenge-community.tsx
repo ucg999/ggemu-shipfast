@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { getMemberSession, useMemberSession } from '#/lib/member-client'
 
 export type RankableCoinWin = { amount: number; id: string }
-export type CoinChallengeRoomPlayer = { memberId: string; displayName: string; bets: Array<number>; mode: string; credits: number; inRoom: boolean; seat: number | null; isBot?: boolean }
+export type CoinChallengeRoomPlayer = { memberId: string; displayName: string; bets: Array<number>; mode: string; credits: number; inRoom: boolean; seat: number | null }
 
 type CommunityData = {
   chat: Array<{ id: number; memberId: string; displayName: string; message: string; createdAt: string }>
@@ -12,9 +12,10 @@ type CommunityData = {
   players: Array<CoinChallengeRoomPlayer>
   room: { joined: boolean; count: number; capacity: number }
   sharedRound?: { token: string; startsAt: number; target: number } | null
+  winCounts: Record<string, number>
 }
 
-const EMPTY_DATA: CommunityData = { chat: [], leaderboard: [], online: 0, players: [], room: { joined: false, count: 0, capacity: 6 } }
+const EMPTY_DATA: CommunityData = { chat: [], leaderboard: [], online: 0, players: [], room: { joined: false, count: 0, capacity: 4 }, winCounts: {} }
 
 export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, onRoomChange, onRoomPlayers, recentWins }: { bets: Array<number>; credits: number; gameMode: 'normal' | 'gold' | 'ghost'; onOpenChange?: (open: boolean) => void; onRoomChange?: (joined: boolean) => void; onRoomPlayers?: (players: Array<CoinChallengeRoomPlayer>) => void; recentWins: Array<RankableCoinWin> }) {
   const member = useMemberSession()
@@ -33,29 +34,37 @@ export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, 
     const next = await response.json() as CommunityData
     setData(next)
     onRoomChange?.(next.room?.joined ?? false)
-    const visiblePlayers = next.players.filter(player => player.inRoom)
-    if (next.room?.joined && next.sharedRound?.token) visiblePlayers.push(createRoundBot(next.sharedRound.token))
-    onRoomPlayers?.(visiblePlayers)
+    onRoomPlayers?.(next.players.filter(player => player.inRoom))
+  }
+
+  async function refreshRoom() {
+    const response = await fetch('/api/coin-challenge-community?room=1', { credentials: 'same-origin' })
+    if (!response.ok) return
+    const next = await response.json() as Pick<CommunityData, 'online' | 'players' | 'room' | 'sharedRound' | 'winCounts'>
+    setData(current => ({ ...current, ...next }))
+    onRoomChange?.(next.room.joined)
+    onRoomPlayers?.(next.players.filter(player => player.inRoom))
   }
 
   useEffect(() => { void getMemberSession() }, [])
   useEffect(() => {
     if (!member) return
-    const updatePresence = () => void post({ action: 'presence', bets, credits, mode: gameMode }).then(() => void refresh()).catch(() => {})
+    const updatePresence = () => void post({ action: 'presence', bets, credits, mode: gameMode }).catch(() => {})
     updatePresence()
-    const timer = window.setInterval(updatePresence, 5_000)
+    const timer = window.setInterval(updatePresence, 8_000)
     return () => window.clearInterval(timer)
   }, [bets, credits, gameMode, isOpen, member?.id])
   useEffect(() => { void refresh() }, [])
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen || data.room.joined) return
     void refresh()
-    const timer = window.setInterval(() => void refresh(), 4_000)
+    const timer = window.setInterval(() => void refresh(), 5_000)
     return () => window.clearInterval(timer)
-  }, [isOpen])
+  }, [isOpen, data.room.joined])
   useEffect(() => {
     if (!data.room.joined) return
-    const timer = window.setInterval(() => void refresh(), 800)
+    void refreshRoom()
+    const timer = window.setInterval(() => void refreshRoom(), 2_000)
     return () => window.clearInterval(timer)
   }, [data.room.joined])
   useEffect(() => {
@@ -108,6 +117,13 @@ export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, 
     } finally { setBusy(false) }
   }
 
+  async function closeHall() {
+    setIsOpen(false)
+    onOpenChange?.(false)
+    setData(current => ({ ...current, chat: [] }))
+    if (member) await post({ action: 'chat-clear' }).catch(() => {})
+  }
+
   return (
     <>
       <div className="absolute right-20 top-4 z-30 flex items-center gap-1.5 sm:right-28 sm:top-5">
@@ -121,7 +137,7 @@ export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, 
         <aside className="fixed inset-x-3 bottom-3 top-3 z-[190] mx-auto flex max-w-md flex-col overflow-hidden rounded-3xl border border-white/15 bg-[#111]/95 text-white shadow-2xl backdrop-blur sm:absolute sm:bottom-0 sm:left-[calc(100%+12px)] sm:right-auto sm:top-0 sm:w-[clamp(260px,24vw,340px)]">
           <header className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
             <div className="min-w-0 flex-1"><strong>金币娱乐游戏大厅</strong><p className="text-xs text-white/50">在线玩家 {data.online} 人</p></div>
-            <button aria-label="关闭" className="grid h-8 w-8 place-items-center rounded-full hover:bg-white/10" onClick={() => { setIsOpen(false); onOpenChange?.(false) }} type="button">✕</button>
+            <button aria-label="退出聊天大厅" className="grid h-8 w-8 place-items-center rounded-full hover:bg-white/10" onClick={() => void closeHall()} type="button">✕</button>
           </header>
           <div className="grid grid-cols-2 border-b border-white/10 p-1">
             <button className={`rounded-xl py-2 text-sm ${tab === 'chat' ? 'bg-amber-400 font-bold text-black' : 'text-white/70'}`} onClick={() => setTab('chat')} type="button">聊天</button>
@@ -130,7 +146,7 @@ export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, 
           {tab === 'chat' ? (
             <>
               <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
-                {data.room.joined ? <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-2"><p className="mb-2 text-[11px] font-semibold text-emerald-300">1号房正在下注 · 由1P点击开始</p><div className="space-y-2">{[...data.players.filter(player => player.inRoom), ...(data.sharedRound?.token ? [createRoundBot(data.sharedRound.token)] : [])].sort((left, right) => (left.seat ?? 99) - (right.seat ?? 99)).map(player => { const total = player.bets.reduce((sum, value) => sum + value, 0); return <div className="rounded-xl bg-black/30 px-2.5 py-2" key={player.memberId}><div className="flex items-center justify-between gap-2 text-xs"><b className="truncate"><span className={`mr-1 ${player.isBot ? 'text-violet-300' : 'text-emerald-300'}`}>{player.isBot ? 'AI' : `${player.seat ?? '?'}P`}</span>{player.displayName}</b><span className="text-white/50">共 {total}</span></div><BetCells bets={player.bets} /></div> })}</div></div> : null}
+                {data.room.joined ? <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-2"><p className="mb-2 text-[11px] font-semibold text-emerald-300">1号房正在下注 · 由1P点击开始</p><div className="space-y-2">{data.players.filter(player => player.inRoom).sort((left, right) => (left.seat ?? 99) - (right.seat ?? 99)).map(player => { const total = player.bets.reduce((sum, value) => sum + value, 0); return <div className="rounded-xl bg-black/30 px-2.5 py-2" key={player.memberId}><div className="flex items-center justify-between gap-2 text-xs"><b className="truncate"><span className="mr-1 text-emerald-300">{player.seat ?? '?'}P</span>{player.displayName}</b><span className="flex items-center gap-2"><em className="not-italic font-bold text-amber-300">中 {data.winCounts[player.memberId] ?? 0} 次</em><span className="text-white/50">下注 {total}</span></span></div><BetCells bets={player.bets} /></div> })}</div></div> : null}
                 {data.chat.length ? data.chat.map(item => <div key={item.id}><div className="text-[11px] text-amber-300">{item.displayName}</div><p className="mt-0.5 break-words rounded-2xl rounded-tl-sm bg-white/10 px-3 py-2 text-sm">{item.message}</p></div>) : <p className="py-10 text-center text-sm text-white/40">还没有消息，来打个招呼吧</p>}
                 <div ref={chatEndRef} />
               </div>
@@ -156,14 +172,4 @@ export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, 
 
 function BetCells({ bets }: { bets: Array<number> }) {
   return <div className="mt-1 grid grid-cols-8 gap-1">{bets.map((_, displayIndex) => { const optionIndex = bets.length - 1 - displayIndex; const value = bets[optionIndex] ?? 0; return <span className={`grid aspect-square place-items-center rounded text-[10px] ${value ? 'bg-amber-400 font-bold text-black' : 'bg-white/5 text-white/25'}`} key={optionIndex}>{value}</span> })}</div>
-}
-
-function createRoundBot(token: string): CoinChallengeRoomPlayer {
-  const source = token.replace(/-/g, '').slice(-8) || '0'
-  const option = Number.parseInt(source, 16) % 8
-  return {
-    memberId: 'round-test-bot', displayName: '测试人机', mode: 'normal', credits: 1,
-    inRoom: true, seat: null, isBot: true,
-    bets: Array.from({ length: 8 }, (_, index) => index === option ? 1 : 0),
-  }
 }
