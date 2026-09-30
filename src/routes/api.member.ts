@@ -11,6 +11,7 @@ import {
   hashPassword,
   jsonError,
   memberDb,
+  passwordNeedsRehash,
   releaseInactiveMembers,
   toMemberView,
   validateCredentials,
@@ -79,7 +80,15 @@ export const Route = createFileRoute('/api/member')({
           const fallback = await hashPassword(credentials.password, '00000000000000000000000000000000')
           const valid = row ? await verifyPassword(row, credentials.password) : fallback.hash.length === 0
           if (!row || !valid) return jsonError('用户名或密码不正确', 401)
-          await memberDb().prepare('UPDATE members SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?').bind(row.id).run()
+          if (passwordNeedsRehash(row.password_iterations)) {
+            const upgraded = await hashPassword(credentials.password)
+            await memberDb().prepare(`
+              UPDATE members SET password_hash = ?, password_salt = ?, password_iterations = ?,
+                last_login_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+            `).bind(upgraded.hash, upgraded.salt, upgraded.iterations, row.id).run()
+          } else {
+            await memberDb().prepare('UPDATE members SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?').bind(row.id).run()
+          }
           const session = await createSession(row.id, request)
           return Response.json({ member: toMemberView(row) }, { headers: { 'Set-Cookie': session.cookie } })
         } catch (error) {

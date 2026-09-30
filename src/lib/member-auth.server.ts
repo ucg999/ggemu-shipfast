@@ -1,8 +1,10 @@
 import { env } from 'cloudflare:workers'
+import { pbkdf2Sync } from 'node:crypto'
 
 const SESSION_COOKIE = '__Host-ucg999_member'
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30
-const PASSWORD_ITERATIONS = 210_000
+const PASSWORD_ITERATIONS = 100_000
+const WEB_CRYPTO_PBKDF2_LIMIT = 100_000
 type MemberRow = {
   id: string
   username: string
@@ -71,9 +73,17 @@ export function validateCredentials(username: unknown, password: unknown) {
 }
 
 export async function hashPassword(password: string, salt = randomHex(16), iterations = PASSWORD_ITERATIONS) {
+  if (iterations > WEB_CRYPTO_PBKDF2_LIMIT) {
+    const hash = pbkdf2Sync(password, Buffer.from(salt, 'hex'), iterations, 32, 'sha256').toString('hex')
+    return { hash, salt, iterations }
+  }
   const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits'])
   const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: hexToBytes(salt), iterations }, material, 256)
   return { hash: bytesToHex(new Uint8Array(bits)), salt, iterations }
+}
+
+export function passwordNeedsRehash(iterations: number) {
+  return iterations !== PASSWORD_ITERATIONS
 }
 
 export async function verifyPassword(member: MemberRow, password: string) {
