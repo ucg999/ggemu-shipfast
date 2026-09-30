@@ -4,12 +4,14 @@ import type { CSSProperties } from 'react'
 
 import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
 import { CoinMachineWelcome } from '#/components/coin-machine-welcome'
+import { CoinChallengeCommunity, type CoinChallengeRoomPlayer, type RankableCoinWin } from '#/components/coin-challenge-community'
 import { SiteLayout } from '#/components/site-layout'
 import type { Locale } from '#/lib/ggemu'
 import { addCoinBalance, getCoinRank, readCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
 import { createSpinAudioClock } from '#/lib/spin-audio-clock'
 import { normalizeLocale } from '#/lib/i18n'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
+import { useMemberSession } from '#/lib/member-client'
 
 const COIN_CHALLENGE_STORAGE_KEY = 'retro-games-coin-challenge-machine'
 const COIN_CHALLENGE_RTP_STORAGE_KEY = 'retro-games-coin-challenge-rtp-ledger'
@@ -69,6 +71,16 @@ type CoinChallengeExitState = {
 
 type CoinChallengeSearch = {
   embed?: '1'
+}
+
+type SharedCoinRound = {
+  token: string
+  startsAt: number
+  target: number
+  awardMemberId?: string | null
+  awardAmount?: number
+  round?: number
+  jackpot?: number
 }
 
 export const Route = createFileRoute('/$locale/coin-challenge')({
@@ -159,6 +171,20 @@ function CoinChallengePage() {
   )
   const [activeLight, setActiveLight] = useState(0)
   const [gameMode, setGameMode] = useState<'normal' | 'gold' | 'ghost'>('normal')
+  const member = useMemberSession()
+  const [joinedRoom, setJoinedRoom] = useState(false)
+  const [roomPlayers, setRoomPlayers] = useState<Array<CoinChallengeRoomPlayer>>([])
+  const [sharedJackpot, setSharedJackpot] = useState(0)
+  const [sharedCompetitionRound, setSharedCompetitionRound] = useState(0)
+  const [communityOpen, setCommunityOpen] = useState(false)
+  const joinedRoomRef = useRef(false)
+  const handledSharedRoundRef = useRef<string | null>(null)
+  const launchedSharedRoundRef = useRef<string | null>(null)
+  const ensuringSharedRoundRef = useRef(false)
+  const pendingSharedLaunchRef = useRef(false)
+  const pendingSharedAwardRef = useRef<{ token: string; memberId: string | null; amount: number } | null>(null)
+  const sharedStartTimerRef = useRef<number | null>(null)
+  const handleStartRef = useRef<(skipSharedWaiting?: boolean, forcedTarget?: number) => boolean>(() => false)
   const [modeRounds, setModeRounds] = useState(0)
   const [luckyLitLights, setLuckyLitLights] = useState<Array<number>>([])
   const [winningLight, setWinningLight] = useState<number | null>(null)
@@ -167,6 +193,7 @@ function CoinChallengePage() {
   const [isSpinning, setIsSpinning] = useState(false)
   const [roundWin, setRoundWin] = useState(0)
   const [collectibleWin, setCollectibleWin] = useState(0)
+  const [rankableWins, setRankableWins] = useState<Array<RankableCoinWin>>([])
   const [compareMode, setCompareMode] = useState(false)
   const [isWithdrawing, setIsWithdrawing] = useState(false)
   const [poolTransferDisplay, setPoolTransferDisplay] = useState<{
@@ -665,6 +692,10 @@ function CoinChallengePage() {
         audioContextRef.current = context
         if (context.state === 'suspended') void context.resume().catch(() => {})
       }
+      if (sharedStartTimerRef.current !== null) {
+        window.clearTimeout(sharedStartTimerRef.current)
+        sharedStartTimerRef.current = null
+      }
 
       for (const audio of [
         coinDropAudioRef.current,
@@ -741,6 +772,12 @@ function CoinChallengePage() {
     const withdrawPrizeOnly = prizeCoins > 0
     const totalCoins = withdrawPrizeOnly ? prizeCoins : machine.credits
     if (isSpinning || compareMode || isWithdrawing || poolTransferDisplay || creditTransferDisplay || totalCoins < 1) return
+    if (withdrawPrizeOnly) {
+      setRankableWins(current => [
+        { amount: prizeCoins, id: crypto.randomUUID() },
+        ...current,
+      ].slice(0, 5))
+    }
     autoRankRefillEnabledRef.current = false
     setIsWithdrawing(true)
     safelyRunAudio(() => {
@@ -868,6 +905,7 @@ function CoinChallengePage() {
     if (isSpinning || compareMode || poolTransferDisplay || creditTransferDisplay) return
     const resetAllBets = shouldResetAllBetsRef.current
     const currentMachine = machineRef.current
+    if (joinedRoom && !resetAllBets && currentMachine.bets.some((value, itemIndex) => itemIndex !== index && value > 0)) return
     if (!resetAllBets && currentMachine.bets[index] >= 9) return
     if (currentMachine.credits < 1) {
       stopBetHold()
@@ -918,8 +956,103 @@ function CoinChallengePage() {
     // interrupted by modal dialogs.
   }
 
-  function handleStart() {
-    if (isSpinning || compareMode || poolTransferDisplay || creditTransferDisplay) return
+  async function requestSharedStart() {
+    if (ensuringSharedRoundRef.current) return
+    ensuringSharedRoundRef.current = true
+    try {
+      const response = await fetch('/api/coin-challenge-community', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'round-start' }),
+      })
+      const result = await response.json() as { shared?: boolean; round?: SharedCoinRound }
+      if (result.shared && result.round) {
+        scheduleSharedRound(result.round)
+        return
+      }
+    } catch {
+      // Network trouble must not block a local round.
+    } finally {
+      ensuringSharedRoundRef.current = false
+    }
+    if (!joinedRoomRef.current) handleStart(true)
+  }
+
+  function handleRoomChange(joined: boolean) {
+    if (joined === joinedRoomRef.current) return
+    if (joined) {
+      updateMachine((current) => ({
+        ...current,
+        bets: Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0),
+        credits: Math.min(MAX_MACHINE_CREDITS, current.credits + current.bets.reduce((sum, value) => sum + value, 0)),
+      }))
+      setShouldResetAllBets(false)
+    } else {
+      if (sharedStartTimerRef.current !== null) window.clearTimeout(sharedStartTimerRef.current)
+      sharedStartTimerRef.current = null
+      pendingSharedLaunchRef.current = false
+    }
+    joinedRoomRef.current = joined
+    setJoinedRoom(joined)
+  }
+
+  function scheduleSharedRound(round: SharedCoinRound) {
+    if (handledSharedRoundRef.current === round.token) return
+    handledSharedRoundRef.current = round.token
+    setSharedJackpot(Math.max(0, round.jackpot ?? 0))
+    setSharedCompetitionRound(Math.max(0, round.round ?? 0))
+    pendingSharedAwardRef.current = {
+      token: round.token,
+      memberId: round.awardMemberId ?? null,
+      amount: Math.max(0, round.awardAmount ?? 0),
+    }
+    if (sharedStartTimerRef.current !== null) window.clearTimeout(sharedStartTimerRef.current)
+    const launchRound = () => {
+      if (launchedSharedRoundRef.current === round.token) return
+      pendingSharedLaunchRef.current = true
+      sharedStartTimerRef.current = null
+      if (handleStartRef.current(true, round.target)) {
+        launchedSharedRoundRef.current = round.token
+        pendingSharedLaunchRef.current = false
+        return
+      }
+      // A transfer/animation can briefly overlap the deadline. Keep the
+      // server round alive locally and retry instead of leaving the counter
+      // frozen at zero.
+      sharedStartTimerRef.current = window.setTimeout(launchRound, 150)
+    }
+    sharedStartTimerRef.current = window.setTimeout(launchRound, Math.max(0, round.startsAt - Date.now()))
+  }
+
+  useEffect(() => {
+    if (!member || !joinedRoom || gameMode !== 'normal') return
+    let stopped = false
+    const poll = async () => {
+      try {
+        const response = await fetch('/api/coin-challenge-community?round=1', { credentials: 'same-origin' })
+        if (!response.ok || stopped) return
+        const result = await response.json() as { sharedRound?: SharedCoinRound | null }
+        if (result.sharedRound && result.sharedRound.startsAt > Date.now() - 2_000) {
+          scheduleSharedRound(result.sharedRound)
+        }
+      } catch {
+        // Multiplayer waiting is optional; local play remains available.
+      }
+    }
+    void poll()
+    const timer = window.setInterval(() => void poll(), 500)
+    return () => { stopped = true; window.clearInterval(timer) }
+  }, [member?.id, joinedRoom, gameMode])
+
+  function handleStart(skipSharedWaiting = false, forcedTarget?: number): boolean {
+    if (isSpinning || compareMode || poolTransferDisplay || creditTransferDisplay) return false
+    if (!skipSharedWaiting && member && joinedRoom && gameMode === 'normal') {
+      const ownSeat = roomPlayers.find(player => player.memberId === member.id)?.seat
+      if (ownSeat !== 1) return false
+      void requestSharedStart()
+      return true
+    }
     safelyRunAudio(() => {
     winAudioRef.current?.pause()
     if (winAudioRef.current) {
@@ -946,10 +1079,13 @@ function CoinChallengePage() {
     let roundBets = machine.bets
     let usedAutomaticBet = false
     if (!roundBets.some((value) => value > 0)) {
-      if (gameMode !== 'normal') return
+      if (joinedRoom && forcedTarget !== undefined) {
+        roundBets = Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0)
+      } else {
+      if (gameMode !== 'normal') return false
       if (machine.credits < 1) {
         showCreditEmptyOnce()
-        return
+        return false
       }
       const randomOption = Math.floor(Math.random() * CHALLENGE_OPTION_COUNT)
       roundBets = Array.from(
@@ -963,21 +1099,31 @@ function CoinChallengePage() {
         credits: Math.max(0, current.credits - 1),
       }))
       setShouldResetAllBets(false)
+      }
     }
 
-    const totalBet = roundBets.reduce((sum, value) => sum + value, 0)
-    const freeModeSpin = gameMode === 'ghost' || (gameMode === 'gold' && modeRounds === 0)
-    const repeatBetCost = !freeModeSpin && shouldResetAllBets && !usedAutomaticBet ? totalBet : 0
+    let totalBet = roundBets.reduce((sum, value) => sum + value, 0)
+    const freeModeSpin = gameMode === 'ghost' || gameMode === 'gold'
+    let repeatBetCost = !freeModeSpin && shouldResetAllBets && !usedAutomaticBet ? totalBet : 0
     if (machine.credits < repeatBetCost) {
-      showCreditEmptyOnce()
-      return
+      if (joinedRoom && forcedTarget !== undefined) {
+        // A shared room must still advance for observers or players whose
+        // repeat stake no longer fits their credit balance.
+        roundBets = Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0)
+        totalBet = 0
+        repeatBetCost = 0
+      } else {
+        showCreditEmptyOnce()
+        return false
+      }
     }
     const carriedWin = collectibleWin
     if (carriedWin > 0) {
       playPoolAudio()
       updateMachine((current) => ({
         ...current,
-        bonusWin: Math.min(9999, current.bonusWin + carriedWin),
+        bonusWin: joinedRoom ? current.bonusWin : Math.min(9999, current.bonusWin + carriedWin),
+        credits: joinedRoom ? Math.min(MAX_MACHINE_CREDITS, current.credits + carriedWin) : current.credits,
       }))
       collectibleWinRef.current = 0
       setCollectibleWin(0)
@@ -995,7 +1141,7 @@ function CoinChallengePage() {
       credits: Math.max(0, current.credits - repeatBetCost),
     }))
 
-    const normalTarget = chooseStandardTarget(roundBets)
+    const normalTarget = forcedTarget ?? chooseStandardTarget(roundBets)
     const exitLights = [BAR_50_LIGHT_INDEX, BAR_25_LIGHT_INDEX, LUCKY_LIGHT_INDEX, PENALTY_LIGHT_INDEX]
     const target = gameMode === 'normal'
       ? normalTarget
@@ -1071,6 +1217,7 @@ function CoinChallengePage() {
             }
             setModeRounds((current) => current + 1)
             finishRound(roundBets[option] * outcome.multiplier, option, outcome.multiplier, target)
+            spinTimerRef.current = window.setTimeout(() => handleStartRef.current(true), 700)
           }
           return
         }
@@ -1090,6 +1237,7 @@ function CoinChallengePage() {
             void entryAudio.play().catch(() => {})
             })
           }
+          spinTimerRef.current = window.setTimeout(() => handleStartRef.current(true), 700)
           return
         }
         if (target === LUCKY_LIGHT_INDEX) {
@@ -1137,6 +1285,20 @@ function CoinChallengePage() {
       void option
       void multiplier
       const adjustedPayout = gameMode === 'gold' ? payout * 2 : payout
+      const sharedAward = pendingSharedAwardRef.current
+      if (joinedRoom && sharedAward?.token === handledSharedRoundRef.current) {
+        if (sharedAward.amount > 0 && sharedAward.memberId === member?.id) {
+          updateMachine(current => ({
+            ...current,
+            credits: Math.min(MAX_MACHINE_CREDITS, current.credits + sharedAward.amount),
+          }))
+        }
+        pendingSharedAwardRef.current = null
+        if (sharedAward.amount > 0) {
+          setSharedJackpot(0)
+          setSharedCompetitionRound(0)
+        }
+      }
       if (gameMode === 'ghost' && adjustedPayout > 0) {
         let remaining = adjustedPayout
         const centerDeduction = Math.min(collectibleWinRef.current, remaining)
@@ -1314,12 +1476,15 @@ function CoinChallengePage() {
     spinClockRef.current?.stop()
     spinClockRef.current = createSpinAudioClock(mainSpinAudioRef.current, mainSpinDurationMs)
     spinTimerRef.current = window.setTimeout(advance, 16)
+    return true
   }
 
+  handleStartRef.current = handleStart
+
   const game = (
-    <div className="fixed inset-0 z-[80] bg-black sm:static sm:z-auto sm:flex sm:h-[calc(100dvh-80px)] sm:items-center sm:justify-center sm:bg-base-100 sm:p-3">
+    <div className="fixed inset-0 z-[80] bg-black sm:static sm:z-auto sm:flex sm:h-[calc(100dvh-80px)] sm:items-center sm:justify-center sm:bg-base-100 sm:p-3 sm:transition-[padding] sm:duration-300" style={communityOpen ? { paddingRight: 'min(360px, 35vw)' } : undefined}>
     <section
-      className="relative min-h-screen touch-manipulation overflow-hidden bg-black text-white sm:min-h-0 sm:w-full sm:max-w-[760px] sm:rounded-2xl sm:border sm:border-white/20 sm:shadow-2xl"
+      className="relative min-h-screen touch-manipulation overflow-hidden bg-black text-white sm:min-h-0 sm:w-full sm:max-w-[760px] sm:overflow-visible sm:rounded-2xl sm:border sm:border-white/20 sm:shadow-2xl"
       onDoubleClick={(event) => event.preventDefault()}
       onPointerDownCapture={(event) => {
         unlockGameAudio()
@@ -1349,6 +1514,7 @@ function CoinChallengePage() {
           onOpen={globalCoins.showBalance}
         />
       </div>
+      <CoinChallengeCommunity bets={machine.bets} credits={machine.credits} gameMode={gameMode} onOpenChange={setCommunityOpen} onRoomChange={handleRoomChange} onRoomPlayers={setRoomPlayers} recentWins={rankableWins} />
 
       <h1 className="sr-only sm:not-sr-only sm:absolute sm:left-16 sm:top-5 sm:text-base sm:font-bold">{title}</h1>
       {embed !== '1' ? <CoinMachineWelcome lang={lang} /> : null}
@@ -1410,8 +1576,13 @@ function CoinChallengePage() {
         >
           <SevenSegmentNumber
             digits={4}
-            value={creditTransferDisplay?.pool ?? poolTransferDisplay?.pool ?? machine.bonusWin}
+            value={creditTransferDisplay?.pool ?? poolTransferDisplay?.pool ?? (joinedRoom && roomPlayers.filter(player => !player.isBot).length >= 2 ? sharedJackpot : machine.bonusWin)}
           />
+          {joinedRoom && roomPlayers.filter(player => !player.isBot).length >= 2 ? (
+            <span className="pointer-events-none absolute left-1/2 top-full mt-0.5 -translate-x-1/2 whitespace-nowrap rounded bg-black/75 px-1.5 py-0.5 text-[7px] font-bold text-amber-300 sm:text-[8px]">
+              五局奖池 · 第 {sharedCompetitionRound} 局
+            </span>
+          ) : null}
         </button>
 
         <button
@@ -1518,6 +1689,18 @@ function CoinChallengePage() {
               >
                 <SevenSegmentNumber compact digits={1} value={machine.bets[optionIndex]} />
               </span>
+              {joinedRoom ? (
+                <span className="pointer-events-none absolute left-1/2 top-[27%] z-20 flex min-w-max -translate-x-1/2 flex-col items-center gap-px">
+                  {roomPlayers
+                    .filter(player => (player.bets[optionIndex] ?? 0) > 0)
+                    .sort((left, right) => (left.seat ?? 99) - (right.seat ?? 99))
+                    .map(player => (
+                      <span className="rounded-sm bg-black/80 px-1 py-px text-[7px] font-black leading-none text-amber-300 shadow-sm sm:text-[8px]" key={player.memberId}>
+                        {player.isBot ? 'AI' : `${player.seat ?? '?'}P`}×{player.bets[optionIndex]}
+                      </span>
+                    ))}
+                </span>
+              ) : null}
             </button>
           ))}
         </div>
@@ -1525,8 +1708,8 @@ function CoinChallengePage() {
         <button
           aria-label={copy.start}
           className="absolute left-[34.5%] top-[88.1%] z-10 h-[8.2%] w-[31%] cursor-pointer rounded-[28%] bg-transparent text-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 disabled:cursor-not-allowed disabled:grayscale"
-          disabled={isSpinning || compareMode || Boolean(poolTransferDisplay) || Boolean(creditTransferDisplay)}
-          onClick={handleStart}
+          disabled={(joinedRoom && roomPlayers.find(player => player.memberId === member?.id)?.seat !== 1) || isSpinning || compareMode || Boolean(poolTransferDisplay) || Boolean(creditTransferDisplay)}
+          onClick={() => handleStart()}
           type="button"
         >
           <span className="sr-only">{isSpinning ? copy.running : copy.start}</span>

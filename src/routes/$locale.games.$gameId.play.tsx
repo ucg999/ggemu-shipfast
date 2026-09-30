@@ -194,15 +194,7 @@ function LocalizedPlayGamePage() {
       playStartedAtRef.current,
     )
 
-    if (isMahjongCoinChargeGame) {
-      if (ARCADE_MAHJONG_COINS_PER_MINUTE <= 0) {
-        return {
-          coins: 0,
-          deducted: false,
-          multiplier: 1,
-          minutes: Math.max(1, Math.ceil(activeTime / 60_000)),
-        }
-      }
+    if (isMahjongCoinChargeGame && ARCADE_MAHJONG_COINS_PER_MINUTE > 0) {
       const freeTrialTime = ARCADE_MAHJONG_FREE_TRIAL_MINUTES * 60_000
       const chargeableCoins = Math.floor(Math.max(0, activeTime - freeTrialTime) / 60_000) * ARCADE_MAHJONG_COINS_PER_MINUTE
       const dueCoins = Math.max(0, chargeableCoins - awardedCoinsRef.current)

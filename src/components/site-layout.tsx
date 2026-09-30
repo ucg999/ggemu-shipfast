@@ -11,6 +11,8 @@ import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
 import { CoinRankBadge, HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
 import { addCoinBalance, prepareRandomGameCoinMultiplier } from '#/lib/coin-wallet'
 import { confirmResourceDownload, unlockPaidResource } from '#/lib/paid-resource'
+import { MemberAccountButton } from '#/components/member-account'
+import { useMemberSession } from '#/lib/member-client'
 
 const SITE_VISIT_COIN_SESSION_KEY = 'game-adventure-site-visit-coin-awarded'
 const DESKTOP_SIDEBAR_STATE_KEY = 'retro-games-desktop-sidebar-state'
@@ -56,6 +58,7 @@ export function SiteLayout({
   const canSwitchTheme = siteThemes.length > 1
   const sidebarSearchParams = new URLSearchParams(location.searchStr)
   const globalCoins = useGlobalCoinBalance()
+  const memberSession = useMemberSession()
   const [dailyCheckIn, setDailyCheckIn] = useState({ completed: false, lastDate: '', streak: 0 })
   const [randomPopupGame, setRandomPopupGame] = useState<PublicGame | null>(null)
   const [randomPopupMultiplier, setRandomPopupMultiplier] = useState(2)
@@ -340,12 +343,13 @@ export function SiteLayout({
               </span>
             </Link>
             <div className="relative ml-2 flex shrink-0 items-center sm:ml-4 lg:hidden">
+              <MemberAccountButton locale={locale} />
               <HomeCoinBag
                 balance={globalCoins.balance}
                 lang={locale}
                 onOpen={globalCoins.showBalance}
               />
-              <CoinRankBadge balance={globalCoins.balance} lang={locale} />
+              {memberSession ? <CoinRankBadge balance={memberSession.coinBalance} lang={locale} /> : null}
               {brandAddon ? <div className="absolute left-full top-1/2 -translate-y-1/2">{brandAddon}</div> : null}
             </div>
           </div>
@@ -355,7 +359,7 @@ export function SiteLayout({
               {topContent}
             </div>
           ) : (
-            <DesktopUnifiedHeaderNavigation isRandomGameLoading={isRandomGameLoading} locale={locale} onRandomGame={showRandomGame} />
+            <DesktopUnifiedHeaderNavigation locale={locale} />
           )}
 
           <div className="navbar-end ml-auto w-auto flex-none flex-nowrap gap-1 sm:gap-2">
@@ -370,6 +374,20 @@ export function SiteLayout({
                 <i className="ri-search-line text-base" />
               </button>
             ) : null}
+            <div className="hidden h-9 w-[clamp(12rem,18vw,22rem)] shrink-0 items-center rounded-full border border-black/30 text-xs text-black/60 lg:flex">
+              <Link className="flex min-w-0 flex-1 items-center gap-2 px-3" params={{ locale }} search={{ q: '' }} to="/$locale/search">
+                <i className="ri-search-line text-lg" />
+                <span className="truncate">{locale === 'zh-CN' ? '按需求搜索' : t.searchGames}</span>
+              </Link>
+              <button
+                className="flex h-5 shrink-0 items-center border-l border-black/20 px-3 font-medium text-black/75 hover:text-black"
+                disabled={isRandomGameLoading}
+                onClick={showRandomGame}
+                type="button"
+              >
+                {isRandomGameLoading ? (locale === 'en' ? 'Loading…' : '加载中…') : (locale === 'en' ? 'Random Play' : '随机玩玩')}
+              </button>
+            </div>
             <Link
               aria-label={t.watchOthers}
               className={`desktop-watch-button btn h-6 min-h-6 shrink-0 gap-0.5 rounded-full border border-rose-200 bg-rose-100 px-1.5 text-[10px] font-semibold text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 lg:h-9 lg:min-h-9 lg:gap-2 lg:px-4 lg:text-sm max-lg:[&_.live-watch-eye]:scale-75 ${isHomePage ? '' : 'hidden lg:flex'}`}
@@ -465,7 +483,8 @@ export function SiteLayout({
               <strong>×{dailyCheckIn.completed ? Math.max(1, dailyCheckIn.streak) : getNextCheckInMultiplier(dailyCheckIn)}</strong>
             </button>
             <div className="ml-2 hidden shrink-0 items-center gap-0 [&_.coin-rank-badge]:-mr-2 lg:flex">
-              <CoinRankBadge balance={globalCoins.balance} lang={locale} />
+              <MemberAccountButton locale={locale} />
+              {memberSession ? <CoinRankBadge balance={memberSession.coinBalance} lang={locale} /> : null}
               <HomeCoinBag
                 balance={globalCoins.balance}
                 lang={locale}
@@ -516,6 +535,18 @@ export function SiteLayout({
                       <i className="ri-home-5-fill text-base text-red-500" />
                     </span>
                     <span className="sidebar-label min-w-0 flex-1 text-red-500">{t.games}</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    className={`group flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition hover:bg-base-200 ${location.pathname === `/${locale}/rankings/coins` ? 'bg-base-200 font-semibold text-amber-700' : ''}`}
+                    params={{ locale }}
+                    to="/$locale/rankings/coins"
+                  >
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-700 group-hover:bg-amber-200">
+                      <i className="ri-trophy-line text-base" />
+                    </span>
+                    <span className="sidebar-label min-w-0 flex-1">{locale === 'en' ? 'Rankings' : '排行榜'}</span>
                   </Link>
                 </li>
                 <li>
@@ -834,13 +865,9 @@ export function SiteLayout({
 }
 
 function DesktopUnifiedHeaderNavigation({
-  isRandomGameLoading,
   locale,
-  onRandomGame,
 }: {
-  isRandomGameLoading: boolean
   locale: Locale
-  onRandomGame: () => void | Promise<void>
 }) {
   const layout = getI18n(locale).layout
   const home = getI18n(locale).home
@@ -849,7 +876,7 @@ function DesktopUnifiedHeaderNavigation({
   return (
     <nav
       aria-label={layout.mainNavigation}
-      className="hidden min-w-0 items-center gap-2 lg:flex lg:pl-10"
+      className="hidden min-w-0 items-center gap-1 lg:flex lg:pl-6"
     >
       <details className="dropdown shrink-0">
         <summary className="flex h-9 cursor-pointer list-none items-center gap-1 whitespace-nowrap px-2 text-sm font-normal">
@@ -858,6 +885,7 @@ function DesktopUnifiedHeaderNavigation({
         <div className="dropdown-content z-50 mt-2 flex w-max overflow-hidden bg-[#f0f0ed] text-sm text-black shadow-xl">
           <ul className="menu w-52 shrink-0 p-2">
             <li><Link params={{ locale }} to="/$locale">{layout.games}</Link></li>
+            <li><Link params={{ locale }} to="/$locale/rankings/coins"><i className="ri-trophy-line text-amber-700" />{locale === 'en' ? 'Rankings' : '排行榜'}</Link></li>
             <li>
               <span>{layout.gameLibrary}</span>
             </li>
@@ -889,22 +917,7 @@ function DesktopUnifiedHeaderNavigation({
       <Link className={linkClass} params={{ locale, platformId: 'mahjong' }} title={getMahjongChargeTip(locale)} to="/$locale/platform/$platformId">{getGameModeLabels(locale).mahjong}</Link>
       <Link className={linkClass} params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
       <Link className={linkClass} params={{ locale, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
-      <div className="ml-1 flex h-9 min-w-48 max-w-md flex-1 items-center rounded-full border border-black/30 text-xs text-black/60">
-        <Link className="flex min-w-0 flex-1 items-center gap-2 px-3" params={{ locale }} search={{ q: '' }} to="/$locale/search">
-          <i className="ri-search-line text-lg" />
-          <span className="truncate">{locale === 'zh-CN' ? '按需求搜索' : layout.searchGames}</span>
-        </Link>
-        <button
-          className="flex h-5 shrink-0 items-center border-l border-black/20 px-3 font-medium text-black/75 hover:text-black"
-          disabled={isRandomGameLoading}
-          onClick={onRandomGame}
-          type="button"
-        >
-          {isRandomGameLoading
-            ? locale === 'en' ? 'Loading…' : '加载中…'
-            : locale === 'en' ? 'Random Play' : '随机玩玩'}
-        </button>
-      </div>
+      <Link className={`${linkClass} font-semibold text-amber-700`} params={{ locale }} to="/$locale/rankings/coins"><i className="ri-trophy-line mr-1" />{locale === 'en' ? 'Rankings' : '排行榜'}</Link>
     </nav>
   )
 }

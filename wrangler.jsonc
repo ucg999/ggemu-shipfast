@@ -5,6 +5,13 @@
   "compatibility_date": "2026-07-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
+  "d1_databases": [
+    {
+      "binding": "LEADERBOARD_DB",
+      "database_name": "ucg999-leaderboard",
+      "database_id": "eda33bf8-c72e-418b-bf78-5f307171f286"
+    }
+  ],
   "routes": [
     { "pattern": "ucg999.com", "custom_domain": true },
     { "pattern": "www.ucg999.com", "custom_domain": true }

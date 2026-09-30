@@ -1,0 +1,287 @@
+import { createFileRoute } from '@tanstack/react-router'
+
+import { assertSameOrigin, getMemberFromRequest, jsonError, memberDb } from '#/lib/member-auth.server'
+
+type ChatRow = { id: number; member_id: string; display_name: string; message: string; created_at: string }
+type RankRow = { display_name: string; score: number; updated_at: string }
+type PresenceRow = { member_id: string; display_name: string; bets_json: string; game_mode: string; credits: number; room_id: string | null; room_seat: number | null; last_seen_at: string }
+type SharedRoundRow = { round_token: string; starts_at_ms: number; target_index: number; award_member_id: string | null; award_amount: number; competition_round: number; competition_jackpot: number }
+type CompetitionRow = { round_number: number; jackpot: number; win_counts_json: string; last_round_token: string | null }
+
+export const Route = createFileRoute('/api/coin-challenge-community')({
+  server: {
+    handlers: {
+      GET: async ({ request }) => {
+        if (new URL(request.url).searchParams.get('round') === '1') {
+          const sharedRound = await memberDb().prepare(`
+            SELECT round_token, starts_at_ms, target_index, award_member_id, award_amount, competition_round, competition_jackpot FROM coin_challenge_shared_rounds WHERE room_id = '1'
+          `).first<SharedRoundRow>()
+          return Response.json({
+            sharedRound: sharedRound && sharedRound.starts_at_ms >= Date.now() - 2_000
+              ? sharedRoundView(sharedRound)
+              : null,
+          })
+        }
+        const member = await getMemberFromRequest(request)
+        if (member) {
+          await memberDb().prepare(`
+            INSERT INTO coin_challenge_presence (member_id, display_name, last_seen_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(member_id) DO UPDATE SET display_name = excluded.display_name, last_seen_at = CURRENT_TIMESTAMP
+          `).bind(member.id, member.displayName).run()
+        }
+        const [chatResult, rankResult, onlineResult, sharedRound] = await Promise.all([
+          memberDb().prepare(`SELECT id, member_id, display_name, message, created_at FROM coin_challenge_chat_messages ORDER BY id DESC LIMIT 50`).all<ChatRow>(),
+          memberDb().prepare(`
+            SELECT p.nickname AS display_name, s.score, s.updated_at
+            FROM leaderboard_scores s JOIN leaderboard_players p ON p.player_id = s.player_id
+            WHERE s.game_id = 'coin-challenge' AND s.period_type = 'all' AND s.period_key = 'all' AND s.score > 0
+            ORDER BY s.score DESC, s.updated_at ASC LIMIT 20
+          `).all<RankRow>(),
+          memberDb().prepare(`
+            SELECT member_id, display_name, bets_json, game_mode, credits, room_id, room_seat, last_seen_at
+            FROM coin_challenge_presence WHERE last_seen_at >= datetime('now', '-20 seconds')
+            ORDER BY last_seen_at DESC LIMIT 30
+          `).all<PresenceRow>(),
+          memberDb().prepare(`SELECT round_token, starts_at_ms, target_index, award_member_id, award_amount, competition_round, competition_jackpot FROM coin_challenge_shared_rounds WHERE room_id = '1'`).first<SharedRoundRow>(),
+        ])
+        const now = Date.now()
+        return Response.json({
+          chat: [...chatResult.results].reverse().map(row => ({ id: row.id, memberId: row.member_id, displayName: row.display_name, message: row.message, createdAt: row.created_at })),
+          leaderboard: rankResult.results.map((row: RankRow, index: number) => ({ rank: index + 1, displayName: row.display_name, score: row.score, updatedAt: row.updated_at })),
+          member,
+          online: onlineResult.results.length,
+          sharedRound: sharedRound && sharedRound.starts_at_ms >= now - 2_000
+            ? sharedRoundView(sharedRound)
+            : null,
+          room: {
+            joined: Boolean(member && onlineResult.results.some((row: PresenceRow) => row.member_id === member.id && row.room_id === '1')),
+            count: onlineResult.results.filter((row: PresenceRow) => row.room_id === '1').length,
+            capacity: 6,
+          },
+          players: onlineResult.results.map((row: PresenceRow) => ({
+            memberId: row.member_id,
+            displayName: row.display_name,
+            bets: parseBets(row.bets_json),
+            mode: row.game_mode,
+            credits: Math.max(0, Number(row.credits) || 0),
+            inRoom: row.room_id === '1',
+            seat: row.room_seat,
+          })),
+        })
+      },
+      POST: async ({ request }) => {
+        try {
+          assertSameOrigin(request)
+          const member = await getMemberFromRequest(request)
+          if (!member) return jsonError('请先登录玩家账号', 401)
+          const body = await request.json() as Record<string, unknown>
+          if (body.action === 'presence') {
+            const bets = Array.isArray(body.bets)
+              ? body.bets.slice(0, 8).map(value => Math.min(9, Math.max(0, Math.floor(Number(value) || 0))))
+              : []
+            while (bets.length < 8) bets.push(0)
+            const mode = body.mode === 'gold' || body.mode === 'ghost' ? body.mode : 'normal'
+            const credits = Math.min(99_999, Math.max(0, Math.floor(Number(body.credits) || 0)))
+            await memberDb().prepare(`
+              INSERT INTO coin_challenge_presence (member_id, display_name, bets_json, game_mode, credits, last_seen_at)
+              VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+              ON CONFLICT(member_id) DO UPDATE SET display_name = excluded.display_name, bets_json = excluded.bets_json,
+                game_mode = excluded.game_mode, credits = excluded.credits, last_seen_at = CURRENT_TIMESTAMP
+            `).bind(member.id, member.displayName, JSON.stringify(bets), mode, credits).run()
+            return Response.json({ ok: true })
+          }
+          if (body.action === 'room-join') {
+            const current = await memberDb().prepare(`SELECT room_id, room_seat FROM coin_challenge_presence WHERE member_id = ?`).bind(member.id).first<{ room_id: string | null; room_seat: number | null }>()
+            if (current?.room_id === '1' && current.room_seat) return Response.json({ ok: true, joined: true, seat: current.room_seat })
+            const room = await memberDb().prepare(`
+              SELECT room_seat FROM coin_challenge_presence
+              WHERE room_id = '1' AND last_seen_at >= datetime('now', '-20 seconds')
+            `).all<{ room_seat: number | null }>()
+            const occupied = new Set(room.results.map(row => Number(row.room_seat)).filter(seat => seat >= 1 && seat <= 6))
+            const seat = [1, 2, 3, 4, 5, 6].find(value => !occupied.has(value))
+            if (!seat) return jsonError('1号房间已满，请稍后再试', 409)
+            await memberDb().prepare(`
+              INSERT INTO coin_challenge_presence (member_id, display_name, room_id, room_seat, last_seen_at)
+              VALUES (?, ?, '1', ?, CURRENT_TIMESTAMP)
+              ON CONFLICT(member_id) DO UPDATE SET room_id = '1', room_seat = excluded.room_seat,
+                display_name = excluded.display_name, last_seen_at = CURRENT_TIMESTAMP
+            `).bind(member.id, member.displayName, seat).run()
+            return Response.json({ ok: true, joined: true, seat })
+          }
+          if (body.action === 'room-leave') {
+            await memberDb().prepare(`UPDATE coin_challenge_presence SET room_id = NULL, room_seat = NULL, last_seen_at = CURRENT_TIMESTAMP WHERE member_id = ?`).bind(member.id).run()
+            return Response.json({ ok: true, joined: false })
+          }
+          if (body.action === 'round-start') {
+            const roomMember = await memberDb().prepare(`SELECT room_id, room_seat FROM coin_challenge_presence WHERE member_id = ?`).bind(member.id).first<{ room_id: string | null; room_seat: number | null }>()
+            if (roomMember?.room_id !== '1') return Response.json({ ok: true, shared: false })
+            if (roomMember.room_seat !== 1) return jsonError('请等待1P开始游戏', 403)
+
+            const now = Date.now()
+            const current = await memberDb().prepare(`
+              SELECT round_token, starts_at_ms, target_index, award_member_id, award_amount, competition_round, competition_jackpot FROM coin_challenge_shared_rounds WHERE room_id = '1'
+            `).first<SharedRoundRow>()
+            if (current && current.starts_at_ms >= now - 1_000 && current.starts_at_ms <= now + 11_000) {
+              return Response.json({ ok: true, shared: true, round: sharedRoundView(current) })
+            }
+
+            const token = crypto.randomUUID()
+            // A short synchronization window lets every joined browser receive
+            // the same target without showing a countdown to players.
+            const startsAt = now + 1_000
+            const target = chooseSharedTarget()
+            const roomPlayers = await memberDb().prepare(`
+              SELECT member_id, display_name, bets_json, game_mode, credits, room_id, room_seat, last_seen_at
+              FROM coin_challenge_presence
+              WHERE room_id = '1' AND last_seen_at >= datetime('now', '-20 seconds')
+              ORDER BY room_seat ASC
+            `).all<PresenceRow>()
+            const competition = await settleCompetition(token, target, roomPlayers.results)
+            await memberDb().prepare(`
+              INSERT INTO coin_challenge_shared_rounds
+                (room_id, round_token, starts_at_ms, target_index, award_member_id, award_amount, competition_round, competition_jackpot, created_at)
+              VALUES ('1', ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+              ON CONFLICT(room_id) DO UPDATE SET round_token = excluded.round_token,
+                starts_at_ms = excluded.starts_at_ms, target_index = excluded.target_index,
+                award_member_id = excluded.award_member_id, award_amount = excluded.award_amount,
+                competition_round = excluded.competition_round, competition_jackpot = excluded.competition_jackpot,
+                created_at = CURRENT_TIMESTAMP
+            `).bind(token, startsAt, target, competition.awardMemberId, competition.awardAmount, competition.round, competition.jackpot).run()
+            return Response.json({ ok: true, shared: true, round: { token, startsAt, target, ...competition } })
+          }
+          if (body.action === 'chat') {
+            const message = typeof body.message === 'string' ? body.message.trim().replace(/\s+/g, ' ') : ''
+            if (!message || message.length > 120) return jsonError('聊天内容需为 1–120 个字')
+            const recent = await memberDb().prepare(`SELECT created_at FROM coin_challenge_chat_messages WHERE member_id = ? ORDER BY id DESC LIMIT 1`).bind(member.id).first<{ created_at: string }>()
+            if (recent && Date.now() - Date.parse(`${recent.created_at.replace(' ', 'T')}Z`) < 2_000) return jsonError('发送太快了，请稍等一下', 429)
+            await memberDb().prepare(`INSERT INTO coin_challenge_chat_messages (member_id, display_name, message) VALUES (?, ?, ?)`).bind(member.id, member.displayName, message).run()
+            return Response.json({ ok: true })
+          }
+
+          if (body.action === 'score') {
+            const score = Math.floor(Number(body.score) || 0)
+            const submissionKey = typeof body.submissionKey === 'string' ? body.submissionKey.slice(0, 96) : ''
+            if (score < 1 || score > 99_999 || !submissionKey) return jsonError('这次中奖记录不能上传')
+            await memberDb().batch([
+              memberDb().prepare(`
+                INSERT INTO leaderboard_players (player_id, nickname) VALUES (?, ?)
+                ON CONFLICT(player_id) DO UPDATE SET nickname = excluded.nickname, updated_at = CURRENT_TIMESTAMP
+              `).bind(member.id, member.displayName),
+              memberDb().prepare(`INSERT INTO leaderboard_submissions (submission_key, game_id, player_id, score) VALUES (?, 'coin-challenge', ?, ?)`).bind(submissionKey, member.id, score),
+              memberDb().prepare(`
+                INSERT INTO leaderboard_scores (game_id, player_id, period_type, period_key, score)
+                VALUES ('coin-challenge', ?, 'all', 'all', ?)
+                ON CONFLICT(game_id, player_id, period_type, period_key) DO UPDATE SET
+                  score = MAX(score, excluded.score), updated_at = CURRENT_TIMESTAMP
+              `).bind(member.id, score),
+            ])
+            return Response.json({ ok: true, score })
+          }
+          return jsonError('不支持的操作')
+        } catch (error) {
+          if (error instanceof Response) return error
+          const message = error instanceof Error ? error.message : ''
+          if (message.includes('UNIQUE constraint failed')) return jsonError('这次中奖记录已经上传过')
+          return jsonError('操作失败，请稍后重试', 500)
+        }
+      },
+    },
+  },
+})
+
+function parseBets(value: string) {
+  try {
+    const bets = JSON.parse(value)
+    return Array.isArray(bets) ? bets.slice(0, 8).map(item => Math.min(9, Math.max(0, Math.floor(Number(item) || 0)))) : Array(8).fill(0)
+  } catch {
+    return Array(8).fill(0)
+  }
+}
+
+function sharedRoundView(row: SharedRoundRow) {
+  return {
+    token: row.round_token,
+    startsAt: row.starts_at_ms,
+    target: row.target_index,
+    awardMemberId: row.award_member_id,
+    awardAmount: Math.max(0, Number(row.award_amount) || 0),
+    round: Math.max(0, Number(row.competition_round) || 0),
+    jackpot: Math.max(0, Number(row.competition_jackpot) || 0),
+  }
+}
+
+async function settleCompetition(token: string, target: number, players: Array<PresenceRow>) {
+  if (players.length < 2) {
+    await memberDb().prepare(`
+      INSERT INTO coin_challenge_room_competitions (room_id) VALUES ('1')
+      ON CONFLICT(room_id) DO UPDATE SET round_number = 0, jackpot = 0,
+        win_counts_json = '{}', last_round_token = NULL, updated_at = CURRENT_TIMESTAMP
+    `).run()
+    return { round: 0, jackpot: 0, awardMemberId: null as string | null, awardAmount: 0 }
+  }
+  const previous = await memberDb().prepare(`
+    SELECT round_number, jackpot, win_counts_json, last_round_token
+    FROM coin_challenge_room_competitions WHERE room_id = '1'
+  `).first<CompetitionRow>()
+  if (previous?.last_round_token === token) {
+    return { round: previous.round_number, jackpot: previous.jackpot, awardMemberId: null as string | null, awardAmount: 0 }
+  }
+  const outcome = SHARED_OUTCOMES[target]
+  const counts = parseWinCounts(previous?.win_counts_json)
+  let lostCoins = 0
+  for (const player of players) {
+    const bets = parseBets(player.bets_json)
+    const total = bets.reduce((sum, value) => sum + value, 0)
+    const won = outcome?.option !== null && outcome?.option !== undefined && (bets[outcome.option] ?? 0) > 0
+    if (won) counts[player.member_id] = (counts[player.member_id] ?? 0) + 1
+    else lostCoins += total
+  }
+  const round = (previous?.round_number ?? 0) + 1
+  const jackpot = Math.min(99_999, (previous?.jackpot ?? 0) + lostCoins)
+  let awardMemberId: string | null = null
+  let awardAmount = 0
+  const highestWins = Math.max(0, ...players.map(player => counts[player.member_id] ?? 0))
+  if (round >= 5 && jackpot > 0 && highestWins > 0) {
+    awardMemberId = [...players].sort((left, right) =>
+      (counts[right.member_id] ?? 0) - (counts[left.member_id] ?? 0) ||
+      (left.room_seat ?? 99) - (right.room_seat ?? 99),
+    )[0]?.member_id ?? null
+    awardAmount = awardMemberId ? jackpot : 0
+  }
+  await memberDb().prepare(`
+    INSERT INTO coin_challenge_room_competitions
+      (room_id, round_number, jackpot, win_counts_json, last_round_token, updated_at)
+    VALUES ('1', ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(room_id) DO UPDATE SET round_number = excluded.round_number,
+      jackpot = excluded.jackpot, win_counts_json = excluded.win_counts_json,
+      last_round_token = excluded.last_round_token, updated_at = CURRENT_TIMESTAMP
+  `).bind(awardMemberId ? 0 : round, awardMemberId ? 0 : jackpot, awardMemberId ? '{}' : JSON.stringify(counts), token).run()
+  return { round, jackpot, awardMemberId, awardAmount }
+}
+
+function parseWinCounts(value?: string) {
+  try {
+    const parsed = JSON.parse(value || '{}')
+    return parsed && typeof parsed === 'object' ? parsed as Record<string, number> : {}
+  } catch {
+    return {} as Record<string, number>
+  }
+}
+
+const SHARED_OUTCOMES: Array<{ option: number | null; multiplier: number }> = [
+  { option: 1, multiplier: 10 }, { option: 3, multiplier: 10 }, { option: null, multiplier: 1 },
+  { option: 7, multiplier: 100 }, { option: null, multiplier: 1 }, { option: 0, multiplier: 5 },
+  { option: 2, multiplier: 10 }, { option: 4, multiplier: 20 }, { option: 4, multiplier: 3 },
+  { option: null, multiplier: 1 }, { option: 0, multiplier: 5 }, { option: 1, multiplier: 2 },
+  { option: 1, multiplier: 10 }, { option: 3, multiplier: 10 }, { option: 6, multiplier: 3 },
+  { option: 6, multiplier: 20 }, { option: 0, multiplier: 5 }, { option: 2, multiplier: 2 },
+  { option: 2, multiplier: 10 }, { option: 5, multiplier: 20 }, { option: 5, multiplier: 3 },
+  { option: null, multiplier: 1 }, { option: 0, multiplier: 5 }, { option: 1, multiplier: 2 },
+]
+
+function chooseSharedTarget() {
+  // Multiplayer is deliberately fair by physical light: every one of the 24
+  // track cells has exactly the same chance. Solo mode keeps its tuned table.
+  return Math.floor(Math.random() * SHARED_OUTCOMES.length)
+}

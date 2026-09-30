@@ -1,3 +1,5 @@
+import { spendMemberCoinsOptimistic } from './member-client'
+
 export const COIN_BALANCE_STORAGE_KEY = 'game-adventure-coin-balance'
 export const COIN_BALANCE_EVENT = 'game-adventure-coin-balance-change'
 export const MAX_COIN_BALANCE = 99_999
@@ -56,6 +58,17 @@ export function addCoinBalance(amount: number) {
     // Rewards remain available for the current visit when storage is unavailable.
   }
 
+  return next
+}
+
+export function setCoinBalance(amount: number) {
+  const next = Math.min(MAX_COIN_BALANCE, Math.max(0, Math.floor(Number(amount) || 0)))
+  try {
+    window.localStorage.setItem(COIN_BALANCE_STORAGE_KEY, String(next))
+    window.dispatchEvent(new CustomEvent(COIN_BALANCE_EVENT, { detail: next }))
+  } catch {
+    // Keep the current page usable when browser storage is unavailable.
+  }
   return next
 }
 
@@ -139,8 +152,26 @@ export function consumeRandomGameCoinMultiplier(gameId: string) {
 export function spendCoinBalance(amount: number) {
   const cost = Math.max(0, Math.floor(amount))
   const current = readCoinBalance()
-  if (cost === 0 || current < cost) return false
+  if (cost === 0) return true
+  const browserCost = Math.min(current, cost)
+  const memberCost = cost - browserCost
+  if (memberCost > 0 && !spendMemberCoinsOptimistic(memberCost)) return false
 
+  const next = current - browserCost
+  try {
+    window.localStorage.setItem(COIN_BALANCE_STORAGE_KEY, String(next))
+    window.dispatchEvent(new CustomEvent(COIN_BALANCE_EVENT, { detail: next }))
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function spendBrowserCoinBalance(amount: number) {
+  const cost = Math.max(0, Math.floor(amount))
+  const current = readCoinBalance()
+  if (cost === 0) return true
+  if (current < cost) return false
   const next = current - cost
   try {
     window.localStorage.setItem(COIN_BALANCE_STORAGE_KEY, String(next))

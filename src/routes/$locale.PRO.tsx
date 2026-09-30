@@ -10,6 +10,9 @@ import { getPlatformLabel } from '#/lib/platform-label'
 import { getThemeAsset, themePlatformLabel } from '#/lib/k-team'
 import { SWITCH_LIBRARY_GAMES } from '#/lib/switch-library'
 import { PSP_LIBRARY_GAMES } from '#/lib/psp-library'
+import { PspLikeButton } from '#/components/psp-like-button'
+import { MemberAccountButton } from '#/components/member-account'
+import { useMemberSession } from '#/lib/member-client'
 import {
   CoinRewardPopup,
   CoinRankBadge,
@@ -150,9 +153,9 @@ function ThemeMode() {
   const [retry, setRetry] = useState(0)
   const [gameIndex, setGameIndex] = useState(0)
   const [showcaseIndex, setShowcaseIndex] = useState(0)
-  const [showcaseVideoFailed, setShowcaseVideoFailed] = useState(false)
   const [pageVisible, setPageVisible] = useState(true)
   const coinRewards = useHomeCoinRewards()
+  const memberSession = useMemberSession()
   const [dailyCheckIn, setDailyCheckIn] = useState({ completed: false, streak: 0 })
   const [fullscreen, setFullscreen] = useState(false)
   const [preferredMode, setPreferredMode] = useState(false)
@@ -163,7 +166,6 @@ function ThemeMode() {
   const lastWheel = useRef(0)
   const touchY = useRef(0)
   const navigationAudio = useRef<HTMLAudioElement | null>(null)
-  const showcaseQueue = useRef<Array<number>>([])
   const platform = platforms[selected]
   const allGames = platform?.name === 'all-games'
   const favoritesPlatform = platform?.name === 'theme-favorites'
@@ -214,28 +216,10 @@ function ThemeMode() {
     coinRewards.addCoins(streak * 10)
   }
 
-  const advanceShowcase = useCallback(() => {
-    const games = result?.games || []
-    if (games.length < 2) return
-    setShowcaseIndex(current => {
-      if (showcaseQueue.current.length === 0) {
-        showcaseQueue.current = createShowcaseQueue(games, current)
-      }
-      return showcaseQueue.current.shift() ?? current
-    })
-  }, [result?.games])
-
   useEffect(() => {
     const games = result?.games || []
-    const queue = createShowcaseQueue(games)
-    const first = queue.shift() ?? 0
-    showcaseQueue.current = queue
-    setShowcaseIndex(first)
-  }, [platform?.name, result])
-
-  useEffect(() => {
-    setShowcaseVideoFailed(false)
-  }, [activeGame?._id, activeGame?.url_slug])
+    setShowcaseIndex(selectDailyShowcaseIndex(games, platform?.name || 'all-games'))
+  }, [platform?.name, result?.games])
 
   useEffect(() => {
     const updateVisibility = () => setPageVisible(document.visibilityState === 'visible')
@@ -250,14 +234,6 @@ function ThemeMode() {
       window.removeEventListener('pageshow', restoreVisiblePage)
     }
   }, [])
-
-  useEffect(() => {
-    if (inLibrary || !activeGame || !pageVisible) return
-    const hasVideo = Boolean(!showcaseVideoFailed && activeGame.game_video && /\.(mp4|webm)(\?|$)/i.test(activeGame.game_video))
-    if (hasVideo) return
-    const timer = window.setTimeout(advanceShowcase, 10000)
-    return () => window.clearTimeout(timer)
-  }, [activeGame, advanceShowcase, inLibrary, pageVisible, showcaseVideoFailed])
 
   useEffect(() => {
     const syncFavorites = () => setFavoriteGames(readFavoriteGames())
@@ -527,9 +503,9 @@ function ThemeMode() {
           </section>
           <div className="kt-scene" key={platform.name}>
             {asset.console ? <>
-              <div className={`kt-machine-video ${centeredCollectionPreview ? 'is-centered' : ''} ${!preciselyCenteredPlatform && centeredCollectionPreview ? 'is-nudged-left' : ''} ${atariPlatform ? 'is-atari' : ''} ${gbaPlatform ? 'is-gba' : ''} ${sega32xPlatform ? 'is-sega32x' : ''}`} style={{ ...box(asset.videoPosition, asset.videoSize), ...(gbaPlatform ? { height: `calc(${asset.videoSize[1] * 100}% + 3px)` } : {}), ...(sega32xPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 5px)` } : {}), ...(virtualBoyPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 40px)` } : {}) }}><GamePreview game={activeGame} onEnded={advanceShowcase} onVideoError={() => setShowcaseVideoFailed(true)} playing={pageVisible} /></div>
+              <div className={`kt-machine-video ${centeredCollectionPreview ? 'is-centered' : ''} ${!preciselyCenteredPlatform && centeredCollectionPreview ? 'is-nudged-left' : ''} ${atariPlatform ? 'is-atari' : ''} ${gbaPlatform ? 'is-gba' : ''} ${sega32xPlatform ? 'is-sega32x' : ''}`} style={{ ...box(asset.videoPosition, asset.videoSize), ...(gbaPlatform ? { height: `calc(${asset.videoSize[1] * 100}% + 3px)` } : {}), ...(sega32xPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 5px)` } : {}), ...(virtualBoyPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 40px)` } : {}) }}><GamePreview game={activeGame} playing={pageVisible} /></div>
               <img className="kt-console" src={getLosslessThemeImage(asset.console)} decoding="async" fetchPriority="high" alt="" style={box(asset.consolePosition, asset.consoleSize)} />
-            </> : <div className="kt-fallback-preview"><GamePreview game={activeGame} onEnded={advanceShowcase} onVideoError={() => setShowcaseVideoFailed(true)} playing={pageVisible} /></div>}
+            </> : <div className="kt-fallback-preview"><GamePreview game={activeGame} playing={pageVisible} /></div>}
           </div>
           <div className="kt-platform-info">
             <dl>
@@ -601,7 +577,7 @@ function ThemeMode() {
                 >
                   <span className="kt-game-number">{String((page - 1) * 24 + index + 1).padStart(3, '0')}</span>
                   <ThemeGameCardPreview game={game} eager={index < 6} />
-                  <strong>{game.name}</strong>
+                  <strong className={pspPlatform ? 'kt-psp-title-line' : undefined}><span>{game.name}</span>{pspPlatform ? <PspLikeButton className="kt-psp-like" gameId={id} locale={lang} /> : null}</strong>
                   {(switchPlatform || pspPlatform) ? <small className="kt-game-meta">{formatThemeLibraryCardMeta(game)}</small> : null}
                 </a>
                 {allGames && <button className={`kt-favorite ${favorite ? 'is-favorite' : ''}`} aria-label={english ? (favorite ? 'Remove from favorites' : 'Add to favorites') : (favorite ? '取消收藏' : '收藏游戏')} aria-pressed={favorite} onClick={() => toggleFavorite(game)}>{favorite ? '♥' : '♡'}</button>}
@@ -614,7 +590,8 @@ function ThemeMode() {
           <div className="kt-footer-brand">
             <a href={`/${lang}#classic`} aria-label={layoutCopy.siteName}><img src="/logo.png" alt="" /><span className="kt-footer-title"><strong>{layoutCopy.siteName}</strong><small>{layoutCopy.siteSlogan}</small></span></a>
             <HomeCoinBag balance={coinRewards.balance} lang={lang} onOpen={() => {}} />
-            <CoinRankBadge balance={coinRewards.balance} compact lang={lang} />
+            <MemberAccountButton locale={lang} />
+            {memberSession ? <CoinRankBadge balance={memberSession.coinBalance} compact lang={lang} /> : null}
             <Link className="kt-footer-shortcut" to="/$locale/platform/$platformId" params={{ locale: lang, platformId: 'coin' }} hash="PRO">{getThemeFooterCopy(lang).coinMode}</Link>
             <Link className="kt-footer-shortcut" to="/$locale/original-games" params={{ locale: lang }} hash="PRO">{getOriginalGamesTitle(lang)}</Link>
           </div>
@@ -882,27 +859,14 @@ function readRecentGamesForTheme() {
   }
 }
 
-function createShowcaseQueue(games: Array<PublicGame>, avoidFirst = -1) {
-  const shuffle = (indices: Array<number>) => {
-    const next = [...indices]
-    for (let index = next.length - 1; index > 0; index -= 1) {
-      const target = Math.floor(Math.random() * (index + 1))
-      ;[next[index], next[target]] = [next[target], next[index]]
-    }
-    return next
-  }
-  const videos: Array<number> = []
-  const images: Array<number> = []
-  games.forEach((game, index) => {
-    const target = game.game_video && /\.(mp4|webm)(\?|$)/i.test(game.game_video) ? videos : images
-    target.push(index)
-  })
-  const queue = [...shuffle(videos), ...shuffle(images)]
-  if (queue.length > 1 && queue[0] === avoidFirst) {
-    const replacement = queue.findIndex(index => index !== avoidFirst)
-    if (replacement > 0) [queue[0], queue[replacement]] = [queue[replacement], queue[0]]
-  }
-  return queue
+function selectDailyShowcaseIndex(games: Array<PublicGame>, platformName: string) {
+  if (games.length === 0) return 0
+  const videos = games
+    .map((game, index) => ({ game, index }))
+    .filter(({ game }) => Boolean(game.game_video && /\.(mp4|webm)(\?|$)/i.test(game.game_video)))
+  const candidates = videos.length > 0 ? videos : games.map((game, index) => ({ game, index }))
+  const dayKey = getLocalDateKey(new Date())
+  return candidates[Math.abs(hashThemeLibraryId(`${dayKey}:${platformName}`)) % candidates.length]?.index ?? 0
 }
 
 function getOptimizedThemeBackground(background: string) {

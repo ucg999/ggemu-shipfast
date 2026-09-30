@@ -69,12 +69,20 @@
 .kt-game-cover video{width:100%;height:100%;object-fit:cover}
 .kt-version{flex:none;white-space:nowrap;color:#ffffffa8;font-size:.85em;letter-spacing:0}
 .kt-footer .kt-footer-brand .coin-rank-badge{gap:0}
+.kt-footer-brand>button{min-height:30px!important;height:30px!important;width:auto!important;display:grid!important;grid-auto-flow:column;place-items:center;gap:5px;padding:4px 8px!important;border:1px solid #ffffff32!important;border-radius:4px!important;color:#fff!important;background:#ffffff0d!important;white-space:nowrap}
+.kt-footer-brand>button:hover{background:#ffffff18!important;border-color:#ffffff62!important}.kt-footer-brand>button span{display:block!important;max-width:72px;font-size:9px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kt-library-top .kt-library-archive{flex:none}
 @media(max-width:1000px) and (orientation:landscape){.kt-library-top .kt-library-archive{padding:3px 4px;font-size:8px}}
 .kt-footer-help{display:flex;flex-direction:column;align-items:center;justify-self:center;line-height:1.25;color:#fff}.kt-footer-help strong{font-size:11px;white-space:nowrap}.kt-footer-help small{margin-top:2px;font-size:10px;color:#ffffffc7;white-space:nowrap}.kt-check-in{display:flex;min-height:30px;align-items:center;padding:5px 11px;border:1px solid #ffffff32;border-radius:4px;background:#ffffff0d;color:#fff;cursor:pointer}.kt-check-in:disabled{cursor:default;opacity:.5}
 @media(max-width:1000px) and (orientation:landscape){.kt-footer-brand .coin-rank-badge{gap:2px}.kt-footer-brand .coin-rank-badge img{width:clamp(22px,7dvh,30px);height:clamp(22px,7dvh,30px)}.kt-footer-brand .coin-rank-badge small{font-size:clamp(5px,1.45dvh,7px);white-space:nowrap}.kt-footer-brand .coin-rank-badge strong{font-size:clamp(6px,1.8dvh,9px)}.kt-check-in{min-height:23px;padding:2px 5px;font-size:7px}.kt-footer-help strong{font-size:8px}.kt-footer-help small{font-size:6px}}
 @media(max-width:800px) and (orientation:landscape),(max-height:430px) and (orientation:landscape){.kt-footer-brand .coin-rank-badge img{width:clamp(18px,6.2dvh,24px);height:clamp(18px,6.2dvh,24px)}.kt-footer-brand .coin-rank-badge small{font-size:clamp(4px,1.25dvh,6px)}.kt-footer-brand .coin-rank-badge strong{font-size:clamp(5px,1.55dvh,7px)}.kt-check-in{min-height:clamp(18px,5.8dvh,22px);padding:1px clamp(3px,.8vw,5px);font-size:clamp(5px,1.65dvh,7px)}}
+@media(max-width:1000px) and (orientation:landscape){.kt-footer-brand>button{min-height:22px!important;height:22px!important;padding:1px 4px!important;font-size:7px!important}.kt-footer-brand>button span{max-width:44px;font-size:6px!important}}
 @media(max-width:800px) and (orientation:landscape),(max-height:430px) and (orientation:landscape){.kt-footer .kt-footer-help{position:absolute;left:50%;bottom:50%;display:flex;max-width:38vw;transform:translate(-50%,50%);line-height:1.15;text-align:center;pointer-events:none}.kt-footer .kt-footer-help strong{font-size:clamp(5px,1.45dvh,7px)}.kt-footer .kt-footer-help small{margin-top:1px;font-size:clamp(5px,1.45dvh,7px)}}
+
+/* Keep the console-mode coin count compact and centered inside the coin box. */
+.kt-footer-brand [data-coin-box] .coin-box-count-blink{display:grid;width:18px;height:18px;box-sizing:border-box;place-items:center;padding:0;border-width:1px;font-size:7px;line-height:1;letter-spacing:-.06em;text-align:center}
+@media(max-width:1000px) and (orientation:landscape){.kt-footer-brand [data-coin-box] .coin-box-count-blink{width:12px;height:12px;font-size:4px}}
+@media(max-width:800px) and (orientation:landscape),(max-height:430px) and (orientation:landscape){.kt-footer-brand [data-coin-box] .coin-box-count-blink{width:10px;height:10px;font-size:3.5px}}
 
 /* Match the standard PSP and Switch library card typography. */
 .kt-game-select.kt-download-card{background:#fff;color:#000;padding:0}

@@ -30,6 +30,7 @@ import { Route as LocaleCoinChallengeRouteImport } from './routes/$locale.coin-c
 import { Route as LocaleDealsRouteImport } from './routes/$locale.deals'
 import { Route as LocaleGhostHunterRouteImport } from './routes/$locale.ghost-hunter'
 import { Route as LocaleLiveRouteImport } from './routes/$locale.live'
+import { Route as LocaleLuckyGrandSlamRouteImport } from './routes/$locale.lucky-grand-slam'
 import { Route as LocaleOriginalGamesRouteImport } from './routes/$locale.original-games'
 import { Route as LocalePlayMyRomRouteImport } from './routes/$locale.play-my-rom'
 import { Route as LocalePrivacyPolicyRouteImport } from './routes/$locale.privacy-policy'
@@ -38,7 +39,11 @@ import { Route as LocaleRedBlueArenaRouteImport } from './routes/$locale.red-blu
 import { Route as LocaleSearchRouteImport } from './routes/$locale.search'
 import { Route as LocaleTermsOfServiceRouteImport } from './routes/$locale.terms-of-service'
 import { Route as LocaleThemeModeRouteImport } from './routes/$locale.theme-mode'
+import { Route as ApiCoinChallengeCommunityRouteImport } from './routes/api.coin-challenge-community'
+import { Route as ApiCoinRankingsRouteImport } from './routes/api.coin-rankings'
 import { Route as ApiLocaleSuggestionRouteImport } from './routes/api/locale-suggestion'
+import { Route as ApiMemberRouteImport } from './routes/api.member'
+import { Route as ApiPspLikesRouteImport } from './routes/api.psp-likes'
 import { Route as ApiShareImageRouteImport } from './routes/api/share-image'
 import { Route as GamesGameIdRouteImport } from './routes/games/$gameId'
 import { Route as LocaleBlogBlogIdRouteImport } from './routes/$locale.blog.$blogId'
@@ -46,6 +51,7 @@ import { Route as LocaleCollectionsCollectionIdRouteImport } from './routes/$loc
 import { Route as LocaleGamesGameIdRouteImport } from './routes/$locale.games.$gameId'
 import { Route as LocalePlatformPlatformIdRouteImport } from './routes/$locale.platform.$platformId'
 import { Route as LocaleRankingsRankingIdRouteImport } from './routes/$locale.rankings.$rankingId'
+import { Route as LocaleRankingsCoinsRouteImport } from './routes/$locale.rankings.coins'
 import { Route as UsernameArticleStatusidRouteImport } from './routes/$username/article/$statusid'
 import { Route as UsernameStatusStatusidRouteImport } from './routes/$username/status/$statusid'
 import { Route as GamesGameIdPlayRouteImport } from './routes/games/$gameId/play'
@@ -159,6 +165,11 @@ const LocaleLiveRoute = LocaleLiveRouteImport.update({
   path: '/live',
   getParentRoute: () => LocaleRoute,
 } as any)
+const LocaleLuckyGrandSlamRoute = LocaleLuckyGrandSlamRouteImport.update({
+  id: '/lucky-grand-slam',
+  path: '/lucky-grand-slam',
+  getParentRoute: () => LocaleRoute,
+} as any)
 const LocaleOriginalGamesRoute = LocaleOriginalGamesRouteImport.update({
   id: '/original-games',
   path: '/original-games',
@@ -199,9 +210,30 @@ const LocaleThemeModeRoute = LocaleThemeModeRouteImport.update({
   path: '/theme-mode',
   getParentRoute: () => LocaleRoute,
 } as any)
+const ApiCoinChallengeCommunityRoute =
+  ApiCoinChallengeCommunityRouteImport.update({
+    id: '/api/coin-challenge-community',
+    path: '/api/coin-challenge-community',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiCoinRankingsRoute = ApiCoinRankingsRouteImport.update({
+  id: '/api/coin-rankings',
+  path: '/api/coin-rankings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiLocaleSuggestionRoute = ApiLocaleSuggestionRouteImport.update({
   id: '/api/locale-suggestion',
   path: '/api/locale-suggestion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMemberRoute = ApiMemberRouteImport.update({
+  id: '/api/member',
+  path: '/api/member',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPspLikesRoute = ApiPspLikesRouteImport.update({
+  id: '/api/psp-likes',
+  path: '/api/psp-likes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiShareImageRoute = ApiShareImageRouteImport.update({
@@ -239,6 +271,11 @@ const LocalePlatformPlatformIdRoute =
 const LocaleRankingsRankingIdRoute = LocaleRankingsRankingIdRouteImport.update({
   id: '/rankings/$rankingId',
   path: '/rankings/$rankingId',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleRankingsCoinsRoute = LocaleRankingsCoinsRouteImport.update({
+  id: '/rankings/coins',
+  path: '/rankings/coins',
   getParentRoute: () => LocaleRoute,
 } as any)
 const UsernameArticleStatusidRoute = UsernameArticleStatusidRouteImport.update({
@@ -300,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/$locale/deals': typeof LocaleDealsRoute
   '/$locale/ghost-hunter': typeof LocaleGhostHunterRoute
   '/$locale/live': typeof LocaleLiveRoute
+  '/$locale/lucky-grand-slam': typeof LocaleLuckyGrandSlamRoute
   '/$locale/original-games': typeof LocaleOriginalGamesRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
@@ -308,7 +346,11 @@ export interface FileRoutesByFullPath {
   '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/$locale/theme-mode': typeof LocaleThemeModeRoute
+  '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
+  '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
+  '/api/member': typeof ApiMemberRoute
+  '/api/psp-likes': typeof ApiPspLikesRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale/': typeof LocaleIndexRoute
@@ -317,6 +359,7 @@ export interface FileRoutesByFullPath {
   '/$locale/games/$gameId': typeof LocaleGamesGameIdRouteWithChildren
   '/$locale/platform/$platformId': typeof LocalePlatformPlatformIdRoute
   '/$locale/rankings/$rankingId': typeof LocaleRankingsRankingIdRoute
+  '/$locale/rankings/coins': typeof LocaleRankingsCoinsRoute
   '/$username/article/$statusid': typeof UsernameArticleStatusidRoute
   '/$username/status/$statusid': typeof UsernameStatusStatusidRoute
   '/games/$gameId/play': typeof GamesGameIdPlayRoute
@@ -345,6 +388,7 @@ export interface FileRoutesByTo {
   '/$locale/deals': typeof LocaleDealsRoute
   '/$locale/ghost-hunter': typeof LocaleGhostHunterRoute
   '/$locale/live': typeof LocaleLiveRoute
+  '/$locale/lucky-grand-slam': typeof LocaleLuckyGrandSlamRoute
   '/$locale/original-games': typeof LocaleOriginalGamesRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
@@ -353,7 +397,11 @@ export interface FileRoutesByTo {
   '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/$locale/theme-mode': typeof LocaleThemeModeRoute
+  '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
+  '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
+  '/api/member': typeof ApiMemberRoute
+  '/api/psp-likes': typeof ApiPspLikesRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale': typeof LocaleIndexRoute
@@ -362,6 +410,7 @@ export interface FileRoutesByTo {
   '/$locale/games/$gameId': typeof LocaleGamesGameIdRouteWithChildren
   '/$locale/platform/$platformId': typeof LocalePlatformPlatformIdRoute
   '/$locale/rankings/$rankingId': typeof LocaleRankingsRankingIdRoute
+  '/$locale/rankings/coins': typeof LocaleRankingsCoinsRoute
   '/$username/article/$statusid': typeof UsernameArticleStatusidRoute
   '/$username/status/$statusid': typeof UsernameStatusStatusidRoute
   '/games/$gameId/play': typeof GamesGameIdPlayRoute
@@ -392,6 +441,7 @@ export interface FileRoutesById {
   '/$locale/deals': typeof LocaleDealsRoute
   '/$locale/ghost-hunter': typeof LocaleGhostHunterRoute
   '/$locale/live': typeof LocaleLiveRoute
+  '/$locale/lucky-grand-slam': typeof LocaleLuckyGrandSlamRoute
   '/$locale/original-games': typeof LocaleOriginalGamesRoute
   '/$locale/play-my-rom': typeof LocalePlayMyRomRoute
   '/$locale/privacy-policy': typeof LocalePrivacyPolicyRoute
@@ -400,7 +450,11 @@ export interface FileRoutesById {
   '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/$locale/theme-mode': typeof LocaleThemeModeRoute
+  '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
+  '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
+  '/api/member': typeof ApiMemberRoute
+  '/api/psp-likes': typeof ApiPspLikesRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale/': typeof LocaleIndexRoute
@@ -409,6 +463,7 @@ export interface FileRoutesById {
   '/$locale/games/$gameId': typeof LocaleGamesGameIdRouteWithChildren
   '/$locale/platform/$platformId': typeof LocalePlatformPlatformIdRoute
   '/$locale/rankings/$rankingId': typeof LocaleRankingsRankingIdRoute
+  '/$locale/rankings/coins': typeof LocaleRankingsCoinsRoute
   '/$username/article/$statusid': typeof UsernameArticleStatusidRoute
   '/$username/status/$statusid': typeof UsernameStatusStatusidRoute
   '/games/$gameId/play': typeof GamesGameIdPlayRoute
@@ -440,6 +495,7 @@ export interface FileRouteTypes {
     | '/$locale/deals'
     | '/$locale/ghost-hunter'
     | '/$locale/live'
+    | '/$locale/lucky-grand-slam'
     | '/$locale/original-games'
     | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
@@ -448,7 +504,11 @@ export interface FileRouteTypes {
     | '/$locale/search'
     | '/$locale/terms-of-service'
     | '/$locale/theme-mode'
+    | '/api/coin-challenge-community'
+    | '/api/coin-rankings'
     | '/api/locale-suggestion'
+    | '/api/member'
+    | '/api/psp-likes'
     | '/api/share-image'
     | '/games/$gameId'
     | '/$locale/'
@@ -457,6 +517,7 @@ export interface FileRouteTypes {
     | '/$locale/games/$gameId'
     | '/$locale/platform/$platformId'
     | '/$locale/rankings/$rankingId'
+    | '/$locale/rankings/coins'
     | '/$username/article/$statusid'
     | '/$username/status/$statusid'
     | '/games/$gameId/play'
@@ -485,6 +546,7 @@ export interface FileRouteTypes {
     | '/$locale/deals'
     | '/$locale/ghost-hunter'
     | '/$locale/live'
+    | '/$locale/lucky-grand-slam'
     | '/$locale/original-games'
     | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
@@ -493,7 +555,11 @@ export interface FileRouteTypes {
     | '/$locale/search'
     | '/$locale/terms-of-service'
     | '/$locale/theme-mode'
+    | '/api/coin-challenge-community'
+    | '/api/coin-rankings'
     | '/api/locale-suggestion'
+    | '/api/member'
+    | '/api/psp-likes'
     | '/api/share-image'
     | '/games/$gameId'
     | '/$locale'
@@ -502,6 +568,7 @@ export interface FileRouteTypes {
     | '/$locale/games/$gameId'
     | '/$locale/platform/$platformId'
     | '/$locale/rankings/$rankingId'
+    | '/$locale/rankings/coins'
     | '/$username/article/$statusid'
     | '/$username/status/$statusid'
     | '/games/$gameId/play'
@@ -531,6 +598,7 @@ export interface FileRouteTypes {
     | '/$locale/deals'
     | '/$locale/ghost-hunter'
     | '/$locale/live'
+    | '/$locale/lucky-grand-slam'
     | '/$locale/original-games'
     | '/$locale/play-my-rom'
     | '/$locale/privacy-policy'
@@ -539,7 +607,11 @@ export interface FileRouteTypes {
     | '/$locale/search'
     | '/$locale/terms-of-service'
     | '/$locale/theme-mode'
+    | '/api/coin-challenge-community'
+    | '/api/coin-rankings'
     | '/api/locale-suggestion'
+    | '/api/member'
+    | '/api/psp-likes'
     | '/api/share-image'
     | '/games/$gameId'
     | '/$locale/'
@@ -548,6 +620,7 @@ export interface FileRouteTypes {
     | '/$locale/games/$gameId'
     | '/$locale/platform/$platformId'
     | '/$locale/rankings/$rankingId'
+    | '/$locale/rankings/coins'
     | '/$username/article/$statusid'
     | '/$username/status/$statusid'
     | '/games/$gameId/play'
@@ -569,7 +642,11 @@ export interface RootRouteChildren {
   SitemapPagesDotxmlRoute: typeof SitemapPagesDotxmlRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   XRoute: typeof XRoute
+  ApiCoinChallengeCommunityRoute: typeof ApiCoinChallengeCommunityRoute
+  ApiCoinRankingsRoute: typeof ApiCoinRankingsRoute
   ApiLocaleSuggestionRoute: typeof ApiLocaleSuggestionRoute
+  ApiMemberRoute: typeof ApiMemberRoute
+  ApiPspLikesRoute: typeof ApiPspLikesRoute
   ApiShareImageRoute: typeof ApiShareImageRoute
   GamesGameIdRoute: typeof GamesGameIdRouteWithChildren
   UsernameArticleStatusidRoute: typeof UsernameArticleStatusidRoute
@@ -725,6 +802,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleLiveRouteImport
       parentRoute: typeof LocaleRoute
     }
+    '/$locale/lucky-grand-slam': {
+      id: '/$locale/lucky-grand-slam'
+      path: '/lucky-grand-slam'
+      fullPath: '/$locale/lucky-grand-slam'
+      preLoaderRoute: typeof LocaleLuckyGrandSlamRouteImport
+      parentRoute: typeof LocaleRoute
+    }
     '/$locale/original-games': {
       id: '/$locale/original-games'
       path: '/original-games'
@@ -781,11 +865,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleThemeModeRouteImport
       parentRoute: typeof LocaleRoute
     }
+    '/api/coin-challenge-community': {
+      id: '/api/coin-challenge-community'
+      path: '/api/coin-challenge-community'
+      fullPath: '/api/coin-challenge-community'
+      preLoaderRoute: typeof ApiCoinChallengeCommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/coin-rankings': {
+      id: '/api/coin-rankings'
+      path: '/api/coin-rankings'
+      fullPath: '/api/coin-rankings'
+      preLoaderRoute: typeof ApiCoinRankingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/locale-suggestion': {
       id: '/api/locale-suggestion'
       path: '/api/locale-suggestion'
       fullPath: '/api/locale-suggestion'
       preLoaderRoute: typeof ApiLocaleSuggestionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/member': {
+      id: '/api/member'
+      path: '/api/member'
+      fullPath: '/api/member'
+      preLoaderRoute: typeof ApiMemberRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/psp-likes': {
+      id: '/api/psp-likes'
+      path: '/api/psp-likes'
+      fullPath: '/api/psp-likes'
+      preLoaderRoute: typeof ApiPspLikesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/share-image': {
@@ -835,6 +947,13 @@ declare module '@tanstack/react-router' {
       path: '/rankings/$rankingId'
       fullPath: '/$locale/rankings/$rankingId'
       preLoaderRoute: typeof LocaleRankingsRankingIdRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/rankings/coins': {
+      id: '/$locale/rankings/coins'
+      path: '/rankings/coins'
+      fullPath: '/$locale/rankings/coins'
+      preLoaderRoute: typeof LocaleRankingsCoinsRouteImport
       parentRoute: typeof LocaleRoute
     }
     '/$username/article/$statusid': {
@@ -922,6 +1041,7 @@ interface LocaleRouteChildren {
   LocaleDealsRoute: typeof LocaleDealsRoute
   LocaleGhostHunterRoute: typeof LocaleGhostHunterRoute
   LocaleLiveRoute: typeof LocaleLiveRoute
+  LocaleLuckyGrandSlamRoute: typeof LocaleLuckyGrandSlamRoute
   LocaleOriginalGamesRoute: typeof LocaleOriginalGamesRoute
   LocalePlayMyRomRoute: typeof LocalePlayMyRomRoute
   LocalePrivacyPolicyRoute: typeof LocalePrivacyPolicyRoute
@@ -935,6 +1055,7 @@ interface LocaleRouteChildren {
   LocaleGamesGameIdRoute: typeof LocaleGamesGameIdRouteWithChildren
   LocalePlatformPlatformIdRoute: typeof LocalePlatformPlatformIdRoute
   LocaleRankingsRankingIdRoute: typeof LocaleRankingsRankingIdRoute
+  LocaleRankingsCoinsRoute: typeof LocaleRankingsCoinsRoute
   LocaleDealsSteamSteamAppIdRoute: typeof LocaleDealsSteamSteamAppIdRoute
   LocalePlatformPspGameIdRoute: typeof LocalePlatformPspGameIdRoute
   LocalePlatformSwitchGameIdRoute: typeof LocalePlatformSwitchGameIdRoute
@@ -950,6 +1071,7 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleDealsRoute: LocaleDealsRoute,
   LocaleGhostHunterRoute: LocaleGhostHunterRoute,
   LocaleLiveRoute: LocaleLiveRoute,
+  LocaleLuckyGrandSlamRoute: LocaleLuckyGrandSlamRoute,
   LocaleOriginalGamesRoute: LocaleOriginalGamesRoute,
   LocalePlayMyRomRoute: LocalePlayMyRomRoute,
   LocalePrivacyPolicyRoute: LocalePrivacyPolicyRoute,
@@ -963,6 +1085,7 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleGamesGameIdRoute: LocaleGamesGameIdRouteWithChildren,
   LocalePlatformPlatformIdRoute: LocalePlatformPlatformIdRoute,
   LocaleRankingsRankingIdRoute: LocaleRankingsRankingIdRoute,
+  LocaleRankingsCoinsRoute: LocaleRankingsCoinsRoute,
   LocaleDealsSteamSteamAppIdRoute: LocaleDealsSteamSteamAppIdRoute,
   LocalePlatformPspGameIdRoute: LocalePlatformPspGameIdRoute,
   LocalePlatformSwitchGameIdRoute: LocalePlatformSwitchGameIdRoute,
@@ -995,7 +1118,11 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapPagesDotxmlRoute: SitemapPagesDotxmlRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   XRoute: XRoute,
+  ApiCoinChallengeCommunityRoute: ApiCoinChallengeCommunityRoute,
+  ApiCoinRankingsRoute: ApiCoinRankingsRoute,
   ApiLocaleSuggestionRoute: ApiLocaleSuggestionRoute,
+  ApiMemberRoute: ApiMemberRoute,
+  ApiPspLikesRoute: ApiPspLikesRoute,
   ApiShareImageRoute: ApiShareImageRoute,
   GamesGameIdRoute: GamesGameIdRouteWithChildren,
   UsernameArticleStatusidRoute: UsernameArticleStatusidRoute,

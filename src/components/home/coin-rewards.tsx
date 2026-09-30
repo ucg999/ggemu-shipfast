@@ -246,7 +246,10 @@ export function CoinRankBadge({ balance, lang, compact = false }: { balance: num
       <img className={compact ? 'h-10 w-10 object-contain' : 'h-9 w-9 object-contain sm:h-12 sm:w-12'} decoding="async" src={rank.icon} alt="" />
       <span className="-ml-0.5 flex min-w-0 flex-col leading-tight">
         <small className={compact ? 'text-[9px] text-white/70' : 'text-[8px] text-white/65 sm:text-[10px]'}>{levelLabel}</small>
-        <strong className={compact ? 'whitespace-nowrap text-[11px]' : 'whitespace-nowrap text-xs sm:text-base'}>{names[rank.id]}</strong>
+        <span className={`member-rank-cycle relative block overflow-hidden ${compact ? 'h-[14px] min-w-12' : 'h-4 min-w-14 sm:h-5 sm:min-w-16'}`}>
+          <strong className={`member-rank-name absolute inset-0 whitespace-nowrap ${compact ? 'text-[11px]' : 'text-xs sm:text-base'}`}>{names[rank.id]}</strong>
+          <strong className={`member-rank-coins absolute inset-0 whitespace-nowrap text-amber-500 ${compact ? 'text-[10px]' : 'text-[11px] sm:text-sm'}`}>币 {balance}</strong>
+        </span>
       </span>
     </div>
   )

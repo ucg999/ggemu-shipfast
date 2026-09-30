@@ -1,6 +1,7 @@
 import type { PublicGame } from './ggemu'
 
-// Adding a game here also opts it into the Arcade Mahjong play-time charge rule.
+// Adding a game here opts it into the Arcade Mahjong mode. With charging disabled,
+// these games use the same play-time coin reward calculation as standard games.
 export const ARCADE_MAHJONG_GAME_QUERIES = [
   '明星三缺一',
   '幸运满贯',

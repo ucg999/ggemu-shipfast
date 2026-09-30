@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS psp_game_likes (
+  game_id TEXT PRIMARY KEY,
+  like_count INTEGER NOT NULL DEFAULT 0 CHECK (like_count >= 0),
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

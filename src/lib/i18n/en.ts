@@ -240,7 +240,7 @@ export const enHomeFaqs = {
     {
       question: 'How can I earn coins?',
       answer:
-        'You can earn coins from daily check-ins, the daily challenge, playing standard games, watching other players, and collecting coins that appear on pages. The moving coin on the home page is always worth 1 coin. Inner-page coins award a random 1–10 coins and appear site-wide once every 30 minutes. Standard gameplay settles rewards every 5 minutes, with a maximum of 100 coins per session. Your check-in streak and rank multiply coins earned from playing and watching only; they do not multiply collected page coins. Arcade Mahjong is free to play and does not deduct coins.',
+        'You can earn coins from daily check-ins, the daily challenge, playing games, watching other players, and collecting coins that appear on pages. The moving coin on the home page is always worth 1 coin. Inner-page coins award a random 1–10 coins and appear site-wide once every 30 minutes. Standard games and Arcade Mahjong settle rewards every 5 minutes, with a maximum of 100 coins per session. Your check-in streak and rank multiply coins earned from playing and watching only; they do not multiply collected page coins. Arcade Mahjong is free to play and does not deduct coins.',
     },
     {
       question: 'Can I play these retro games online?',

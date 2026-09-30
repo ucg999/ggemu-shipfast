@@ -626,3 +626,40 @@ body {
 .psp-library-cover::after{position:absolute;z-index:-1;right:-6%;bottom:-7px;left:-6%;height:15px;content:"";background:linear-gradient(to bottom,rgba(15,23,42,.7),rgba(15,23,42,0));clip-path:polygon(30% 0,70% 0,100% 100%,0 100%);filter:blur(3px);transform:perspective(70px) rotateX(48deg);transform-origin:top center;pointer-events:none}
 .psp-library-card:hover .psp-library-cover{transform:translateY(-1px)}
 .psp-library-info{margin-top:.55rem;border-radius:.65rem}
+.psp-like-wrap{position:relative;z-index:6;display:inline-flex;flex:none}
+.psp-like-button{display:inline-flex;align-items:center;gap:.2rem;border:0;background:transparent;padding:0;color:#111827;font-size:.68rem;font-weight:300;line-height:1;box-shadow:none;transition:transform .15s ease}
+.psp-like-button i{color:#111827;font-size:.78rem}
+.psp-like-button.is-liked i{color:#dc2626}
+.psp-like-button:hover{transform:scale(1.06)}
+.psp-like-button:disabled{opacity:.72}
+.psp-like-notice{position:absolute;right:0;bottom:calc(100% + .35rem);width:max-content;max-width:12rem;border-radius:.4rem;background:rgba(15,23,42,.92);padding:.35rem .5rem;color:white;font-size:.65rem;white-space:nowrap;box-shadow:0 4px 15px rgba(0,0,0,.22)}
+.psp-library-like{margin-left:.1rem}
+.kt-psp-title-line{display:flex!important;min-width:0;align-items:center;gap:.32rem}
+.kt-psp-title-line>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kt-psp-like .psp-like-button{font-size:.62rem;font-weight:300}
+.kt-psp-like .psp-like-button i{font-size:.72rem}
+html:not([data-member-logged-in='true']) .coin-rank-badge {
+  display: none !important;
+}
+
+.member-rank-name,
+.member-rank-coins {
+  animation: member-rank-name-cycle 5s ease-in-out infinite;
+}
+
+.member-rank-coins {
+  animation-name: member-rank-coin-cycle;
+  opacity: 0;
+}
+
+@keyframes member-rank-name-cycle {
+  0%, 42% { opacity: 1; transform: translateY(0); }
+  50%, 92% { opacity: 0; transform: translateY(-35%); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes member-rank-coin-cycle {
+  0%, 42% { opacity: 0; transform: translateY(35%); }
+  50%, 92% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(35%); }
+}

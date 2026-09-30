@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { SiteLayout } from '#/components/site-layout'
+import { PspLikeButton } from '#/components/psp-like-button'
 import { SwitchLibraryImage } from '#/components/switch-library-image'
 import type { Locale } from '#/lib/ggemu'
 import { SWITCH_LIBRARY_GAMES } from '#/lib/switch-library'
@@ -185,7 +186,8 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                 ? game.boxCover
                 : undefined
               return (
-              <Link className={`group ${platform === 'psp' ? 'psp-library-card' : 'overflow-hidden rounded-xl bg-base-100'}`} key={game.id} params={{ gameId: game.id, locale: lang }} to={platform === 'psp' ? '/$locale/platform/psp/$gameId' : '/$locale/platform/switch/$gameId'}>
+              <article className={`group relative ${platform === 'psp' ? 'psp-library-card' : 'overflow-hidden rounded-xl bg-base-100'}`} key={game.id}>
+              <Link params={{ gameId: game.id, locale: lang }} to={platform === 'psp' ? '/$locale/platform/psp/$gameId' : '/$locale/platform/switch/$gameId'}>
                 <SwitchLibraryImage
                   clickable
                   className={`${platform === 'psp' ? 'psp-library-cover aspect-[353/600] [&_img]:object-contain' : 'aspect-[616/353] transition group-hover:scale-[1.02]'} w-full`}
@@ -194,12 +196,13 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                   transparent={platform === 'psp'}
                 />
                 <div className={platform === 'psp' ? 'psp-library-info bg-base-100 p-2 sm:py-2.5' : 'p-2.5 sm:py-4'}>
-                  <h2 className={`truncate font-semibold text-base-content ${platform === 'psp' ? 'text-xs sm:text-sm' : 'text-sm sm:text-lg'}`} title={game.title}>{game.title}</h2>
+                  <h2 className={`flex min-w-0 items-center gap-1 font-semibold text-base-content ${platform === 'psp' ? 'text-xs sm:text-sm' : 'text-sm sm:text-lg'}`} title={game.title}><span className="truncate">{game.title}</span>{platform === 'psp' ? <PspLikeButton className="psp-library-like" gameId={game.id} locale={lang} /> : null}</h2>
                   <div className={`overflow-hidden text-ellipsis whitespace-nowrap text-base-content/55 ${platform === 'psp' ? 'mt-1 text-[8px] sm:text-[10px]' : 'mt-1.5 text-[9px] sm:mt-2 sm:text-xs'}`}>
                     <span>{platformName}</span>{' · '}<span>{getCardLanguage('cardLanguage' in game ? String(game.cardLanguage ?? game.language) : game.language, lang)}</span>{' · '}<span>{'cardGenre' in game ? String(game.cardGenre ?? game.genre.split('、')[0]) : game.genre.split('、')[0]}</span>{' · '}<time>{game.releaseDate}</time>
                   </div>
                 </div>
               </Link>
+              </article>
               )
             })}
           </div>

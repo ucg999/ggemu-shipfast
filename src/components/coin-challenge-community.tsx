@@ -1,0 +1,169 @@
+import { useEffect, useRef, useState } from 'react'
+
+import { getMemberSession, useMemberSession } from '#/lib/member-client'
+
+export type RankableCoinWin = { amount: number; id: string }
+export type CoinChallengeRoomPlayer = { memberId: string; displayName: string; bets: Array<number>; mode: string; credits: number; inRoom: boolean; seat: number | null; isBot?: boolean }
+
+type CommunityData = {
+  chat: Array<{ id: number; memberId: string; displayName: string; message: string; createdAt: string }>
+  leaderboard: Array<{ rank: number; displayName: string; score: number; updatedAt: string }>
+  online: number
+  players: Array<CoinChallengeRoomPlayer>
+  room: { joined: boolean; count: number; capacity: number }
+  sharedRound?: { token: string; startsAt: number; target: number } | null
+}
+
+const EMPTY_DATA: CommunityData = { chat: [], leaderboard: [], online: 0, players: [], room: { joined: false, count: 0, capacity: 6 } }
+
+export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, onRoomChange, onRoomPlayers, recentWins }: { bets: Array<number>; credits: number; gameMode: 'normal' | 'gold' | 'ghost'; onOpenChange?: (open: boolean) => void; onRoomChange?: (joined: boolean) => void; onRoomPlayers?: (players: Array<CoinChallengeRoomPlayer>) => void; recentWins: Array<RankableCoinWin> }) {
+  const member = useMemberSession()
+  const [isOpen, setIsOpen] = useState(false)
+  const [tab, setTab] = useState<'chat' | 'rank'>('chat')
+  const [data, setData] = useState<CommunityData>(EMPTY_DATA)
+  const [message, setMessage] = useState('')
+  const [status, setStatus] = useState('')
+  const [busy, setBusy] = useState(false)
+  const chatEndRef = useRef<HTMLDivElement>(null)
+  const uploadedWinsRef = useRef<Set<string>>(new Set())
+
+  async function refresh() {
+    const response = await fetch('/api/coin-challenge-community', { credentials: 'same-origin' })
+    if (!response.ok) return
+    const next = await response.json() as CommunityData
+    setData(next)
+    onRoomChange?.(next.room?.joined ?? false)
+    const visiblePlayers = next.players.filter(player => player.inRoom)
+    if (next.room?.joined && next.sharedRound?.token) visiblePlayers.push(createRoundBot(next.sharedRound.token))
+    onRoomPlayers?.(visiblePlayers)
+  }
+
+  useEffect(() => { void getMemberSession() }, [])
+  useEffect(() => {
+    if (!member) return
+    const updatePresence = () => void post({ action: 'presence', bets, credits, mode: gameMode }).then(() => void refresh()).catch(() => {})
+    updatePresence()
+    const timer = window.setInterval(updatePresence, 5_000)
+    return () => window.clearInterval(timer)
+  }, [bets, credits, gameMode, isOpen, member?.id])
+  useEffect(() => { void refresh() }, [])
+  useEffect(() => {
+    if (!isOpen) return
+    void refresh()
+    const timer = window.setInterval(() => void refresh(), 4_000)
+    return () => window.clearInterval(timer)
+  }, [isOpen])
+  useEffect(() => {
+    if (!data.room.joined) return
+    const timer = window.setInterval(() => void refresh(), 800)
+    return () => window.clearInterval(timer)
+  }, [data.room.joined])
+  useEffect(() => {
+    if (tab === 'chat') chatEndRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [data.chat, tab])
+  useEffect(() => {
+    if (!member) return
+    const pending = recentWins.filter(item => item.amount > 0 && !uploadedWinsRef.current.has(item.id))
+    if (!pending.length) return
+    pending.forEach(win => uploadedWinsRef.current.add(win.id))
+    void Promise.all(pending.map(win =>
+      post({ action: 'score', score: win.amount, submissionKey: `${member.id}:${win.id}` })
+        .catch(() => uploadedWinsRef.current.delete(win.id)),
+    )).then(() => { if (isOpen && tab === 'rank') void refresh() })
+  }, [member?.id, recentWins, isOpen, tab])
+
+  async function post(body: Record<string, unknown>) {
+    const response = await fetch('/api/coin-challenge-community', {
+      method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    })
+    const result = await response.json() as { error?: string }
+    if (!response.ok) throw new Error(result.error || '操作失败')
+  }
+
+  async function sendMessage(event: React.FormEvent) {
+    event.preventDefault()
+    if (!member || !message.trim() || busy) return
+    setBusy(true); setStatus('')
+    try {
+      await post({ action: 'chat', message })
+      setMessage('')
+      await refresh()
+    } catch (error) { setStatus(error instanceof Error ? error.message : '发送失败') }
+    finally { setBusy(false) }
+  }
+
+  async function changeRoom(action: 'room-join' | 'room-leave') {
+    if (!member || busy) {
+      setStatus('请先登录玩家账号再加入联机房间')
+      setIsOpen(true); onOpenChange?.(true)
+      return
+    }
+    setBusy(true); setStatus('')
+    try {
+      await post({ action })
+      await refresh()
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : '房间操作失败')
+      setIsOpen(true); onOpenChange?.(true)
+    } finally { setBusy(false) }
+  }
+
+  return (
+    <>
+      <div className="absolute right-20 top-4 z-30 flex items-center gap-1.5 sm:right-28 sm:top-5">
+        <button className="rounded-full border border-emerald-300/40 bg-emerald-500/90 px-2.5 py-2 text-xs font-bold text-white shadow-lg disabled:opacity-35" disabled={busy || data.room.joined} onClick={() => void changeRoom('room-join')} type="button">加入</button>
+        <button className="rounded-full border border-white/20 bg-black/75 px-2.5 py-2 text-xs font-semibold text-white shadow-lg disabled:opacity-35" disabled={busy || !data.room.joined} onClick={() => void changeRoom('room-leave')} type="button">退出</button>
+        <button className="flex items-center gap-1.5 rounded-full border border-white/20 bg-black/75 px-3 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur hover:bg-black" onClick={() => { setIsOpen(true); onOpenChange?.(true) }} type="button">
+          <i className="ri-group-line" /> {data.room.joined ? <>1号房 {data.room.count}/{data.room.capacity}</> : '聊天大厅'}
+        </button>
+      </div>
+      {isOpen ? (
+        <aside className="fixed inset-x-3 bottom-3 top-3 z-[190] mx-auto flex max-w-md flex-col overflow-hidden rounded-3xl border border-white/15 bg-[#111]/95 text-white shadow-2xl backdrop-blur sm:absolute sm:bottom-0 sm:left-[calc(100%+12px)] sm:right-auto sm:top-0 sm:w-[clamp(260px,24vw,340px)]">
+          <header className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
+            <div className="min-w-0 flex-1"><strong>金币娱乐游戏大厅</strong><p className="text-xs text-white/50">在线玩家 {data.online} 人</p></div>
+            <button aria-label="关闭" className="grid h-8 w-8 place-items-center rounded-full hover:bg-white/10" onClick={() => { setIsOpen(false); onOpenChange?.(false) }} type="button">✕</button>
+          </header>
+          <div className="grid grid-cols-2 border-b border-white/10 p-1">
+            <button className={`rounded-xl py-2 text-sm ${tab === 'chat' ? 'bg-amber-400 font-bold text-black' : 'text-white/70'}`} onClick={() => setTab('chat')} type="button">聊天</button>
+            <button className={`rounded-xl py-2 text-sm ${tab === 'rank' ? 'bg-amber-400 font-bold text-black' : 'text-white/70'}`} onClick={() => setTab('rank')} type="button">金币排行榜</button>
+          </div>
+          {tab === 'chat' ? (
+            <>
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
+                {data.room.joined ? <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-2"><p className="mb-2 text-[11px] font-semibold text-emerald-300">1号房正在下注 · 由1P点击开始</p><div className="space-y-2">{[...data.players.filter(player => player.inRoom), ...(data.sharedRound?.token ? [createRoundBot(data.sharedRound.token)] : [])].sort((left, right) => (left.seat ?? 99) - (right.seat ?? 99)).map(player => { const total = player.bets.reduce((sum, value) => sum + value, 0); return <div className="rounded-xl bg-black/30 px-2.5 py-2" key={player.memberId}><div className="flex items-center justify-between gap-2 text-xs"><b className="truncate"><span className={`mr-1 ${player.isBot ? 'text-violet-300' : 'text-emerald-300'}`}>{player.isBot ? 'AI' : `${player.seat ?? '?'}P`}</span>{player.displayName}</b><span className="text-white/50">共 {total}</span></div><BetCells bets={player.bets} /></div> })}</div></div> : null}
+                {data.chat.length ? data.chat.map(item => <div key={item.id}><div className="text-[11px] text-amber-300">{item.displayName}</div><p className="mt-0.5 break-words rounded-2xl rounded-tl-sm bg-white/10 px-3 py-2 text-sm">{item.message}</p></div>) : <p className="py-10 text-center text-sm text-white/40">还没有消息，来打个招呼吧</p>}
+                <div ref={chatEndRef} />
+              </div>
+              <form className="border-t border-white/10 p-3" onSubmit={sendMessage}>
+                {member ? <div className="flex gap-2"><input className="h-10 min-w-0 flex-1 rounded-full border border-white/15 bg-white/10 px-4 text-sm outline-none focus:border-amber-300" maxLength={120} onChange={event => setMessage(event.target.value)} placeholder="和正在玩的玩家聊聊…" value={message} /><button className="h-10 rounded-full bg-amber-400 px-4 text-sm font-bold text-black disabled:opacity-50" disabled={busy || !message.trim()} type="submit">发送</button></div> : <p className="text-center text-sm text-white/60">登录玩家账号后即可参与聊天</p>}
+              </form>
+            </>
+          ) : (
+            <div className="min-h-0 flex-1 overflow-y-auto p-3">
+              <div className="space-y-1">
+                {data.leaderboard.map(item => <div className="grid grid-cols-[36px_1fr_auto] items-center rounded-xl bg-white/5 px-3 py-2 text-sm" key={`${item.rank}-${item.displayName}`}><b className={item.rank <= 3 ? 'text-amber-300' : 'text-white/40'}>#{item.rank}</b><span className="truncate">{item.displayName}</span><strong>{item.score}</strong></div>)}
+                {!data.leaderboard.length ? <p className="py-10 text-center text-sm text-white/40">暂时还没有挑战成绩</p> : null}
+              </div>
+              <p className="mt-4 text-center text-xs text-white/45">按本游戏单局获得的金币数自动排名，0 金币不计入</p>
+            </div>
+          )}
+          {status ? <p className="border-t border-white/10 px-4 py-2 text-center text-xs text-amber-300">{status}</p> : null}
+        </aside>
+      ) : null}
+    </>
+  )
+}
+
+function BetCells({ bets }: { bets: Array<number> }) {
+  return <div className="mt-1 grid grid-cols-8 gap-1">{bets.map((_, displayIndex) => { const optionIndex = bets.length - 1 - displayIndex; const value = bets[optionIndex] ?? 0; return <span className={`grid aspect-square place-items-center rounded text-[10px] ${value ? 'bg-amber-400 font-bold text-black' : 'bg-white/5 text-white/25'}`} key={optionIndex}>{value}</span> })}</div>
+}
+
+function createRoundBot(token: string): CoinChallengeRoomPlayer {
+  const source = token.replace(/-/g, '').slice(-8) || '0'
+  const option = Number.parseInt(source, 16) % 8
+  return {
+    memberId: 'round-test-bot', displayName: '测试人机', mode: 'normal', credits: 1,
+    inRoom: true, seat: null, isBot: true,
+    bets: Array.from({ length: 8 }, (_, index) => index === option ? 1 : 0),
+  }
+}

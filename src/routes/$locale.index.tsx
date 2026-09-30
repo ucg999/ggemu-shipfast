@@ -29,7 +29,7 @@ import {
   getPokiDailyLayoutSeed,
 } from '#/components/home/poki-like-template'
 import { SidenavHomeTemplate } from '#/components/home/sidenav-template'
-import { HOME_BLOG_POST_LIMIT, SearchForm } from '#/components/home/shared'
+import { HOME_BLOG_POST_LIMIT } from '#/components/home/shared'
 import type { Filters, HomeLoaderData } from '#/components/home/types'
 import { TwoColumnHomeTemplate } from '#/components/home/two-column-template'
 import { SiteLayout } from '#/components/site-layout'
@@ -474,11 +474,6 @@ function LocalizedHomePage() {
         hideFooterOnMobile
         locale={lang}
         onOpenSearch={() => window.location.assign(`/${lang}/search`)}
-        topContent={
-          <div className="hidden w-full lg:block">
-            <SearchForm {...templateProps} mode="default" />
-          </div>
-        }
       >
         {initialResult.loadFailed || initialResult.videoLoadFailed ? (
           <div role="status" className="mx-4 my-3 flex items-center justify-between gap-3 rounded-lg bg-base-200 p-3 text-sm">
