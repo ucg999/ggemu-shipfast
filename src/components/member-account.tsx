@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import type { Locale } from '#/lib/ggemu'
 import { readCoinBalance, spendBrowserCoinBalance } from '#/lib/coin-wallet'
@@ -29,6 +29,16 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
   const [remainingToday, setRemainingToday] = useState(999)
   const copy = getMemberCopy(locale)
 
+  const refreshAccount = useCallback(async () => {
+    try {
+      const account = await getMemberSession()
+      setMember(account.member)
+      setRemainingToday(account.remainingToday)
+    } catch {
+      // A temporary network failure must not sign the player out locally.
+    }
+  }, [])
+
   useEffect(() => {
     let active = true
     void getMemberSession().then((account) => {
@@ -43,6 +53,19 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
       window.removeEventListener(MEMBER_SESSION_EVENT, handleSession)
     }
   }, [])
+
+  useEffect(() => {
+    if (!member) return
+    const refresh = () => void refreshAccount()
+    const timer = isOpen ? window.setInterval(refresh, 5_000) : undefined
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refresh)
+    return () => {
+      if (timer) window.clearInterval(timer)
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', refresh)
+    }
+  }, [isOpen, member?.id, refreshAccount])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -111,7 +134,7 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
       <button
         aria-label={member ? `${copy.member}: ${member.displayName}` : copy.login}
         className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-black/25 text-sm text-current transition hover:border-black lg:h-9 lg:w-auto lg:grid-flow-col lg:gap-1.5 lg:px-3"
-        onClick={() => { setSecurityOpen(false); setIsOpen(true) }}
+        onClick={() => { setSecurityOpen(false); setIsOpen(true); void refreshAccount() }}
         title={member ? member.displayName : copy.login}
         type="button"
       >
@@ -156,8 +179,8 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
                   </button>
                   {securityOpen ? (
                     <div className="border-t border-black/10 p-3 pt-1">
-                      <input className="mt-2 h-10 w-full rounded-xl border border-black/20 px-3 text-sm" onChange={event => setCurrentPassword(event.target.value)} placeholder={copy.currentPassword} type="password" value={currentPassword} />
-                      <input className="mt-2 h-10 w-full rounded-xl border border-black/20 px-3 text-sm" minLength={8} onChange={event => setNewPassword(event.target.value)} placeholder={copy.newPassword} type="password" value={newPassword} />
+                      <PasswordInput className="mt-2 h-10 w-full rounded-xl border border-black/20 px-3 pr-10 text-sm" onChange={setCurrentPassword} placeholder={copy.currentPassword} value={currentPassword} />
+                      <PasswordInput className="mt-2 h-10 w-full rounded-xl border border-black/20 px-3 pr-10 text-sm" minLength={8} onChange={setNewPassword} placeholder={copy.newPassword} value={newPassword} />
                       <div className="mt-2 grid grid-cols-2 gap-2">
                         <button className="h-10 rounded-xl bg-amber-300 text-xs font-semibold text-black disabled:opacity-40" disabled={busy || !currentPassword || newPassword.length < 8} onClick={() => void handleSecurity('change-password')} type="button">{copy.changePassword}</button>
                         <button className="h-10 rounded-xl border border-black/20 text-xs font-semibold disabled:opacity-40" disabled={busy || !currentPassword} onClick={() => void handleSecurity('new-recovery-code')} type="button">{copy.newRecoveryCode}</button>
@@ -177,7 +200,7 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
                 </div>
                 <form className="mt-5 space-y-3" onSubmit={handleSubmit}>
                   <label className="block text-sm font-medium">{copy.username}<input autoComplete="username" className="mt-1 h-11 w-full rounded-xl border border-black/20 px-3 outline-none focus:border-black" maxLength={24} minLength={3} onChange={(event) => setUsername(event.target.value)} required value={username} /></label>
-                  <label className="block text-sm font-medium">{mode === 'reset-password' ? copy.newPassword : copy.password}<input autoComplete={mode === 'register' || mode === 'reset-password' ? 'new-password' : 'current-password'} className="mt-1 h-11 w-full rounded-xl border border-black/20 px-3 outline-none focus:border-black" maxLength={72} minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} /></label>
+                  <label className="block text-sm font-medium">{mode === 'reset-password' ? copy.newPassword : copy.password}<PasswordInput autoComplete={mode === 'register' || mode === 'reset-password' ? 'new-password' : 'current-password'} className="mt-1 h-11 w-full rounded-xl border border-black/20 px-3 pr-10 outline-none focus:border-black" maxLength={72} minLength={8} onChange={setPassword} required value={password} /></label>
                   {mode === 'reset-password' ? <label className="block text-sm font-medium">{copy.recoveryCode}<input className="mt-1 h-11 w-full rounded-xl border border-black/20 px-3 uppercase outline-none focus:border-black" onChange={event => setRecoveryCode(event.target.value)} required value={recoveryCode} /></label> : null}
                   {mode === 'register' ? <p className="text-xs text-black/50">{copy.separateHint}</p> : null}
                   {error ? <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
@@ -190,6 +213,26 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
         </div>
       ) : null}
     </>
+  )
+}
+
+function PasswordInput({ className, onChange, ...props }: {
+  className: string
+  onChange: (value: string) => void
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'className' | 'onChange' | 'type'>) {
+  const [visible, setVisible] = useState(false)
+  return (
+    <span className="relative block">
+      <input {...props} className={className} onChange={event => onChange(event.target.value)} type={visible ? 'text' : 'password'} />
+      <button
+        aria-label={visible ? '隐藏密码' : '显示密码'}
+        className="absolute right-1.5 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-base text-black/55 hover:bg-black/5 hover:text-black"
+        onClick={() => setVisible(value => !value)}
+        tabIndex={-1}
+        title={visible ? '隐藏密码' : '显示密码'}
+        type="button"
+      ><i aria-hidden="true" className={visible ? 'ri-eye-off-line' : 'ri-eye-line'} /></button>
+    </span>
   )
 }
 
