@@ -323,6 +323,14 @@ function LocalizedGameDetailPage() {
   const requiredCoinRank = getCoinModeGameRequiredRank(game)
   const minimumCoinBalance = getCoinModeGameMinimumBalance(game)
   const member = useMemberSession()
+  const normalizedGameName = game.name?.replaceAll(/\s+/g, '') ?? ''
+  const isLuckyFullHouse = normalizedGameName.includes('幸运满贯') || normalizedGameName.includes('幸運滿貫')
+  const isSuperGrandSlam2 = normalizedGameName.includes('超级大满贯2') || normalizedGameName.includes('超級大滿貫2')
+  const mahjongRateTip = isLuckyFullHouse
+    ? '提升胡牌率：进入游戏，按键盘 0 进入系统，按 D，再按 1 连输密码，再按 D，然后按 N 把机率调到最高，按 1 保存再退出就可以了。'
+    : isSuperGrandSlam2
+      ? '提升胡牌率：进入游戏，按键盘 0 进入系统，按 E，再按 1 连输密码，再按 C，然后按 N 把机率调到最高，按 0 保存再退出就可以了。'
+      : ''
 
   useEffect(() => {
     consumeRandomGameCoinMultiplier(gameId)
@@ -437,7 +445,14 @@ function LocalizedGameDetailPage() {
                   <Stat label={t.views} value={game.views_count ?? 0} />
                 </>
               ) : null}
-              <GameFavoriteButton gameId={gameId} locale={lang} name={game.name || gameId} cover={game.game_cover} platform={game.platform} className="mt-auto w-fit" />
+              <div className="mt-auto flex flex-col items-start gap-3">
+                {mahjongRateTip ? (
+                  <p className="max-w-2xl text-xs leading-relaxed text-base-content/65 sm:text-sm">
+                    {mahjongRateTip}
+                  </p>
+                ) : null}
+                <GameFavoriteButton gameId={gameId} locale={lang} name={game.name || gameId} cover={game.game_cover} platform={game.platform} className="w-fit" />
+              </div>
             </div>
             </> : null}
 

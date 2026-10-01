@@ -15,6 +15,7 @@ import { getOriginalGamesTitle } from '#/lib/original-games'
 import { CardScrollRow } from './card-scroll-row'
 import { CoinFruitCard } from '#/components/coin-fruit-card'
 import { RedBlueArenaCard } from '#/components/red-blue-arena-card'
+import { useMemberSession } from '#/lib/member-client'
 
 export const HOME_BLOG_POST_LIMIT = 4
 
@@ -85,6 +86,7 @@ export function HomeMostPlayedGamesSection({
 }) {
   const items = games.slice(0, mobile ? 4 : 6)
   const t = getI18n(lang).home
+  const member = useMemberSession()
 
   return (
     <section className="bg-base-100">
@@ -124,7 +126,7 @@ export function HomeMostPlayedGamesSection({
         <div className={mobile ? 'mt-1 grid grid-cols-2 gap-2' : 'mt-1 grid grid-cols-6 gap-2'}>
           {items.map((game, index) => {
             const gameId = game.url_slug || game._id || ''
-            const multiplier = getDailyCoinMultiplier(items, index)
+            const multiplier = member ? getDailyCoinMultiplier(items, index) : 1
 
             return (
               <Link

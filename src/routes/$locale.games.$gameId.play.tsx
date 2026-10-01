@@ -168,7 +168,12 @@ function LocalizedPlayGamePage() {
     playStartedAtRef.current = consumeGamePlayStartedAt(gameId)
     sessionCoinsRef.current = 0
     coinDepletedRef.current = false
-    coinMultiplierRef.current = getDailyGameCoinMultiplier(gameId)
+    coinMultiplierRef.current = 1
+    void getMemberSession().then(({ member }) => {
+      coinMultiplierRef.current = member ? getDailyGameCoinMultiplier(gameId) : 1
+    }).catch(() => {
+      coinMultiplierRef.current = 1
+    })
     recommendationsRequestedRef.current = false
     setRecommendations([])
     setRecommendationType('category')

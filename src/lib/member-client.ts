@@ -35,6 +35,10 @@ export function useMemberSession() {
   )
 }
 
+export function getCurrentMemberSession() {
+  return currentMember
+}
+
 export function useRequiredMemberAccess(enabled = true) {
   const member = useMemberSession()
   const [checked, setChecked] = useState(!enabled)

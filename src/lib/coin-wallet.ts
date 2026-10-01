@@ -1,4 +1,4 @@
-import { spendMemberCoinsOptimistic } from './member-client'
+import { getCurrentMemberSession, spendMemberCoinsOptimistic } from './member-client'
 
 export const COIN_BALANCE_STORAGE_KEY = 'game-adventure-coin-balance'
 export const COIN_BALANCE_EVENT = 'game-adventure-coin-balance-change'
@@ -85,8 +85,9 @@ export function hasCoinRank(requiredRank: CoinRankId, balance = readCoinBalance(
 
 export function addCoinReward(amount: number, maximumAward = MAX_COIN_BALANCE) {
   const current = readCoinBalance()
-  const rankMultiplier = getCoinRank(current).multiplier
-  const checkInMultiplier = getDailyCheckInMultiplier()
+  const isMember = Boolean(getCurrentMemberSession())
+  const rankMultiplier = isMember ? getCoinRank(current).multiplier : 1
+  const checkInMultiplier = isMember ? getDailyCheckInMultiplier() : 1
   const multiplier = rankMultiplier * checkInMultiplier
   const requested = calculateCappedCoinReward(amount, multiplier, maximumAward)
   const balance = requested > 0 ? addCoinBalance(requested) : current
@@ -128,6 +129,7 @@ export function pickRandomGameCoinMultiplier() {
 }
 
 export function prepareRandomGameCoinMultiplier() {
+  if (!getCurrentMemberSession()) return 1
   const multiplier = pickRandomGameCoinMultiplier()
   try {
     window.sessionStorage.setItem(PENDING_RANDOM_GAME_MULTIPLIER_KEY, String(multiplier))
@@ -138,7 +140,7 @@ export function prepareRandomGameCoinMultiplier() {
 }
 
 export function consumeRandomGameCoinMultiplier(gameId: string) {
-  if (!gameId) return 1
+  if (!gameId || !getCurrentMemberSession()) return 1
   try {
     const multiplier = Math.max(1, Math.min(20, Math.floor(Number(window.sessionStorage.getItem(PENDING_RANDOM_GAME_MULTIPLIER_KEY))) || 1))
     window.sessionStorage.removeItem(PENDING_RANDOM_GAME_MULTIPLIER_KEY)
@@ -183,7 +185,7 @@ export function spendBrowserCoinBalance(amount: number) {
 }
 
 export function setDailyGameCoinMultiplier(gameId: string, multiplier: number) {
-  if (!gameId || multiplier < 2) return
+  if (!gameId || multiplier < 2 || !getCurrentMemberSession()) return
   const safeMultiplier = Math.max(2, Math.min(20, Math.floor(multiplier)))
   const today = getLocalDateKey(new Date())
   const current = readDailyGameMultipliers()
@@ -200,6 +202,7 @@ export function setDailyGameCoinMultiplier(gameId: string, multiplier: number) {
 }
 
 export function getDailyGameCoinMultiplier(gameId: string) {
+  if (!getCurrentMemberSession()) return 1
   const current = readDailyGameMultipliers()
   if (current.date !== getLocalDateKey(new Date())) return 1
   return Math.max(1, Math.min(20, Math.floor(Number(current.games[gameId])) || 1))

@@ -166,7 +166,7 @@ export function DefaultHomeTemplate(
         const game = await loadGameDetail({ data: { id: gameId } })
         if (isHiddenHomeGame(game)) continue
         setRandomPopupGame(game)
-        setRandomPopupMultiplier(pickWeightedRandomCoinMultiplier())
+        setRandomPopupMultiplier(member ? pickWeightedRandomCoinMultiplier() : 1)
         const progress = completeDailyChallenge()
         if (progress.newlyCompleted) {
           onCoinsEarned?.(progress.streak * 10)
