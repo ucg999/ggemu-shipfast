@@ -6,15 +6,14 @@ import {
   getMemberSession,
   logoutMember,
   MEMBER_LOGIN_REQUEST_EVENT,
-  MEMBER_SESSION_EVENT,
   submitMemberCredentials,
   transferBrowserCoinsToMember,
   updateMemberPassword,
-  type MemberSession,
+  useMemberSession,
 } from '#/lib/member-client'
 
 export function MemberAccountButton({ locale }: { locale: Locale }) {
-  const [member, setMember] = useState<MemberSession | null>(null)
+  const member = useMemberSession()
   const [isOpen, setIsOpen] = useState(false)
   const [securityOpen, setSecurityOpen] = useState(false)
   const [mode, setMode] = useState<'login' | 'register' | 'reset-password'>('login')
@@ -33,7 +32,6 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
   const refreshAccount = useCallback(async () => {
     try {
       const account = await getMemberSession()
-      setMember(account.member)
       setRemainingToday(account.remainingToday)
     } catch {
       // A temporary network failure must not sign the player out locally.
@@ -44,14 +42,12 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
     let active = true
     void getMemberSession().then((account) => {
       if (!active) return
-      setMember(account.member)
       setRemainingToday(account.remainingToday)
-    }).catch(() => setMember(null))
-    const handleSession = (event: Event) => setMember((event as CustomEvent<MemberSession | null>).detail)
-    window.addEventListener(MEMBER_SESSION_EVENT, handleSession)
+    }).catch(() => {
+      // Keep the last known account visible while the service reconnects.
+    })
     return () => {
       active = false
-      window.removeEventListener(MEMBER_SESSION_EVENT, handleSession)
     }
   }, [])
 
@@ -84,7 +80,6 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
     setError('')
     try {
       const session = await submitMemberCredentials(mode, username, password, recoveryCode)
-      setMember(session.member)
       const account = await getMemberSession()
       setRemainingToday(account.remainingToday)
       setPassword('')
@@ -119,7 +114,6 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
     try {
       const result = await transferBrowserCoinsToMember(amount)
       if (!spendBrowserCoinBalance(result.transferred)) throw new Error(copy.browserInsufficient)
-      setMember(result.member)
       setRemainingToday(result.remainingToday)
       setTransferAmount('')
     } catch (cause) {
@@ -133,7 +127,6 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
     setBusy(true)
     try {
       await logoutMember()
-      setMember(null)
       setIsOpen(false)
     } finally {
       setBusy(false)

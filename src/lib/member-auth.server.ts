@@ -135,7 +135,17 @@ export async function getMemberFromRequest(request: Request) {
     WHERE s.id = ? AND s.expires_at > CURRENT_TIMESTAMP
   `).bind(tokenHash).first<Pick<MemberRow, 'id' | 'username' | 'display_name' | 'coin_balance' | 'player_number'>>()
   if (!row) return null
-  await memberDb().prepare('UPDATE member_sessions SET last_seen_at = CURRENT_TIMESTAMP WHERE id = ?').bind(tokenHash).run()
+  // Session reads must remain available even if this non-essential activity
+  // timestamp cannot be written. Throttling also avoids a database write on
+  // every route change, focus event and account-panel refresh.
+  try {
+    await memberDb().prepare(`
+      UPDATE member_sessions SET last_seen_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND last_seen_at < datetime('now', '-15 minutes')
+    `).bind(tokenHash).run()
+  } catch (error) {
+    console.warn('Unable to refresh member session activity', error instanceof Error ? error.message : error)
+  }
   return toMemberView(row)
 }
 

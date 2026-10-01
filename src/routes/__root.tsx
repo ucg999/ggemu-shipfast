@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   HeadContent,
   Outlet,
@@ -161,6 +161,16 @@ export const Route = createRootRoute({
 })
 
 function RootComponent() {
+  useEffect(() => {
+    // The login cookie is intentionally host-only. Keep every visitor on one
+    // canonical host so www and apex never appear to have different accounts.
+    if (window.location.hostname === 'www.ucg999.com') {
+      const canonicalUrl = new URL(window.location.href)
+      canonicalUrl.hostname = 'ucg999.com'
+      window.location.replace(canonicalUrl.toString())
+    }
+  }, [])
+
   return <Outlet />
 }
 

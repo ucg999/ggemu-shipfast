@@ -12,6 +12,7 @@ export type MemberSession = {
 }
 
 let currentMember: MemberSession | null = null
+let memberSessionRequest: Promise<{ member: MemberSession | null; remainingToday: number }> | null = null
 const memberListeners = new Set<() => void>()
 
 function publishMember(member: MemberSession | null) {
@@ -64,14 +65,21 @@ export function requestMemberLogin() {
 }
 
 export async function getMemberSession() {
-  const response = await fetch('/api/member', { credentials: 'same-origin' })
-  if (!response.ok) {
-    publishMember(null)
-    return { member: null, remainingToday: 999 }
-  }
-  const data = await response.json() as { member: MemberSession | null; remainingToday?: number }
-  publishMember(data.member)
-  return { member: data.member, remainingToday: data.remainingToday ?? 999 }
+  if (memberSessionRequest) return memberSessionRequest
+
+  memberSessionRequest = (async () => {
+    const response = await fetch('/api/member', { credentials: 'same-origin' })
+    if (!response.ok) throw new Error(`member_session_request_failed:${response.status}`)
+    const data = await response.json() as { member: MemberSession | null; remainingToday?: number }
+    // Only a successful response is authoritative. A network/database error must
+    // never turn a signed-in player into a guest in the browser.
+    publishMember(data.member)
+    return { member: data.member, remainingToday: data.remainingToday ?? 999 }
+  })().finally(() => {
+    memberSessionRequest = null
+  })
+
+  return memberSessionRequest
 }
 
 export async function submitMemberCredentials(action: 'login' | 'register' | 'reset-password', username: string, password: string, recoveryCode?: string) {

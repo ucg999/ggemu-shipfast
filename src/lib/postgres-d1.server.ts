@@ -102,6 +102,7 @@ function translateSql(source: string) {
   query = query
     .replace(/^insert\s+or\s+ignore\s+/i, 'INSERT ')
     .replace(/datetime\('now',\s*'-30 minutes'\)/gi, "CURRENT_TIMESTAMP - INTERVAL '30 minutes'")
+    .replace(/datetime\('now',\s*'-15 minutes'\)/gi, "CURRENT_TIMESTAMP - INTERVAL '15 minutes'")
     .replace(/datetime\('now',\s*'-1 year'\)/gi, "CURRENT_TIMESTAMP - INTERVAL '1 year'")
     .replace(/date\('now'\)/gi, 'CURRENT_DATE')
     .replace(/MAX\(score,\s*excluded\.score\)/gi, 'GREATEST(score, excluded.score)')
