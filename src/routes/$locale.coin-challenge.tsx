@@ -1025,11 +1025,9 @@ function CoinChallengePage() {
       if (handleStartRef.current(true, round.target)) {
         launchedSharedRoundRef.current = round.token
         pendingSharedLaunchRef.current = false
-        updateMachine((current) => ({
-          ...current,
-          bets: Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0),
-        }))
-        setShouldResetAllBets(false)
+        // Keep the visible wager until the light has stopped and the result is
+        // confirmed. Ordinary rounds clear in finishRound; special modes clear
+        // only when the whole mode exits.
         return
       }
       // A transfer/animation can briefly overlap the deadline. Keep the
@@ -1120,23 +1118,29 @@ function CoinChallengePage() {
       if (joinedRoom && forcedTarget !== undefined) {
         roundBets = Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0)
       } else {
-      if (gameMode !== 'normal') return false
-      if (machine.credits < 1) {
-        showCreditEmptyOnce()
-        return false
-      }
-      const randomOption = Math.floor(Math.random() * CHALLENGE_OPTION_COUNT)
-      roundBets = Array.from(
-        { length: CHALLENGE_OPTION_COUNT },
-        (_, index) => index === randomOption ? 1 : 0,
-      )
-      usedAutomaticBet = true
-      updateMachine((current) => ({
-        ...current,
-        bets: roundBets,
-        credits: Math.max(0, current.credits - 1),
-      }))
-      setShouldResetAllBets(false)
+        if (gameMode !== 'normal') {
+          // A room observer can enter a shared bonus mode without having placed
+          // a wager. Let the automatic rounds run to their exit instead of
+          // leaving the machine permanently locked in that mode.
+          roundBets = Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0)
+        } else {
+          if (machine.credits < 1) {
+            showCreditEmptyOnce()
+            return false
+          }
+          const randomOption = Math.floor(Math.random() * CHALLENGE_OPTION_COUNT)
+          roundBets = Array.from(
+            { length: CHALLENGE_OPTION_COUNT },
+            (_, index) => index === randomOption ? 1 : 0,
+          )
+          usedAutomaticBet = true
+          updateMachine((current) => ({
+            ...current,
+            bets: roundBets,
+            credits: Math.max(0, current.credits - 1),
+          }))
+          setShouldResetAllBets(false)
+        }
       }
     }
 
@@ -1247,6 +1251,13 @@ function CoinChallengePage() {
             setGameMode('normal')
             setModeRounds(0)
             setWinningLight(target)
+            if (joinedRoom) {
+              updateMachine((current) => ({
+                ...current,
+                bets: Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0),
+              }))
+              setShouldResetAllBets(false)
+            }
           } else {
             const option = outcome.option
             if (option === null) {
@@ -1368,6 +1379,14 @@ function CoinChallengePage() {
       setShouldResetAllBets(true)
       setIsSpinning(false)
       spinTimerRef.current = null
+      if (joinedRoom && gameMode === 'normal' &&
+        lightIndex !== BAR_50_LIGHT_INDEX && lightIndex !== BAR_25_LIGHT_INDEX) {
+        updateMachine((current) => ({
+          ...current,
+          bets: Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0),
+        }))
+        setShouldResetAllBets(false)
+      }
     }
 
     const runLuckyRounds = (
@@ -1489,6 +1508,13 @@ function CoinChallengePage() {
           } else {
             setShouldResetAllBets(true)
             setIsSpinning(false)
+            if (joinedRoom) {
+              updateMachine((current) => ({
+                ...current,
+                bets: Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0),
+              }))
+              setShouldResetAllBets(false)
+            }
             spinTimerRef.current = window.setTimeout(() => {
               setLuckyLitLights([])
               setSpecialCellEffect(null)

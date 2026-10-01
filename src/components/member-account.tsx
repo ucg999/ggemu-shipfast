@@ -5,6 +5,7 @@ import { readCoinBalance, spendBrowserCoinBalance } from '#/lib/coin-wallet'
 import {
   getMemberSession,
   logoutMember,
+  MEMBER_LOGIN_REQUEST_EVENT,
   MEMBER_SESSION_EVENT,
   submitMemberCredentials,
   transferBrowserCoinsToMember,
@@ -52,6 +53,16 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
       active = false
       window.removeEventListener(MEMBER_SESSION_EVENT, handleSession)
     }
+  }, [])
+
+  useEffect(() => {
+    const openLogin = () => {
+      setMode('login')
+      setError('')
+      setIsOpen(true)
+    }
+    window.addEventListener(MEMBER_LOGIN_REQUEST_EVENT, openLogin)
+    return () => window.removeEventListener(MEMBER_LOGIN_REQUEST_EVENT, openLogin)
   }, [])
 
   useEffect(() => {

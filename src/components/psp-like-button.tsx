@@ -27,6 +27,16 @@ function loadLikes() {
   return likesRequest
 }
 
+export function useGameLikeCounts() {
+  const [likes, setLikes] = useState<Record<string, number>>(() => cachedLikes ?? {})
+  useEffect(() => {
+    listeners.add(setLikes)
+    void loadLikes().then(setLikes).catch(() => {})
+    return () => { listeners.delete(setLikes) }
+  }, [])
+  return likes
+}
+
 export async function addPspGameLike(gameId: string) {
   const response = await fetch('/api/psp-likes', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gameId }) })
   const data = await response.json() as { error?: string; likeCount?: number; liked?: boolean; incremented?: boolean }

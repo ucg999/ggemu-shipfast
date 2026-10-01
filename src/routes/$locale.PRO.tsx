@@ -10,9 +10,9 @@ import { getPlatformLabel } from '#/lib/platform-label'
 import { getThemeAsset, themePlatformLabel } from '#/lib/k-team'
 import { SWITCH_LIBRARY_GAMES } from '#/lib/switch-library'
 import { PSP_LIBRARY_GAMES } from '#/lib/psp-library'
-import { PspLikeButton } from '#/components/psp-like-button'
+import { PspLikeButton, useGameLikeCounts } from '#/components/psp-like-button'
 import { MemberAccountButton } from '#/components/member-account'
-import { useMemberSession } from '#/lib/member-client'
+import { requestMemberLogin, useMemberSession } from '#/lib/member-client'
 import {
   CoinRewardPopup,
   CoinRankBadge,
@@ -156,6 +156,7 @@ function ThemeMode() {
   const [pageVisible, setPageVisible] = useState(true)
   const coinRewards = useHomeCoinRewards()
   const memberSession = useMemberSession()
+  const gameLikeCounts = useGameLikeCounts()
   const [dailyCheckIn, setDailyCheckIn] = useState({ completed: false, streak: 0 })
   const [fullscreen, setFullscreen] = useState(false)
   const [preferredMode, setPreferredMode] = useState(false)
@@ -310,7 +311,7 @@ function ThemeMode() {
       return
     }
     if (switchPlatform) {
-      const games = prepareThemeLibraryGames(SWITCH_LIBRARY_GAMES, 'switch', query, librarySearchField, librarySort, librarySortReverse, libraryRandomSeed, lang).map(game => ({
+      const games = prepareThemeLibraryGames(SWITCH_LIBRARY_GAMES, 'switch', query, librarySearchField, librarySort, librarySortReverse, libraryRandomSeed, lang, gameLikeCounts).map(game => ({
         _id: game.id,
         url_slug: game.id,
         name: game.title,
@@ -327,7 +328,7 @@ function ThemeMode() {
       return
     }
     if (pspPlatform) {
-      const games = prepareThemeLibraryGames(PSP_LIBRARY_GAMES, 'psp', query, librarySearchField, librarySort, librarySortReverse, libraryRandomSeed, lang).map(game => ({
+      const games = prepareThemeLibraryGames(PSP_LIBRARY_GAMES, 'psp', query, librarySearchField, librarySort, librarySortReverse, libraryRandomSeed, lang, gameLikeCounts).map(game => ({
         _id: game.id,
         url_slug: game.id,
         name: game.title,
@@ -378,7 +379,7 @@ function ThemeMode() {
         .finally(() => { if (!cancelled) setLoading(false) })
     }, query ? 220 : 0)
     return () => { cancelled = true; window.clearTimeout(timer) }
-  }, [platform, allGames, favoritesPlatform, lastPlayedPlatform, favoriteGames, switchPlatform, pspPlatform, lang, page, query, retry, sourcePlatforms, librarySearchField, librarySort, librarySortReverse, libraryRandomSeed])
+  }, [platform, allGames, favoritesPlatform, lastPlayedPlatform, favoriteGames, switchPlatform, pspPlatform, lang, page, query, retry, sourcePlatforms, librarySearchField, librarySort, librarySortReverse, libraryRandomSeed, gameLikeCounts])
 
   function toggleFavorite(game: PublicGame) {
     const id = game.url_slug || game._id
@@ -542,6 +543,12 @@ function ThemeMode() {
               href={switchPlatform ? 'https://www.kdocs.cn/l/cs8H4NUI4lC4' : 'https://www.kdocs.cn/l/coH3Z1VLgop3'}
               rel="noreferrer"
               target="_blank"
+              onClickCapture={(event) => {
+                if (memberSession) return
+                event.preventDefault()
+                setNotice(english ? 'Sign in to open the complete game archive.' : '登录玩家账号后才能打开全游戏档案')
+                requestMemberLogin()
+              }}
             >{switchPlatform ? (english ? 'Complete Switch Game Archive' : lang === 'zh-TW' ? 'Switch全遊戲檔案' : 'Switch全游戏档案') : (english ? 'Complete PSP Game Archive' : lang === 'zh-TW' ? 'PSP全遊戲檔案' : 'PSP全游戏档案')}</a> : null}
             {(switchPlatform || pspPlatform) ? <div className="kt-library-filters">
               {[...(pspPlatform ? [{ field: 'name' as const, label: lang === 'en' ? 'Game name' : lang === 'zh-TW' ? '遊戲名稱' : lang === 'ja' ? 'ゲーム名' : '游戏名称' }] : []), ...getThemeLibraryFilters(lang)].map(filter => <button
@@ -573,11 +580,19 @@ function ThemeMode() {
                   data-start-game
                   href={switchPlatform ? `/${lang}/platform/switch/${id}#PRO` : pspPlatform ? `/${lang}/platform/psp/${id}#PRO` : `/${lang}/games/${id}#PRO`}
                   onFocus={() => setGameIndex(index)}
-                  onClick={() => rememberGameDetailReturnPath(lang, `/${lang}/PRO?platform=${encodeURIComponent(getThemePlatformReturnKey(platform))}`)}
+                  onClickCapture={(event) => {
+                    if ((switchPlatform || pspPlatform) && !memberSession) {
+                      event.preventDefault()
+                      setNotice(english ? 'Sign in to open game details.' : '登录玩家账号后才能打开游戏详情')
+                      requestMemberLogin()
+                      return
+                    }
+                    rememberGameDetailReturnPath(lang, `/${lang}/PRO?platform=${encodeURIComponent(getThemePlatformReturnKey(platform))}`)
+                  }}
                 >
                   <span className="kt-game-number">{String((page - 1) * 24 + index + 1).padStart(3, '0')}</span>
                   <ThemeGameCardPreview game={game} eager={index < 6} />
-                  <strong className={pspPlatform ? 'kt-psp-title-line' : undefined}><span>{game.name}</span>{pspPlatform ? <PspLikeButton className="kt-psp-like" gameId={id} locale={lang} /> : null}</strong>
+                  <strong className={pspPlatform ? 'kt-psp-title-line' : undefined}><span>{game.name}</span>{(pspPlatform || switchPlatform) ? <PspLikeButton className={pspPlatform ? 'kt-psp-like' : ''} gameId={id} locale={lang} /> : null}</strong>
                   {(switchPlatform || pspPlatform) ? <small className="kt-game-meta">{formatThemeLibraryCardMeta(game)}</small> : null}
                 </a>
                 {allGames && <button className={`kt-favorite ${favorite ? 'is-favorite' : ''}`} aria-label={english ? (favorite ? 'Remove from favorites' : 'Add to favorites') : (favorite ? '取消收藏' : '收藏游戏')} aria-pressed={favorite} onClick={() => toggleFavorite(game)}>{favorite ? '♥' : '♡'}</button>}
@@ -675,6 +690,7 @@ function prepareThemeLibraryGames<T extends ThemeLibraryGame>(
   reverse: boolean,
   randomSeed: number,
   lang: ReturnType<typeof normalizeLocale>,
+  likeCounts: Record<string, number>,
 ) {
   const normalizedQuery = query.trim().toLocaleLowerCase()
   const games = library.filter(game => {
@@ -689,7 +705,7 @@ function prepareThemeLibraryGames<T extends ThemeLibraryGame>(
   return games.sort((left, right) => {
     let result = 0
     if (sort === 'name') result = left.title.localeCompare(right.title, lang, { numeric: true, sensitivity: 'base' })
-    else if (sort === 'popular') result = (right.popularity || 0) - (left.popularity || 0)
+    else if (sort === 'popular') result = (likeCounts[right.id] ?? 0) - (likeCounts[left.id] ?? 0) || (right.popularity || 0) - (left.popularity || 0)
     else if (sort === 'updatedAt') result = getThemeLibraryUpdateTime(platform, right) - getThemeLibraryUpdateTime(platform, left) || parseThemeLibraryDate(right.releaseDate) - parseThemeLibraryDate(left.releaseDate)
     else if (sort === 'random') return hashThemeLibraryId(`${left.id}:${randomSeed}`) - hashThemeLibraryId(`${right.id}:${randomSeed}`)
     else result = parseThemeLibraryDate(right.releaseDate) - parseThemeLibraryDate(left.releaseDate)

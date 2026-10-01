@@ -2,6 +2,7 @@ import ghostHunterStyles from '#/components/ghost-hunter.css?url'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { memo, useEffect, useRef, useState } from 'react'
 import { CoinRewardPopup } from '#/components/home/coin-rewards'
+import { CoinChallengeCommunity } from '#/components/coin-challenge-community'
 import { addCoinBalance, readCoinBalance } from '#/lib/coin-wallet'
 import type { PointerEvent } from 'react'
 import { SiteLayout } from '#/components/site-layout'
@@ -109,6 +110,7 @@ function GhostHunterPage() {
   const [zap, setZap] = useState(0)
   const [coinReward, setCoinReward] = useState(10)
   const [message, setMessage] = useState('把右侧模块拖进场景，点击模块旋转 90°。')
+  const [rankSubmission, setRankSubmission] = useState<{ id: string; score: number } | null>(null)
   const found = litGhosts(placed, level.ghosts)
   const foundKey = found.map(([x, y]) => `${x},${y}`).sort().join('|')
   const won = isLevelComplete(placed, level.ghosts)
@@ -260,6 +262,7 @@ function GhostHunterPage() {
       const nextBalance = addCoinBalance(GHOST_CLEAR_REWARD)
       setCoinReward(Math.max(0, nextBalance - previousBalance))
       setCleared(value => value + 1)
+      setRankSubmission({ id: `${level.id}-${Date.now()}`, score: cleared + 1 })
       setLightning(value => value + 1)
     }
     const audio = completionAudioRef.current
@@ -362,6 +365,7 @@ function GhostHunterPage() {
     onPointerCancel: () => { dragRef.current = null; setDrag(null) },
   })
   const game = <section ref={gameRef} className={`ghost-game mx-auto w-full max-w-6xl px-3 sm:px-6 ${embed === '1' ? 'ghost-game-embed' : ''}`}>
+      {embed === '1' ? <CoinChallengeCommunity bets={[]} channel="ghost-hunter" chatOnly credits={readCoinBalance()} gameMode="normal" leaderboardTitle="最高连续过关数" recentWins={[]} scoreSubmission={rankSubmission} /> : null}
       {embed !== '1' ? <div className="flex shrink-0 items-center justify-between gap-2">
         <div><Link to="/$locale/original-games" params={{ locale: lang }} className="text-sm text-base-content/60">← 原创游戏（内测版）</Link>
           <h1 className="text-xl font-black">幽灵捕手 <span className="text-sm font-normal text-base-content/60">关卡 {level.id}</span></h1></div>
@@ -373,7 +377,8 @@ function GhostHunterPage() {
             else setMessage('当前浏览器不支持系统全屏，游戏已铺满可用屏幕。')
           } catch { setMessage('未能进入系统全屏，游戏仍可正常操作。') }
         }}>全屏</button>
-        <button className="btn btn-sm" disabled={gameOver || won} onClick={() => { setCleared(0); setLightning(1); resetBoard() }}>重新开始</button>
+        <CoinChallengeCommunity bets={[]} channel="ghost-hunter" chatOnly inlineLauncher credits={readCoinBalance()} gameMode="normal" leaderboardTitle="最高连续过关数" recentWins={[]} scoreSubmission={rankSubmission} />
+        <button className="btn btn-sm" disabled={gameOver || won} onClick={() => { setCleared(0); setLightning(1); advanceLevel() }}>换一关</button>
         </div>
       </div> : null}
       {embed !== '1' ? <p className="shrink-0 text-xs text-base-content/70">拖动放置 · 点击旋转 90° · 拖出背景放回 · 光圈照到全部幽灵即可过关</p> : null}

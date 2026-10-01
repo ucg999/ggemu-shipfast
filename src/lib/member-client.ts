@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 
 export const MEMBER_SESSION_EVENT = 'ucg999-member-session-change'
+export const MEMBER_LOGIN_REQUEST_EVENT = 'ucg999-member-login-request'
 
 export type MemberSession = {
   id: string
@@ -31,6 +32,10 @@ export function useMemberSession() {
     () => currentMember,
     () => null,
   )
+}
+
+export function requestMemberLogin() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(MEMBER_LOGIN_REQUEST_EVENT))
 }
 
 export async function getMemberSession() {

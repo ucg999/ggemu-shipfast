@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { SiteLayout } from '#/components/site-layout'
-import { PspLikeButton } from '#/components/psp-like-button'
+import { PspLikeButton, useGameLikeCounts } from '#/components/psp-like-button'
 import { SwitchLibraryImage } from '#/components/switch-library-image'
 import type { Locale } from '#/lib/ggemu'
 import { SWITCH_LIBRARY_GAMES } from '#/lib/switch-library'
 import { PSP_LIBRARY_GAMES } from '#/lib/psp-library'
 import updates from '#/lib/library-updates.json'
+import { requestMemberLogin, useMemberSession } from '#/lib/member-client'
 
 export function SwitchDownloadLibrary({ lang }: { lang: Locale }) {
   return <DownloadLibrary lang={lang} platform="switch" />
@@ -16,6 +17,9 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
   const platformName = platform === 'psp' ? 'PSP' : 'Switch'
   const library = platform === 'psp' ? PSP_LIBRARY_GAMES : SWITCH_LIBRARY_GAMES
   const copy = { ...getCopy(lang), title: getCopy(lang).title.replace('Switch', platformName) }
+  const member = useMemberSession()
+  const likeCounts = useGameLikeCounts()
+  const [loginNotice, setLoginNotice] = useState('')
   const [sortField, setSortField] = useState<'random' | 'popular' | 'updatedAt' | 'releaseDate' | 'name'>('releaseDate')
   const [searchField, setSearchField] = useState<'genre' | 'publisher' | null>(null)
   const [draftField, setDraftField] = useState<'genre' | 'publisher' | null>(null)
@@ -56,7 +60,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
     return filtered.sort((a, b) => {
       let result = 0
       if (sortField === 'random') result = randomIds.indexOf(a.id) - randomIds.indexOf(b.id)
-      else if (sortField === 'popular') result = (b.popularity ?? 0) - (a.popularity ?? 0)
+      else if (sortField === 'popular') result = (likeCounts[b.id] ?? 0) - (likeCounts[a.id] ?? 0) || (b.popularity ?? 0) - (a.popularity ?? 0)
       else if (sortField === 'name') result = a.title.localeCompare(b.title, lang, { numeric: true, sensitivity: 'base' })
       else if (sortField === 'releaseDate') result = b.releaseDate.localeCompare(a.releaseDate)
       else {
@@ -66,7 +70,16 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
       }
       return reverse ? -result : result
     })
-  }, [sortField, reverse, randomIds, searchQuery, searchField, library, platform, platformName, lang])
+  }, [sortField, reverse, randomIds, searchQuery, searchField, library, platform, platformName, lang, likeCounts])
+
+  function requireLogin(event: React.MouseEvent<HTMLElement>) {
+    if (member) return
+    event.preventDefault()
+    event.stopPropagation()
+    setLoginNotice(lang === 'en' ? 'Sign in to open game details and the complete archive.' : '登录玩家账号后才能打开游戏详情和全游戏档案')
+    requestMemberLogin()
+    window.setTimeout(() => setLoginNotice(''), 2400)
+  }
   const pageCount = Math.max(1, Math.ceil(games.length / 20))
   const visibleGames = games.slice((page - 1) * 20, page * 20)
   const filters = [
@@ -106,6 +119,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                   href={platform === 'psp' ? 'https://www.kdocs.cn/l/coH3Z1VLgop3' : 'https://www.kdocs.cn/l/cs8H4NUI4lC4'}
                   rel="noreferrer"
                   target="_blank"
+                  onClickCapture={requireLogin}
                 >
                   {platform === 'psp'
                     ? (lang === 'en' ? 'PSP Complete Game Archive' : lang === 'zh-TW' ? 'PSP全遊戲檔案' : 'PSP全游戏档案')
@@ -178,6 +192,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
               ) : null}
             </div>
           </div>
+          {loginNotice ? <div className="fixed left-1/2 top-20 z-[220] -translate-x-1/2 rounded-full bg-black px-5 py-2 text-sm font-medium text-white shadow-xl" role="status">{loginNotice}</div> : null}
           {searchQuery ? <button className="btn btn-ghost btn-sm mb-3" onClick={() => { setSearchQuery(''); setDraftQuery(''); setPage(1) }}>{copy.clear}: {searchQuery} ×</button> : null}
           {games.length === 0 ? <p className="py-12 text-center text-base-content/60">{copy.empty}</p> : null}
           <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${platform === 'psp' ? 'sm:grid-cols-4 lg:grid-cols-7' : 'sm:grid-cols-3 lg:grid-cols-5'}`}>
@@ -187,7 +202,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                 : undefined
               return (
               <article className={`group relative ${platform === 'psp' ? 'psp-library-card' : 'overflow-hidden rounded-xl bg-base-100'}`} key={game.id}>
-              <Link params={{ gameId: game.id, locale: lang }} to={platform === 'psp' ? '/$locale/platform/psp/$gameId' : '/$locale/platform/switch/$gameId'}>
+              <Link onClickCapture={requireLogin} params={{ gameId: game.id, locale: lang }} to={platform === 'psp' ? '/$locale/platform/psp/$gameId' : '/$locale/platform/switch/$gameId'}>
                 <SwitchLibraryImage
                   clickable
                   className={`${platform === 'psp' ? 'psp-library-cover aspect-[353/600] [&_img]:object-contain' : 'aspect-[616/353] transition group-hover:scale-[1.02]'} w-full`}
@@ -196,7 +211,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                   transparent={platform === 'psp'}
                 />
                 <div className={platform === 'psp' ? 'psp-library-info bg-base-100 p-2 sm:py-2.5' : 'p-2.5 sm:py-4'}>
-                  <h2 className={`flex min-w-0 items-center gap-1 font-semibold text-base-content ${platform === 'psp' ? 'text-xs sm:text-sm' : 'text-sm sm:text-lg'}`} title={game.title}><span className="truncate">{game.title}</span>{platform === 'psp' ? <PspLikeButton className="psp-library-like" gameId={game.id} locale={lang} /> : null}</h2>
+                  <h2 className={`flex min-w-0 items-center gap-1 font-semibold text-base-content ${platform === 'psp' ? 'text-xs sm:text-sm' : 'text-sm sm:text-lg'}`} title={game.title}><span className="truncate">{game.title}</span><PspLikeButton className="psp-library-like" gameId={game.id} locale={lang} /></h2>
                   <div className={`overflow-hidden text-ellipsis whitespace-nowrap text-base-content/55 ${platform === 'psp' ? 'mt-1 text-[8px] sm:text-[10px]' : 'mt-1.5 text-[9px] sm:mt-2 sm:text-xs'}`}>
                     <span>{platformName}</span>{' · '}<span>{getCardLanguage('cardLanguage' in game ? String(game.cardLanguage ?? game.language) : game.language, lang)}</span>{' · '}<span>{'cardGenre' in game ? String(game.cardGenre ?? game.genre.split('、')[0]) : game.genre.split('、')[0]}</span>{' · '}<time>{game.releaseDate}</time>
                   </div>
