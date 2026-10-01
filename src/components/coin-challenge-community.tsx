@@ -146,7 +146,10 @@ export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, 
       <div className={inlineLauncher ? 'relative z-30 flex shrink-0 items-center gap-1.5' : chatOnly ? 'fixed right-3 top-3 z-[180] flex items-center gap-1.5 sm:right-5 sm:top-5' : 'absolute right-20 top-4 z-30 flex items-center gap-1.5 sm:right-28 sm:top-5'}>
         {!chatOnly ? <button className="rounded-full border border-emerald-300/40 bg-emerald-500/90 px-2.5 py-2 text-xs font-bold text-white shadow-lg disabled:opacity-35" disabled={busy || data.room.joined} onClick={() => void changeRoom('room-join')} type="button">加入</button> : null}
         {!chatOnly ? <button className="rounded-full border border-white/20 bg-black/75 px-2.5 py-2 text-xs font-semibold text-white shadow-lg disabled:opacity-35" disabled={busy || !data.room.joined} onClick={() => void changeRoom('room-leave')} type="button">退出</button> : null}
-        <button className="flex items-center gap-1.5 rounded-full border border-white/20 bg-black/75 px-3 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur hover:bg-black" onClick={() => { setIsOpen(true); onOpenChange?.(true) }} type="button">
+        <button className="flex items-center gap-1.5 rounded-full border border-amber-300/35 bg-black/75 px-3 py-2 text-xs font-semibold text-amber-300 shadow-lg hover:bg-black" onClick={() => { setTab('rank'); setIsOpen(true); onOpenChange?.(true) }} type="button">
+          <i className="ri-trophy-line" /> 排行榜
+        </button>
+        <button className="flex items-center gap-1.5 rounded-full border border-white/20 bg-black/75 px-3 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur hover:bg-black" onClick={() => { setTab('chat'); setIsOpen(true); onOpenChange?.(true) }} type="button">
           <i className="ri-group-line" /> 聊天室 {data.online}
         </button>
       </div>
@@ -156,10 +159,6 @@ export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, 
             <div className="min-w-0 flex-1"><strong>{channel === 'red-blue-arena' ? '红蓝竞技场聊天室' : channel === 'ghost-hunter' ? '幽灵捕手聊天室' : '金币娱乐游戏聊天室'}</strong><p className="text-xs text-white/50">在线玩家 {data.online} 人</p></div>
             <button aria-label="关闭聊天室" className="grid h-8 w-8 place-items-center rounded-full hover:bg-white/10" onClick={() => void closeHall()} type="button">✕</button>
           </header>
-          <div className="grid grid-cols-2 border-b border-white/10 p-1">
-            <button className={`rounded-xl py-2 text-sm ${tab === 'chat' ? 'bg-amber-400 font-bold text-black' : 'text-white/70'}`} onClick={() => setTab('chat')} type="button">聊天</button>
-            <button className={`rounded-xl py-2 text-sm ${tab === 'rank' ? 'bg-amber-400 font-bold text-black' : 'text-white/70'}`} onClick={() => setTab('rank')} type="button">排行榜</button>
-          </div>
           {tab === 'chat' ? (
             <>
               <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">

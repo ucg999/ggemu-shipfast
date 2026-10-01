@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 
 export const MEMBER_SESSION_EVENT = 'ucg999-member-session-change'
 export const MEMBER_LOGIN_REQUEST_EVENT = 'ucg999-member-login-request'
@@ -32,6 +32,31 @@ export function useMemberSession() {
     () => currentMember,
     () => null,
   )
+}
+
+export function useRequiredMemberAccess(enabled = true) {
+  const member = useMemberSession()
+  const [checked, setChecked] = useState(!enabled)
+
+  useEffect(() => {
+    if (!enabled) {
+      setChecked(true)
+      return
+    }
+    let cancelled = false
+    void getMemberSession().then(({ member: sessionMember }) => {
+      if (cancelled) return
+      setChecked(true)
+      if (!sessionMember) window.setTimeout(requestMemberLogin, 100)
+    }).catch(() => {
+      if (cancelled) return
+      setChecked(true)
+      window.setTimeout(requestMemberLogin, 100)
+    })
+    return () => { cancelled = true }
+  }, [enabled])
+
+  return { checked, member }
 }
 
 export function requestMemberLogin() {

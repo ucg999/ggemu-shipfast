@@ -63,8 +63,10 @@ export async function checkAuthRateLimit(request: Request, action: string) {
 export function validateCredentials(username: unknown, password: unknown) {
   const displayName = typeof username === 'string' ? username.trim() : ''
   const normalizedUsername = displayName.toLocaleLowerCase('en-US')
-  if (!/^[\p{L}\p{N}_-]{3,24}$/u.test(displayName)) {
-    return { error: '用户名需为 3–24 位中文、字母、数字、下划线或短横线' }
+  const characters = [...displayName]
+  const chineseCharacters = characters.filter(character => /\p{Script=Han}/u.test(character)).length
+  if (!/^[\p{L}\p{N}_-]+$/u.test(displayName) || characters.length > 20 || chineseCharacters > 8) {
+    return { error: '用户名可使用中文、字母、数字、下划线或短横线；中文最多8个字，英文和数字最多20位' }
   }
   if (typeof password !== 'string' || password.length < 8 || password.length > 72) {
     return { error: '密码需为 8–72 位' }

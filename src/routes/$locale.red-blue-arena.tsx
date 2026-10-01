@@ -4,11 +4,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { CoinRewardPopup } from '#/components/home/coin-rewards'
 import { CoinChallengeCommunity } from '#/components/coin-challenge-community'
 import { SiteLayout } from '#/components/site-layout'
+import { MemberRequiredNotice } from '#/components/member-required-notice'
 import { addCoinBalance, readCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
 import { normalizeLocale } from '#/lib/i18n'
 import { ARENA_BET_OPTIONS, ARENA_MAX_HEALTH, arenaPayout, arenaWeaponDamage, healArenaHealth } from '#/lib/red-blue-arena'
 import type { ArenaResult, ArenaSide } from '#/lib/red-blue-arena'
 import type { ArenaAudio } from '#/lib/red-blue-arena-audio'
+import { useRequiredMemberAccess } from '#/lib/member-client'
 
 export const Route = createFileRoute('/$locale/red-blue-arena')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -136,6 +138,7 @@ function createRound(mode: ArenaMode = 'duel'): RoundState {
 function RedBlueArenaPage() {
   const lang = normalizeLocale(Route.useParams().locale)
   const { embed } = Route.useSearch()
+  const { checked: memberChecked, member } = useRequiredMemberAccess(embed !== '1')
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const roundRef = useRef<RoundState | null>(null)
   const audioRef = useRef<ArenaAudio | null>(null)
@@ -321,6 +324,7 @@ function RedBlueArenaPage() {
     <CoinRewardPopup feedback={feedback} />
   </section></main>
 
+  if (embed !== '1' && (!memberChecked || !member)) return <MemberRequiredNotice checked={memberChecked} locale={lang} />
   return embed === '1' ? content : <SiteLayout locale={lang} hideFooter>{content}</SiteLayout>
 }
 

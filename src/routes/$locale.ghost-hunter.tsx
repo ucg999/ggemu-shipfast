@@ -6,9 +6,11 @@ import { CoinChallengeCommunity } from '#/components/coin-challenge-community'
 import { addCoinBalance, readCoinBalance } from '#/lib/coin-wallet'
 import type { PointerEvent } from 'react'
 import { SiteLayout } from '#/components/site-layout'
+import { MemberRequiredNotice } from '#/components/member-required-notice'
 import { normalizeLocale } from '#/lib/i18n'
 import { GHOST_CLEAR_REWARD, LEVELS, MODULES, geometry, canPlace, isLevelComplete, litGhosts } from '#/lib/ghost-hunter'
 import type { Placement } from '#/lib/ghost-hunter'
+import { useRequiredMemberAccess } from '#/lib/member-client'
 
 export const Route = createFileRoute('/$locale/ghost-hunter')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -84,6 +86,7 @@ const ModuleImage = memo(function ModuleImage({ id, rotation, highlighted = [], 
 function GhostHunterPage() {
   const lang = normalizeLocale(Route.useParams().locale)
   const { embed } = Route.useSearch()
+  const { checked: memberChecked, member } = useRequiredMemberAccess(embed !== '1')
   const initialGame = Route.useLoaderData()
   const [levelIndex, setLevelIndex] = useState(initialGame.levelIndex)
   const level = LEVELS[levelIndex]
@@ -448,6 +451,8 @@ function GhostHunterPage() {
       </p> : <p className="ghost-trial-note shrink-0 text-center text-white/65">等待游戏加载，请你试玩原创游戏，希望你喜欢</p>}
       {drag?.moved && <div className="pointer-events-none fixed z-[100] opacity-90" style={{ left: drag.x - drag.grabX * unit, top: drag.y - drag.grabY * unit, width: geometry(drag.id, rotations[drag.id]).width * unit, height: geometry(drag.id, rotations[drag.id]).height * unit }}><ModuleImage id={drag.id} rotation={rotations[drag.id]} /></div>}
     </section>
+
+  if (embed !== '1' && (!memberChecked || !member)) return <MemberRequiredNotice checked={memberChecked} locale={lang} />
 
   return embed === '1'
     ? <main className="min-h-dvh bg-black">{game}</main>

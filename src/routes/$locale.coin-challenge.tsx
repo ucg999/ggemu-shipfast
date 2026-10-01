@@ -6,12 +6,13 @@ import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-reward
 import { CoinMachineWelcome } from '#/components/coin-machine-welcome'
 import { CoinChallengeCommunity, type CoinChallengeRoomPlayer, type RankableCoinWin } from '#/components/coin-challenge-community'
 import { SiteLayout } from '#/components/site-layout'
+import { MemberRequiredNotice } from '#/components/member-required-notice'
 import type { Locale } from '#/lib/ggemu'
 import { addCoinBalance, getCoinRank, readCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
 import { createSpinAudioClock } from '#/lib/spin-audio-clock'
 import { normalizeLocale } from '#/lib/i18n'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
-import { useMemberSession } from '#/lib/member-client'
+import { useRequiredMemberAccess } from '#/lib/member-client'
 
 const COIN_CHALLENGE_STORAGE_KEY = 'retro-games-coin-challenge-machine'
 const COIN_CHALLENGE_RTP_STORAGE_KEY = 'retro-games-coin-challenge-rtp-ledger'
@@ -171,7 +172,7 @@ function CoinChallengePage() {
   )
   const [activeLight, setActiveLight] = useState(0)
   const [gameMode, setGameMode] = useState<'normal' | 'gold' | 'ghost'>('normal')
-  const member = useMemberSession()
+  const { checked: memberChecked, member } = useRequiredMemberAccess(embed !== '1')
   const [joinedRoom, setJoinedRoom] = useState(false)
   const [roomPlayers, setRoomPlayers] = useState<Array<CoinChallengeRoomPlayer>>([])
   const [sharedJackpot, setSharedJackpot] = useState(0)
@@ -1793,6 +1794,8 @@ function CoinChallengePage() {
     </section>
     </div>
   )
+
+  if (embed !== '1' && (!memberChecked || !member)) return <MemberRequiredNotice checked={memberChecked} locale={lang} />
 
   return embed === '1'
     ? <main className="min-h-dvh bg-black">{game}</main>

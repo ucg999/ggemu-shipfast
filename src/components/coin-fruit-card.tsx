@@ -1,12 +1,16 @@
 import { Link } from '@tanstack/react-router'
+import type { MouseEvent } from 'react'
 import type { Locale } from '#/lib/ggemu'
+import { requestMemberLogin, useMemberSession } from '#/lib/member-client'
 
 export function CoinFruitCard({ lang, videoAligned = false, hideTitle = false }: { lang: Locale; videoAligned?: boolean; hideTitle?: boolean }) {
   const title = lang === 'zh-TW' ? '金幣娛樂遊戲' : lang === 'en' ? 'Coin Entertainment Game' : lang === 'ja' ? 'コインエンターテインメントゲーム' : '金币娱乐游戏'
+  const member = useMemberSession()
+  const requireLogin = (event: MouseEvent<HTMLAnchorElement>) => { if (!member) { event.preventDefault(); requestMemberLogin() } }
   if (videoAligned) {
     return (
       <div className="relative aspect-[4/3] min-w-0">
-        <Link className="group relative mx-auto block aspect-square w-3/4" to="/$locale/coin-challenge" params={{ locale: lang }} search={{}} aria-label={title}>
+        <Link className="group relative mx-auto block aspect-square w-3/4" to="/$locale/coin-challenge" params={{ locale: lang }} search={{}} aria-label={title} onClick={requireLogin}>
           <span className="absolute inset-x-0 bottom-full pb-1 text-center text-xs font-bold leading-5 text-base-content sm:text-sm">{title}</span>
           <span className="block h-full w-full overflow-hidden rounded-md bg-black">
             <img src="/coin-fruit-machine-cover.jpg" alt={title} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
@@ -16,7 +20,7 @@ export function CoinFruitCard({ lang, videoAligned = false, hideTitle = false }:
     )
   }
   return (
-    <Link className="group relative block aspect-square overflow-hidden rounded-md bg-black lg:aspect-[4/3] lg:rounded-sm" to="/$locale/coin-challenge" params={{ locale: lang }} search={{}} aria-label={title}>
+    <Link className="group relative block aspect-square overflow-hidden rounded-md bg-black lg:aspect-[4/3] lg:rounded-sm" to="/$locale/coin-challenge" params={{ locale: lang }} search={{}} aria-label={title} onClick={requireLogin}>
       <img src="/coin-fruit-machine-cover.jpg" alt={title} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
       {!hideTitle && <span className="absolute inset-x-0 bottom-0 bg-black/75 px-2 py-1 text-center text-sm font-bold text-white">{title}</span>}
     </Link>
