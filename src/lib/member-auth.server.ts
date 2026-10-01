@@ -36,6 +36,14 @@ export function memberDb() {
   return db
 }
 
+// Original-game rankings stay on Cloudflare D1 so score writes and reads use
+// the same edge database without waiting on the member database connection.
+export function leaderboardDb() {
+  const db = env.LEADERBOARD_DB
+  if (!db) return memberDb()
+  return db
+}
+
 export function jsonError(message: string, status = 400) {
   return Response.json({ error: message }, { status })
 }

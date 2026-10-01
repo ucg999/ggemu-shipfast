@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { assertSameOrigin, getMemberFromRequest, jsonError, memberDb } from '#/lib/member-auth.server'
+import { assertSameOrigin, getMemberFromRequest, jsonError, leaderboardDb, memberDb } from '#/lib/member-auth.server'
 
 type ChatRow = { id: number; member_id: string; display_name: string; message: string; created_at: string }
 type RankRow = { display_name: string; score: number; wins: number; losses: number; updated_at: string }
@@ -57,14 +57,14 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
         const leaderboardGame = channel === 'ghost-hunter' ? 'ghost-hunter' : channel === 'red-blue-arena' ? 'red-blue-arena' : 'coin-challenge'
         const leaderboardPeriodKey = channel === 'red-blue-arena' ? leaderboardMode : 'all'
         const leaderboardMetric = channel === 'red-blue-arena' ? 's.wins' : 's.score'
-        const [chatResult, rankResult, onlineResult, sharedRound, competition] = await Promise.all([
+        const rankPromise = leaderboardDb().prepare(`
+          SELECT p.nickname AS display_name, ${leaderboardMetric} AS score, s.wins, s.losses, s.updated_at
+          FROM leaderboard_scores s JOIN leaderboard_players p ON p.player_id = s.player_id
+          WHERE s.game_id = ? AND s.period_type = 'all' AND s.period_key = ? AND ${channel === 'red-blue-arena' ? '(s.wins + s.losses)' : leaderboardMetric} > 0
+          ORDER BY ${leaderboardMetric} DESC, s.losses ASC, s.updated_at ASC LIMIT 20
+        `).bind(leaderboardGame, leaderboardPeriodKey).all<RankRow>()
+        const [chatResult, onlineResult, sharedRound, competition, rankResult] = await Promise.all([
           memberDb().prepare(`SELECT id, member_id, display_name, message, created_at FROM coin_challenge_chat_messages WHERE game_channel = ? ORDER BY id DESC LIMIT 50`).bind(channel).all<ChatRow>(),
-          memberDb().prepare(`
-            SELECT p.nickname AS display_name, ${leaderboardMetric} AS score, s.wins, s.losses, s.updated_at
-            FROM leaderboard_scores s JOIN leaderboard_players p ON p.player_id = s.player_id
-            WHERE s.game_id = ? AND s.period_type = 'all' AND s.period_key = ? AND ${channel === 'red-blue-arena' ? '(s.wins + s.losses)' : leaderboardMetric} > 0
-            ORDER BY ${leaderboardMetric} DESC, s.losses ASC, s.updated_at ASC LIMIT 20
-          `).bind(leaderboardGame, leaderboardPeriodKey).all<RankRow>(),
           memberDb().prepare(`
             SELECT member_id, display_name, bets_json, game_mode, credits, room_id, room_seat, last_seen_at
             FROM coin_challenge_presence WHERE game_channel = ? AND last_seen_at >= datetime('now', '-30 minutes')
@@ -72,6 +72,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
           `).bind(channel).all<PresenceRow>(),
           memberDb().prepare(`SELECT round_token, starts_at_ms, target_index, award_member_id, award_amount, competition_round, competition_jackpot FROM coin_challenge_shared_rounds WHERE room_id = '1'`).first<SharedRoundRow>(),
           memberDb().prepare(`SELECT round_number, jackpot, win_counts_json, win_coins_json, last_round_token FROM coin_challenge_room_competitions WHERE room_id = '1'`).first<CompetitionRow>(),
+          rankPromise,
         ])
         const now = Date.now()
         return Response.json({
@@ -217,13 +218,14 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             const score = Math.floor(Number(body.score) || 0)
             const submissionKey = typeof body.submissionKey === 'string' ? body.submissionKey.slice(0, 96) : ''
             if (score < 1 || score > 99_999 || !submissionKey) return jsonError('这次中奖记录不能上传')
-            await memberDb().batch([
-              memberDb().prepare(`
+            const ranking = leaderboardDb()
+            await ranking.batch([
+              ranking.prepare(`
                 INSERT INTO leaderboard_players (player_id, nickname) VALUES (?, ?)
                 ON CONFLICT(player_id) DO UPDATE SET nickname = excluded.nickname, updated_at = CURRENT_TIMESTAMP
               `).bind(member.id, member.displayName),
-              memberDb().prepare(`INSERT INTO leaderboard_submissions (submission_key, game_id, player_id, score) VALUES (?, 'coin-challenge', ?, ?)`).bind(submissionKey, member.id, score),
-              memberDb().prepare(`
+              ranking.prepare(`INSERT INTO leaderboard_submissions (submission_key, game_id, player_id, score) VALUES (?, 'coin-challenge', ?, ?)`).bind(submissionKey, member.id, score),
+              ranking.prepare(`
                 INSERT INTO leaderboard_scores (game_id, player_id, period_type, period_key, score)
                 VALUES ('coin-challenge', ?, 'all', 'all', ?)
                 ON CONFLICT(game_id, player_id, period_type, period_key) DO UPDATE SET
@@ -249,13 +251,14 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             const initialWins = scoreChannel === 'red-blue-arena' && outcome === 'win' ? 1 : 0
             const initialLosses = scoreChannel === 'red-blue-arena' && outcome === 'loss' ? 1 : 0
             const initialScore = scoreChannel === 'red-blue-arena' ? initialWins : score
-            await memberDb().batch([
-              memberDb().prepare(`
+            const ranking = leaderboardDb()
+            await ranking.batch([
+              ranking.prepare(`
                 INSERT INTO leaderboard_players (player_id, nickname) VALUES (?, ?)
                 ON CONFLICT(player_id) DO UPDATE SET nickname = excluded.nickname, updated_at = CURRENT_TIMESTAMP
               `).bind(member.id, member.displayName),
-              memberDb().prepare(`INSERT INTO leaderboard_submissions (submission_key, game_id, player_id, score) VALUES (?, ?, ?, ?)`).bind(submissionKey, gameId, member.id, score),
-              memberDb().prepare(`
+              ranking.prepare(`INSERT INTO leaderboard_submissions (submission_key, game_id, player_id, score) VALUES (?, ?, ?, ?)`).bind(submissionKey, gameId, member.id, score),
+              ranking.prepare(`
                 INSERT INTO leaderboard_scores (game_id, player_id, period_type, period_key, score, wins, losses)
                 VALUES (?, ?, 'all', ?, ?, ?, ?)
                 ON CONFLICT(game_id, player_id, period_type, period_key) DO UPDATE SET ${scoreUpdate}
