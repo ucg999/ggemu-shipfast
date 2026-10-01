@@ -32,7 +32,7 @@ export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, 
 
   async function refresh() {
     const modeQuery = leaderboardMode ? `&mode=${encodeURIComponent(leaderboardMode)}` : ''
-    const response = await fetch(`/api/coin-challenge-community?channel=${encodeURIComponent(channel)}${modeQuery}`, { credentials: 'same-origin' })
+    const response = await fetch(`/api/coin-challenge-community?channel=${encodeURIComponent(channel)}${modeQuery}`, { credentials: 'same-origin', cache: 'no-store' })
     if (!response.ok) return
     const next = await response.json() as CommunityData
     setData(next)
@@ -41,7 +41,7 @@ export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, 
   }
 
   async function refreshRoom() {
-    const response = await fetch(`/api/coin-challenge-community?room=1&channel=${encodeURIComponent(channel)}`, { credentials: 'same-origin' })
+    const response = await fetch(`/api/coin-challenge-community?room=1&channel=${encodeURIComponent(channel)}`, { credentials: 'same-origin', cache: 'no-store' })
     if (!response.ok) return
     const next = await response.json() as Pick<CommunityData, 'online' | 'players' | 'room' | 'sharedRound' | 'winCounts' | 'winCoins'>
     setData(current => ({ ...current, ...next }))

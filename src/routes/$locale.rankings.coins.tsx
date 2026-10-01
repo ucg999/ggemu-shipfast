@@ -19,7 +19,25 @@ function CoinRankingsPage() {
   const [data, setData] = useState<RankingData | null>(null)
 
   useEffect(() => {
-    void fetch('/api/coin-rankings').then(response => response.json()).then(setData).catch(() => setData({ date: '', total: [], daily: [] }))
+    let active = true
+    const refresh = () => {
+      void fetch('/api/coin-rankings', { cache: 'no-store' })
+        .then(response => {
+          if (!response.ok) throw new Error('ranking_request_failed')
+          return response.json() as Promise<RankingData>
+        })
+        .then(next => { if (active) setData(next) })
+        .catch(() => {})
+    }
+    refresh()
+    const timer = window.setInterval(refresh, 5_000)
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
 
   return (
@@ -27,7 +45,7 @@ function CoinRankingsPage() {
       <main className="mx-auto min-h-[70vh] w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-base-content/45">Player Rankings</p>
         <h1 className="mt-2 text-4xl font-semibold tracking-tight sm:text-6xl">{english ? 'Coin Rankings' : '金币排行榜'}</h1>
-        <p className="mt-3 text-sm text-base-content/55">{english ? 'The total ranking refreshes once per day. Daily ranking counts coins credited today.' : '账号总金币榜每天更新一次；本日金币榜按今天进入玩家账号的金币计算。'}</p>
+        <p className="mt-3 text-sm text-base-content/55">{english ? 'Rankings update live. The daily ranking counts coins credited today.' : '排行榜实时更新；本日金币榜按今天进入玩家账号的金币计算。'}</p>
         <div className="mt-10 grid gap-8 lg:grid-cols-2">
           <RankingPanel entries={data?.total ?? []} loading={!data} title={english ? 'Total Coins' : '金币榜'} />
           <RankingPanel entries={data?.daily ?? []} loading={!data} title={english ? "Today's Coins" : '本日金币榜'} />

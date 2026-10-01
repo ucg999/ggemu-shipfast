@@ -23,7 +23,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             sharedRound: sharedRound && sharedRound.starts_at_ms >= Date.now() - 2_000
               ? sharedRoundView(sharedRound)
               : null,
-          })
+          }, { headers: { 'Cache-Control': 'private, no-store' } })
         }
         const member = await getMemberFromRequest(request)
         if (searchParams.get('room') === '1') {
@@ -52,7 +52,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
               mode: row.game_mode, credits: Math.max(0, Number(row.credits) || 0),
               inRoom: row.room_id === '1', seat: row.room_seat,
             })),
-          })
+          }, { headers: { 'Cache-Control': 'private, no-store' } })
         }
         const leaderboardGame = channel === 'ghost-hunter' ? 'ghost-hunter' : channel === 'red-blue-arena' ? 'red-blue-arena' : 'coin-challenge'
         const leaderboardPeriodKey = channel === 'red-blue-arena' ? leaderboardMode : 'all'
@@ -98,7 +98,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             inRoom: row.room_id === '1',
             seat: row.room_seat,
           })),
-        })
+        }, { headers: { 'Cache-Control': 'private, no-store' } })
       },
       POST: async ({ request }) => {
         try {

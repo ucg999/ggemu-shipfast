@@ -145,7 +145,10 @@ export const Route = createFileRoute('/api/member')({
           const updated = await memberDb().prepare('SELECT id, username, display_name, coin_balance, player_number FROM members WHERE id = ?').bind(member.id).first<{ id: string; username: string; display_name: string; coin_balance: number; player_number: number }>()
           if (!updated) return jsonError('玩家账号不存在', 404)
           const totalToday = usedToday + amount
-          return Response.json({ member: toMemberView(updated), transferred: amount, remainingToday: Math.max(0, 999 - totalToday) })
+          return Response.json(
+            { member: toMemberView(updated), transferred: amount, remainingToday: Math.max(0, 999 - totalToday) },
+            { headers: { 'Cache-Control': 'private, no-store' } },
+          )
         } catch (error) {
           if (error instanceof Response) return error
           return jsonError(error instanceof Error ? error.message : '金币保存失败', 500)
