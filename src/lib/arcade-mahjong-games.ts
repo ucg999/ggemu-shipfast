@@ -14,6 +14,7 @@ export const ARCADE_MAHJONG_GAME_QUERIES = [
   '超级斗地主',
   '双龙抢珠',
   '天降神兵',
+  '全民斗地主',
 ] as const
 
 export const ARCADE_MAHJONG_COINS_PER_MINUTE = 0

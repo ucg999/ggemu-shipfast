@@ -15,9 +15,8 @@ const COIN_MODE_GAME_RANKS: Readonly<Record<string, CoinModeRequiredRank>> = {
   '美女弹珠打砖块': 'silver',
   '美女天蚕变': 'gold',
   '美女打钻': 'silver',
-  '全民斗地主': 'bronze',
 }
-const COIN_MODE_GAME_QUERIES = ['wiggie waggie', 'wow new fantasia', 'excelsior', '斗地主'] as const
+const COIN_MODE_GAME_QUERIES = ['wiggie waggie', 'wow new fantasia', 'excelsior'] as const
 const COIN_MODE_CHINESE_NAMES: Readonly<Record<string, string>> = {
   'wiggie waggie': '美女弹珠打砖块',
   'wow new fantasia': '美女天蚕变',
@@ -589,10 +588,8 @@ export function getCoinModeGameRequiredRank(game: Pick<PublicGame, 'name'> | str
   return COIN_MODE_GAME_RANKS[normalized] ?? null
 }
 
-export function getCoinModeGameMinimumBalance(game: Pick<PublicGame, 'name'> | string | undefined) {
-  const name = typeof game === 'string' ? game : game?.name
-  const normalized = name?.trim().toLocaleLowerCase() ?? ''
-  return normalized === '全民斗地主' || normalized.includes('斗地主') ? 20 : 0
+export function getCoinModeGameMinimumBalance(_game: Pick<PublicGame, 'name'> | string | undefined) {
+  return 0
 }
 
 function resolveCoinModeSearchQuery(query: string) {

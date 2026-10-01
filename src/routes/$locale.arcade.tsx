@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
+import type { MouseEvent } from 'react'
 
 import { SiteLayout } from '#/components/site-layout'
 import { RedBlueArenaCard } from '#/components/red-blue-arena-card'
@@ -9,6 +10,7 @@ import { getCoinModeGameMinimumBalance, getCoinModeGameRequiredRank, searchGames
 import { getI18n, normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
+import { requestMemberLogin, useMemberSession } from '#/lib/member-client'
 
 const ARCADE_PAGE_SIZE = 100
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
@@ -67,6 +69,7 @@ export function PlatformModeContent({
   games,
   lang,
   layout = 'list',
+  requireMember = false,
   showCoinChallenge = false,
   title,
 }: {
@@ -75,6 +78,7 @@ export function PlatformModeContent({
   games: Array<PublicGame>
   lang: Locale
   layout?: 'cards' | 'library-cards' | 'list'
+  requireMember?: boolean
   showCoinChallenge?: boolean
   title: string
 }) {
@@ -83,6 +87,13 @@ export function PlatformModeContent({
   const [letter, setLetter] = useState('ALL')
   const [query, setQuery] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const member = useMemberSession()
+  const requireLogin = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!requireMember || member) return
+    event.preventDefault()
+    event.stopPropagation()
+    requestMemberLogin()
+  }
   const totalGamesLabel = t.allGames
   const coinChallengeTitle = getCoinChallengeTitle(lang)
   const redBlueArenaTitle = lang === 'en' ? 'Red vs Blue Arena' : lang === 'ja' ? '赤青アリーナ' : lang === 'zh-TW' ? '紅藍競技場' : '红蓝竞技场'
@@ -193,7 +204,7 @@ export function PlatformModeContent({
             {visibleGames.map((game) => layout === 'cards' ? (
               <CoinModeGameCard game={game} key={game.url_slug || game._id} lang={lang} />
             ) : layout === 'library-cards' ? (
-              <ArcadeLibraryGameCard game={game} key={game.url_slug || game._id} lang={lang} />
+              <ArcadeLibraryGameCard game={game} key={game.url_slug || game._id} lang={lang} onClickCapture={requireLogin} />
             ) : (
               <ArcadeGameRow game={game} key={game.url_slug || game._id} lang={lang} />
             ))}
@@ -208,13 +219,13 @@ export function PlatformModeContent({
   )
 }
 
-function ArcadeLibraryGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
+function ArcadeLibraryGameCard({ game, lang, onClickCapture }: { game: PublicGame; lang: Locale; onClickCapture?: (event: MouseEvent<HTMLAnchorElement>) => void }) {
   const gameId = game.url_slug?.trim() || game._id?.trim() || ''
   const categories = game.categories?.slice(0, 1).join('')
   const language = game.languages?.slice(0, 1).join('')
 
   return (
-    <Link className="group overflow-hidden rounded-xl bg-white text-black shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" {...gameCardPreviewHandlers} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
+    <Link className="group overflow-hidden rounded-xl bg-white text-black shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" {...gameCardPreviewHandlers} onClickCapture={onClickCapture} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
       <figure className="relative aspect-[616/353] overflow-hidden bg-neutral-100">
         {game.game_cover ? <img alt={game.name ?? ''} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} /> : null}
         <GameCardPreviewVideo src={game.game_video} />

@@ -124,6 +124,7 @@ function PlatformModePage() {
       games={games}
       lang={lang}
       layout={modeId === 'coin' ? 'cards' : modeId === 'mahjong' ? 'library-cards' : 'list'}
+      requireMember={modeId === 'mahjong'}
       showCoinChallenge={modeId === 'coin'}
       title={copy.title}
     />
@@ -157,10 +158,10 @@ function getModeCopy(locale: Locale, modeId: PlatformModeId | undefined) {
 }
 
 function getMahjongModeCopy(locale: Locale) {
-  if (locale === 'zh-TW') return { description: '匯集明星三缺一、幸運滿貫、電子基盤等經典街機麻將與休閒棋牌作品。無需金幣，點擊遊戲卡片即可免費遊玩，重溫街機廳裡熟悉的樂趣。', seoTitle: '街機麻將遊戲｜懷舊遊戲廳', subtitle: '精選街機麻將、電子基盤與經典休閒棋牌遊戲，全部免費遊玩。', title: '街機麻將' }
-  if (locale === 'en') return { description: 'A hand-picked collection of classic arcade mahjong, electronic board, and casual tabletop games. No coins are required—choose a game and play free.', seoTitle: 'Arcade Mahjong | Retro Game Hall', subtitle: 'Classic arcade mahjong and casual tabletop games, all free to play.', title: 'Arcade Mahjong' }
-  if (locale === 'ja') return { description: '定番のアーケード麻雀、電子基盤、カジュアルテーブルゲームを集めました。コインは不要で、ゲームカードを選ぶだけで無料で遊べます。', seoTitle: 'アーケード麻雀｜懐かしゲームセンター', subtitle: 'アーケード麻雀と定番テーブルゲームをすべて無料で楽しめます。', title: 'アーケード麻雀' }
-  return { description: '汇集明星三缺一、幸运满贯、电子基盘等经典街机麻将与休闲棋牌作品。无需金币，点击游戏卡片即可免费游玩，重温街机厅里的熟悉乐趣。', seoTitle: '街机麻将游戏｜怀旧游戏厅', subtitle: '精选街机麻将、电子基盘与经典休闲棋牌游戏，全部免费游玩。', title: '街机麻将' }
+  if (locale === 'zh-TW') return { description: '匯集明星三缺一、全民鬥地主、幸運滿貫、電子基盤等經典街機麻將與休閒棋牌作品。登入玩家帳號後即可免費遊玩，沒有段位限制。', seoTitle: '街機麻將遊戲｜懷舊遊戲廳', subtitle: '精選街機麻將、鬥地主、電子基盤與經典休閒棋牌遊戲；登入後免費遊玩。', title: '街機麻將' }
+  if (locale === 'en') return { description: 'A hand-picked collection of classic arcade mahjong and casual tabletop games. Sign in to play free, with no rank requirement.', seoTitle: 'Arcade Mahjong | Retro Game Hall', subtitle: 'Sign in to play classic mahjong and tabletop games free.', title: 'Arcade Mahjong' }
+  if (locale === 'ja') return { description: '定番のアーケード麻雀やテーブルゲームを集めました。プレイヤーアカウントでログインすると、ランク制限なしで無料プレイできます。', seoTitle: 'アーケード麻雀｜懐かしゲームセンター', subtitle: 'ログイン後、定番の麻雀・テーブルゲームを無料で遊べます。', title: 'アーケード麻雀' }
+  return { description: '汇集明星三缺一、全民斗地主、幸运满贯、电子基盘等经典街机麻将与休闲棋牌作品。登录玩家账号后即可免费游玩，没有等级限制。', seoTitle: '街机麻将游戏｜怀旧游戏厅', subtitle: '精选街机麻将、斗地主、电子基盘与经典休闲棋牌游戏；登录后免费游玩。', title: '街机麻将' }
 }
 
 function getSwitchLibraryCopy(locale: Locale) {
@@ -227,25 +228,25 @@ function getCoinModeCopy(locale: Locale) {
   if (locale === 'zh-TW') return {
     description: '金幣模式遊戲依段位解鎖，只檢查段位與金幣餘額，開始遊戲不會扣除金幣。',
     seoTitle: '金幣模式｜專屬遊戲｜懷舊遊戲廳',
-    subtitle: '全民鬥地主需青銅段位且至少擁有20枚金幣；美女打鑽、美女彈珠打磚塊需白銀段位；美女天蠶變需黃金段位。達到條件即可遊玩，不扣金幣。',
+    subtitle: '美女打鑽、美女彈珠打磚塊需白銀段位；美女天蠶變需黃金段位。達到條件即可遊玩，不扣金幣。',
     title: '金幣模式',
   }
   if (locale === 'en') return {
     description: 'Coin Mode games unlock by rank. Starting a game does not spend coins.',
     seoTitle: 'Coin Mode | Exclusive Games | Retro Game Hall',
-    subtitle: 'Dou Dizhu requires Bronze rank and a balance of 20 coins. Wiggie Waggie and Excelsior require Silver; WOW New Fantasia requires Gold. Coins are not deducted.',
+    subtitle: 'Wiggie Waggie and Excelsior require Silver; WOW New Fantasia requires Gold. Coins are not deducted.',
     title: 'Coin Mode',
   }
   if (locale === 'ja') return {
     description: 'コインモードのゲームはランクで解放され、開始時にコインは消費されません。',
     seoTitle: 'コインモード｜限定ゲーム｜レトロゲームセンター',
-    subtitle: '全民斗地主はブロンズランクと20コイン以上、Wiggie WaggieとExcelsiorはシルバー、WOW New Fantasiaはゴールドが必要です。コインは消費されません。',
+    subtitle: 'Wiggie WaggieとExcelsiorはシルバー、WOW New Fantasiaはゴールドが必要です。コインは消費されません。',
     title: 'コインモード',
   }
   return {
     description: '金币模式游戏按段位解锁，只检查段位和金币余额，开始游戏不会扣除金币。',
     seoTitle: '金币模式｜金币专属游戏｜怀旧游戏厅',
-    subtitle: '全民斗地主需青铜段位且至少拥有20个金币；美女打钻、美女弹珠打砖块需白银段位；美女天蚕变需黄金段位。达到条件即可游玩，不扣金币。',
+    subtitle: '美女打钻、美女弹珠打砖块需白银段位；美女天蚕变需黄金段位。达到条件即可游玩，不扣金币。',
     title: '金币模式',
   }
 }

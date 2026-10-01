@@ -18,6 +18,7 @@ import {
   readCoinBalance,
   spendCoinBalance,
 } from '#/lib/coin-wallet'
+import { getMemberSession, requestMemberLogin } from '#/lib/member-client'
 
 const trialDragDocuments = new WeakSet<Document>()
 
@@ -72,11 +73,12 @@ function LocalizedPlayGamePage() {
   const loadingTrialDisabled = isMahjongCoinChargeGame
   const minimumCoinBalance = getCoinModeGameMinimumBalance(game)
   const [rankAccessGranted, setRankAccessGranted] = useState(requiredCoinRank === null)
+  const [memberAccessGranted, setMemberAccessGranted] = useState(!isMahjongCoinChargeGame)
   const embedId = encodeURIComponent(game._id || game.url_slug || gameId)
   const refcode = encodeURIComponent(siteConfig.GGEMU_REFCODE)
   const isPsp = isPspGame(game)
   const theme = useCurrentSiteTheme()
-  const embedSrc = rankAccessGranted ? `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp, theme, autoplay === '1')}` : 'about:blank'
+  const embedSrc = rankAccessGranted && memberAccessGranted ? `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp, theme, autoplay === '1')}` : 'about:blank'
   const [showRecommendations, setShowRecommendations] = useState(false)
   const [recommendations, setRecommendations] = useState<Array<PublicGame>>([])
   const [recommendationType, setRecommendationType] = useState<'series' | 'category'>('category')
@@ -103,6 +105,30 @@ function LocalizedPlayGamePage() {
     : lang === 'ja' ? (isFullscreen ? '全画面を終了' : '全画面')
     : lang === 'zh-TW' ? (isFullscreen ? '退出全螢幕' : '全螢幕')
     : (isFullscreen ? '退出全屏' : '全屏')
+
+  useEffect(() => {
+    if (!isMahjongCoinChargeGame) {
+      setMemberAccessGranted(true)
+      return
+    }
+    let cancelled = false
+    void getMemberSession().then(({ member }) => {
+      if (cancelled) return
+      if (member) {
+        setMemberAccessGranted(true)
+        return
+      }
+      setMemberAccessGranted(false)
+      requestMemberLogin()
+      void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
+    }).catch(() => {
+      if (cancelled) return
+      setMemberAccessGranted(false)
+      requestMemberLogin()
+      void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
+    })
+    return () => { cancelled = true }
+  }, [gameId, isMahjongCoinChargeGame, isProGame, lang, navigate])
 
   useEffect(() => {
     if (!requiredCoinRank || (hasCoinRank(requiredCoinRank) && readCoinBalance() >= minimumCoinBalance)) {
