@@ -135,6 +135,21 @@ function chooseModeTarget(
   return candidates[Math.floor(random() * candidates.length)]?.index ?? exits[0]
 }
 
+function createSharedRandom(token: string) {
+  let seed = 2166136261
+  for (const character of token) {
+    seed ^= character.charCodeAt(0)
+    seed = Math.imul(seed, 16777619)
+  }
+  return () => {
+    seed += 0x6D2B79F5
+    let value = seed
+    value = Math.imul(value ^ (value >>> 15), value | 1)
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61)
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296
+  }
+}
+
 function ModeBackground({ active, src }: { active: boolean; src: string }) {
   const [requested, setRequested] = useState(false)
   const [loaded, setLoaded] = useState(false)
@@ -188,6 +203,7 @@ function CoinChallengePage() {
   const pendingSharedAwardRef = useRef<{ token: string; memberId: string | null; amount: number } | null>(null)
   const sharedStartTimerRef = useRef<number | null>(null)
   const sharedAwardTimerRef = useRef<number | null>(null)
+  const sharedRandomRef = useRef<() => number>(Math.random)
   const handleStartRef = useRef<(skipSharedWaiting?: boolean, forcedTarget?: number) => boolean>(() => false)
   const [modeRounds, setModeRounds] = useState(0)
   const [luckyLitLights, setLuckyLitLights] = useState<Array<number>>([])
@@ -1011,6 +1027,9 @@ function CoinChallengePage() {
   function scheduleSharedRound(round: SharedCoinRound) {
     if (handledSharedRoundRef.current === round.token) return
     handledSharedRoundRef.current = round.token
+    // Every browser in the room derives the same special-round sequence from
+    // the server token, so gold, ghost, lucky and bomb animations cannot split.
+    sharedRandomRef.current = createSharedRandom(round.token)
     setSharedJackpot(Math.max(0, round.jackpot ?? 0))
     setSharedCompetitionRound(Math.max(0, round.round ?? 0))
     pendingSharedAwardRef.current = {
@@ -1067,10 +1086,10 @@ function CoinChallengePage() {
     let stopped = false
     const poll = async () => {
       try {
-        const response = await fetch('/api/coin-challenge-community?round=1', { credentials: 'same-origin' })
+        const response = await fetch('/api/coin-challenge-community?round=1', { credentials: 'same-origin', cache: 'no-store' })
         if (!response.ok || stopped) return
         const result = await response.json() as { sharedRound?: SharedCoinRound | null }
-        if (result.sharedRound && result.sharedRound.startsAt > Date.now() - 2_000) {
+        if (result.sharedRound && result.sharedRound.startsAt > Date.now() - 12_000) {
           scheduleSharedRound(result.sharedRound)
         }
       } catch {
@@ -1078,7 +1097,7 @@ function CoinChallengePage() {
       }
     }
     void poll()
-    const timer = window.setInterval(() => void poll(), 1_000)
+    const timer = window.setInterval(() => void poll(), 500)
     return () => { stopped = true; window.clearInterval(timer) }
   }, [member?.id, joinedRoom, gameMode])
 
@@ -1188,7 +1207,13 @@ function CoinChallengePage() {
     const exitLights = [BAR_50_LIGHT_INDEX, BAR_25_LIGHT_INDEX, LUCKY_LIGHT_INDEX, PENALTY_LIGHT_INDEX]
     const target = gameMode === 'normal'
       ? normalTarget
-      : chooseModeTarget(gameMode, modeRounds, normalTarget, roundBets)
+      : chooseModeTarget(
+          gameMode,
+          modeRounds,
+          normalTarget,
+          roundBets,
+          joinedRoom ? sharedRandomRef.current : Math.random,
+        )
     const outcome = TRACK_LIGHTS[target]
     const trackLength = TRACK_LIGHTS.length
     const distance = (target - activeLight + trackLength) % trackLength
@@ -1398,7 +1423,7 @@ function CoinChallengePage() {
       const candidates = TRACK_LIGHTS
         .map((light, index) => ({ ...light, index }))
         .filter((light) => light.option !== null)
-      const selected = candidates[Math.floor(Math.random() * candidates.length)]
+      const selected = candidates[Math.floor((joinedRoom ? sharedRandomRef.current() : Math.random()) * candidates.length)]
 
       if (!selected || selected.option === null) {
         finishRound(accumulatedPayout, 0, 1, startIndex, true)
@@ -1452,7 +1477,7 @@ function CoinChallengePage() {
       const candidates = TRACK_LIGHTS
         .map((light, index) => ({ ...light, index }))
         .filter((light) => light.option !== null)
-      const selected = candidates[Math.floor(Math.random() * candidates.length)]
+      const selected = candidates[Math.floor((joinedRoom ? sharedRandomRef.current() : Math.random()) * candidates.length)]
 
       if (!selected || selected.option === null) {
         setShouldResetAllBets(true)

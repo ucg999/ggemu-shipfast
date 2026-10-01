@@ -20,7 +20,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             SELECT round_token, starts_at_ms, target_index, award_member_id, award_amount, competition_round, competition_jackpot FROM coin_challenge_shared_rounds WHERE room_id = '1'
           `).first<SharedRoundRow>()
           return Response.json({
-            sharedRound: sharedRound && sharedRound.starts_at_ms >= Date.now() - 2_000
+            sharedRound: sharedRound && sharedRound.starts_at_ms >= Date.now() - 12_000
               ? sharedRoundView(sharedRound)
               : null,
           }, { headers: { 'Cache-Control': 'private, no-store' } })
@@ -41,7 +41,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             online: onlineResult.results.length,
             winCounts: parseWinCounts(competition?.win_counts_json),
             winCoins: parseWinCounts(competition?.win_coins_json),
-            sharedRound: sharedRound && sharedRound.starts_at_ms >= now - 2_000 ? sharedRoundView(sharedRound) : null,
+            sharedRound: sharedRound && sharedRound.starts_at_ms >= now - 12_000 ? sharedRoundView(sharedRound) : null,
             room: {
               joined: Boolean(member && onlineResult.results.some(row => row.member_id === member.id && row.room_id === '1')),
               count: onlineResult.results.filter(row => row.room_id === '1').length,
@@ -81,7 +81,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
           online: onlineResult.results.length,
           winCounts: parseWinCounts(competition?.win_counts_json),
           winCoins: parseWinCounts(competition?.win_coins_json),
-          sharedRound: sharedRound && sharedRound.starts_at_ms >= now - 2_000
+          sharedRound: sharedRound && sharedRound.starts_at_ms >= now - 12_000
             ? sharedRoundView(sharedRound)
             : null,
           room: {
@@ -173,7 +173,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             const token = crypto.randomUUID()
             // A short synchronization window lets every joined browser receive
             // the same target without showing a countdown to players.
-            const startsAt = now + 1_000
+            const startsAt = now + 2_000
             const target = chooseSharedTarget()
             const roomPlayers = await memberDb().prepare(`
               SELECT member_id, display_name, bets_json, game_mode, credits, room_id, room_seat, last_seen_at
