@@ -14,31 +14,24 @@ export type DatabaseLike = {
   batch: (statements: DatabaseStatement[]) => Promise<Array<{ success: boolean; meta: { changes: number; last_row_id?: number } }>>
 }
 
-let client: Sql | undefined
-
 export function postgresDatabase(connectionString: string): DatabaseLike {
-  const throughHyperdrive = connectionString.includes('.hyperdrive.local')
-  client ??= postgres(connectionString, {
-    max: throughHyperdrive ? 1 : 3,
-    idle_timeout: 20,
-    connect_timeout: 10,
-    prepare: false,
-    fetch_types: false,
-    ...(throughHyperdrive ? {} : { ssl: 'require' as const }),
-  })
-
   return {
     prepare(query) {
-      return createStatement(client!, query)
+      return createStatement(connectionString, query)
     },
     async batch(statements) {
-      return client!.begin(async transaction => {
-        const results = []
-        for (const statement of statements as PostgresStatement[]) {
-          results.push(await statement.execute(transaction))
-        }
-        return results
-      })
+      const client = createClient(connectionString)
+      try {
+        return await client.begin(async transaction => {
+          const results = []
+          for (const statement of statements as PostgresStatement[]) {
+            results.push(await statement.execute(transaction))
+          }
+          return results
+        })
+      } finally {
+        await client.end({ timeout: 1 })
+      }
     },
   }
 }
@@ -47,21 +40,42 @@ type PostgresStatement = DatabaseStatement & {
   execute: (sql: Sql) => Promise<{ success: boolean; meta: { changes: number; last_row_id?: number } }>
 }
 
-function createStatement(sql: Sql, source: string, values: unknown[] = []): PostgresStatement {
+function createClient(connectionString: string) {
+  const throughHyperdrive = connectionString.includes('.hyperdrive.local')
+  return postgres(connectionString, {
+    max: 1,
+    idle_timeout: 20,
+    connect_timeout: 10,
+    prepare: false,
+    fetch_types: false,
+    ...(throughHyperdrive ? {} : { ssl: 'require' as const }),
+  })
+}
+
+async function withClient<T>(connectionString: string, operation: (client: Sql) => Promise<T>) {
+  const client = createClient(connectionString)
+  try {
+    return await operation(client)
+  } finally {
+    await client.end({ timeout: 1 })
+  }
+}
+
+function createStatement(connectionString: string, source: string, values: unknown[] = []): PostgresStatement {
   const statement: PostgresStatement = {
     bind(...nextValues) {
-      return createStatement(sql, source, nextValues)
+      return createStatement(connectionString, source, nextValues)
     },
     async first<T>() {
-      const rows = await executeRows(sql, source, values)
+      const rows = await withClient(connectionString, client => executeRows(client, source, values))
       return (rows[0] as T | undefined) ?? null
     },
     async all<T>() {
-      const rows = await executeRows(sql, source, values)
+      const rows = await withClient(connectionString, client => executeRows(client, source, values))
       return { results: rows as T[] }
     },
     async run() {
-      return statement.execute(sql)
+      return withClient(connectionString, client => statement.execute(client))
     },
     async execute(executor) {
       const rows = await executeRows(executor, source, values)
