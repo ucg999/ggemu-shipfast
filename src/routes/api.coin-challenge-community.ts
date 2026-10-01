@@ -129,7 +129,10 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             return Response.json({ ok: true })
           }
           if (body.action === 'presence-leave') {
-            await memberDb().prepare('DELETE FROM coin_challenge_presence WHERE member_id = ? AND game_channel = ?').bind(member.id, channel).run()
+            await memberDb().batch([
+              memberDb().prepare('DELETE FROM coin_challenge_presence WHERE member_id = ? AND game_channel = ?').bind(member.id, channel),
+              memberDb().prepare('DELETE FROM coin_challenge_chat_messages WHERE member_id = ? AND game_channel = ?').bind(member.id, channel),
+            ])
             return Response.json({ ok: true })
           }
           if (body.action === 'room-join') {
@@ -153,7 +156,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
           if (body.action === 'room-leave') {
             await memberDb().batch([
               memberDb().prepare(`UPDATE coin_challenge_presence SET room_id = NULL, room_seat = NULL, bets_json = '[0,0,0,0,0,0,0,0]', last_seen_at = CURRENT_TIMESTAMP WHERE member_id = ?`).bind(member.id),
-              memberDb().prepare(`DELETE FROM coin_challenge_chat_messages WHERE game_channel = 'coin-challenge'`),
+              memberDb().prepare(`DELETE FROM coin_challenge_chat_messages WHERE member_id = ? AND game_channel = 'coin-challenge'`).bind(member.id),
             ])
             return Response.json({ ok: true, joined: false })
           }
@@ -206,7 +209,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             return Response.json({ ok: true })
           }
           if (body.action === 'chat-clear') {
-            await memberDb().prepare('DELETE FROM coin_challenge_chat_messages WHERE game_channel = ?').bind(channel).run()
+            await memberDb().prepare('DELETE FROM coin_challenge_chat_messages WHERE member_id = ? AND game_channel = ?').bind(member.id, channel).run()
             return Response.json({ ok: true })
           }
 

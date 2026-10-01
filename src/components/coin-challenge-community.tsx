@@ -75,11 +75,11 @@ export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, 
   }, [channel, member?.id])
   useEffect(() => { void refresh() }, [channel, leaderboardMode])
   useEffect(() => {
-    if (!isOpen || data.room.joined) return
+    if (!isOpen) return
     void refresh()
-    const timer = window.setInterval(() => void refresh(), 5_000)
+    const timer = window.setInterval(() => void refresh(), 2_000)
     return () => window.clearInterval(timer)
-  }, [isOpen, data.room.joined, channel, leaderboardMode])
+  }, [isOpen, channel, leaderboardMode])
   useEffect(() => {
     if (!data.room.joined) return
     void refreshRoom()
@@ -97,13 +97,13 @@ export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, 
     void Promise.all(pending.map(win =>
       post({ action: 'score', score: win.amount, submissionKey: `${member.id}:${win.id}` })
         .catch(() => uploadedWinsRef.current.delete(win.id)),
-    )).then(() => { if (isOpen && tab === 'rank') void refresh() })
+    )).then(() => void refresh())
   }, [member?.id, recentWins, isOpen, tab])
   useEffect(() => {
     if (!member || !scoreSubmission || uploadedGameScoresRef.current.has(scoreSubmission.id)) return
     uploadedGameScoresRef.current.add(scoreSubmission.id)
     void post({ action: 'game-score', mode: leaderboardMode, outcome: scoreSubmission.outcome, score: scoreSubmission.score, submissionKey: `${member.id}:${channel}:${scoreSubmission.id}` })
-      .then(() => { if (isOpen && tab === 'rank') void refresh() })
+      .then(() => void refresh())
       .catch(() => uploadedGameScoresRef.current.delete(scoreSubmission.id))
   }, [scoreSubmission?.id, member?.id, channel, leaderboardMode])
 
