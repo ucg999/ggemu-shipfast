@@ -128,7 +128,7 @@ export const Route = createFileRoute('/api/member')({
                 INSERT INTO member_daily_transfers (member_id, transfer_date, browser_to_member)
                 VALUES (?, date('now'), ?)
                 ON CONFLICT(member_id, transfer_date) DO UPDATE SET
-                  browser_to_member = browser_to_member + excluded.browser_to_member,
+                  browser_to_member = member_daily_transfers.browser_to_member + excluded.browser_to_member,
                   updated_at = CURRENT_TIMESTAMP
               `).bind(member.id, amount),
               memberDb().prepare('UPDATE members SET coin_balance = coin_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(amount, member.id),

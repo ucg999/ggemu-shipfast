@@ -264,7 +264,12 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
         } catch (error) {
           if (error instanceof Response) return error
           const message = error instanceof Error ? error.message : ''
-          if (message.includes('UNIQUE constraint failed')) return jsonError('这次中奖记录已经上传过')
+          if (
+            message.includes('UNIQUE constraint failed: leaderboard_submissions.submission_key')
+            || (message.includes('duplicate key value violates unique constraint') && message.includes('submission_key'))
+          ) {
+            return Response.json({ ok: true, duplicate: true })
+          }
           return jsonError('操作失败，请稍后重试', 500)
         }
       },
