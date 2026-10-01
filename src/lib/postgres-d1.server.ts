@@ -121,7 +121,10 @@ function normalizeRow(row: QueryRow) {
     if ((key.endsWith('_json') || key === 'bets_json') && value !== null && typeof value === 'object') {
       row[key] = JSON.stringify(value)
     } else if (value instanceof Date) {
-      row[key] = value.toISOString().replace('T', ' ').replace('Z', '')
+      const iso = value.toISOString()
+      row[key] = key === 'today' || key.endsWith('_date') ? iso.slice(0, 10) : iso.replace('T', ' ').replace('Z', '')
+    } else if (typeof value === 'string' && (key === 'coins_gained' || key.endsWith('_at_ms'))) {
+      row[key] = Number(value)
     }
   }
 }
