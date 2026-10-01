@@ -25,9 +25,14 @@ export const Route = createFileRoute('/api/coin-rankings')({
           `).all<TotalRow>()
           if (current.results.length) {
             await memberDb().batch(current.results.map((row, index) => memberDb().prepare(`
-              INSERT OR REPLACE INTO coin_leaderboard_daily_snapshot
+              INSERT INTO coin_leaderboard_daily_snapshot
                 (snapshot_date, rank, member_id, display_name, player_number, coin_balance)
               VALUES (?, ?, ?, ?, ?, ?)
+              ON CONFLICT(snapshot_date, rank) DO UPDATE SET
+                member_id = excluded.member_id,
+                display_name = excluded.display_name,
+                player_number = excluded.player_number,
+                coin_balance = excluded.coin_balance
             `).bind(today, index + 1, row.member_id, row.display_name, row.player_number, row.coin_balance)))
           }
           total = current.results.map((row, index) => ({ rank: index + 1, display_name: row.display_name, player_number: row.player_number, coin_balance: row.coin_balance }))

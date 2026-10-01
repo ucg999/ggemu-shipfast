@@ -1,5 +1,6 @@
 import { env } from 'cloudflare:workers'
 import { pbkdf2Sync } from 'node:crypto'
+import { postgresDatabase } from './postgres-d1.server'
 
 const SESSION_COOKIE = '__Host-ucg999_member'
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30
@@ -28,6 +29,8 @@ export type MemberView = {
 }
 
 export function memberDb() {
+  if (env.HYPERDRIVE?.connectionString) return postgresDatabase(env.HYPERDRIVE.connectionString)
+  if (env.SUPABASE_DATABASE_URL) return postgresDatabase(env.SUPABASE_DATABASE_URL)
   const db = env.LEADERBOARD_DB
   if (!db) throw new Error('玩家数据库尚未绑定')
   return db

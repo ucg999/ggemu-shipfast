@@ -12,6 +12,12 @@
       "database_id": "eda33bf8-c72e-418b-bf78-5f307171f286"
     }
   ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "7d39c00a2ab741e896e5aa8a75503fea"
+    }
+  ],
   "routes": [
     { "pattern": "ucg999.com", "custom_domain": true },
     { "pattern": "www.ucg999.com", "custom_domain": true }

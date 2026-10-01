@@ -30,7 +30,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
           const [onlineResult, sharedRound, competition] = await Promise.all([
             memberDb().prepare(`
               SELECT member_id, display_name, bets_json, game_mode, credits, room_id, room_seat, last_seen_at
-              FROM coin_challenge_presence WHERE game_channel = ? AND last_seen_at >= datetime('now', '-20 seconds')
+              FROM coin_challenge_presence WHERE game_channel = ? AND last_seen_at >= datetime('now', '-30 minutes')
               ORDER BY last_seen_at DESC LIMIT 30
             `).bind(channel).all<PresenceRow>(),
             memberDb().prepare(`SELECT round_token, starts_at_ms, target_index, award_member_id, award_amount, competition_round, competition_jackpot FROM coin_challenge_shared_rounds WHERE room_id = '1'`).first<SharedRoundRow>(),
@@ -67,7 +67,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
           `).bind(leaderboardGame, leaderboardPeriodKey).all<RankRow>(),
           memberDb().prepare(`
             SELECT member_id, display_name, bets_json, game_mode, credits, room_id, room_seat, last_seen_at
-            FROM coin_challenge_presence WHERE game_channel = ? AND last_seen_at >= datetime('now', '-20 seconds')
+            FROM coin_challenge_presence WHERE game_channel = ? AND last_seen_at >= datetime('now', '-30 minutes')
             ORDER BY last_seen_at DESC LIMIT 30
           `).bind(channel).all<PresenceRow>(),
           memberDb().prepare(`SELECT round_token, starts_at_ms, target_index, award_member_id, award_amount, competition_round, competition_jackpot FROM coin_challenge_shared_rounds WHERE room_id = '1'`).first<SharedRoundRow>(),
@@ -119,7 +119,17 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
               VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
               ON CONFLICT(member_id) DO UPDATE SET display_name = excluded.display_name, bets_json = excluded.bets_json,
                 game_mode = excluded.game_mode, credits = excluded.credits, game_channel = excluded.game_channel, last_seen_at = CURRENT_TIMESTAMP
+              WHERE coin_challenge_presence.display_name <> excluded.display_name
+                OR coin_challenge_presence.bets_json <> excluded.bets_json
+                OR coin_challenge_presence.game_mode <> excluded.game_mode
+                OR coin_challenge_presence.credits <> excluded.credits
+                OR coin_challenge_presence.game_channel <> excluded.game_channel
+                OR coin_challenge_presence.last_seen_at < datetime('now', '-30 minutes')
             `).bind(member.id, member.displayName, JSON.stringify(bets), mode, credits, channel).run()
+            return Response.json({ ok: true })
+          }
+          if (body.action === 'presence-leave') {
+            await memberDb().prepare('DELETE FROM coin_challenge_presence WHERE member_id = ? AND game_channel = ?').bind(member.id, channel).run()
             return Response.json({ ok: true })
           }
           if (body.action === 'room-join') {
@@ -127,7 +137,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             if (current?.room_id === '1' && current.room_seat) return Response.json({ ok: true, joined: true, seat: current.room_seat })
             const room = await memberDb().prepare(`
               SELECT room_seat FROM coin_challenge_presence
-              WHERE room_id = '1' AND last_seen_at >= datetime('now', '-20 seconds')
+              WHERE room_id = '1' AND last_seen_at >= datetime('now', '-30 minutes')
             `).all<{ room_seat: number | null }>()
             const occupied = new Set(room.results.map(row => Number(row.room_seat)).filter(seat => seat >= 1 && seat <= 4))
             const seat = [1, 2, 3, 4].find(value => !occupied.has(value))
@@ -168,7 +178,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             const roomPlayers = await memberDb().prepare(`
               SELECT member_id, display_name, bets_json, game_mode, credits, room_id, room_seat, last_seen_at
               FROM coin_challenge_presence
-              WHERE room_id = '1' AND last_seen_at >= datetime('now', '-20 seconds')
+              WHERE room_id = '1' AND last_seen_at >= datetime('now', '-30 minutes')
               ORDER BY room_seat ASC
             `).all<PresenceRow>()
             const competition = await settleCompetition(token, target, roomPlayers.results)

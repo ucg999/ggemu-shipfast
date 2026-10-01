@@ -52,7 +52,7 @@ export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, 
   useEffect(() => { void getMemberSession() }, [])
   useEffect(() => {
     if (!member) return
-    const updatePresence = () => void post({
+    void post({
       action: 'presence',
       // Gold/ghost bonus rounds reuse the initiating wager locally. Do not
       // publish that retained wager as a new multiplayer bet.
@@ -60,10 +60,19 @@ export function CoinChallengeCommunity({ bets, credits, gameMode, onOpenChange, 
       credits,
       mode: gameMode,
     }).catch(() => {})
-    updatePresence()
-    const timer = window.setInterval(updatePresence, 8_000)
-    return () => window.clearInterval(timer)
   }, [bets, credits, gameMode, isOpen, member?.id])
+  useEffect(() => {
+    if (!member) return
+    const leave = () => {
+      const body = JSON.stringify({ action: 'presence-leave', channel })
+      navigator.sendBeacon('/api/coin-challenge-community', new Blob([body], { type: 'application/json' }))
+    }
+    window.addEventListener('pagehide', leave)
+    return () => {
+      window.removeEventListener('pagehide', leave)
+      leave()
+    }
+  }, [channel, member?.id])
   useEffect(() => { void refresh() }, [channel, leaderboardMode])
   useEffect(() => {
     if (!isOpen || data.room.joined) return
