@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import type { Locale } from '#/lib/ggemu'
-import { getMemberSession, useMemberSession } from '#/lib/member-client'
+import { getMemberSession, requestMemberLogin, useMemberSession } from '#/lib/member-client'
 
 let cachedLikes: Record<string, number> | null = null
 let cachedLiked = new Set<string>()
@@ -66,9 +66,17 @@ export function PspLikeButton({ gameId, locale, className = '' }: { gameId: stri
 
   async function like(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault(); event.stopPropagation()
-    if (!member) {
+    const activeMember = member ?? (await getMemberSession().catch(() => ({ member: null, remainingToday: 999 }))).member
+    if (!activeMember) {
       setNotice(loginRequired)
+      requestMemberLogin()
       window.setTimeout(() => setNotice(''), 1800)
+      return
+    }
+    if (activeMember.needsNickname) {
+      setNotice(locale === 'en' ? 'Set your nickname first' : '请先在玩家账号中设置昵称')
+      requestMemberLogin()
+      window.setTimeout(() => setNotice(''), 2200)
       return
     }
     if (busy) return
@@ -77,7 +85,9 @@ export function PspLikeButton({ gameId, locale, className = '' }: { gameId: stri
       const data = await addPspGameLike(gameId)
       cachedLiked.add(gameId); setLiked(true)
       setCount(data.likeCount ?? 0)
-    } catch {
+    } catch (cause) {
+      setNotice(cause instanceof Error && cause.message !== 'like_failed' ? cause.message : (locale === 'en' ? 'Like failed. Please try again.' : '点赞失败，请稍后重试'))
+      window.setTimeout(() => setNotice(''), 2400)
       cachedLikes = null
       void loadLikes().then(likes => setCount(likes[gameId] ?? 0)).catch(() => setCount(value => Math.max(0, value - 1)))
     } finally { setBusy(false) }

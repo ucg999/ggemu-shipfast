@@ -202,7 +202,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                 : undefined
               return (
               <article className={`group relative ${platform === 'psp' ? 'psp-library-card' : 'overflow-hidden rounded-xl bg-base-100'}`} key={game.id}>
-              <Link onClickCapture={requireLogin} params={{ gameId: game.id, locale: lang }} to={platform === 'psp' ? '/$locale/platform/psp/$gameId' : '/$locale/platform/switch/$gameId'}>
+              <Link onClick={requireLogin} params={{ gameId: game.id, locale: lang }} to={platform === 'psp' ? '/$locale/platform/psp/$gameId' : '/$locale/platform/switch/$gameId'}>
                 <SwitchLibraryImage
                   clickable
                   className={`${platform === 'psp' ? 'psp-library-cover aspect-[353/600] [&_img]:object-contain' : 'aspect-[616/353] transition group-hover:scale-[1.02]'} w-full`}

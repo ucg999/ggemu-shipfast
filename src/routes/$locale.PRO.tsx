@@ -580,7 +580,7 @@ function ThemeMode() {
                   data-start-game
                   href={switchPlatform ? `/${lang}/platform/switch/${id}#PRO` : pspPlatform ? `/${lang}/platform/psp/${id}#PRO` : `/${lang}/games/${id}#PRO`}
                   onFocus={() => setGameIndex(index)}
-                  onClickCapture={(event) => {
+                  onClick={(event) => {
                     if ((switchPlatform || pspPlatform) && !memberSession) {
                       event.preventDefault()
                       setNotice(english ? 'Sign in to open game details.' : '登录玩家账号后才能打开游戏详情')
