@@ -15,6 +15,7 @@ export const Route = createFileRoute('/api/psp-likes')({
         assertSameOrigin(request)
         const member = await getMemberFromRequest(request)
         if (!member) return jsonError('请先登录玩家账号后点赞', 401)
+        if (member.needsNickname) return jsonError('请先完成必填昵称设置', 428)
         const body = await request.json() as { gameId?: unknown }
         const gameId = typeof body.gameId === 'string' ? body.gameId.trim().slice(0, 100) : ''
         if (!/^[a-z0-9][a-z0-9-]{0,99}$/.test(gameId)) return jsonError('游戏信息不正确')

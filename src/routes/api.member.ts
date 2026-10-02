@@ -15,6 +15,8 @@ import {
   releaseInactiveMembers,
   toMemberView,
   validateCredentials,
+  validateNickname,
+  validateRegistrationCredentials,
   verifyRecoveryCode,
   verifyPassword,
 } from '#/lib/member-auth.server'
@@ -34,7 +36,9 @@ export const Route = createFileRoute('/api/member')({
           const action = body.action === 'register' ? 'register' : body.action === 'reset-password' ? 'reset-password' : 'login'
           if (!await checkAuthRateLimit(request, action)) return jsonError('尝试次数过多，请稍后再试', 429)
           await releaseInactiveMembers()
-          const credentials = validateCredentials(body.username, body.password)
+          const credentials = action === 'register'
+            ? validateRegistrationCredentials(body.username, body.password)
+            : validateCredentials(body.username, body.password)
           if ('error' in credentials) return jsonError(credentials.error ?? '账号信息不符合要求')
 
           if (action === 'register') {
@@ -45,18 +49,19 @@ export const Route = createFileRoute('/api/member')({
             const coinBalance = 0
             const playerNumber = await allocatePlayerNumber()
             if (!Number.isInteger(playerNumber) || playerNumber < 1 || playerNumber > 99_999) return jsonError('玩家 ID 已达到上限', 503)
+            const generatedNickname = `玩家${String(playerNumber).padStart(5, '0')}`
             try {
               await memberDb().prepare(`
                 INSERT INTO members (id, username, display_name, password_hash, password_salt, password_iterations,
                   recovery_hash, recovery_salt, recovery_iterations, coin_balance, player_number, last_login_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, CURRENT_TIMESTAMP)
-              `).bind(memberId, credentials.normalizedUsername, credentials.displayName, password.hash, password.salt, password.iterations,
+              `).bind(memberId, credentials.normalizedUsername, generatedNickname, password.hash, password.salt, password.iterations,
                 recovery.password.hash, recovery.password.salt, recovery.password.iterations, playerNumber).run()
             } catch {
               return jsonError('这个用户名已被使用', 409)
             }
             const session = await createSession(memberId, request)
-            return Response.json({ member: { id: memberId, username: credentials.normalizedUsername, displayName: credentials.displayName, coinBalance, playerNumber }, recoveryCode: recovery.code }, { status: 201, headers: { 'Set-Cookie': session.cookie } })
+            return Response.json({ member: { id: memberId, username: credentials.normalizedUsername, displayName: generatedNickname, coinBalance, playerNumber, needsNickname: false }, recoveryCode: recovery.code, needsNickname: false }, { status: 201, headers: { 'Set-Cookie': session.cookie } })
           }
 
           if (action === 'reset-password') {
@@ -77,9 +82,13 @@ export const Route = createFileRoute('/api/member')({
           }
 
           const row = await findMemberByUsername(credentials.normalizedUsername)
-          const fallback = await hashPassword(credentials.password, '00000000000000000000000000000000')
-          const valid = row ? await verifyPassword(row, credentials.password) : fallback.hash.length === 0
-          if (!row || !valid) return jsonError('用户名或密码不正确', 401)
+          if (!row) {
+            // Keep a comparable response time for unknown users without doing a
+            // second PBKDF2 calculation for every successful login.
+            await hashPassword(credentials.password, '00000000000000000000000000000000')
+            return jsonError('用户名或密码不正确', 401)
+          }
+          if (!await verifyPassword(row, credentials.password)) return jsonError('用户名或密码不正确', 401)
           if (passwordNeedsRehash(row.password_iterations)) {
             const upgraded = await hashPassword(credentials.password)
             await memberDb().prepare(`
@@ -101,6 +110,7 @@ export const Route = createFileRoute('/api/member')({
           assertSameOrigin(request)
           const member = await getMemberFromRequest(request)
           if (!member) return jsonError('请先登录玩家账号', 401)
+          if (member.needsNickname) return jsonError('请先完成必填昵称设置', 428)
           const body = await request.json() as Record<string, unknown>
           const amount = Math.floor(Number(body.amount) || 0)
           if (amount < 1 || amount > 999) return jsonError('单次转入数量需为 1–999 个')
@@ -160,6 +170,31 @@ export const Route = createFileRoute('/api/member')({
           const member = await getMemberFromRequest(request)
           if (!member) return jsonError('请先登录玩家账号', 401)
           const body = await request.json() as Record<string, unknown>
+
+          if (body.action === 'set-nickname') {
+            const validated = validateNickname(body.nickname)
+            if ('error' in validated) return jsonError(validated.error ?? '昵称不符合要求')
+            const threshold = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').replace('Z', '')
+            const recentChange = await memberDb().prepare(`
+              SELECT created_at FROM member_coin_transactions
+              WHERE member_id = ? AND reason = 'nickname_change' AND created_at > ?
+              ORDER BY created_at DESC LIMIT 1
+            `).bind(member.id, threshold).first<{ created_at: string }>()
+            if (recentChange) return jsonError('昵称每30天只能修改一次', 429)
+            await memberDb().batch([
+              memberDb().prepare('UPDATE members SET display_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(validated.nickname, member.id),
+              memberDb().prepare(`
+                INSERT INTO member_coin_transactions (member_id, amount, balance_after, reason, idempotency_key)
+                VALUES (?, 0, ?, 'nickname_change', ?)
+              `).bind(member.id, member.coinBalance, crypto.randomUUID()),
+            ])
+            const updated = await memberDb().prepare('SELECT id, username, display_name, coin_balance, player_number FROM members WHERE id = ?').bind(member.id).first<{ id: string; username: string; display_name: string; coin_balance: number; player_number: number }>()
+            if (!updated) return jsonError('玩家账号不存在', 404)
+            return Response.json({ member: toMemberView(updated) })
+          }
+
+          if (member.needsNickname) return jsonError('请先完成必填昵称设置', 428)
+
           const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : ''
           const row = await findMemberByUsername(member.username)
           if (!row || !await verifyPassword(row, currentPassword)) return jsonError('当前密码不正确', 401)

@@ -8,6 +8,7 @@ import {
   MEMBER_LOGIN_REQUEST_EVENT,
   submitMemberCredentials,
   transferBrowserCoinsToMember,
+  updateMemberNickname,
   updateMemberPassword,
   useMemberSession,
 } from '#/lib/member-client'
@@ -23,6 +24,8 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [issuedRecoveryCode, setIssuedRecoveryCode] = useState('')
+  const [nickname, setNickname] = useState('')
+  const [nicknameSetup, setNicknameSetup] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [transferAmount, setTransferAmount] = useState('')
@@ -74,6 +77,12 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
     }
   }, [isOpen, member?.id, refreshAccount])
 
+  useEffect(() => {
+    if (!member?.needsNickname) return
+    setNicknameSetup(true)
+    setIsOpen(true)
+  }, [member?.needsNickname])
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setBusy(true)
@@ -83,8 +92,24 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
       const account = await getMemberSession()
       setRemainingToday(account.remainingToday)
       setPassword('')
+      setNicknameSetup(session.needsNickname)
       if (session.recoveryCode) setIssuedRecoveryCode(session.recoveryCode)
       else setIsOpen(false)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : copy.failed)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleNickname(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    try {
+      await updateMemberNickname(nickname)
+      setNickname('')
+      setNicknameSetup(false)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : copy.failed)
     } finally {
@@ -139,44 +164,53 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
         aria-label={member ? `${copy.member}: ${member.displayName}` : copy.login}
         className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-black/25 text-sm text-current transition hover:border-black lg:h-9 lg:w-auto lg:grid-flow-col lg:gap-1.5 lg:px-3"
         onClick={() => { setSecurityOpen(false); setIsOpen(true); void refreshAccount() }}
-        title={member ? member.displayName : copy.login}
+        title={member ? member.displayName || copy.setNickname : copy.login}
         type="button"
       >
         <i className={member ? 'ri-user-smile-line' : 'ri-user-line'} />
-        <span className="hidden max-w-24 truncate text-xs font-semibold lg:block">{member?.displayName ?? copy.login}</span>
+        <span className="hidden max-w-24 truncate text-xs font-semibold lg:block">{member ? member.displayName || copy.setNickname : copy.login}</span>
       </button>
 
       {isOpen ? (
-        <div className="fixed inset-0 z-[180] grid place-items-center bg-black/55 p-4" onClick={() => setIsOpen(false)} role="presentation">
+        <div className="fixed inset-0 z-[180] grid place-items-center bg-black/55 p-4" onClick={() => { if (!member?.needsNickname) setIsOpen(false) }} role="presentation">
           <section aria-modal="true" className="w-full max-w-sm rounded-3xl bg-white p-6 text-black shadow-2xl" onClick={(event) => event.stopPropagation()} role="dialog">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-semibold">{member ? copy.account : mode === 'login' ? copy.login : copy.register}</h2>
                 <p className="mt-1 text-sm text-black/55">{copy.description}</p>
               </div>
-              <button aria-label={copy.close} className="grid h-8 w-8 place-items-center rounded-full hover:bg-black/5" onClick={() => setIsOpen(false)} type="button">✕</button>
+              {!member?.needsNickname ? <button aria-label={copy.close} className="grid h-8 w-8 place-items-center rounded-full hover:bg-black/5" onClick={() => setIsOpen(false)} type="button">✕</button> : null}
             </div>
 
             {member ? (
               <div className="mt-6">
                 <div className="rounded-2xl bg-amber-50 p-4">
                   <p className="text-sm text-black/55">{copy.signedInAs}</p>
-                  <strong className="mt-1 block text-xl">{member.displayName}</strong>
+                  <strong className="mt-1 block text-xl">{member.displayName || copy.nicknameRequired}</strong>
+                  <p className="mt-0.5 text-xs text-black/45">{copy.loginAccount}：{member.username}</p>
                   <p className="mt-0.5 font-mono text-xs font-semibold tracking-wider text-black/55">ID：{String(member.playerNumber).padStart(5, '0')}</p>
                   <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
                     <p>{copy.browserCoins}：<b>{readCoinBalance()}</b></p>
                     <p>{copy.memberCoins}：<b>{member.coinBalance}</b></p>
                   </div>
                 </div>
-                <form className="mt-4" onSubmit={handleTransfer}>
+                <form className={`mt-4 rounded-2xl border p-3 ${nicknameSetup || member.needsNickname ? 'border-amber-400 bg-amber-50' : 'border-black/10'}`} onSubmit={handleNickname}>
+                  <p className="text-sm font-semibold">{nicknameSetup || member.needsNickname ? copy.setNickname : copy.changeNickname}</p>
+                  <p className="mt-1 text-xs text-black/50">{copy.nicknameHint}</p>
+                  <div className="mt-2 flex gap-2">
+                    <input aria-label={copy.nickname} className="h-10 min-w-0 flex-1 rounded-xl border border-black/20 px-3 outline-none focus:border-black" maxLength={20} onChange={event => setNickname(event.target.value)} placeholder={copy.nickname} required value={nickname} />
+                    <button className="h-10 shrink-0 rounded-xl bg-amber-400 px-4 text-sm font-semibold disabled:opacity-40" disabled={busy || !nickname.trim()} type="submit">{copy.saveNickname}</button>
+                  </div>
+                </form>
+                {!member.needsNickname ? <form className="mt-4" onSubmit={handleTransfer}>
                   <div className="flex gap-2">
                     <input aria-label={copy.transferAmount} className="h-11 min-w-0 flex-1 rounded-xl border border-black/20 px-3 outline-none focus:border-black" max={Math.min(999, remainingToday)} min="1" onChange={(event) => setTransferAmount(event.target.value)} placeholder={copy.transferAmount} type="number" value={transferAmount} />
                     <button className="h-11 shrink-0 rounded-xl bg-amber-400 px-4 font-semibold disabled:opacity-50" disabled={busy || remainingToday <= 0} type="submit">{copy.transfer}</button>
                   </div>
                   <p className="mt-2 text-xs text-black/50">{copy.remainingToday.replace('{count}', String(remainingToday))}</p>
                   {error ? <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
-                </form>
-                <div className="mt-4 overflow-hidden rounded-2xl border border-black/10">
+                </form> : null}
+                {!member.needsNickname ? <div className="mt-4 overflow-hidden rounded-2xl border border-black/10">
                   <button aria-expanded={securityOpen} className="flex h-12 w-full items-center justify-between px-3 text-sm font-semibold hover:bg-black/[0.03]" onClick={() => setSecurityOpen(current => !current)} type="button">
                     <span>{copy.security}</span>
                     <i className={`ri-arrow-down-s-line text-lg transition-transform ${securityOpen ? 'rotate-180' : ''}`} />
@@ -191,7 +225,7 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
                       </div>
                     </div>
                   ) : null}
-                </div>
+                </div> : null}
                 {issuedRecoveryCode ? <RecoveryCodeNotice code={issuedRecoveryCode} copy={copy} onDone={() => setIssuedRecoveryCode('')} /> : null}
                 <button className="mt-4 h-11 w-full rounded-full border border-black/25 font-medium hover:bg-black/5" disabled={busy} onClick={handleLogout} type="button">{copy.logout}</button>
               </div>
@@ -203,7 +237,8 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
                   <button className={`h-9 rounded-full text-xs ${mode === 'reset-password' ? 'bg-black text-white' : ''}`} onClick={() => { setMode('reset-password'); setError('') }} type="button">{copy.forgot}</button>
                 </div>
                 <form className="mt-5 space-y-3" onSubmit={handleSubmit}>
-                  <label className="block text-sm font-medium">{copy.username}<input autoComplete="username" className="mt-1 h-11 w-full rounded-xl border border-black/20 px-3 outline-none focus:border-black" maxLength={20} minLength={1} onChange={(event) => setUsername(event.target.value)} required value={username} /></label>
+                  <label className="block text-sm font-medium">{copy.username}<input autoComplete="username" className="mt-1 h-11 w-full rounded-xl border border-black/20 px-3 outline-none focus:border-black" maxLength={20} minLength={mode === 'register' ? 6 : 1} onChange={(event) => setUsername(event.target.value)} pattern={mode === 'register' ? '[A-Za-z0-9_]{6,20}' : undefined} required value={username} /></label>
+                  {mode === 'register' ? <p className="-mt-1 text-xs text-black/50">{copy.usernameHint}</p> : null}
                   <label className="block text-sm font-medium">{mode === 'reset-password' ? copy.newPassword : copy.password}<PasswordInput autoComplete={mode === 'register' || mode === 'reset-password' ? 'new-password' : 'current-password'} className="mt-1 h-11 w-full rounded-xl border border-black/20 px-3 pr-10 outline-none focus:border-black" maxLength={72} minLength={8} onChange={setPassword} required value={password} /></label>
                   {mode === 'reset-password' ? <label className="block text-sm font-medium">{copy.recoveryCode}<input className="mt-1 h-11 w-full rounded-xl border border-black/20 px-3 uppercase outline-none focus:border-black" onChange={event => setRecoveryCode(event.target.value)} required value={recoveryCode} /></label> : null}
                   {mode === 'register' ? <p className="text-xs text-black/50">{copy.separateHint}</p> : null}
@@ -241,8 +276,12 @@ function PasswordInput({ className, onChange, ...props }: {
 }
 
 function getMemberCopy(locale: Locale) {
-  if (locale === 'en') return { account: 'Member account', browserCoins: 'Browser coins', browserInsufficient: 'Not enough browser coins', changePassword: 'Change password', close: 'Close', create: 'Create account', currentPassword: 'Current password', dailyLimit: 'You can transfer {count} more coins today', description: 'Browser coins and member coins are kept separately.', failed: 'Something went wrong', forgot: 'Forgot', invalidAmount: 'Enter a valid coin amount', login: 'Sign in', logout: 'Sign out', member: 'Member', memberCoins: 'Member coins', newPassword: 'New password', newRecoveryCode: 'New recovery code', password: 'New password', recoveryCode: 'Recovery code', recoveryWarning: 'Save this code now. It is shown only once and is required if you forget your password.', register: 'Register', remainingToday: 'Daily transfer allowance remaining: {count}/999', resetPassword: 'Reset password', security: 'Account security', separateHint: 'Your browser coins stay on this device. Transfer them manually after signing in.', signedInAs: 'Signed in as', transfer: 'Save', transferAmount: 'Coin amount', username: 'Username', wait: 'Please wait…' }
-  return { account: '玩家账号', browserCoins: '浏览器金币', browserInsufficient: '浏览器金币不足', changePassword: '修改密码', close: '关闭', create: '创建玩家账号', currentPassword: '当前密码', dailyLimit: '今天最多还能转入 {count} 个金币', description: '浏览器金币与玩家金币相互独立，登录后可主动转入保存。注册获得金币将会更快。', failed: '操作失败，请稍后重试', forgot: '忘记密码', invalidAmount: '请输入正确的金币数量', login: '登录', logout: '退出登录', member: '玩家', memberCoins: '玩家金币', newPassword: '新密码（至少8位）', newRecoveryCode: '生成恢复码', password: '密码', recoveryCode: '账号恢复码', recoveryWarning: '请立即保存恢复码。它只显示一次，忘记密码时必须使用。', register: '注册', remainingToday: '今日还可转入 {count}/999 个', resetPassword: '重置密码', security: '账号安全', separateHint: '浏览器金币仍保留在当前设备，登录后可自行选择转入玩家账号。', signedInAs: '当前玩家', transfer: '转入玩家账号', transferAmount: '转入数量', username: '用户名', wait: '请稍候…' }
+  if (locale === 'en') return {
+    account: 'Member account', browserCoins: 'Browser coins', browserInsufficient: 'Not enough browser coins', changeNickname: 'Change nickname', changePassword: 'Change password', close: 'Close', create: 'Create account', currentPassword: 'Current password', dailyLimit: 'You can transfer {count} more coins today', description: 'Browser coins and member coins are kept separately.', failed: 'Something went wrong', forgot: 'Forgot', invalidAmount: 'Enter a valid coin amount', login: 'Sign in', loginAccount: 'Login username', logout: 'Sign out', member: 'Member', memberCoins: 'Member coins', newPassword: 'New password', newRecoveryCode: 'New recovery code', nickname: 'Display nickname', nicknameHint: 'Shown publicly on leaderboards and may contain Chinese. After changing it, you can change it again in 30 days.', nicknameRequired: 'Nickname required', password: 'Password', recoveryCode: 'Recovery code', recoveryWarning: 'Save this code now. It is shown only once and is required if you forget your password.', register: 'Register', remainingToday: 'Daily transfer allowance remaining: {count}/999', resetPassword: 'Reset password', saveNickname: 'Save', security: 'Account security', separateHint: 'A leaderboard nickname will be generated automatically and can be changed later. Your browser coins stay on this device.', setNickname: 'Set your nickname', signedInAs: 'Signed in as', transfer: 'Save', transferAmount: 'Coin amount', username: 'Username', usernameHint: 'Use 6–20 letters, numbers, or underscores. This is your login name.', wait: 'Please wait…',
+  }
+  return {
+    account: '玩家账号', browserCoins: '浏览器金币', browserInsufficient: '浏览器金币不足', changeNickname: '修改昵称', changePassword: '修改密码', close: '关闭', create: '创建玩家账号', currentPassword: '当前密码', dailyLimit: '今天最多还能转入 {count} 个金币', description: '浏览器金币与玩家金币相互独立，登录后可主动转入保存。注册获得金币将会更快。', failed: '操作失败，请稍后重试', forgot: '忘记密码', invalidAmount: '请输入正确的金币数量', login: '登录', loginAccount: '登录账号', logout: '退出登录', member: '玩家', memberCoins: '玩家金币', newPassword: '新密码（至少8位）', newRecoveryCode: '生成恢复码', nickname: '展示昵称', nicknameHint: '昵称用于排行榜公开展示，支持中文；修改后需等待30天才能再次修改。', nicknameRequired: '请先设置昵称', password: '密码', recoveryCode: '账号恢复码', recoveryWarning: '请立即保存恢复码。它只显示一次，忘记密码时必须使用。', register: '注册', remainingToday: '今日还可转入 {count}/999 个', resetPassword: '重置密码', saveNickname: '保存', security: '账号安全', separateHint: '系统会自动生成排行榜昵称，注册后可自行修改；浏览器金币仍保留在当前设备。', setNickname: '设置昵称', signedInAs: '当前玩家', transfer: '转入玩家账号', transferAmount: '转入数量', username: '用户名', usernameHint: '只允许字母、数字和下划线，长度为6–20位；这是以后登录使用的账号。', wait: '请稍候…',
+  }
 }
 
 function RecoveryCodeNotice({ code, copy, onDone }: { code: string; copy: ReturnType<typeof getMemberCopy>; onDone: () => void }) {

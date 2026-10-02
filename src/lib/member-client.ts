@@ -9,6 +9,7 @@ export type MemberSession = {
   displayName: string
   coinBalance: number
   playerNumber: number
+  needsNickname: boolean
 }
 
 let currentMember: MemberSession | null = null
@@ -52,7 +53,7 @@ export function useRequiredMemberAccess(enabled = true) {
     void getMemberSession().then(({ member: sessionMember }) => {
       if (cancelled) return
       setChecked(true)
-      if (!sessionMember) window.setTimeout(requestMemberLogin, 100)
+      if (!sessionMember || sessionMember.needsNickname) window.setTimeout(requestMemberLogin, 100)
     }).catch(() => {
       if (cancelled) return
       setChecked(true)
@@ -93,10 +94,21 @@ export async function submitMemberCredentials(action: 'login' | 'register' | 're
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, username, password, recoveryCode }),
   })
-  const data = await response.json() as { error?: string; member?: MemberSession; recoveryCode?: string }
+  const data = await response.json() as { error?: string; member?: MemberSession; recoveryCode?: string; needsNickname?: boolean }
   if (!response.ok || !data.member) throw new Error(data.error || '操作失败')
   publishMember(data.member)
-  return { member: data.member, recoveryCode: data.recoveryCode }
+  return { member: data.member, recoveryCode: data.recoveryCode, needsNickname: data.needsNickname ?? false }
+}
+
+export async function updateMemberNickname(nickname: string) {
+  const response = await fetch('/api/member', {
+    method: 'PATCH', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'set-nickname', nickname }),
+  })
+  const data = await response.json() as { error?: string; member?: MemberSession }
+  if (!response.ok || !data.member) throw new Error(data.error || '昵称保存失败')
+  publishMember(data.member)
+  return data.member
 }
 
 export async function updateMemberPassword(action: 'change-password' | 'new-recovery-code', currentPassword: string, newPassword?: string) {

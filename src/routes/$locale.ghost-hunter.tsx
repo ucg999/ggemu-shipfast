@@ -368,7 +368,7 @@ function GhostHunterPage() {
     onPointerCancel: () => { dragRef.current = null; setDrag(null) },
   })
   const game = <section ref={gameRef} className={`ghost-game mx-auto w-full max-w-6xl px-3 sm:px-6 ${embed === '1' ? 'ghost-game-embed' : ''}`}>
-      {embed === '1' ? <CoinChallengeCommunity bets={[]} channel="ghost-hunter" chatOnly credits={readCoinBalance()} gameMode="normal" leaderboardTitle="最高连续过关数" recentWins={[]} scoreSubmission={rankSubmission} /> : null}
+      {embed === '1' ? <CoinChallengeCommunity channel="ghost-hunter" standalone leaderboardTitle="最高连续过关数" recentWins={[]} scoreSubmission={rankSubmission} /> : null}
       {embed !== '1' ? <div className="flex shrink-0 items-center justify-between gap-2">
         <div><Link to="/$locale/original-games" params={{ locale: lang }} className="text-sm text-base-content/60">← 原创游戏（内测版）</Link>
           <h1 className="text-xl font-black">幽灵捕手 <span className="text-sm font-normal text-base-content/60">关卡 {level.id}</span></h1></div>
@@ -380,7 +380,7 @@ function GhostHunterPage() {
             else setMessage('当前浏览器不支持系统全屏，游戏已铺满可用屏幕。')
           } catch { setMessage('未能进入系统全屏，游戏仍可正常操作。') }
         }}>全屏</button>
-        <CoinChallengeCommunity bets={[]} channel="ghost-hunter" chatOnly inlineLauncher credits={readCoinBalance()} gameMode="normal" leaderboardTitle="最高连续过关数" recentWins={[]} scoreSubmission={rankSubmission} />
+        <CoinChallengeCommunity channel="ghost-hunter" standalone inlineLauncher leaderboardTitle="最高连续过关数" recentWins={[]} scoreSubmission={rankSubmission} />
         <button className="btn btn-sm" disabled={gameOver || won} onClick={() => { setCleared(0); setLightning(1); advanceLevel() }}>换一关</button>
         </div>
       </div> : null}

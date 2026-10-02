@@ -1595,7 +1595,7 @@ function CoinChallengePage() {
           onOpen={globalCoins.showBalance}
         />
       </div>
-      <CoinChallengeCommunity bets={machine.bets} credits={machine.credits} gameMode={gameMode} onOpenChange={setCommunityOpen} onRoomChange={handleRoomChange} onRoomPlayers={setRoomPlayers} recentWins={rankableWins} />
+      <CoinChallengeCommunity onOpenChange={setCommunityOpen} recentWins={rankableWins} />
       {sharedWinnerSeat !== null ? (
         <>
           <style>{`@keyframes sharedPrizeFly{0%{transform:translate(0,0) scale(.7);opacity:0}15%{opacity:1}100%{transform:translate(58vw,-38vh) scale(.25);opacity:0}}`}</style>

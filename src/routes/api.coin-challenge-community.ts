@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { assertSameOrigin, getMemberFromRequest, jsonError, leaderboardDb, memberDb } from '#/lib/member-auth.server'
 
-type ChatRow = { id: number; member_id: string; display_name: string; message: string; created_at: string }
 type RankRow = { display_name: string; score: number; wins: number; losses: number; updated_at: string }
 type PresenceRow = { member_id: string; display_name: string; bets_json: string; game_mode: string; credits: number; room_id: string | null; room_seat: number | null; last_seen_at: string }
 type SharedRoundRow = { round_token: string; starts_at_ms: number; target_index: number; award_member_id: string | null; award_amount: number; competition_round: number; competition_jackpot: number }
@@ -15,6 +14,9 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
         const searchParams = new URL(request.url).searchParams
         const channel = normalizeChatChannel(searchParams.get('channel'))
         const leaderboardMode = normalizeArenaMode(searchParams.get('mode'))
+        if (searchParams.get('round') === '1' || searchParams.get('room') === '1') {
+          return jsonError('联机功能已关闭', 410)
+        }
         if (searchParams.get('round') === '1') {
           const sharedRound = await memberDb().prepare(`
             SELECT round_token, starts_at_ms, target_index, award_member_id, award_amount, competition_round, competition_jackpot FROM coin_challenge_shared_rounds WHERE room_id = '1'
@@ -63,8 +65,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
           WHERE s.game_id = ? AND s.period_type = 'all' AND s.period_key = ? AND ${channel === 'red-blue-arena' ? '(s.wins + s.losses)' : leaderboardMetric} > 0
           ORDER BY ${leaderboardMetric} DESC, s.losses ASC, s.updated_at ASC LIMIT 20
         `).bind(leaderboardGame, leaderboardPeriodKey).all<RankRow>()
-        const [chatResult, onlineResult, sharedRound, competition, rankResult] = await Promise.all([
-          memberDb().prepare(`SELECT id, member_id, display_name, message, created_at FROM coin_challenge_chat_messages WHERE game_channel = ? ORDER BY id DESC LIMIT 50`).bind(channel).all<ChatRow>(),
+        const [onlineResult, sharedRound, competition, rankResult] = await Promise.all([
           memberDb().prepare(`
             SELECT member_id, display_name, bets_json, game_mode, credits, room_id, room_seat, last_seen_at
             FROM coin_challenge_presence WHERE game_channel = ? AND last_seen_at >= datetime('now', '-30 minutes')
@@ -76,7 +77,6 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
         ])
         const now = Date.now()
         return Response.json({
-          chat: [...chatResult.results].reverse().map(row => ({ id: row.id, memberId: row.member_id, displayName: row.display_name, message: row.message, createdAt: row.created_at })),
           leaderboard: rankResult.results.map((row: RankRow, index: number) => ({ rank: index + 1, displayName: row.display_name, score: row.score, wins: row.wins, losses: row.losses, updatedAt: row.updated_at })),
           member,
           online: onlineResult.results.length,
@@ -106,8 +106,12 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
           assertSameOrigin(request)
           const member = await getMemberFromRequest(request)
           if (!member) return jsonError('请先登录玩家账号', 401)
+          if (member.needsNickname) return jsonError('请先完成必填昵称设置', 428)
           const body = await request.json() as Record<string, unknown>
           const channel = normalizeChatChannel(body.channel)
+          if (['presence', 'presence-leave', 'room-join', 'room-leave', 'round-start'].includes(String(body.action))) {
+            return jsonError('联机功能已关闭', 410)
+          }
           if (body.action === 'presence') {
             const bets = Array.isArray(body.bets)
               ? body.bets.slice(0, 8).map(value => Math.min(9, Math.max(0, Math.floor(Number(value) || 0))))
@@ -130,10 +134,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             return Response.json({ ok: true })
           }
           if (body.action === 'presence-leave') {
-            await memberDb().batch([
-              memberDb().prepare('DELETE FROM coin_challenge_presence WHERE member_id = ? AND game_channel = ?').bind(member.id, channel),
-              memberDb().prepare('DELETE FROM coin_challenge_chat_messages WHERE member_id = ? AND game_channel = ?').bind(member.id, channel),
-            ])
+            await memberDb().prepare('DELETE FROM coin_challenge_presence WHERE member_id = ? AND game_channel = ?').bind(member.id, channel).run()
             return Response.json({ ok: true })
           }
           if (body.action === 'room-join') {
@@ -155,10 +156,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             return Response.json({ ok: true, joined: true, seat })
           }
           if (body.action === 'room-leave') {
-            await memberDb().batch([
-              memberDb().prepare(`UPDATE coin_challenge_presence SET room_id = NULL, room_seat = NULL, bets_json = '[0,0,0,0,0,0,0,0]', last_seen_at = CURRENT_TIMESTAMP WHERE member_id = ?`).bind(member.id),
-              memberDb().prepare(`DELETE FROM coin_challenge_chat_messages WHERE member_id = ? AND game_channel = 'coin-challenge'`).bind(member.id),
-            ])
+            await memberDb().prepare(`UPDATE coin_challenge_presence SET room_id = NULL, room_seat = NULL, bets_json = '[0,0,0,0,0,0,0,0]', last_seen_at = CURRENT_TIMESTAMP WHERE member_id = ?`).bind(member.id).run()
             return Response.json({ ok: true, joined: false })
           }
           if (body.action === 'round-start') {
@@ -201,19 +199,6 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             ])
             return Response.json({ ok: true, shared: true, round: { token, startsAt, target, ...competition } })
           }
-          if (body.action === 'chat') {
-            const message = typeof body.message === 'string' ? body.message.trim().replace(/\s+/g, ' ') : ''
-            if (!message || message.length > 120) return jsonError('聊天内容需为 1–120 个字')
-            const recent = await memberDb().prepare(`SELECT created_at FROM coin_challenge_chat_messages WHERE member_id = ? AND game_channel = ? ORDER BY id DESC LIMIT 1`).bind(member.id, channel).first<{ created_at: string }>()
-            if (recent && Date.now() - Date.parse(`${recent.created_at.replace(' ', 'T')}Z`) < 2_000) return jsonError('发送太快了，请稍等一下', 429)
-            await memberDb().prepare(`INSERT INTO coin_challenge_chat_messages (member_id, display_name, message, game_channel) VALUES (?, ?, ?, ?)`).bind(member.id, member.displayName, message, channel).run()
-            return Response.json({ ok: true })
-          }
-          if (body.action === 'chat-clear') {
-            await memberDb().prepare('DELETE FROM coin_challenge_chat_messages WHERE member_id = ? AND game_channel = ?').bind(member.id, channel).run()
-            return Response.json({ ok: true })
-          }
-
           if (body.action === 'score') {
             const score = Math.floor(Number(body.score) || 0)
             const submissionKey = typeof body.submissionKey === 'string' ? body.submissionKey.slice(0, 96) : ''

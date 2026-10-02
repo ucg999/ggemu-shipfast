@@ -26,6 +26,7 @@ export type MemberView = {
   displayName: string
   coinBalance: number
   playerNumber: number
+  needsNickname: boolean
 }
 
 export function memberDb() {
@@ -72,17 +73,29 @@ export async function checkAuthRateLimit(request: Request, action: string) {
 }
 
 export function validateCredentials(username: unknown, password: unknown) {
-  const displayName = typeof username === 'string' ? username.trim() : ''
-  const normalizedUsername = displayName.toLocaleLowerCase('en-US')
-  const characters = [...displayName]
-  const chineseCharacters = characters.filter(character => /\p{Script=Han}/u.test(character)).length
-  if (!/^[\p{L}\p{N}_-]+$/u.test(displayName) || characters.length > 20 || chineseCharacters > 8) {
-    return { error: '用户名可使用中文、字母、数字、下划线或短横线；中文最多8个字，英文和数字最多20位' }
-  }
+  const normalizedUsername = typeof username === 'string' ? username.trim().toLocaleLowerCase('en-US') : ''
+  if (!normalizedUsername || normalizedUsername.length > 20) return { error: '用户名或密码不正确' }
   if (typeof password !== 'string' || password.length < 8 || password.length > 72) {
     return { error: '密码需为 8–72 位' }
   }
-  return { displayName, normalizedUsername, password }
+  return { normalizedUsername, password }
+}
+
+export function validateRegistrationCredentials(username: unknown, password: unknown) {
+  const credentials = validateCredentials(username, password)
+  if ('error' in credentials) return credentials
+  if (!/^[a-z0-9_]{6,20}$/i.test(credentials.normalizedUsername)) {
+    return { error: '用户名只允许字母、数字和下划线，长度为 6–20 位' }
+  }
+  return credentials
+}
+
+export function validateNickname(value: unknown) {
+  const nickname = typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : ''
+  if ([...nickname].length < 1 || [...nickname].length > 20 || /[\u0000-\u001f\u007f]/.test(nickname)) {
+    return { error: '昵称需为 1–20 个字符，可以使用中文、字母、数字和常用符号' }
+  }
+  return { nickname }
 }
 
 export async function hashPassword(password: string, salt = randomHex(16), iterations = PASSWORD_ITERATIONS) {
@@ -106,13 +119,17 @@ export async function verifyPassword(member: MemberRow, password: string) {
 
 export async function createRecoveryCode() {
   const code = `${randomHex(3).toUpperCase()}-${randomHex(3).toUpperCase()}-${randomHex(3).toUpperCase()}`
-  return { code, password: await hashPassword(code) }
+  const salt = randomHex(16)
+  return { code, password: { hash: await sha256(`${salt}:${code}`), salt, iterations: 0 } }
 }
 
 export async function verifyRecoveryCode(member: MemberRow, code: string) {
-  if (!member.recovery_hash || !member.recovery_salt || !member.recovery_iterations) return false
-  const candidate = await hashPassword(code.trim().toUpperCase(), member.recovery_salt, member.recovery_iterations)
-  return timingSafeEqual(candidate.hash, member.recovery_hash)
+  if (!member.recovery_hash || !member.recovery_salt || member.recovery_iterations === null) return false
+  const normalizedCode = code.trim().toUpperCase()
+  const hash = member.recovery_iterations === 0
+    ? await sha256(`${member.recovery_salt}:${normalizedCode}`)
+    : (await hashPassword(normalizedCode, member.recovery_salt, member.recovery_iterations)).hash
+  return timingSafeEqual(hash, member.recovery_hash)
 }
 
 export async function releaseInactiveMembers() {
@@ -170,7 +187,7 @@ export async function findMemberByUsername(username: string) {
 }
 
 export function toMemberView(row: Pick<MemberRow, 'id' | 'username' | 'display_name' | 'coin_balance' | 'player_number'>): MemberView {
-  return { id: row.id, username: row.username, displayName: row.display_name, coinBalance: row.coin_balance, playerNumber: row.player_number }
+  return { id: row.id, username: row.username, displayName: row.display_name, coinBalance: row.coin_balance, playerNumber: row.player_number, needsNickname: !row.display_name.trim() }
 }
 
 function readCookie(header: string | null, name: string) {
