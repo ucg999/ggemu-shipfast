@@ -45,9 +45,9 @@ function CoinRankingsPage() {
       <main className="mx-auto min-h-[70vh] w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-base-content/45">Player Rankings</p>
         <h1 className="mt-2 text-4xl font-semibold tracking-tight sm:text-6xl">{english ? 'Coin Rankings' : '金币排行榜'}</h1>
-        <p className="mt-3 text-sm text-base-content/55">{english ? 'The total ranking refreshes daily. Today\'s ranking updates live.' : '金币总榜每天更新一次；本日金币榜实时统计今天进入玩家账号的金币。'}</p>
+        <p className="mt-3 text-sm text-base-content/55">{english ? 'The all-time ranking records each account\'s real balance and refreshes once per Beijing day. Today\'s ranking updates live.' : '金币榜总榜记录玩家账号的实际金币余额，按北京时间每天更新一次；本日金币榜实时统计今天进入玩家账号的金币。'}</p>
         <div className="mt-10 grid gap-8 lg:grid-cols-2">
-          <RankingPanel entries={data?.total ?? []} loading={!data} title={english ? 'Total Coins' : '金币榜'} />
+          <RankingPanel entries={data?.total ?? []} loading={!data} title={english ? 'All-time Coin Ranking' : '金币榜总榜'} />
           <RankingPanel entries={data?.daily ?? []} loading={!data} title={english ? "Today's Coins" : '本日金币榜'} />
         </div>
       </main>

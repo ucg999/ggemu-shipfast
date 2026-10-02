@@ -9,7 +9,9 @@ export const Route = createFileRoute('/api/coin-rankings')({
   server: {
     handlers: {
       GET: async () => {
-        const dateRow = await memberDb().prepare(`SELECT date('now') AS today`).first<{ today: string }>()
+        // The total leaderboard is a once-per-Beijing-day snapshot of each
+        // account's real current balance. It must never sum transaction rows.
+        const dateRow = await memberDb().prepare(`SELECT CAST(CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai' AS date) AS today`).first<{ today: string }>()
         const today = dateRow?.today ?? new Date().toISOString().slice(0, 10)
         const snapshot = await memberDb().prepare(`
           SELECT rank, display_name, player_number, coin_balance
@@ -43,7 +45,8 @@ export const Route = createFileRoute('/api/coin-rankings')({
             SUM(t.amount) AS coins_gained
           FROM member_coin_transactions t
           JOIN members m ON m.id = t.member_id
-          WHERE t.amount > 0 AND date(t.created_at) = date('now')
+          WHERE t.amount > 0
+            AND CAST(t.created_at AT TIME ZONE 'Asia/Shanghai' AS date) = CAST(CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai' AS date)
           GROUP BY m.id, m.display_name, m.player_number
           ORDER BY coins_gained DESC, m.player_number ASC LIMIT 10
         `).all<DailyRow>()
