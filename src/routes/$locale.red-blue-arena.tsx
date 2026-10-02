@@ -143,6 +143,7 @@ function RedBlueArenaPage() {
   const roundRef = useRef<RoundState | null>(null)
   const audioRef = useRef<ArenaAudio | null>(null)
   const settledRef = useRef(false)
+  const roundStartBalanceRef = useRef(0)
   const chargedDeathIdsRef = useRef(new Set<number>())
   const rewardedEnemyDeathIdsRef = useRef(new Set<number>())
   const [mode, setMode] = useState<ArenaMode>('duel')
@@ -156,7 +157,7 @@ function RedBlueArenaPage() {
   const [result, setResult] = useState<ArenaResult | null>(null)
   const [message, setMessage] = useState('选择阵营和投注额，见证自动对战！')
   const [feedback, setFeedback] = useState<{ amount: number; id: number; prefix: '+' | '×' } | null>(null)
-  const [rankSubmission, setRankSubmission] = useState<{ id: string; score: number; outcome: 'win' | 'loss' } | null>(null)
+  const [rankSubmission, setRankSubmission] = useState<{ id: string; score: number; outcome: 'win' | 'loss' | 'draw'; wonCoins: number; lostCoins: number } | null>(null)
 
   useEffect(() => setBalance(readCoinBalance()), [])
 
@@ -186,10 +187,11 @@ function RedBlueArenaPage() {
     const billiardsMultiplier = mode === 'billiards' && roundRef.current && finalResult !== 'draw' ? longestBilliardsRun(roundRef.current, finalResult) : 1
     const payout = isTeamMode ? bonusMultiplier * stake : arenaPayout(betSide, finalResult, stake, mode === 'billiards' ? billiardsMultiplier : MODE_RULES[mode].profit)
     const nextBalance = payout > 0 ? addCoinBalance(payout) : readCoinBalance()
+    const coinDelta = nextBalance - roundStartBalanceRef.current
     setBalance(nextBalance)
     setResult(finalResult)
     setPhase('result')
-    if (finalResult !== 'draw') setRankSubmission({ id: `${mode}-${Date.now()}`, score: 1, outcome: finalResult === betSide ? 'win' : 'loss' })
+    setRankSubmission({ id: `${mode}-${Date.now()}`, score: 1, outcome: finalResult === 'draw' ? 'draw' : finalResult === betSide ? 'win' : 'loss', wonCoins: Math.max(0, coinDelta), lostCoins: Math.max(0, -coinDelta) })
     if (isTeamMode && finalResult === 'draw') setMessage('平局，本局按双方阵亡数完成奖扣。')
     else if (isTeamMode && finalResult === betSide) setMessage(`竞猜成功！${bonusMultiplier > 0 ? `额外获得 ${bonusMultiplier}倍奖励，共 ${payout} 金币` : '本局按双方阵亡数完成奖扣'}`)
     else if (isTeamMode && finalResult !== 'draw') setMessage(`竞猜失败，${contestantName(mode, finalResult)}获胜；本局已按双方阵亡数完成奖扣。`)
@@ -270,6 +272,7 @@ function RedBlueArenaPage() {
       setMessage(`本模式最低投注 ${MODE_RULES[mode].minBet} 金币。`)
       return
     }
+    roundStartBalanceRef.current = readCoinBalance()
     if (!spendCoinBalance(stake)) {
       setMessage('金币不足，请先在站内获取金币。')
       return

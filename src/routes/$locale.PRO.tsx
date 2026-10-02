@@ -592,9 +592,10 @@ function ThemeMode() {
                 >
                   <span className="kt-game-number">{String((page - 1) * 24 + index + 1).padStart(3, '0')}</span>
                   <ThemeGameCardPreview game={game} eager={index < 6} />
-                  <strong className={pspPlatform ? 'kt-psp-title-line' : undefined}><span>{game.name}</span>{(pspPlatform || switchPlatform) ? <PspLikeButton className={pspPlatform ? 'kt-psp-like' : ''} gameId={id} locale={lang} /> : null}</strong>
+                  <strong className={pspPlatform ? 'kt-psp-title-line' : undefined}><span>{game.name}</span></strong>
                   {(switchPlatform || pspPlatform) ? <small className="kt-game-meta">{formatThemeLibraryCardMeta(game)}</small> : null}
                 </a>
+                {(pspPlatform || switchPlatform) ? <PspLikeButton className={`kt-download-like ${pspPlatform ? 'kt-psp-like' : ''}`} gameId={id} locale={lang} /> : null}
                 {allGames && <button className={`kt-favorite ${favorite ? 'is-favorite' : ''}`} aria-label={english ? (favorite ? 'Remove from favorites' : 'Add to favorites') : (favorite ? '取消收藏' : '收藏游戏')} aria-pressed={favorite} onClick={() => toggleFavorite(game)}>{favorite ? '♥' : '♡'}</button>}
               </div>
             })}

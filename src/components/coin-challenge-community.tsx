@@ -13,6 +13,8 @@ type LeaderboardEntry = {
   updatedAt: string
 }
 
+type WeeklyCoinEntry = { rank: number; displayName: string; coins: number }
+
 export function CoinChallengeCommunity({
   onOpenChange,
   recentWins,
@@ -30,11 +32,13 @@ export function CoinChallengeCommunity({
   inlineLauncher?: boolean
   leaderboardMode?: string
   leaderboardTitle?: string
-  scoreSubmission?: { id: string; score: number; outcome?: 'win' | 'loss' } | null
+  scoreSubmission?: { id: string; score: number; outcome?: 'win' | 'loss' | 'draw'; wonCoins?: number; lostCoins?: number } | null
 }) {
   const member = useMemberSession()
   const [isOpen, setIsOpen] = useState(false)
   const [leaderboard, setLeaderboard] = useState<Array<LeaderboardEntry>>([])
+  const [bountyLeaderboard, setBountyLeaderboard] = useState<Array<WeeklyCoinEntry>>([])
+  const [arrestLeaderboard, setArrestLeaderboard] = useState<Array<WeeklyCoinEntry>>([])
   const uploadedWinsRef = useRef<Set<string>>(new Set())
   const uploadedGameScoresRef = useRef<Set<string>>(new Set())
 
@@ -42,8 +46,10 @@ export function CoinChallengeCommunity({
     const modeQuery = leaderboardMode ? `&mode=${encodeURIComponent(leaderboardMode)}` : ''
     const response = await fetch(`/api/coin-challenge-community?channel=${encodeURIComponent(channel)}${modeQuery}`, { credentials: 'same-origin', cache: 'no-store' })
     if (!response.ok) return
-    const next = await response.json() as { leaderboard?: Array<LeaderboardEntry> }
+    const next = await response.json() as { leaderboard?: Array<LeaderboardEntry>; bountyLeaderboard?: Array<WeeklyCoinEntry>; arrestLeaderboard?: Array<WeeklyCoinEntry> }
     setLeaderboard(next.leaderboard ?? [])
+    setBountyLeaderboard(next.bountyLeaderboard ?? [])
+    setArrestLeaderboard(next.arrestLeaderboard ?? [])
   }
 
   async function post(body: Record<string, unknown>) {
@@ -74,7 +80,7 @@ export function CoinChallengeCommunity({
   useEffect(() => {
     if (!member || !scoreSubmission || uploadedGameScoresRef.current.has(scoreSubmission.id)) return
     uploadedGameScoresRef.current.add(scoreSubmission.id)
-    void post({ action: 'game-score', mode: leaderboardMode, outcome: scoreSubmission.outcome, score: scoreSubmission.score, submissionKey: `${member.id}:${channel}:${scoreSubmission.id}` })
+    void post({ action: 'game-score', mode: leaderboardMode, outcome: scoreSubmission.outcome, score: scoreSubmission.score, wonCoins: scoreSubmission.wonCoins, lostCoins: scoreSubmission.lostCoins, submissionKey: `${member.id}:${channel}:${scoreSubmission.id}` })
       .then(() => void refresh())
       .catch(() => uploadedGameScoresRef.current.delete(scoreSubmission.id))
   }, [scoreSubmission?.id, member?.id, channel, leaderboardMode])
@@ -109,9 +115,24 @@ export function CoinChallengeCommunity({
               {!leaderboard.length ? <p className="py-10 text-center text-sm text-white/40">暂时还没有挑战成绩</p> : null}
             </div>
             <p className="mt-4 text-center text-xs text-white/45">{channel === 'ghost-hunter' ? '自动记录登录玩家的最高连续过关数' : channel === 'red-blue-arena' ? '自动累计登录玩家在当前模式的胜利次数' : '按本游戏单局获得的金币数自动排名，0 金币不计入'}</p>
+            {channel === 'red-blue-arena' ? <>
+              <WeeklyCoinRanking title="悬赏令 · 本周赢得金币" entries={bountyLeaderboard} tone="bounty" />
+              <WeeklyCoinRanking title="逮捕令 · 本周输掉金币" entries={arrestLeaderboard} tone="arrest" />
+              <p className="mt-3 text-center text-[11px] leading-5 text-white/45">北京时间每周一 03:00 结算；逮捕令第一名高于悬赏令第一名时，可获得悬赏令第一名对应的金币数。不能领取自己的悬赏，同一玩家同时第一时顺延给下一位符合者。</p>
+            </> : null}
           </div>
         </aside>
       ) : null}
     </>
   )
+}
+
+function WeeklyCoinRanking({ title, entries, tone }: { title: string; entries: WeeklyCoinEntry[]; tone: 'bounty' | 'arrest' }) {
+  return <section className="mt-4 border-t border-white/10 pt-3">
+    <h3 className={`mb-2 text-center text-xs font-black ${tone === 'bounty' ? 'text-yellow-300' : 'text-red-300'}`}>{title}</h3>
+    <div className="space-y-1.5">
+      {entries.slice(0, 10).map(item => <div className="grid grid-cols-[32px_1fr_auto] items-center rounded-xl bg-white/5 px-3 py-2 text-xs" key={`${tone}-${item.rank}-${item.displayName}`}><b className={item.rank <= 3 ? 'text-amber-300' : 'text-white/40'}>#{item.rank}</b><span className="truncate">{item.displayName}</span><strong>🪙 {item.coins}</strong></div>)}
+      {!entries.length ? <p className="py-4 text-center text-xs text-white/35">本周暂时没有记录</p> : null}
+    </div>
+  </section>
 }
