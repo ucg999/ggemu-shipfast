@@ -343,18 +343,21 @@ async function settleArenaWeeks() {
   `).bind(currentKey).all<{ period_key: string }>()
 
   for (const period of periods.results) {
+    const totals = await ranking.prepare(`
+      SELECT COALESCE(SUM(won_coins), 0) AS bounty_total,
+             COALESCE(SUM(lost_coins), 0) AS arrest_total
+      FROM arena_weekly_coin_scores WHERE period_key = ?
+    `).bind(period.period_key).first<{ bounty_total: number; arrest_total: number }>()
     const bounty = await ranking.prepare(`SELECT player_id, won_coins AS coins FROM arena_weekly_coin_scores WHERE period_key = ? AND won_coins > 0 ORDER BY won_coins DESC, updated_at ASC LIMIT 1`).bind(period.period_key).first<{ player_id: string; coins: number }>()
-    // A player cannot collect their own bounty. If the same player leads both
-    // lists, use the next highest arrest entry belonging to somebody else.
-    const arrest = bounty
-      ? await ranking.prepare(`SELECT player_id, lost_coins AS coins FROM arena_weekly_coin_scores WHERE period_key = ? AND lost_coins > 0 AND player_id <> ? ORDER BY lost_coins DESC, updated_at ASC LIMIT 1`).bind(period.period_key, bounty.player_id).first<{ player_id: string; coins: number }>()
-      : null
-    const reward = bounty && arrest && arrest.coins > bounty.coins ? Math.max(0, Number(bounty.coins) || 0) : 0
+    const arrest = await ranking.prepare(`SELECT player_id, lost_coins AS coins FROM arena_weekly_coin_scores WHERE period_key = ? AND lost_coins > 0 ORDER BY lost_coins DESC, updated_at ASC LIMIT 1`).bind(period.period_key).first<{ player_id: string; coins: number }>()
+    const bountyTotal = Math.max(0, Number(totals?.bounty_total) || 0)
+    const arrestTotal = Math.max(0, Number(totals?.arrest_total) || 0)
+    const reward = arrest && arrestTotal > bountyTotal ? arrestTotal - bountyTotal : 0
     await ranking.prepare(`
       INSERT OR IGNORE INTO arena_weekly_settlements
         (period_key, bounty_player_id, bounty_coins, arrest_player_id, arrest_coins, reward_coins, reward_applied)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).bind(period.period_key, bounty?.player_id ?? null, bounty?.coins ?? 0, arrest?.player_id ?? null, arrest?.coins ?? 0, reward, reward > 0 ? 0 : 1).run()
+    `).bind(period.period_key, bounty?.player_id ?? null, bountyTotal, arrest?.player_id ?? null, arrestTotal, reward, reward > 0 ? 0 : 1).run()
 
     if (reward <= 0 || !arrest) continue
     const rewardKey = `red-blue-arrest:${period.period_key}`

@@ -39,12 +39,14 @@ import { Route as LocaleRedBlueArenaRouteImport } from './routes/$locale.red-blu
 import { Route as LocaleSearchRouteImport } from './routes/$locale.search'
 import { Route as LocaleTermsOfServiceRouteImport } from './routes/$locale.terms-of-service'
 import { Route as LocaleThemeModeRouteImport } from './routes/$locale.theme-mode'
+import { Route as LocaleWantedRouteImport } from './routes/$locale.wanted'
 import { Route as ApiCoinChallengeCommunityRouteImport } from './routes/api.coin-challenge-community'
 import { Route as ApiCoinRankingsRouteImport } from './routes/api.coin-rankings'
 import { Route as ApiLocaleSuggestionRouteImport } from './routes/api/locale-suggestion'
 import { Route as ApiMemberRouteImport } from './routes/api.member'
 import { Route as ApiPspLikesRouteImport } from './routes/api.psp-likes'
 import { Route as ApiShareImageRouteImport } from './routes/api/share-image'
+import { Route as ApiWantedRouteImport } from './routes/api.wanted'
 import { Route as GamesGameIdRouteImport } from './routes/games/$gameId'
 import { Route as LocaleBlogBlogIdRouteImport } from './routes/$locale.blog.$blogId'
 import { Route as LocaleCollectionsCollectionIdRouteImport } from './routes/$locale.collections.$collectionId'
@@ -210,6 +212,11 @@ const LocaleThemeModeRoute = LocaleThemeModeRouteImport.update({
   path: '/theme-mode',
   getParentRoute: () => LocaleRoute,
 } as any)
+const LocaleWantedRoute = LocaleWantedRouteImport.update({
+  id: '/wanted',
+  path: '/wanted',
+  getParentRoute: () => LocaleRoute,
+} as any)
 const ApiCoinChallengeCommunityRoute =
   ApiCoinChallengeCommunityRouteImport.update({
     id: '/api/coin-challenge-community',
@@ -239,6 +246,11 @@ const ApiPspLikesRoute = ApiPspLikesRouteImport.update({
 const ApiShareImageRoute = ApiShareImageRouteImport.update({
   id: '/api/share-image',
   path: '/api/share-image',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWantedRoute = ApiWantedRouteImport.update({
+  id: '/api/wanted',
+  path: '/api/wanted',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamesGameIdRoute = GamesGameIdRouteImport.update({
@@ -346,12 +358,14 @@ export interface FileRoutesByFullPath {
   '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/$locale/theme-mode': typeof LocaleThemeModeRoute
+  '/$locale/wanted': typeof LocaleWantedRoute
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
   '/api/share-image': typeof ApiShareImageRoute
+  '/api/wanted': typeof ApiWantedRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale/': typeof LocaleIndexRoute
   '/$locale/blog/$blogId': typeof LocaleBlogBlogIdRoute
@@ -397,12 +411,14 @@ export interface FileRoutesByTo {
   '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/$locale/theme-mode': typeof LocaleThemeModeRoute
+  '/$locale/wanted': typeof LocaleWantedRoute
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
   '/api/share-image': typeof ApiShareImageRoute
+  '/api/wanted': typeof ApiWantedRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale': typeof LocaleIndexRoute
   '/$locale/blog/$blogId': typeof LocaleBlogBlogIdRoute
@@ -450,12 +466,14 @@ export interface FileRoutesById {
   '/$locale/search': typeof LocaleSearchRoute
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/$locale/theme-mode': typeof LocaleThemeModeRoute
+  '/$locale/wanted': typeof LocaleWantedRoute
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
   '/api/share-image': typeof ApiShareImageRoute
+  '/api/wanted': typeof ApiWantedRoute
   '/games/$gameId': typeof GamesGameIdRouteWithChildren
   '/$locale/': typeof LocaleIndexRoute
   '/$locale/blog/$blogId': typeof LocaleBlogBlogIdRoute
@@ -504,12 +522,14 @@ export interface FileRouteTypes {
     | '/$locale/search'
     | '/$locale/terms-of-service'
     | '/$locale/theme-mode'
+    | '/$locale/wanted'
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
     | '/api/share-image'
+    | '/api/wanted'
     | '/games/$gameId'
     | '/$locale/'
     | '/$locale/blog/$blogId'
@@ -555,12 +575,14 @@ export interface FileRouteTypes {
     | '/$locale/search'
     | '/$locale/terms-of-service'
     | '/$locale/theme-mode'
+    | '/$locale/wanted'
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
     | '/api/share-image'
+    | '/api/wanted'
     | '/games/$gameId'
     | '/$locale'
     | '/$locale/blog/$blogId'
@@ -607,12 +629,14 @@ export interface FileRouteTypes {
     | '/$locale/search'
     | '/$locale/terms-of-service'
     | '/$locale/theme-mode'
+    | '/$locale/wanted'
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
     | '/api/share-image'
+    | '/api/wanted'
     | '/games/$gameId'
     | '/$locale/'
     | '/$locale/blog/$blogId'
@@ -648,6 +672,7 @@ export interface RootRouteChildren {
   ApiMemberRoute: typeof ApiMemberRoute
   ApiPspLikesRoute: typeof ApiPspLikesRoute
   ApiShareImageRoute: typeof ApiShareImageRoute
+  ApiWantedRoute: typeof ApiWantedRoute
   GamesGameIdRoute: typeof GamesGameIdRouteWithChildren
   UsernameArticleStatusidRoute: typeof UsernameArticleStatusidRoute
   UsernameStatusStatusidRoute: typeof UsernameStatusStatusidRoute
@@ -865,6 +890,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleThemeModeRouteImport
       parentRoute: typeof LocaleRoute
     }
+    '/$locale/wanted': {
+      id: '/$locale/wanted'
+      path: '/wanted'
+      fullPath: '/$locale/wanted'
+      preLoaderRoute: typeof LocaleWantedRouteImport
+      parentRoute: typeof LocaleRoute
+    }
     '/api/coin-challenge-community': {
       id: '/api/coin-challenge-community'
       path: '/api/coin-challenge-community'
@@ -905,6 +937,13 @@ declare module '@tanstack/react-router' {
       path: '/api/share-image'
       fullPath: '/api/share-image'
       preLoaderRoute: typeof ApiShareImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/wanted': {
+      id: '/api/wanted'
+      path: '/api/wanted'
+      fullPath: '/api/wanted'
+      preLoaderRoute: typeof ApiWantedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/games/$gameId': {
@@ -1050,6 +1089,7 @@ interface LocaleRouteChildren {
   LocaleSearchRoute: typeof LocaleSearchRoute
   LocaleTermsOfServiceRoute: typeof LocaleTermsOfServiceRoute
   LocaleThemeModeRoute: typeof LocaleThemeModeRoute
+  LocaleWantedRoute: typeof LocaleWantedRoute
   LocaleIndexRoute: typeof LocaleIndexRoute
   LocaleCollectionsCollectionIdRoute: typeof LocaleCollectionsCollectionIdRoute
   LocaleGamesGameIdRoute: typeof LocaleGamesGameIdRouteWithChildren
@@ -1080,6 +1120,7 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleSearchRoute: LocaleSearchRoute,
   LocaleTermsOfServiceRoute: LocaleTermsOfServiceRoute,
   LocaleThemeModeRoute: LocaleThemeModeRoute,
+  LocaleWantedRoute: LocaleWantedRoute,
   LocaleIndexRoute: LocaleIndexRoute,
   LocaleCollectionsCollectionIdRoute: LocaleCollectionsCollectionIdRoute,
   LocaleGamesGameIdRoute: LocaleGamesGameIdRouteWithChildren,
@@ -1124,6 +1165,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMemberRoute: ApiMemberRoute,
   ApiPspLikesRoute: ApiPspLikesRoute,
   ApiShareImageRoute: ApiShareImageRoute,
+  ApiWantedRoute: ApiWantedRoute,
   GamesGameIdRoute: GamesGameIdRouteWithChildren,
   UsernameArticleStatusidRoute: UsernameArticleStatusidRoute,
   UsernameStatusStatusidRoute: UsernameStatusStatusidRoute,

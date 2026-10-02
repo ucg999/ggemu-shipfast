@@ -118,7 +118,7 @@ export function CoinChallengeCommunity({
             {channel === 'red-blue-arena' ? <>
               <WeeklyCoinRanking title="悬赏令 · 本周赢得金币" entries={bountyLeaderboard} tone="bounty" />
               <WeeklyCoinRanking title="逮捕令 · 本周输掉金币" entries={arrestLeaderboard} tone="arrest" />
-              <p className="mt-3 text-center text-[11px] leading-5 text-white/45">北京时间每周一 03:00 结算；逮捕令第一名高于悬赏令第一名时，可获得悬赏令第一名对应的金币数。不能领取自己的悬赏，同一玩家同时第一时顺延给下一位符合者。</p>
+              <p className="mt-3 text-center text-[11px] leading-5 text-white/45">北京时间每周一 03:00 结算；当逮捕令累计总和高于悬赏令累计总和时，逮捕令第一名获得两榜总和的差额金币。同一玩家同时位列两榜第一，也可以正常领取奖励。</p>
             </> : null}
           </div>
         </aside>

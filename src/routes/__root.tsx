@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-router'
 
 import { ThirdPartyScripts } from '#/components/third-party-scripts'
+import { WantedPlaytimeTracker } from '#/components/wanted-playtime-tracker'
 import { getDocumentLang, getSeoOrigin } from '#/lib/seo'
 import { serializeSiteConfig, siteConfig } from '#/lib/site-config'
 import { getSiteThemeInitScript } from '#/lib/site-themes'
@@ -171,7 +172,7 @@ function RootComponent() {
     }
   }, [])
 
-  return <Outlet />
+  return <><WantedPlaytimeTracker /><Outlet /></>
 }
 
 function MaintenanceErrorComponent() {

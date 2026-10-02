@@ -871,7 +871,7 @@ function DesktopUnifiedHeaderNavigation({
 }) {
   const layout = getI18n(locale).layout
   const home = getI18n(locale).home
-  const linkClass = 'flex h-9 shrink-0 items-center whitespace-nowrap px-2 text-sm font-normal'
+  const linkClass = 'flex h-9 shrink-0 items-center whitespace-nowrap px-1.5 text-[13px] font-normal xl:px-2 xl:text-sm'
 
   return (
     <nav
@@ -879,7 +879,7 @@ function DesktopUnifiedHeaderNavigation({
       className="hidden min-w-0 items-center gap-1 lg:flex lg:pl-6"
     >
       <details className="dropdown shrink-0">
-        <summary className="flex h-9 cursor-pointer list-none items-center gap-1 whitespace-nowrap px-2 text-sm font-normal">
+        <summary className="flex h-9 cursor-pointer list-none items-center gap-1 whitespace-nowrap px-1.5 text-[13px] font-normal xl:px-2 xl:text-sm">
           {layout.explore}<i className="ri-arrow-down-s-line text-sm" />
         </summary>
         <div className="dropdown-content z-50 mt-2 flex w-max overflow-hidden bg-[#f0f0ed] text-sm text-black shadow-xl">
@@ -918,6 +918,7 @@ function DesktopUnifiedHeaderNavigation({
       <Link className={linkClass} params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
       <Link className={linkClass} params={{ locale, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
       <Link className={`${linkClass} font-semibold text-amber-700`} params={{ locale }} to="/$locale/rankings/coins"><i className="ri-trophy-line mr-1" />{locale === 'en' ? 'Rankings' : '排行榜'}</Link>
+      <Link className={`${linkClass} font-semibold text-[#7a2f23]`} params={{ locale }} to="/$locale/wanted"><i className="ri-file-warning-line mr-1" />{locale === 'en' ? 'Wanted' : '悬赏令'}</Link>
     </nav>
   )
 }

@@ -663,3 +663,11 @@ html:not([data-member-logged-in='true']) .coin-rank-badge {
   50%, 92% { opacity: 1; transform: translateY(0); }
   100% { opacity: 0; transform: translateY(35%); }
 }
+
+.wanted-poster-board{isolation:isolate}
+.wanted-poster-copy{position:absolute;top:69.8%;width:25%;text-align:center;font-family:Georgia,"Times New Roman",serif;color:#38251f;text-transform:uppercase;line-height:1;pointer-events:none}
+.wanted-poster-copy strong{display:block;margin-inline:auto;width:100%;transform-origin:center;font-size:clamp(.72rem,2.35vw,2.55rem);font-weight:900;white-space:nowrap}
+.wanted-poster-copy span{display:block;margin-top:4.8%;font-size:clamp(.62rem,1.68vw,1.78rem);font-weight:800;letter-spacing:.11em}
+.wanted-poster-copy small{display:block;margin-top:2%;font-family:ui-sans-serif,system-ui,sans-serif;font-size:clamp(.42rem,.72vw,.78rem);font-weight:800;letter-spacing:.04em}
+.wanted-slot-1{left:5.1%}.wanted-slot-2{left:37.5%}.wanted-slot-3{left:69.3%}
+@media(max-width:640px){.wanted-poster-board{transform:translateX(0)}.wanted-poster-copy{top:69.5%;width:27%}.wanted-slot-1{left:4%}.wanted-slot-2{left:36.5%}.wanted-slot-3{left:68.5%}.wanted-poster-copy span{margin-top:3.5%}.wanted-poster-copy small{display:none}}
