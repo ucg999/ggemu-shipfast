@@ -33,7 +33,7 @@ type CollectedCoinFlight = {
   travelY: number
 }
 
-export function useHomeCoinRewards() {
+export function useHomeCoinRewards(rewardMultiplier = 1) {
   const [balance, setBalance] = useState(0)
   const [coinPositions, setCoinPositions] = useState<Array<CoinPosition>>([])
   const [rewardFeedback, setRewardFeedback] = useState<CoinRewardFeedback | null>(null)
@@ -117,14 +117,15 @@ export function useHomeCoinRewards() {
   const addCoins = useCallback((amount: number, showFeedback = true) => {
     if (!Number.isFinite(amount) || amount <= 0) return
 
+    const multipliedAmount = Math.floor(amount) * Math.max(1, Math.floor(rewardMultiplier))
     const previousBalance = readCoinBalance()
-    const nextBalance = addCoinBalance(amount)
+    const nextBalance = addCoinBalance(multipliedAmount)
     const awarded = Math.max(0, nextBalance - previousBalance)
     setBalance(nextBalance)
     if (showFeedback) {
       showRewardFeedback(awarded, '+')
     }
-  }, [showRewardFeedback])
+  }, [rewardMultiplier, showRewardFeedback])
 
   const collectFloatingCoin = useCallback((coinId: number) => {
     const coinPosition = coinPositions.find((position) => position.id === coinId)
@@ -152,15 +153,15 @@ export function useHomeCoinRewards() {
       current.filter((position) => position.id !== coinId),
     )
     window.setTimeout(() => {
-      // A coin picked up directly from the page is always worth exactly one.
-      // It intentionally does not use rank or consecutive check-in bonuses.
+      // Page coins use only the page multiplier and do not use rank or
+      // consecutive check-in bonuses.
       const previousBalance = readCoinBalance()
-      const nextBalance = addCoinBalance(1)
+      const nextBalance = addCoinBalance(Math.max(1, Math.floor(rewardMultiplier)))
       setBalance(nextBalance)
       showRewardFeedback(Math.max(0, nextBalance - previousBalance), '+')
       setCollectedCoinFlight(null)
     }, 720)
-  }, [coinPositions, showRewardFeedback])
+  }, [coinPositions, rewardMultiplier, showRewardFeedback])
 
   const showBalance = useCallback(() => {
     showRewardFeedback(balance, '×')

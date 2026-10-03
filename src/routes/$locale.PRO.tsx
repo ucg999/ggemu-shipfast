@@ -154,7 +154,7 @@ function ThemeMode() {
   const [gameIndex, setGameIndex] = useState(0)
   const [showcaseIndex, setShowcaseIndex] = useState(0)
   const [pageVisible, setPageVisible] = useState(true)
-  const coinRewards = useHomeCoinRewards()
+  const coinRewards = useHomeCoinRewards(2)
   const memberSession = useMemberSession()
   const gameLikeCounts = useGameLikeCounts()
   const [dailyCheckIn, setDailyCheckIn] = useState({ completed: false, streak: 0 })

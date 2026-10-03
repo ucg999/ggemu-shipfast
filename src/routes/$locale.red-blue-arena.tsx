@@ -5,7 +5,7 @@ import { CoinRewardPopup } from '#/components/home/coin-rewards'
 import { CoinChallengeCommunity } from '#/components/coin-challenge-community'
 import { SiteLayout } from '#/components/site-layout'
 import { MemberRequiredNotice } from '#/components/member-required-notice'
-import { addCoinBalance, readCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
+import { addCoinBalance, readSpendableCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
 import { normalizeLocale } from '#/lib/i18n'
 import { ARENA_BET_OPTIONS, ARENA_MAX_HEALTH, arenaPayout, arenaWeaponDamage, healArenaHealth } from '#/lib/red-blue-arena'
 import type { ArenaResult, ArenaSide } from '#/lib/red-blue-arena'
@@ -63,6 +63,17 @@ const MODE_RULES: Record<ArenaMode, { label: string; minBet: number; maxBet: num
   team: { label: '2V2 红蓝', minBet: 10, maxBet: 1000, profit: 1, seconds: 120, itemLimit: 3, sides: ['red', 'blue'] },
   team3: { label: '3V3组队战', minBet: 10, maxBet: 1000, profit: 1, seconds: 60, itemLimit: 3, sides: ['red', 'blue'] },
   billiards: { label: '桌球模式', minBet: 1, maxBet: 100, profit: 1, seconds: 60, itemLimit: 1, sides: ['red', 'blue'] },
+}
+
+function settlesAfterBattle(mode: ArenaMode) {
+  return mode === 'team' || mode === 'team3' || mode === 'billiards'
+}
+
+function requiredStartingBalance(mode: ArenaMode, stake: number) {
+  if (mode === 'team') return stake * 2
+  if (mode === 'team3') return stake * 3
+  if (mode === 'billiards') return stake * 9
+  return stake
 }
 const SIDE_COPY: Record<ArenaSide, { name: string; color: string; emoji: string }> = {
   red: { name: '小红', color: '#ef233c', emoji: '🔴' }, blue: { name: '小蓝', color: '#3987ff', emoji: '🔵' },
@@ -159,7 +170,7 @@ function RedBlueArenaPage() {
   const [feedback, setFeedback] = useState<{ amount: number; id: number; prefix: '+' | '×' } | null>(null)
   const [rankSubmission, setRankSubmission] = useState<{ id: string; score: number; outcome: 'win' | 'loss' | 'draw'; wonCoins: number; lostCoins: number } | null>(null)
 
-  useEffect(() => setBalance(readCoinBalance()), [])
+  useEffect(() => setBalance(readSpendableCoinBalance()), [member?.coinBalance])
 
   useEffect(() => {
     let cancelled = false
@@ -182,23 +193,38 @@ function RedBlueArenaPage() {
     if (settledRef.current) return
     settledRef.current = true
     if (roundRef.current) roundRef.current.running = false
+    const round = roundRef.current
     const isTeamMode = mode === 'team' || mode === 'team3'
-    const bonusMultiplier = mode === 'team3' && roundRef.current && finalResult === betSide ? getTeam3BonusMultiplier(roundRef.current, finalResult) : 0
-    const billiardsMultiplier = mode === 'billiards' && roundRef.current && finalResult !== 'draw' ? longestBilliardsRun(roundRef.current, finalResult) : 1
-    const payout = isTeamMode ? bonusMultiplier * stake : arenaPayout(betSide, finalResult, stake, mode === 'billiards' ? billiardsMultiplier : MODE_RULES[mode].profit)
-    const nextBalance = payout > 0 ? addCoinBalance(payout) : readCoinBalance()
-    const coinDelta = nextBalance - roundStartBalanceRef.current
+    const bonusMultiplier = mode === 'team3' && round && finalResult === betSide ? getTeam3BonusMultiplier(round, finalResult) : 0
+    const billiardsMultiplier = mode === 'billiards' && round && finalResult !== 'draw' ? longestBilliardsRun(round, finalResult) : 1
+    let coinDelta = 0
+    if (isTeamMode) {
+      const ownDeaths = chargedDeathIdsRef.current.size
+      const enemyDeaths = rewardedEnemyDeathIdsRef.current.size
+      coinDelta = (enemyDeaths - ownDeaths + bonusMultiplier) * stake
+    } else if (mode === 'billiards') {
+      coinDelta = finalResult === 'draw' ? 0 : (finalResult === betSide ? 1 : -1) * billiardsMultiplier * stake
+    } else {
+      const payout = arenaPayout(betSide, finalResult, stake, MODE_RULES[mode].profit)
+      if (payout > 0) addCoinBalance(payout)
+      coinDelta = readSpendableCoinBalance() - roundStartBalanceRef.current
+    }
+    if (settlesAfterBattle(mode)) {
+      if (coinDelta > 0) addCoinBalance(coinDelta)
+      else if (coinDelta < 0) spendCoinBalance(-coinDelta)
+    }
+    const nextBalance = readSpendableCoinBalance()
     setBalance(nextBalance)
     setResult(finalResult)
     setPhase('result')
     setRankSubmission({ id: `${mode}-${Date.now()}`, score: 1, outcome: finalResult === 'draw' ? 'draw' : finalResult === betSide ? 'win' : 'loss', wonCoins: Math.max(0, coinDelta), lostCoins: Math.max(0, -coinDelta) })
     if (isTeamMode && finalResult === 'draw') setMessage('平局，本局按双方阵亡数完成奖扣。')
-    else if (isTeamMode && finalResult === betSide) setMessage(`竞猜成功！${bonusMultiplier > 0 ? `额外获得 ${bonusMultiplier}倍奖励，共 ${payout} 金币` : '本局按双方阵亡数完成奖扣'}`)
+    else if (isTeamMode && finalResult === betSide) setMessage(`竞猜成功！${bonusMultiplier > 0 ? `含 ${bonusMultiplier}倍额外奖励` : '已按双方阵亡数结算'}，本局${coinDelta >= 0 ? '获得' : '扣除'} ${Math.abs(coinDelta)} 金币。`)
     else if (isTeamMode && finalResult !== 'draw') setMessage(`竞猜失败，${contestantName(mode, finalResult)}获胜；本局已按双方阵亡数完成奖扣。`)
-    else if (finalResult === 'draw') setMessage(`平局，退回 ${stake} 金币`)
-    else if (finalResult === betSide) setMessage(mode === 'billiards' ? `竞猜成功！最长连号 ${billiardsMultiplier} 个，赢得 ${payout - stake} 金币` : `竞猜成功！赢得 ${payout - stake} 金币`)
-    else setMessage(`竞猜失败，${contestantName(mode, finalResult)}获胜`)
-    if (payout > 0) setFeedback({ amount: payout, id: Date.now(), prefix: '+' })
+    else if (finalResult === 'draw') setMessage(mode === 'billiards' ? '平局，本局不扣金币。' : `平局，退回 ${stake} 金币`)
+    else if (finalResult === betSide) setMessage(mode === 'billiards' ? `竞猜成功！最长连号 ${billiardsMultiplier} 个，赢得 ${coinDelta} 金币` : `竞猜成功！赢得 ${coinDelta} 金币`)
+    else setMessage(mode === 'billiards' ? `竞猜失败，${contestantName(mode, finalResult)}最长连号 ${billiardsMultiplier} 个，扣除 ${Math.abs(coinDelta)} 金币` : `竞猜失败，${contestantName(mode, finalResult)}获胜`)
+    if (coinDelta > 0) setFeedback({ amount: coinDelta, id: Date.now(), prefix: '+' })
   }, [betSide, mode, stake])
 
   useEffect(() => {
@@ -219,19 +245,14 @@ function RedBlueArenaPage() {
       updateRound(round, dt, audioRef.current)
       if (round.mode === 'team3' && round.time <= 0) activateTimedTeam3Reinforcements(round)
       if (round.mode === 'team' || round.mode === 'team3') {
-        let enemyReward = 0
         for (const fighter of round.fighters) {
           if (!fighter.active || fighter.health > 0) continue
           if (fighter.team === betSide && !chargedDeathIdsRef.current.has(fighter.id)) {
             chargedDeathIdsRef.current.add(fighter.id)
-            spendCoinBalance(stake)
           } else if (fighter.team !== betSide && !rewardedEnemyDeathIdsRef.current.has(fighter.id)) {
             rewardedEnemyDeathIdsRef.current.add(fighter.id)
-            enemyReward += stake
           }
         }
-        if (enemyReward > 0) { addCoinBalance(enemyReward); setFeedback({ amount: enemyReward, id: Date.now(), prefix: '+' }) }
-        setBalance(readCoinBalance())
       }
       const aliveTeams = new Set(round.fighters.filter(fighter => fighter.active && fighter.health > 0).map(fighter => fighter.team))
       if (round.mode !== 'billiards' && round.deathAnimation === null && round.time > 0 && aliveTeams.size <= 1) startDeathAnimation(round, audioRef.current)
@@ -272,9 +293,10 @@ function RedBlueArenaPage() {
       setMessage(`本模式最低投注 ${MODE_RULES[mode].minBet} 金币。`)
       return
     }
-    roundStartBalanceRef.current = readCoinBalance()
-    if (!spendCoinBalance(stake)) {
-      setMessage('金币不足，请先在站内获取金币。')
+    const requiredBalance = requiredStartingBalance(mode, stake)
+    roundStartBalanceRef.current = readSpendableCoinBalance()
+    if (roundStartBalanceRef.current < requiredBalance || (!settlesAfterBattle(mode) && !spendCoinBalance(stake))) {
+      setMessage(`开战需要至少 ${requiredBalance} 金币可用余额。`)
       return
     }
     settledRef.current = false
@@ -282,7 +304,7 @@ function RedBlueArenaPage() {
     rewardedEnemyDeathIdsRef.current.clear()
     void audioRef.current?.start().then(() => audioRef.current?.play('start')).catch(() => {})
     roundRef.current = createRound(mode)
-    setBalance(readCoinBalance())
+    setBalance(readSpendableCoinBalance())
     setHealth(createRound(mode).fighters.map(fighter => fighter.health))
     setPocketedBilliards({ red: [], blue: [] })
     setTime(MODE_RULES[mode].seconds)
@@ -306,6 +328,7 @@ function RedBlueArenaPage() {
   }
 
   const rules = MODE_RULES[mode]
+  const requiredBalance = requiredStartingBalance(mode, stake)
   const displayedSides = rules.sides
   const previewFighters = createRound(mode).fighters
   const healthEntries = previewFighters.map((fighter, index) => ({
@@ -323,7 +346,7 @@ function RedBlueArenaPage() {
     <div className="whitespace-nowrap text-center font-mono text-xs font-black uppercase tracking-tight sm:text-base">{displayedSides.map((side, index) => <span key={side}><span style={{ color: SIDE_COPY[side].color }}>{contestantName(mode, side)}</span>{index < displayedSides.length - 1 ? <span className="mx-1 text-white/55">VS</span> : null}</span>)}</div>
     <div className="arena-canvas-wrap"><canvas ref={canvasRef} className="arena-canvas" aria-label="多球自动战斗的圆形竞技场" />{phase !== 'running' && <div className="arena-overlay"><div className="arena-overlay-card"><div className="arena-result-mark mb-2 text-4xl">{result === 'draw' ? '🤝' : result ? SIDE_COPY[result].emoji : '⚔️'}</div><strong className="text-xl">{result ? result === 'draw' ? '平局' : `${contestantName(mode, result)}胜利` : '等待开战'}</strong><p className="mt-2 text-sm text-white/65">{message}</p></div></div>}</div>
     {phase === 'running' ? <aside className="mt-2 grid grid-cols-2 gap-2 text-white/70"><details className="rounded-lg border border-white/10 bg-white/[.04] p-2"><summary className="cursor-pointer select-none text-[11px] font-black text-yellow-300">⚔️ 武器与防具</summary><div className="mt-2 grid gap-y-1 text-[9px] leading-tight sm:text-[10px]">{WEAPON_HELP.map(([icon, text]) => <span key={text}><b className="mr-1">{icon}</b>{text}</span>)}</div></details><details className="rounded-lg border border-white/10 bg-white/[.04] p-2"><summary className="cursor-pointer select-none text-[11px] font-black text-cyan-300">🎁 道具说明</summary><div className="mt-2 grid gap-y-1 text-[9px] leading-tight sm:text-[10px]">{ITEM_HELP.map(([icon, text]) => <span key={text}><b className="mr-1">{icon}</b>{text}</span>)}</div></details></aside> : null}
-    {phase === 'betting' ? <><label className="mb-2 flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-black text-white"><span className="shrink-0 text-white/60">模式</span><select className="min-w-0 flex-1 bg-transparent text-right font-black text-yellow-300 outline-none" value={mode} onChange={event => { const value = event.currentTarget.value as ArenaMode; setMode(value); setBetSide(MODE_RULES[value].sides[0]); setStake(0); setHealth(createRound(value).fighters.map(() => 10)); setPocketedBilliards({ red: [], blue: [] }); setTime(MODE_RULES[value].seconds) }}>{(Object.keys(MODE_RULES) as ArenaMode[]).map(value => <option className="bg-black text-white" key={value} value={value}>{MODE_RULES[value].label}</option>)}</select></label><div className="arena-bet-panel arena-bet-layout"><div className="arena-bet-controls"><div className="arena-choice" style={{ gridTemplateColumns: `repeat(${displayedSides.length}, minmax(0, 1fr))` }}>{displayedSides.map(side => <button className="!px-1 text-[10px] sm:text-xs" key={side} style={{ backgroundColor: `${SIDE_COPY[side].color}cc` }} data-active={betSide === side} onClick={() => setBetSide(side)}>{SIDE_COPY[side].emoji} 投{contestantName(mode, side)}</button>)}</div><div className="arena-stakes">{ARENA_BET_OPTIONS.filter(value => value >= rules.minBet).map(value => <button key={value} data-active="false" disabled={stake + value > balance || stake + value > rules.maxBet} onClick={() => setStake(current => Math.min(rules.maxBet, current + value))}>+ 🪙 {value}</button>)}</div><div className="arena-bet-total flex items-center justify-between rounded-xl bg-black/25 px-3 py-2 text-sm"><strong className="text-yellow-300">累计投注：🪙 {stake} / {rules.maxBet}　赔率：{mode === 'team3' ? '击败+1倍，阵亡-1倍；一挑三另+2倍，一反三另+3倍' : mode === 'team' ? '击败+1倍，阵亡-1倍' : `1赔${rules.profit}`}</strong><button className="text-white/60 underline" disabled={stake === 0} onClick={() => setStake(0)}>清空投注</button></div></div><button aria-label={stake < rules.minBet ? `最低投注 ${rules.minBet} 金币` : balance < stake ? '金币不足' : `投注 ${stake} 金币并开战`} className="arena-start arena-start-square" disabled={stake < rules.minBet || balance < stake} onClick={startRound}>开战</button></div></> : phase === 'result' ? <div className="arena-bet-panel"><button className="arena-start" onClick={resetBetting}>再来一局</button></div> : null}
+    {phase === 'betting' ? <><label className="mb-2 flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-black text-white"><span className="shrink-0 text-white/60">模式</span><select className="min-w-0 flex-1 bg-transparent text-right font-black text-yellow-300 outline-none" value={mode} onChange={event => { const value = event.currentTarget.value as ArenaMode; setMode(value); setBetSide(MODE_RULES[value].sides[0]); setStake(0); setHealth(createRound(value).fighters.map(() => 10)); setPocketedBilliards({ red: [], blue: [] }); setTime(MODE_RULES[value].seconds) }}>{(Object.keys(MODE_RULES) as ArenaMode[]).map(value => <option className="bg-black text-white" key={value} value={value}>{MODE_RULES[value].label}</option>)}</select></label><div className="arena-bet-panel arena-bet-layout"><div className="arena-bet-controls"><div className="arena-choice" style={{ gridTemplateColumns: `repeat(${displayedSides.length}, minmax(0, 1fr))` }}>{displayedSides.map(side => <button className="!px-1 text-[10px] sm:text-xs" key={side} style={{ backgroundColor: `${SIDE_COPY[side].color}cc` }} data-active={betSide === side} onClick={() => setBetSide(side)}>{SIDE_COPY[side].emoji} 投{contestantName(mode, side)}</button>)}</div><div className="arena-stakes">{ARENA_BET_OPTIONS.filter(value => value >= rules.minBet).map(value => <button key={value} data-active="false" disabled={requiredStartingBalance(mode, stake + value) > balance || stake + value > rules.maxBet} onClick={() => setStake(current => Math.min(rules.maxBet, current + value))}>+ 🪙 {value}</button>)}</div><div className="arena-bet-total flex items-center justify-between rounded-xl bg-black/25 px-3 py-2 text-sm"><strong className="text-yellow-300">累计投注：🪙 {stake} / {rules.maxBet}　赔率：{mode === 'team3' ? '击败+1倍，阵亡-1倍；一挑三另+2倍，一反三另+3倍' : mode === 'team' ? '击败+1倍，阵亡-1倍' : mode === 'billiards' ? '胜负均按胜方最长连号倍数' : `1赔${rules.profit}`}</strong><button className="text-white/60 underline" disabled={stake === 0} onClick={() => setStake(0)}>清空投注</button></div></div><button aria-label={stake < rules.minBet ? `最低投注 ${rules.minBet} 金币` : balance < requiredBalance ? '金币不足' : `投注 ${stake} 金币并开战`} className="arena-start arena-start-square" disabled={stake < rules.minBet || balance < requiredBalance} onClick={startRound}>开战</button></div></> : phase === 'result' ? <div className="arena-bet-panel"><button className="arena-start" onClick={resetBetting}>再来一局</button></div> : null}
     <CoinRewardPopup feedback={feedback} />
   </section></main>
 

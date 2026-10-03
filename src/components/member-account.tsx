@@ -194,14 +194,19 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
                     <p>{copy.memberCoins}：<b>{member.coinBalance}</b></p>
                   </div>
                 </div>
-                <form className={`mt-4 rounded-2xl border p-3 ${nicknameSetup || member.needsNickname ? 'border-amber-400 bg-amber-50' : 'border-black/10'}`} onSubmit={handleNickname}>
-                  <p className="text-sm font-semibold">{nicknameSetup || member.needsNickname ? copy.setNickname : copy.changeNickname}</p>
-                  <p className="mt-1 text-xs text-black/50">{copy.nicknameHint}</p>
-                  <div className="mt-2 flex gap-2">
-                    <input aria-label={copy.nickname} className="h-10 min-w-0 flex-1 rounded-xl border border-black/20 px-3 outline-none focus:border-black" maxLength={20} onChange={event => setNickname(event.target.value)} placeholder={copy.nickname} required value={nickname} />
-                    <button className="h-10 shrink-0 rounded-xl bg-amber-400 px-4 text-sm font-semibold disabled:opacity-40" disabled={busy || !nickname.trim()} type="submit">{copy.saveNickname}</button>
-                  </div>
-                </form>
+                <div className={`mt-4 overflow-hidden rounded-2xl border ${member.needsNickname ? 'border-amber-400 bg-amber-50' : 'border-black/10'}`}>
+                  <button aria-expanded={nicknameSetup || member.needsNickname} className="flex h-12 w-full items-center justify-between px-3 text-sm font-semibold hover:bg-black/[0.03]" disabled={member.needsNickname} onClick={() => setNicknameSetup(current => !current)} type="button">
+                    <span>{member.needsNickname ? copy.setNickname : copy.changeNickname}</span>
+                    <i className={`ri-arrow-down-s-line text-lg transition-transform ${nicknameSetup || member.needsNickname ? 'rotate-180' : ''}`} />
+                  </button>
+                  {nicknameSetup || member.needsNickname ? <form className="border-t border-black/10 p-3" onSubmit={handleNickname}>
+                    <p className="text-xs text-black/50">{copy.nicknameHint}</p>
+                    <div className="mt-2 flex gap-2">
+                      <input aria-label={copy.nickname} className="h-10 min-w-0 flex-1 rounded-xl border border-black/20 px-3 outline-none focus:border-black" maxLength={20} onChange={event => setNickname(event.target.value)} placeholder={copy.nickname} required value={nickname} />
+                      <button className="h-10 shrink-0 rounded-xl bg-amber-400 px-4 text-sm font-semibold disabled:opacity-40" disabled={busy || !nickname.trim()} type="submit">{copy.saveNickname}</button>
+                    </div>
+                  </form> : null}
+                </div>
                 {!member.needsNickname ? <form className="mt-4" onSubmit={handleTransfer}>
                   <div className="flex gap-2">
                     <input aria-label={copy.transferAmount} className="h-11 min-w-0 flex-1 rounded-xl border border-black/20 px-3 outline-none focus:border-black" max={Math.min(999, remainingToday)} min="1" onChange={(event) => setTransferAmount(event.target.value)} placeholder={copy.transferAmount} type="number" value={transferAmount} />

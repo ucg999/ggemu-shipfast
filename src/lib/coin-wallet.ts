@@ -47,6 +47,10 @@ export function readCoinBalance() {
   }
 }
 
+export function readSpendableCoinBalance() {
+  return readCoinBalance() + (getCurrentMemberSession()?.coinBalance ?? 0)
+}
+
 export function addCoinBalance(amount: number) {
   if (!Number.isFinite(amount) || amount <= 0) return readCoinBalance()
   const next = Math.min(MAX_COIN_BALANCE, readCoinBalance() + Math.floor(amount))

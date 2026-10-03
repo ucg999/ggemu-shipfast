@@ -113,9 +113,11 @@ export const Route = createFileRoute('/api/member')({
           if (member.needsNickname) return jsonError('请先完成必填昵称设置', 428)
           const body = await request.json() as Record<string, unknown>
           const amount = Math.floor(Number(body.amount) || 0)
-          if (amount < 1 || amount > 999) return jsonError('单次转入数量需为 1–999 个')
+          const isSpend = body.action === 'spend'
+          const maximumAmount = isSpend ? 99_999 : 999
+          if (amount < 1 || amount > maximumAmount) return jsonError(isSpend ? '金币扣除数量不正确' : '单次转入数量需为 1–999 个')
           const idempotencyKey = typeof body.idempotencyKey === 'string' ? body.idempotencyKey.slice(0, 96) : crypto.randomUUID()
-          if (body.action === 'spend') {
+          if (isSpend) {
             const result = await memberDb().prepare(`
               UPDATE members SET coin_balance = coin_balance - ?, updated_at = CURRENT_TIMESTAMP
               WHERE id = ? AND coin_balance >= ?
