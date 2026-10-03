@@ -22,8 +22,8 @@ export const COIN_RANKS: ReadonlyArray<CoinRank> = [
   { id: 'platinum', name: '铂金', icon: '/images/ranks/铂金.png', min: 1_000, max: 1_999, multiplier: 4 },
   { id: 'diamond', name: '钻石', icon: '/images/ranks/钻石.png', min: 2_000, max: 4_999, multiplier: 5 },
   { id: 'master', name: '大师', icon: '/images/ranks/大师.png', min: 5_000, max: 9_999, multiplier: 6 },
-  { id: 'king', name: '王者', icon: '/images/ranks/王者.png', min: 10_000, max: 49_999, multiplier: 10 },
-  { id: 'legend', name: '传奇', icon: '/images/ranks/传奇.png', min: 50_000, max: MAX_COIN_BALANCE, multiplier: 20 },
+  { id: 'king', name: '王者', icon: '/images/ranks/王者.png', min: 10_000, max: 49_999, multiplier: 8 },
+  { id: 'legend', name: '传奇', icon: '/images/ranks/传奇.png', min: 50_000, max: MAX_COIN_BALANCE, multiplier: 10 },
 ]
 
 const DAILY_GAME_MULTIPLIER_STORAGE_KEY = 'game-adventure-daily-game-multipliers'
@@ -92,10 +92,16 @@ export function addCoinReward(amount: number, maximumAward = MAX_COIN_BALANCE) {
   const isMember = Boolean(getCurrentMemberSession())
   const rankMultiplier = isMember ? getCoinRank(current).multiplier : 1
   const checkInMultiplier = isMember ? getDailyCheckInMultiplier() : 1
-  const multiplier = rankMultiplier * checkInMultiplier
+  const multiplier = combineCoinMultipliers(rankMultiplier, checkInMultiplier)
   const requested = calculateCappedCoinReward(amount, multiplier, maximumAward)
   const balance = requested > 0 ? addCoinBalance(requested) : current
   return { awarded: Math.max(0, balance - current), balance, checkInMultiplier, multiplier, rankMultiplier }
+}
+
+export function combineCoinMultipliers(rankMultiplier: number, checkInMultiplier: number) {
+  const rank = Math.max(1, Math.floor(Number(rankMultiplier) || 1))
+  const checkIn = Math.max(1, Math.floor(Number(checkInMultiplier) || 1))
+  return rank + checkIn
 }
 
 export function calculateCappedCoinReward(

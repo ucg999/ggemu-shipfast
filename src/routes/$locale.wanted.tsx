@@ -50,9 +50,9 @@ function WantedPage() {
     claimingRef.current = false
   }
 
-  return <SiteLayout locale={lang}>
-    <main className="grid min-h-[calc(100vh-64px)] place-items-center overflow-hidden bg-[#f0f0ed] py-2 text-[#35231d]">
-      <section className="wanted-poster-board relative mx-auto w-[112vw] max-w-[1840px] min-w-[760px] overflow-hidden">
+  return <SiteLayout hideFooter locale={lang}>
+    <main className="grid h-[calc(100dvh-61px)] min-h-0 place-items-start justify-center overflow-hidden bg-[#f0f0ed] text-[#35231d]">
+      <section className="wanted-poster-board relative mx-auto overflow-hidden">
         <img alt="每周悬赏令前三名海报" className="block h-auto w-full" src="/images/wanted/wanted-board.png" />
         {displayOrder.map((rank, slot) => {
           const leader = data?.leaders.find(item => item.rank === rank)

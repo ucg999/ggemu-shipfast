@@ -664,7 +664,7 @@ html:not([data-member-logged-in='true']) .coin-rank-badge {
   100% { opacity: 0; transform: translateY(35%); }
 }
 
-.wanted-poster-board{isolation:isolate}
+.wanted-poster-board{isolation:isolate;width:min(112vw,1840px,calc((100dvh - 61px)*1.872));transform:translateY(-6%)}
 .wanted-poster-copy{position:absolute;top:69.8%;width:25%;text-align:center;font-family:Georgia,"Times New Roman",serif;color:#38251f;text-transform:uppercase;line-height:1;pointer-events:none}
 .wanted-poster-copy strong{display:block;margin-inline:auto;width:100%;transform-origin:center;font-size:clamp(.72rem,2.35vw,2.55rem);font-weight:900;white-space:nowrap}
 .wanted-poster-copy span{display:block;margin-top:4.8%;font-size:clamp(.62rem,1.68vw,1.78rem);font-weight:800;letter-spacing:.11em}

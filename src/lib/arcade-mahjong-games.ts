@@ -15,6 +15,9 @@ export const ARCADE_MAHJONG_GAME_QUERIES = [
   '双龙抢珠',
   '天降神兵',
   '全民斗地主',
+  'Mahjong G-Taste',
+  'VS Mahjong Otome Ryouran',
+  'Governor of Poker',
 ] as const
 
 export const ARCADE_MAHJONG_COINS_PER_MINUTE = 0
@@ -28,6 +31,12 @@ const ARCADE_MAHJONG_GAME_ALIASES = [
   '天開眼',
   '泰山闖天關2',
   '雙龍搶珠',
+  '御姐麻将',
+  '御姐麻將',
+  '乙女缭乱',
+  '乙女繚亂',
+  '州长扑克',
+  '州長撲克',
 ].map(normalizeArcadeMahjongGameName)
 
 export function isArcadeMahjongGame(game: PublicGame) {

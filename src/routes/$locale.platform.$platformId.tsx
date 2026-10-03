@@ -192,8 +192,8 @@ async function loadMahjongGames(locale: Locale) {
     const query = normalizeArcadeMahjongGameName(ARCADE_MAHJONG_GAME_QUERIES[index])
     const exact = result.games.find(game => normalizeArcadeMahjongGameName(game.name) === query)
       ?? result.games.find(game => {
-        const name = normalizeArcadeMahjongGameName(game.name)
-        return name.includes(query) || query.includes(name)
+        const identity = normalizeArcadeMahjongGameName(`${game.name ?? ''} ${game.keywords ?? ''}`)
+        return identity.includes(query) || query.includes(normalizeArcadeMahjongGameName(game.name))
       })
     return exact ? [exact] : []
   })

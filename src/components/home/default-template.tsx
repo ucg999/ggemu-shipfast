@@ -69,6 +69,9 @@ export function DefaultHomeTemplate(
   const [randomVideoGames, setRandomVideoGames] = useState(() =>
     visibleMostPlayedGames.slice(0, 6),
   )
+  const [mobileVideoGames, setMobileVideoGames] = useState(() =>
+    visibleMostPlayedGames.filter(game => Boolean(game.game_video?.trim())).slice(0, 4),
+  )
   const [dailyBestGames, setDailyBestGames] = useState(() =>
     visibleMostPlayedGames.slice(0, 7),
   )
@@ -111,6 +114,10 @@ export function DefaultHomeTemplate(
     if (visibleMostPlayedGames.length > 0) {
       const dailyGames = selectDailyVideoGames(visibleMostPlayedGames, 6)
       setRandomVideoGames(selectRefreshVideoForMiddle(dailyGames, visibleMostPlayedGames, lang))
+      setMobileVideoGames(selectDailyVideoGames(
+        visibleMostPlayedGames.filter(game => Boolean(game.game_video?.trim())),
+        4,
+      ))
     }
   }, [lang, visibleMostPlayedGames])
 
@@ -362,7 +369,7 @@ export function DefaultHomeTemplate(
         <HomeMostPlayedGamesSection
           challengeCompleted={challengeCompleted}
           challengeReward={challengeReward}
-          games={randomVideoGames}
+          games={mobileVideoGames}
           isRandomGameLoading={isRandomGameLoading}
           lang={lang}
           mobile

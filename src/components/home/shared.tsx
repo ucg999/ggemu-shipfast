@@ -85,8 +85,13 @@ export function HomeMostPlayedGamesSection({
   streakDays?: number
 }) {
   const items = games.slice(0, mobile ? 4 : 6)
+  const [activeMobileVideo, setActiveMobileVideo] = useState(0)
   const t = getI18n(lang).home
   const member = useMemberSession()
+
+  useEffect(() => {
+    setActiveMobileVideo(0)
+  }, [games])
 
   return (
     <section className="bg-base-100">
@@ -139,7 +144,10 @@ export function HomeMostPlayedGamesSection({
               >
                 <figure className="relative aspect-[4/3] overflow-hidden rounded-md bg-base-200">
                   <LazyAutoplayVideo
+                    active={mobile ? index === activeMobileVideo : undefined}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loop={!mobile}
+                    onEnded={mobile ? () => setActiveMobileVideo(current => (current + 1) % Math.max(items.length, 1)) : undefined}
                     poster={game.game_cover}
                     src={game.game_video}
                   />
@@ -167,7 +175,7 @@ export function HomeMostPlayedGamesSection({
   )
 }
 
-export function LazyAutoplayVideo({ className, poster, src }: { className: string; poster?: string; src?: string }) {
+export function LazyAutoplayVideo({ active, className, loop = true, onEnded, poster, src }: { active?: boolean; className: string; loop?: boolean; onEnded?: () => void; poster?: string; src?: string }) {
   const mediaRef = useRef<HTMLImageElement | HTMLVideoElement>(null)
   const [isNearViewport, setIsNearViewport] = useState(false)
 
@@ -186,12 +194,13 @@ export function LazyAutoplayVideo({ className, poster, src }: { className: strin
   }, [])
 
   return (
-    isNearViewport && src ? (
+    isNearViewport && src && active !== false ? (
       <video
         autoPlay
         className={className}
-        loop
+        loop={loop}
         muted
+        onEnded={onEnded}
         playsInline
         poster={poster}
         preload="metadata"

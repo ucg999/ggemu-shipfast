@@ -21,6 +21,11 @@ const COIN_MODE_CHINESE_NAMES: Readonly<Record<string, string>> = {
   'wiggie waggie': '美女弹珠打砖块',
   'wow new fantasia': '美女天蚕变',
   excelsior: '美女打钻',
+  'mahjong g-taste': '御姐麻将',
+  'vs mahjong otome ryouran': '乙女缭乱',
+  'governor of poker': '州长扑克',
+  "the king of the fighters '97 plus": '拳皇97 大蛇版',
+  'the king of fighters kyo': '拳皇 京',
 }
 
 export type Locale = 'zh-CN' | 'zh-TW' | 'en' | 'ja'
