@@ -68,8 +68,7 @@ function calculateLayout() {
 const w = mainCanvas.width;
 const h = mainCanvas.height;
 const vs = videoSize();
-const isShortViewport = h <= 700;
-const gameY = isShortViewport ? 8 : Math.max(44, Math.min(58, h * 0.065));
+const gameY = 8;
 const reservedControlsH = Math.max(210, Math.min(280, h * 0.38));
 const maxGameH = Math.max(160, h - gameY - reservedControlsH);
 const scale = Math.min(w / vs.w, maxGameH / vs.h);
@@ -110,7 +109,7 @@ const box = hitboxes[btn.id];
 return Math.max(bottom, box ? box.y + box.r + 22 : 0);
 }, 0);
 const dpadBottom = cy + dpadSize / 2;
-const toolbarTop = Math.min(h - 70, Math.max(actionBottom, dpadBottom) + 34);
+const toolbarTop = Math.min(h - 70, Math.max(actionBottom, dpadBottom) + 20);
 document.documentElement.style.setProperty('--toolbar-top', Math.round(toolbarTop) + 'px');
 const topActionY = cy - ((n - 1) / 2) * sy;
 const m = CAPSULES.length;
