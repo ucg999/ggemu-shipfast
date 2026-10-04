@@ -68,19 +68,20 @@ function calculateLayout() {
 const w = mainCanvas.width;
 const h = mainCanvas.height;
 const vs = videoSize();
+const isShortViewport = h <= 700;
+const gameY = isShortViewport ? 8 : Math.max(44, Math.min(58, h * 0.065));
 const reservedControlsH = Math.max(210, Math.min(280, h * 0.38));
-const maxGameH = Math.max(180, h - 44 - reservedControlsH);
+const maxGameH = Math.max(160, h - gameY - reservedControlsH);
 const scale = Math.min(w / vs.w, maxGameH / vs.h);
 const gameW = vs.w * scale;
 const gameH = vs.h * scale;
 const gameX = (w - gameW) / 2;
-const gameY = Math.max(44, Math.min(58, h * 0.065));
 hitboxes.game = { x: gameX, y: gameY, w: gameW, h: gameH };
 const controlsY = gameY + gameH;
 const controlsH = h - controlsY;
 hitboxes.controls = { y: controlsY, h: controlsH };
 const cy = controlsY + controlsH * 0.5 - 40;
-const dpadSize = Math.min(w * 0.35, 150, Math.max(96, controlsH - 108));
+const dpadSize = Math.min(w * 0.35, 150, Math.max(78, controlsH - 150));
 const dpadX = w * 0.25;
 const btnSize = dpadSize / 3;
 hitboxes.up = { x: dpadX - btnSize / 2, y: cy - dpadSize / 2, w: btnSize, h: btnSize };
@@ -104,6 +105,13 @@ ACTIONS.forEach((btn, i) => {
 const t = i - (n - 1) / 2;
 hitboxes[btn.id] = { type: 'circle', x: clusterCx + t * sx + (btn.id === 'a' ? r * 0.45 : 0), y: cy - t * sy, r: r, hr: hr };
 });
+const actionBottom = ACTIONS.reduce((bottom, btn) => {
+const box = hitboxes[btn.id];
+return Math.max(bottom, box ? box.y + box.r + 22 : 0);
+}, 0);
+const dpadBottom = cy + dpadSize / 2;
+const toolbarTop = Math.min(h - 70, Math.max(actionBottom, dpadBottom) + 34);
+document.documentElement.style.setProperty('--toolbar-top', Math.round(toolbarTop) + 'px');
 const topActionY = cy - ((n - 1) / 2) * sy;
 const m = CAPSULES.length;
 const cbtnW = 50;
@@ -567,17 +575,24 @@ core.setPaused(isPaused);
 pauseButton.textContent = isPaused ? '继续' : '暂停';
 showToast(isPaused ? '游戏已暂停' : '继续游戏');
 });
-if (typeof window.ROM_DATA !== 'string' || window.ROM_DATA.length === 0) {
-alert('ROM_DATA 缺失或为空,请用 build_rom.js 重新打包');
-return;
-}
 resize();
 bindControls();
-core.boot(window.ROM_DATA, {
+fetch('./assets/super-mario-bros-world.nes')
+.then(function (response) {
+if (!response.ok) throw new Error('ROM request failed: ' + response.status);
+return response.arrayBuffer();
+})
+.then(function (buffer) {
+core.boot(new Uint8Array(buffer), {
 toast: showToast,
 onReady: function () {
 renderUI();
 startRenderLoop();
 }
+});
+})
+.catch(function (error) {
+showToast('游戏加载失败，请刷新重试');
+console.error(error);
 });
 })();

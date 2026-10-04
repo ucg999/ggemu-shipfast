@@ -3,10 +3,10 @@ import { createFileRoute } from '@tanstack/react-router'
 export const Route = createFileRoute('/fc')({
   head: () => ({
     meta: [
-      { title: 'FC收藏馆｜Waixing01｜UCG999 怀旧游戏厅' },
+      { title: 'FC收藏馆｜超级马里奥兄弟｜UCG999 怀旧游戏厅' },
       {
         name: 'description',
-        content: '手机直接打开即可游玩的 Waixing01 FC 独立游戏界面，支持触屏按键、存档和读档。',
+        content: '手机直接打开即可游玩的超级马里奥兄弟 FC 独立游戏界面，支持触屏按键、存档和读档。',
       },
     ],
   }),
@@ -18,7 +18,7 @@ function FcPlayerPage() {
     <iframe
       allow="autoplay"
       src="/fc-player/index.html"
-      title="Waixing01 FC收藏馆"
+      title="超级马里奥兄弟 FC收藏馆"
       style={{
         position: 'fixed',
         top: 0,

@@ -3,7 +3,7 @@
 const WIDTH = 256;
 const HEIGHT = 240;
 const FRAMEBUFFER_SIZE = WIDTH * HEIGHT;
-const STATE_KEY = 'nes_save_state';
+const STATE_KEY = 'nes_save_state_super_mario_bros_world';
 let nes = null;
 let ready = false;
 let paused = false;
@@ -119,10 +119,19 @@ capsules: [{ id: 'select', label: 'SELECT' }, { id: 'start', label: 'START' }]
 },
 video: function () { return { w: WIDTH, h: HEIGHT }; },
 source: function () { return offscreen; },
-boot: function (romBase64, api) {
+boot: function (romData, api) {
 nes = new window.jsnes.NES({ onFrame: onFrame, onAudioSample: onAudioSample });
 try {
-const binary = window.atob(romBase64);
+let binary = '';
+if (typeof romData === 'string') {
+binary = window.atob(romData);
+} else {
+const bytes = romData instanceof Uint8Array ? romData : new Uint8Array(romData);
+const chunkSize = 0x8000;
+for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+binary += String.fromCharCode.apply(null, bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length)));
+}
+}
 const mapper = ((binary.charCodeAt(6) >> 4) | (binary.charCodeAt(7) & 0xf0));
 nes.loadROM(mapper === 15 ? prepareMapper15Rom(binary) : binary);
 if (mapper === 15) installMapper15();
