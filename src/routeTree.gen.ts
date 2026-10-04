@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LocaleRouteImport } from './routes/$locale'
+import { Route as FcRouteImport } from './routes/fc'
+import { Route as GbaRouteImport } from './routes/gba'
 import { Route as ManifestDotwebmanifestRouteImport } from './routes/manifest[.]webmanifest'
 import { Route as RandomRouteImport } from './routes/random'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
@@ -70,6 +72,16 @@ const IndexRoute = IndexRouteImport.update({
 const LocaleRoute = LocaleRouteImport.update({
   id: '/$locale',
   path: '/$locale',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FcRoute = FcRouteImport.update({
+  id: '/fc',
+  path: '/fc',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GbaRoute = GbaRouteImport.update({
+  id: '/gba',
+  path: '/gba',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManifestDotwebmanifestRoute = ManifestDotwebmanifestRouteImport.update({
@@ -331,6 +343,8 @@ const LocalePlatformSwitchGameIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$locale': typeof LocaleRouteWithChildren
+  '/fc': typeof FcRoute
+  '/gba': typeof GbaRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/random': typeof RandomRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -384,6 +398,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/fc': typeof FcRoute
+  '/gba': typeof GbaRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/random': typeof RandomRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -439,6 +455,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$locale': typeof LocaleRouteWithChildren
+  '/fc': typeof FcRoute
+  '/gba': typeof GbaRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/random': typeof RandomRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -495,6 +513,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$locale'
+    | '/fc'
+    | '/gba'
     | '/manifest.webmanifest'
     | '/random'
     | '/robots.txt'
@@ -548,6 +568,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/fc'
+    | '/gba'
     | '/manifest.webmanifest'
     | '/random'
     | '/robots.txt'
@@ -602,6 +624,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$locale'
+    | '/fc'
+    | '/gba'
     | '/manifest.webmanifest'
     | '/random'
     | '/robots.txt'
@@ -657,6 +681,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LocaleRoute: typeof LocaleRouteWithChildren
+  FcRoute: typeof FcRoute
+  GbaRoute: typeof GbaRoute
   ManifestDotwebmanifestRoute: typeof ManifestDotwebmanifestRoute
   RandomRoute: typeof RandomRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
@@ -692,6 +718,20 @@ declare module '@tanstack/react-router' {
       path: '/$locale'
       fullPath: '/$locale'
       preLoaderRoute: typeof LocaleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fc': {
+      id: '/fc'
+      path: '/fc'
+      fullPath: '/fc'
+      preLoaderRoute: typeof FcRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gba': {
+      id: '/gba'
+      path: '/gba'
+      fullPath: '/gba'
+      preLoaderRoute: typeof GbaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/manifest.webmanifest': {
@@ -1150,6 +1190,8 @@ const GamesGameIdRouteWithChildren = GamesGameIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LocaleRoute: LocaleRouteWithChildren,
+  FcRoute: FcRoute,
+  GbaRoute: GbaRoute,
   ManifestDotwebmanifestRoute: ManifestDotwebmanifestRoute,
   RandomRoute: RandomRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,

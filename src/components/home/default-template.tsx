@@ -221,7 +221,13 @@ export function DefaultHomeTemplate(
         <span>{lang === 'en' ? 'Rankings could not refresh.' : lang === 'ja' ? 'ランキングを更新できませんでした。' : lang === 'zh-TW' ? '榜單更新失敗，已保留原卡片。' : '榜单更新失败，已保留原卡片。'}</span>
         <button type="button" className="underline" onClick={() => setRankingRetry((value) => value + 1)}>{lang === 'en' ? 'Retry' : lang === 'ja' ? '再試行' : '重试'}</button>
       </div> : null}
-      <nav aria-label="PSP and Switch" className="grid w-full grid-cols-2 bg-blue-600 text-white lg:hidden">
+      <nav aria-label="FC, PSP and Switch" className="grid w-full grid-cols-3 bg-blue-600 text-white lg:hidden">
+        <a
+          className="flex h-9 items-center justify-center border-r border-white/25 text-sm font-medium transition hover:bg-blue-700"
+          href="/fc"
+        >
+          FC收藏馆
+        </a>
         <Link
           className="flex h-9 items-center justify-center border-r border-white/25 text-sm font-medium transition hover:bg-blue-700"
           params={{ locale: lang, platformId: 'psp' }}
