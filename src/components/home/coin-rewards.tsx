@@ -114,10 +114,10 @@ export function useHomeCoinRewards(rewardMultiplier = 1) {
     return () => window.clearInterval(timer)
   }, [])
 
-  const addCoins = useCallback((amount: number, showFeedback = true) => {
+  const addCoins = useCallback((amount: number, showFeedback = true, applyMultiplier = true) => {
     if (!Number.isFinite(amount) || amount <= 0) return
 
-    const multipliedAmount = Math.floor(amount) * Math.max(1, Math.floor(rewardMultiplier))
+    const multipliedAmount = Math.floor(amount) * (applyMultiplier ? Math.max(1, Math.floor(rewardMultiplier)) : 1)
     const previousBalance = readCoinBalance()
     const nextBalance = addCoinBalance(multipliedAmount)
     const awarded = Math.max(0, nextBalance - previousBalance)

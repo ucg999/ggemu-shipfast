@@ -16,8 +16,6 @@ import { requestMemberLogin, useMemberSession } from '#/lib/member-client'
 import {
   CoinRewardPopup,
   CoinRankBadge,
-  FloatingHomeCoin,
-  FlyingCollectedCoin,
   HomeCoinBag,
   useHomeCoinRewards,
 } from '#/components/home/coin-rewards'
@@ -34,6 +32,24 @@ import { rememberGameDetailReturnPath } from '#/lib/game-detail-return'
 const themeGamesCache = createThemeGameCache<Array<PublicGame>>()
 const themeFirstPagesCache = createThemeGameCache<Array<GameSearchResult>>()
 const DAILY_CHALLENGE_STORAGE_KEY = 'game-adventure-daily-challenge'
+const PLATFORM_COIN_DROP_CHANCE = 0.3
+const PLATFORM_COIN_DROP_COOLDOWN_MS = 3_000
+const PLATFORM_COIN_AMOUNT_WEIGHTS = [40, 27, 18, 10, 5] as const
+
+type PlatformCoinDrop = {
+  id: number
+  amount: number
+}
+
+function pickPlatformCoinDropAmount() {
+  const totalWeight = PLATFORM_COIN_AMOUNT_WEIGHTS.reduce((sum, weight) => sum + weight, 0)
+  let roll = Math.random() * totalWeight
+  for (let index = 0; index < PLATFORM_COIN_AMOUNT_WEIGHTS.length; index += 1) {
+    roll -= PLATFORM_COIN_AMOUNT_WEIGHTS[index]
+    if (roll < 0) return index + 1
+  }
+  return 1
+}
 
 export const Route = createFileRoute('/$locale/PRO')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -154,6 +170,9 @@ function ThemeMode() {
   const [gameIndex, setGameIndex] = useState(0)
   const [showcaseIndex, setShowcaseIndex] = useState(0)
   const [pageVisible, setPageVisible] = useState(true)
+  const [backgroundReady, setBackgroundReady] = useState(false)
+  const [consoleReady, setConsoleReady] = useState(false)
+  const [wheelLogoStage, setWheelLogoStage] = useState(0)
   const coinRewards = useHomeCoinRewards(2)
   const memberSession = useMemberSession()
   const gameLikeCounts = useGameLikeCounts()
@@ -161,12 +180,16 @@ function ThemeMode() {
   const [fullscreen, setFullscreen] = useState(false)
   const [preferredMode, setPreferredMode] = useState(false)
   const [notice, setNotice] = useState('')
+  const [platformCoinDrop, setPlatformCoinDrop] = useState<PlatformCoinDrop | null>(null)
   const [favoriteGames, setFavoriteGames] = useState<Array<PublicGame>>([])
   const [browserStats, setBrowserStats] = useState({ favorites: 0, played: 0, frequent: '', lastDate: '' })
   const root = useRef<HTMLDivElement>(null)
   const lastWheel = useRef(0)
   const touchY = useRef(0)
   const navigationAudio = useRef<HTMLAudioElement | null>(null)
+  const platformCoinDropTimer = useRef<number | null>(null)
+  const lastPlatformCoinDrop = useRef(0)
+  const hasMovedPlatformWheel = useRef(false)
   const platform = platforms[selected]
   const allGames = platform?.name === 'all-games'
   const favoritesPlatform = platform?.name === 'theme-favorites'
@@ -196,6 +219,25 @@ function ThemeMode() {
   const activeGame = result?.games[inLibrary ? gameIndex : showcaseIndex]
   const count = result?.pagination.total ?? platform?.count
   const platformLabel = themePlatformLabel(platform, lang) || getPlatformLabel(platform.name, lang)
+  const criticalImagesReady = backgroundReady && (consoleReady || !asset.console)
+
+  useEffect(() => {
+    setBackgroundReady(false)
+    setConsoleReady(!asset?.console)
+    setWheelLogoStage(0)
+  }, [asset?.background, asset?.console])
+
+  useEffect(() => {
+    if (!criticalImagesReady) return
+    setWheelLogoStage(1)
+    const idleWindow = window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void }
+    if (idleWindow.requestIdleCallback) {
+      const id = idleWindow.requestIdleCallback(() => setWheelLogoStage(2), { timeout: 1_200 })
+      return () => idleWindow.cancelIdleCallback?.(id)
+    }
+    const timer = window.setTimeout(() => setWheelLogoStage(2), 500)
+    return () => window.clearTimeout(timer)
+  }, [criticalImagesReady, selected])
 
   useEffect(() => {
     setDailyCheckIn(readProDailyCheckIn())
@@ -281,16 +323,35 @@ function ThemeMode() {
     }
   }, [])
 
+  const tryPlatformCoinDrop = useCallback(() => {
+    const now = Date.now()
+    const firstMove = !hasMovedPlatformWheel.current
+    hasMovedPlatformWheel.current = true
+    if (platformCoinDropTimer.current !== null || (!firstMove && now - lastPlatformCoinDrop.current < PLATFORM_COIN_DROP_COOLDOWN_MS)) return
+    if (!firstMove && Math.random() >= PLATFORM_COIN_DROP_CHANCE) return
+
+    const amount = pickPlatformCoinDropAmount()
+    lastPlatformCoinDrop.current = now
+    setPlatformCoinDrop({ id: now, amount })
+    platformCoinDropTimer.current = window.setTimeout(() => {
+      coinRewards.addCoins(amount, true, false)
+      setPlatformCoinDrop(null)
+      platformCoinDropTimer.current = null
+    }, 1_050)
+  }, [coinRewards.addCoins])
+
   const move = useCallback((delta: number) => {
     if (!platforms.length) return
     playNavigationSound()
     setSelected(value => (value + delta + platforms.length) % platforms.length)
     setPage(1); setQuery(''); setGameIndex(0); setResult(null)
-  }, [platforms.length, playNavigationSound])
+    tryPlatformCoinDrop()
+  }, [platforms.length, playNavigationSound, tryPlatformCoinDrop])
 
   useEffect(() => () => {
     navigationAudio.current?.pause()
     navigationAudio.current = null
+    if (platformCoinDropTimer.current !== null) window.clearTimeout(platformCoinDropTimer.current)
   }, [])
 
   useEffect(() => {
@@ -409,8 +470,8 @@ function ThemeMode() {
         const sources = new Set<string>()
         for (const offset of [-1, 1]) {
           const neighbor = getThemeAsset(platforms[(selected + offset + platforms.length) % platforms.length])
-          sources.add(window.innerWidth > 1920 ? neighbor.background : getOptimizedThemeBackground(neighbor.background))
-          if (neighbor.console) sources.add(getLosslessThemeImage(neighbor.console))
+          sources.add(getResponsiveThemeBackground(neighbor.background, window.innerWidth))
+          if (neighbor.console) sources.add(getPixelThemeImage(neighbor.console))
         }
         for (const source of sources) {
           const image = new Image()
@@ -481,8 +542,10 @@ function ThemeMode() {
       </div>
       <div className="kt-stage">
         <picture>
+          <source media="(max-width: 1000px)" srcSet={getThemeBackgroundVariant(asset.background, 960, 'webp')} type="image/webp" />
+          <source media="(max-width: 1440px)" srcSet={getThemeBackgroundVariant(asset.background, 1280, 'webp')} type="image/webp" />
           <source media="(max-width: 1920px)" srcSet={getOptimizedThemeBackground(asset.background)} />
-          <img alt="" className="kt-background" decoding="async" fetchPriority="high" key={asset.background} src={asset.background} />
+          <img alt="" className="kt-background" decoding="async" fetchPriority="high" key={asset.background} onLoad={() => setBackgroundReady(true)} src={asset.background} />
         </picture>
         <div className="kt-shade" />
         <header className="kt-header">
@@ -504,9 +567,9 @@ function ThemeMode() {
           </section>
           <div className="kt-scene" key={platform.name}>
             {asset.console ? <>
-              <div className={`kt-machine-video ${centeredCollectionPreview ? 'is-centered' : ''} ${!preciselyCenteredPlatform && centeredCollectionPreview ? 'is-nudged-left' : ''} ${atariPlatform ? 'is-atari' : ''} ${gbaPlatform ? 'is-gba' : ''} ${sega32xPlatform ? 'is-sega32x' : ''}`} style={{ ...box(asset.videoPosition, asset.videoSize), ...(gbaPlatform ? { height: `calc(${asset.videoSize[1] * 100}% + 3px)` } : {}), ...(sega32xPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 5px)` } : {}), ...(virtualBoyPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 40px)` } : {}) }}><GamePreview game={activeGame} playing={pageVisible} /></div>
-              <img className="kt-console" src={getLosslessThemeImage(asset.console)} decoding="async" fetchPriority="high" alt="" style={box(asset.consolePosition, asset.consoleSize)} />
-            </> : <div className="kt-fallback-preview"><GamePreview game={activeGame} playing={pageVisible} /></div>}
+              <div className={`kt-machine-video ${centeredCollectionPreview ? 'is-centered' : ''} ${!preciselyCenteredPlatform && centeredCollectionPreview ? 'is-nudged-left' : ''} ${atariPlatform ? 'is-atari' : ''} ${gbaPlatform ? 'is-gba' : ''} ${sega32xPlatform ? 'is-sega32x' : ''}`} style={{ ...box(asset.videoPosition, asset.videoSize), ...(gbaPlatform ? { height: `calc(${asset.videoSize[1] * 100}% + 3px)` } : {}), ...(sega32xPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 5px)` } : {}), ...(virtualBoyPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 40px)` } : {}) }}><GamePreview allowVideo={criticalImagesReady} game={activeGame} playing={pageVisible} /></div>
+              <img className="kt-console" src={getPixelThemeImage(asset.console)} decoding="async" fetchPriority="high" alt="" onLoad={() => setConsoleReady(true)} style={box(asset.consolePosition, asset.consoleSize)} />
+            </> : <div className="kt-fallback-preview"><GamePreview allowVideo={criticalImagesReady} game={activeGame} playing={pageVisible} /></div>}
           </div>
           <div className="kt-platform-info">
             <dl>
@@ -527,14 +590,19 @@ function ThemeMode() {
               if (offset > platforms.length / 2) offset -= platforms.length
               if (Math.abs(offset) > 3) return null
               const itemAsset = getThemeAsset(item)
+              const shouldLoadLogo = offset === 0 || (wheelLogoStage >= 1 && Math.abs(offset) <= 1) || wheelLogoStage >= 2
               return <button key={item.name} className={`kt-wheel-item ${offset === 0 ? 'is-selected' : ''}`} aria-current={offset === 0 ? 'true' : undefined}
                 aria-label={themePlatformLabel(item, lang) || getPlatformLabel(item.name, lang)} style={{ '--offset': offset, '--curve': Math.abs(offset) ** 2 } as CSSProperties}
                 onClick={() => offset === 0 ? enter() : move(offset)}>
-                {itemAsset.logo ? <img src={getOptimizedThemeLogo(itemAsset.logo)} alt={themePlatformLabel(item, lang) || getPlatformLabel(item.name, lang)} decoding="async" draggable={false} /> : <span>{themePlatformLabel(item, lang) || getPlatformLabel(item.name, lang)}</span>}
+                {itemAsset.logo && shouldLoadLogo ? <img src={getOptimizedThemeLogo(itemAsset.logo)} alt={themePlatformLabel(item, lang) || getPlatformLabel(item.name, lang)} decoding="async" draggable={false} fetchPriority={offset === 0 ? 'high' : 'low'} /> : <span>{themePlatformLabel(item, lang) || getPlatformLabel(item.name, lang)}</span>}
+                {offset === 0 && platformCoinDrop ? <span className="kt-platform-coin-drop" key={platformCoinDrop.id} aria-label={`+${platformCoinDrop.amount}`}>
+                  {Array.from({ length: platformCoinDrop.amount }, (_, coinIndex) => <span key={coinIndex} style={{ '--coin-index': coinIndex, '--coin-start-x': `${(coinIndex - 2) * 10}px`, '--coin-end-x': `${(coinIndex - 2) * 18}px` } as CSSProperties}>●</span>)}
+                  <strong>+{platformCoinDrop.amount}</strong>
+                </span> : null}
               </button>
             })}
           </nav>
-          <img className="kt-pointer" src={getLosslessThemeImage(asset.pointer)} decoding="async" alt="" />
+          <img className="kt-pointer" src={getPixelThemeImage(asset.pointer)} decoding="async" alt="" />
         </> : <section className="kt-library">
           <div className="kt-library-top">
             <button onClick={back}>← {english ? 'Platforms' : '平台选择'}</button><h1>{platformLabel}</h1>
@@ -623,8 +691,6 @@ function ThemeMode() {
         </footer>
         {notice && <button className="kt-notice" onClick={() => setNotice('')}>{notice} ×</button>}
       </div>
-      <FloatingHomeCoin lang={lang} onCollect={coinRewards.collectFloatingCoin} positions={coinRewards.coinPositions} />
-      <FlyingCollectedCoin flight={coinRewards.collectedCoinFlight} />
       <CoinRewardPopup feedback={coinRewards.rewardFeedback} />
     </div>
   )
@@ -890,6 +956,17 @@ function getOptimizedThemeBackground(background: string) {
   return background.replace(/\.jpe?g$/i, '-1920.jpeg')
 }
 
+function getThemeBackgroundVariant(background: string, width: 960 | 1280, extension: 'webp') {
+  return background.replace(/\.jpe?g$/i, `-${width}.${extension}`)
+}
+
+function getResponsiveThemeBackground(background: string, viewportWidth: number) {
+  if (viewportWidth <= 1000) return getThemeBackgroundVariant(background, 960, 'webp')
+  if (viewportWidth <= 1440) return getThemeBackgroundVariant(background, 1280, 'webp')
+  if (viewportWidth <= 1920) return getOptimizedThemeBackground(background)
+  return background
+}
+
 function getOptimizedThemeLogo(logo: string) {
   return getLosslessThemeImage(logo.replace(/\.png$/i, '-800.png'))
 }
@@ -898,7 +975,11 @@ function getLosslessThemeImage(source: string) {
   return (themeImageFormats as Record<string, string>)[source] || source
 }
 
-function GamePreview({ game, onEnded, onVideoError, playing = true }: { game?: PublicGame; onEnded?: () => void; onVideoError?: () => void; playing?: boolean }) {
+function getPixelThemeImage(source: string) {
+  return source.replace(/\.png$/i, '.pixel.webp')
+}
+
+function GamePreview({ allowVideo = true, game, onEnded, onVideoError, playing = true }: { allowVideo?: boolean; game?: PublicGame; onEnded?: () => void; onVideoError?: () => void; playing?: boolean }) {
   const [failed, setFailed] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   useEffect(() => setFailed(false), [game?.game_video])
@@ -911,7 +992,7 @@ function GamePreview({ game, onEnded, onVideoError, playing = true }: { game?: P
     }
     void video.play().catch(() => {})
   }, [game?.game_video, playing])
-  if (game?.game_video && /\.(mp4|webm)(\?|$)/i.test(game.game_video) && !failed) return <video ref={videoRef} src={game.game_video} poster={game.game_cover} autoPlay={playing} preload="metadata" loop={!onEnded} muted playsInline onCanPlay={() => { if (playing) void videoRef.current?.play().catch(() => {}) }} onEnded={onEnded} onError={() => { setFailed(true); onVideoError?.() }} />
+  if (allowVideo && game?.game_video && /\.(mp4|webm)(\?|$)/i.test(game.game_video) && !failed) return <video ref={videoRef} src={game.game_video} poster={game.game_cover} autoPlay={playing} preload="metadata" loop={!onEnded} muted playsInline onCanPlay={() => { if (playing) void videoRef.current?.play().catch(() => {}) }} onEnded={onEnded} onError={() => { setFailed(true); onVideoError?.() }} />
   return game?.game_cover ? <img src={game.game_cover} alt={game.name || ''} decoding="async" /> : <div className="kt-preview-placeholder">UCG999<span>SELECT YOUR GAME</span></div>
 }
 

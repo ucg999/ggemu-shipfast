@@ -7,7 +7,7 @@ import { normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { siteConfig } from '#/lib/site-config'
 import { useCurrentSiteTheme } from '#/lib/use-site-theme'
-import { calculateGameCoinAward, GAME_SESSION_COIN_CAP } from '#/lib/game-session-coins'
+import { calculateGameCoinAward, GAME_SESSION_COIN_CAP, PRO_GAME_SESSION_COIN_CAP, resolveGameSessionMultiplier } from '#/lib/game-session-coins'
 import { ARCADE_MAHJONG_COINS_PER_MINUTE, ARCADE_MAHJONG_FREE_TRIAL_MINUTES, isArcadeMahjongGame } from '#/lib/arcade-mahjong-games'
 import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
 import {
@@ -170,14 +170,15 @@ function LocalizedPlayGamePage() {
     coinDepletedRef.current = false
     coinMultiplierRef.current = 1
     void getMemberSession().then(({ member }) => {
-      coinMultiplierRef.current = member ? getDailyGameCoinMultiplier(gameId) : 1
+      const normalMultiplier = member ? getDailyGameCoinMultiplier(gameId) : 1
+      coinMultiplierRef.current = resolveGameSessionMultiplier(normalMultiplier, isProGame)
     }).catch(() => {
-      coinMultiplierRef.current = 1
+      coinMultiplierRef.current = resolveGameSessionMultiplier(1, isProGame)
     })
     recommendationsRequestedRef.current = false
     setRecommendations([])
     setRecommendationType('category')
-  }, [gameId, loadingTrialDisabled])
+  }, [gameId, isProGame, loadingTrialDisabled])
 
   useEffect(() => {
     if (!isProGame) return
@@ -263,8 +264,9 @@ function LocalizedPlayGamePage() {
     }
 
     const multiplier = coinMultiplierRef.current
+    const sessionCoinCap = isProGame ? PRO_GAME_SESSION_COIN_CAP : GAME_SESSION_COIN_CAP
     const { earned: earnedCoins, additional: newCoins } = calculateGameCoinAward(
-      activeTime, multiplier, awardedCoinsRef.current, sessionCoinsRef.current,
+      activeTime, multiplier, awardedCoinsRef.current, sessionCoinsRef.current, sessionCoinCap,
     )
 
     awardedCoinsRef.current = earnedCoins
@@ -272,7 +274,7 @@ function LocalizedPlayGamePage() {
     if (newCoins > 0) {
       sessionCoinsRef.current += addStoredGameCoins(
         newCoins,
-        GAME_SESSION_COIN_CAP - sessionCoinsRef.current,
+        sessionCoinCap - sessionCoinsRef.current,
       )
     }
 
