@@ -52,28 +52,35 @@ const v = core.video ? core.video() : null;
 return { w: (v && v.w) || 256, h: (v && v.h) || 240 };
 }
 function resize() {
-mainCanvas.width = window.innerWidth;
-mainCanvas.height = window.innerHeight;
+const viewport = window.visualViewport;
+const viewportWidth = Math.round((viewport && viewport.width) || window.innerWidth);
+const viewportHeight = Math.round((viewport && viewport.height) || window.innerHeight);
+mainCanvas.width = viewportWidth;
+mainCanvas.height = viewportHeight;
+mainCanvas.style.width = viewportWidth + 'px';
+mainCanvas.style.height = viewportHeight + 'px';
 layoutKey = '';
 renderUI();
 }
 window.addEventListener('resize', resize);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
 function calculateLayout() {
 const w = mainCanvas.width;
 const h = mainCanvas.height;
 const vs = videoSize();
-const maxGameH = h * 0.6;
+const reservedControlsH = Math.max(210, Math.min(280, h * 0.38));
+const maxGameH = Math.max(180, h - 44 - reservedControlsH);
 const scale = Math.min(w / vs.w, maxGameH / vs.h);
 const gameW = vs.w * scale;
 const gameH = vs.h * scale;
 const gameX = (w - gameW) / 2;
-const gameY = 80;
+const gameY = Math.max(44, Math.min(58, h * 0.065));
 hitboxes.game = { x: gameX, y: gameY, w: gameW, h: gameH };
 const controlsY = gameY + gameH;
 const controlsH = h - controlsY;
 hitboxes.controls = { y: controlsY, h: controlsH };
 const cy = controlsY + controlsH * 0.5 - 40;
-const dpadSize = Math.min(w * 0.35, 150);
+const dpadSize = Math.min(w * 0.35, 150, Math.max(96, controlsH - 108));
 const dpadX = w * 0.25;
 const btnSize = dpadSize / 3;
 hitboxes.up = { x: dpadX - btnSize / 2, y: cy - dpadSize / 2, w: btnSize, h: btnSize };
