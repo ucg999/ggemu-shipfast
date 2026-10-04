@@ -7,8 +7,9 @@ const names = (await fs.readdir(directory))
   .filter(name => /-background\.jpeg$/i.test(name) && !/-\d+\.jpeg$/i.test(name))
 
 const variants = [
-  { width: 960, suffix: '-960.webp', quality: 76 },
-  { width: 1280, suffix: '-1280.webp', quality: 78 },
+  { width: 960, suffix: '-960.webp', quality: 66 },
+  { width: 1280, suffix: '-1280.webp', quality: 69 },
+  { width: 1920, suffix: '-1920.webp', quality: 72 },
 ]
 
 const report = []

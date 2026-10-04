@@ -5,7 +5,6 @@ import sharp from 'sharp'
 const directory = 'public/themes/es-k-team'
 const names = await fs.readdir(directory)
 const targets = [
-  { pattern: /-console\.png$/i, width: 360, height: 360 },
   { pattern: /(?:^|-)pointer\.png$/i, width: 54, height: 96 },
 ]
 
@@ -33,6 +32,5 @@ for (const target of targets) {
 console.log(JSON.stringify({
   count: report.length,
   bytes: report.reduce((sum, item) => sum + item.bytes, 0),
-  consoles: report.filter(item => item.name.includes('-console.')).length,
   pointers: report.filter(item => item.name.includes('-pointer.')).length,
 }, null, 2))

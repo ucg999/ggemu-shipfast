@@ -471,7 +471,7 @@ function ThemeMode() {
         for (const offset of [-1, 1]) {
           const neighbor = getThemeAsset(platforms[(selected + offset + platforms.length) % platforms.length])
           sources.add(getResponsiveThemeBackground(neighbor.background, window.innerWidth))
-          if (neighbor.console) sources.add(getPixelThemeImage(neighbor.console))
+          if (neighbor.console) sources.add(getCompactThemeConsole(neighbor.console))
         }
         for (const source of sources) {
           const image = new Image()
@@ -544,8 +544,7 @@ function ThemeMode() {
         <picture>
           <source media="(max-width: 1000px)" srcSet={getThemeBackgroundVariant(asset.background, 960, 'webp')} type="image/webp" />
           <source media="(max-width: 1440px)" srcSet={getThemeBackgroundVariant(asset.background, 1280, 'webp')} type="image/webp" />
-          <source media="(max-width: 1920px)" srcSet={getOptimizedThemeBackground(asset.background)} />
-          <img alt="" className="kt-background" decoding="async" fetchPriority="high" key={asset.background} onLoad={() => setBackgroundReady(true)} src={asset.background} />
+          <img alt="" className="kt-background" decoding="async" fetchPriority="high" key={asset.background} onLoad={() => setBackgroundReady(true)} src={getThemeBackgroundVariant(asset.background, 1920, 'webp')} />
         </picture>
         <div className="kt-shade" />
         <header className="kt-header">
@@ -568,7 +567,7 @@ function ThemeMode() {
           <div className="kt-scene" key={platform.name}>
             {asset.console ? <>
               <div className={`kt-machine-video ${centeredCollectionPreview ? 'is-centered' : ''} ${!preciselyCenteredPlatform && centeredCollectionPreview ? 'is-nudged-left' : ''} ${atariPlatform ? 'is-atari' : ''} ${gbaPlatform ? 'is-gba' : ''} ${sega32xPlatform ? 'is-sega32x' : ''}`} style={{ ...box(asset.videoPosition, asset.videoSize), ...(gbaPlatform ? { height: `calc(${asset.videoSize[1] * 100}% + 3px)` } : {}), ...(sega32xPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 5px)` } : {}), ...(virtualBoyPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 40px)` } : {}) }}><GamePreview allowVideo={criticalImagesReady} game={activeGame} playing={pageVisible} /></div>
-              <img className="kt-console" src={getPixelThemeImage(asset.console)} decoding="async" fetchPriority="high" alt="" onLoad={() => setConsoleReady(true)} style={box(asset.consolePosition, asset.consoleSize)} />
+              <img className="kt-console" src={getCompactThemeConsole(asset.console)} decoding="async" fetchPriority="high" alt="" onLoad={() => setConsoleReady(true)} style={box(asset.consolePosition, asset.consoleSize)} />
             </> : <div className="kt-fallback-preview"><GamePreview allowVideo={criticalImagesReady} game={activeGame} playing={pageVisible} /></div>}
           </div>
           <div className="kt-platform-info">
@@ -952,23 +951,18 @@ function selectDailyShowcaseIndex(games: Array<PublicGame>, platformName: string
   return candidates[Math.abs(hashThemeLibraryId(`${dayKey}:${platformName}`)) % candidates.length]?.index ?? 0
 }
 
-function getOptimizedThemeBackground(background: string) {
-  return background.replace(/\.jpe?g$/i, '-1920.jpeg')
-}
-
-function getThemeBackgroundVariant(background: string, width: 960 | 1280, extension: 'webp') {
+function getThemeBackgroundVariant(background: string, width: 960 | 1280 | 1920, extension: 'webp') {
   return background.replace(/\.jpe?g$/i, `-${width}.${extension}`)
 }
 
 function getResponsiveThemeBackground(background: string, viewportWidth: number) {
   if (viewportWidth <= 1000) return getThemeBackgroundVariant(background, 960, 'webp')
   if (viewportWidth <= 1440) return getThemeBackgroundVariant(background, 1280, 'webp')
-  if (viewportWidth <= 1920) return getOptimizedThemeBackground(background)
-  return background
+  return getThemeBackgroundVariant(background, 1920, 'webp')
 }
 
 function getOptimizedThemeLogo(logo: string) {
-  return getLosslessThemeImage(logo.replace(/\.png$/i, '-800.png'))
+  return logo.replace(/\.png$/i, '-480.webp')
 }
 
 function getLosslessThemeImage(source: string) {
@@ -977,6 +971,10 @@ function getLosslessThemeImage(source: string) {
 
 function getPixelThemeImage(source: string) {
   return source.replace(/\.png$/i, '.pixel.webp')
+}
+
+function getCompactThemeConsole(source: string) {
+  return source.replace(/-console\.png$/i, '-console-720.webp')
 }
 
 function GamePreview({ allowVideo = true, game, onEnded, onVideoError, playing = true }: { allowVideo?: boolean; game?: PublicGame; onEnded?: () => void; onVideoError?: () => void; playing?: boolean }) {
