@@ -624,6 +624,7 @@ body {
 .psp-library-cover{position:relative;isolation:isolate;overflow:visible;border-radius:.75rem;background:transparent;transition:transform .2s ease}
 .psp-library-cover img{border-radius:inherit}
 .psp-library-cover::after{position:absolute;z-index:-1;right:-6%;bottom:-7px;left:-6%;height:15px;content:"";background:linear-gradient(to bottom,rgba(15,23,42,.7),rgba(15,23,42,0));clip-path:polygon(30% 0,70% 0,100% 100%,0 100%);filter:blur(3px);transform:perspective(70px) rotateX(48deg);transform-origin:top center;pointer-events:none}
+.fc-cartridge-cover.psp-library-cover::after{right:-3%;bottom:-4px;left:-3%;height:9px;filter:blur(2px)}
 .psp-library-card:hover .psp-library-cover{transform:translateY(-1px)}
 .psp-library-info{margin-top:.55rem;border-radius:.65rem}
 .psp-like-wrap{position:relative;z-index:6;display:inline-flex;flex:none}

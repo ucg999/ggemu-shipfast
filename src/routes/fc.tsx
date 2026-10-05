@@ -4,9 +4,14 @@ import { useEffect } from 'react'
 import { MemberAccountButton } from '#/components/member-account'
 import { requestMemberLogin } from '#/lib/member-client'
 
+const FC_CARTRIDGE_IDS = new Set([
+  'donkey-kong', 'donkey-kong-jr', 'popeye', 'gomoku-narabe', 'mahjong', 'mario-bros',
+  'popeye-english', 'baseball', 'donkey-kong-jr-math', 'urban-champion', 'happy-cat', 'karateka-street-fighter',
+])
+
 export const Route = createFileRoute('/fc')({
   validateSearch: (search: Record<string, unknown>) => ({
-    cartridge: search.cartridge === 'happy-cat' || search.cartridge === 'urban-champion' || search.cartridge === 'karateka-street-fighter' ? search.cartridge : undefined,
+    cartridge: typeof search.cartridge === 'string' && FC_CARTRIDGE_IDS.has(search.cartridge) ? search.cartridge : undefined,
   }),
   head: () => ({
     meta: [

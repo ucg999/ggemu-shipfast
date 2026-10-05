@@ -2,7 +2,10 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { assertSameOrigin, getMemberFromRequest, jsonError, leaderboardDb } from '#/lib/member-auth.server'
 
-const CARTRIDGE_IDS = new Set(['urban-champion', 'happy-cat', 'karateka-street-fighter'])
+const CARTRIDGE_IDS = new Set([
+  'donkey-kong', 'donkey-kong-jr', 'popeye', 'gomoku-narabe', 'mahjong', 'mario-bros',
+  'popeye-english', 'baseball', 'donkey-kong-jr-math', 'urban-champion', 'happy-cat', 'karateka-street-fighter',
+])
 
 export const Route = createFileRoute('/api/fc-cartridges')({
   server: {

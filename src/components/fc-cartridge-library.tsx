@@ -11,12 +11,48 @@ const CARTRIDGE_PRICE = 50
 
 const FC_CARTRIDGES = [
   {
+    id: 'donkey-kong', number: '001号', title: '森喜刚', cover: '/fc-player/assets/cartridges/donkey-kong.min.webp',
+    genre: '动作', releaseDate: '1983-07-15', publisher: '任天堂',
+  },
+  {
+    id: 'donkey-kong-jr', number: '002号', title: '森喜刚JR.', cover: '/fc-player/assets/cartridges/donkey-kong-jr.min.webp',
+    genre: '动作', releaseDate: '1983-07-15', publisher: '任天堂',
+  },
+  {
+    id: 'popeye', number: '003号', title: '大力水手', cover: '/fc-player/assets/cartridges/popeye.min.webp',
+    genre: '动作', releaseDate: '1983-07-15', publisher: '任天堂',
+  },
+  {
+    id: 'gomoku-narabe', number: '004号', title: '五子棋', cover: '/fc-player/assets/cartridges/gomoku-narabe.min.webp',
+    genre: '益智', releaseDate: '1983-08-27', publisher: '任天堂',
+  },
+  {
+    id: 'mahjong', number: '005号', title: '麻将', cover: '/fc-player/assets/cartridges/mahjong.min.webp',
+    genre: '益智', releaseDate: '1983-08-27', publisher: '任天堂',
+  },
+  {
+    id: 'mario-bros', number: '006号', title: '水管玛丽', cover: '/fc-player/assets/cartridges/mario-bros.min.webp',
+    genre: '动作', releaseDate: '1983-09-09', publisher: '任天堂',
+  },
+  {
+    id: 'popeye-english', number: '007号', title: '大力水手学英语', cover: '/fc-player/assets/cartridges/popeye-english.min.webp',
+    genre: '教育', releaseDate: '1983-11-22', publisher: '任天堂',
+  },
+  {
+    id: 'baseball', number: '008号', title: '棒球', cover: '/fc-player/assets/cartridges/baseball.min.webp',
+    genre: '体育', releaseDate: '1983-12-07', publisher: '任天堂',
+  },
+  {
+    id: 'donkey-kong-jr-math', number: '009号', title: '森喜刚学算数', cover: '/fc-player/assets/cartridges/donkey-kong-jr-math.min.webp',
+    genre: '教育', releaseDate: '1983-12-12', publisher: '任天堂',
+  },
+  {
     id: 'urban-champion',
     number: '026号',
     title: '街头格斗',
     cover: '/fc-player/assets/cartridges/urban-champion.min.webp',
     genre: '格斗',
-    releaseDate: '1984.11.14',
+    releaseDate: '1984-11-14',
     publisher: '任天堂',
   },
   {
@@ -25,7 +61,7 @@ const FC_CARTRIDGES = [
     title: '快乐猫',
     cover: '/fc-player/assets/cartridges/happy-cat.min.webp',
     genre: '动作',
-    releaseDate: '1984.11.14',
+    releaseDate: '1984-11-14',
     publisher: 'NAMCO',
   },
   {
@@ -34,7 +70,7 @@ const FC_CARTRIDGES = [
     title: '空手道 街霸版',
     cover: '/fc-player/assets/cartridges/karateka-street-fighter.min.webp',
     genre: '格斗',
-    releaseDate: '1985.12.05',
+    releaseDate: '1985-12-05',
     publisher: 'Soft Pro',
   },
 ] as const
@@ -205,11 +241,11 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
             </div>
           </header>
 
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-4 lg:grid-cols-6">
             {cartridges.map((cartridge) => (
               <article className="psp-library-card group relative" key={cartridge.id}>
                 <button aria-label={`${owned.includes(cartridge.id) ? copy.open : copy.buy}${cartridge.title}`} className="block w-full" onClick={() => handleCartridge(cartridge.id)} type="button">
-                  <div className="psp-library-cover aspect-[3/2] w-full overflow-hidden rounded-lg bg-transparent">
+                  <div className="fc-cartridge-cover psp-library-cover aspect-[3/2] w-full overflow-hidden rounded-lg bg-transparent">
                     <img
                       alt={`${cartridge.title} FC卡带`}
                       className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.025]"
@@ -219,14 +255,24 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
                     />
                   </div>
                 </button>
-                <div className="psp-library-info bg-base-100 p-2 sm:py-2.5">
-                  <h2 className="truncate text-center text-base font-semibold text-base-content sm:text-lg" title={cartridge.title}>{cartridge.title}</h2>
-                  <div className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap text-center text-[11px] text-base-content/60 sm:text-[13px]">
-                    <span>{cartridge.number}</span>{' · '}<span>{copy.chinese}</span>{' · '}<time>{cartridge.releaseDate}</time>{' · '}<span>{cartridge.publisher}</span>
+                <div className="psp-library-info bg-base-100 p-1.5 sm:p-2">
+                  <h2 className="truncate text-center text-sm font-semibold text-base-content sm:text-base" title={cartridge.title}>{cartridge.title}</h2>
+                  <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[10px] text-base-content/60 sm:text-xs">
+                    <div className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-center">
+                      <span>{cartridge.number}</span>{' · '}<time>{cartridge.releaseDate}</time>{' · '}<span>{cartridge.publisher}</span>
+                    </div>
+                    <button
+                      aria-label={`${owned.includes(cartridge.id) ? copy.open : copy.buy}${cartridge.title}`}
+                      className={`ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-sm transition sm:h-7 sm:w-7 ${owned.includes(cartridge.id) ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-amber-300 text-black hover:bg-amber-200'}`}
+                      title={owned.includes(cartridge.id) ? copy.play : `${CARTRIDGE_PRICE} ${copy.buyLabel}`}
+                      onClick={() => handleCartridge(cartridge.id)}
+                      type="button"
+                    >
+                      {owned.includes(cartridge.id)
+                        ? <i className="ri-play-fill" />
+                        : <img alt="" className="h-4 w-4 object-contain sm:h-[18px] sm:w-[18px]" src="/images/coin-rewards/pixel-reward-coin.webp" />}
+                    </button>
                   </div>
-                  <button className={`mt-2 flex h-7 w-full items-center justify-center gap-1 rounded-md text-[10px] font-semibold transition ${owned.includes(cartridge.id) ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-amber-300 text-black hover:bg-amber-200'}`} onClick={() => handleCartridge(cartridge.id)} type="button">
-                    {owned.includes(cartridge.id) ? copy.play : <><img alt="" className="h-3.5 w-3.5" src="/images/coin-rewards/pixel-reward-coin.webp" />{CARTRIDGE_PRICE} · {copy.buyLabel}</>}
-                  </button>
                 </div>
               </article>
             ))}

@@ -21,7 +21,6 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [recoveryCode, setRecoveryCode] = useState('')
-  const [invitationCode, setInvitationCode] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [issuedRecoveryCode, setIssuedRecoveryCode] = useState('')
@@ -89,11 +88,10 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
     setBusy(true)
     setError('')
     try {
-      const session = await submitMemberCredentials(mode, username, password, recoveryCode, invitationCode)
+      const session = await submitMemberCredentials(mode, username, password, recoveryCode)
       const account = await getMemberSession()
       setRemainingToday(account.remainingToday)
       setPassword('')
-      setInvitationCode('')
       setNicknameSetup(session.needsNickname)
       if (session.recoveryCode) setIssuedRecoveryCode(session.recoveryCode)
       else setIsOpen(false)
@@ -247,8 +245,6 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
                   <label className="block text-sm font-medium">{copy.username}<input autoComplete="username" className="mt-1 h-11 w-full rounded-xl border border-black/20 px-3 outline-none focus:border-black" maxLength={20} minLength={mode === 'register' ? 6 : 1} onChange={(event) => setUsername(event.target.value)} pattern={mode === 'register' ? '[A-Za-z0-9_]{6,20}' : undefined} required value={username} /></label>
                   {mode === 'register' ? <p className="-mt-1 text-xs text-black/50">{copy.usernameHint}</p> : null}
                   <label className="block text-sm font-medium">{mode === 'reset-password' ? copy.newPassword : copy.password}<PasswordInput autoComplete={mode === 'register' || mode === 'reset-password' ? 'new-password' : 'current-password'} className="mt-1 h-11 w-full rounded-xl border border-black/20 px-3 pr-10 outline-none focus:border-black" maxLength={72} minLength={8} onChange={setPassword} required value={password} /></label>
-                  {mode === 'register' ? <label className="block text-sm font-medium">{copy.invitationCode}<input autoComplete="off" className="mt-1 h-11 w-full rounded-xl border border-black/20 px-3 font-mono uppercase tracking-wider outline-none focus:border-black" maxLength={14} onChange={event => setInvitationCode(event.target.value.toUpperCase())} placeholder="UCG-XXXXX-XXXXX" required value={invitationCode} /></label> : null}
-                  {mode === 'register' ? <p className="-mt-1 text-xs leading-5 text-black/50">{copy.invitationHint}</p> : null}
                   {mode === 'reset-password' ? <label className="block text-sm font-medium">{copy.recoveryCode}<input className="mt-1 h-11 w-full rounded-xl border border-black/20 px-3 uppercase outline-none focus:border-black" onChange={event => setRecoveryCode(event.target.value)} required value={recoveryCode} /></label> : null}
                   {mode === 'register' ? <p className="text-xs text-black/50">{copy.separateHint}</p> : null}
                   {error ? <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
