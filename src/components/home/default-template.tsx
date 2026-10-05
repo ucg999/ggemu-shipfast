@@ -21,7 +21,7 @@ import { readHomeCards, saveHomeCards } from '#/lib/home-card-cache'
 import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
 import { RedBlueArenaCard } from '#/components/red-blue-arena-card'
 import { preloadProModeAssets, scheduleInitialProModePreload } from '#/lib/pro-asset-preload'
-import { requestMemberLogin, useMemberSession } from '#/lib/member-client'
+import { useMemberSession } from '#/lib/member-client'
 
 export function DefaultHomeTemplate(
   props: HomeTemplateProps & { onCoinsEarned?: (amount: number) => void },
@@ -88,12 +88,6 @@ export function DefaultHomeTemplate(
   const loadGameDetail = useServerFn(getGameDetail)
   const recentPlayedGames = useRecentPlayedGames()
   const member = useMemberSession()
-  const requireMahjongLogin = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (member) return
-    event.preventDefault()
-    event.stopPropagation()
-    requestMemberLogin()
-  }
 
   useEffect(() => {
     const cancelPreload = scheduleInitialProModePreload()
@@ -367,7 +361,7 @@ export function DefaultHomeTemplate(
                   {homeMahjongGames.slice(0, 8).map((game) => {
                     const gameId = getGameId(game)
                     return (
-                      <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} key={`mahjong-${gameId}`} onClickCapture={requireMahjongLogin} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
+                      <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} key={`mahjong-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
                         <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} />
                         <GameCardPreviewVideo src={game.game_video} />
                       </Link>

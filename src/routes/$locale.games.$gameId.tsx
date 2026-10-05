@@ -9,8 +9,6 @@ import {
 import QRCode from 'qrcode'
 import { useEffect, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
-import { requestMemberLogin, useMemberSession } from '#/lib/member-client'
-import { isArcadeMahjongGame } from '#/lib/arcade-mahjong-games'
 
 import {
   GameCardPreviewVideo,
@@ -322,7 +320,6 @@ function LocalizedGameDetailPage() {
   })
   const requiredCoinRank = getCoinModeGameRequiredRank(game)
   const minimumCoinBalance = getCoinModeGameMinimumBalance(game)
-  const member = useMemberSession()
   const normalizedGameName = game.name?.replaceAll(/\s+/g, '') ?? ''
   const isLuckyFullHouse = normalizedGameName.includes('幸运满贯') || normalizedGameName.includes('幸運滿貫')
   const isSuperGrandSlam2 = normalizedGameName.includes('超级大满贯2') || normalizedGameName.includes('超級大滿貫2')
@@ -340,11 +337,6 @@ function LocalizedGameDetailPage() {
   }, [gameId])
 
   const startGame = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (isArcadeMahjongGame(game) && !member) {
-      event.preventDefault()
-      requestMemberLogin()
-      return
-    }
     if (requiredCoinRank && (!hasCoinRank(requiredCoinRank) || readCoinBalance() < minimumCoinBalance)) {
       event.preventDefault()
       window.alert(minimumCoinBalance > 0 ? `需要达到青铜段位并拥有至少 ${minimumCoinBalance} 个金币才可以开始游戏，金币不会扣除。` : getRankGameCopy(lang, requiredCoinRank).insufficient)

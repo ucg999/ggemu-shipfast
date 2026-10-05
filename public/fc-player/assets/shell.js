@@ -527,6 +527,8 @@ localStorage.setItem(migrationKey, 'yes');
 }
 ownedCartridgeIds = collection.owned.filter(value => typeof value === 'string');
 try { localStorage.setItem(accountKey, JSON.stringify(ownedCartridgeIds)); } catch (error) {}
+} else {
+ownedCartridgeIds = legacyOwnedCartridgeIds.slice(0, 2);
 }
 }
 } catch (error) {
@@ -620,6 +622,7 @@ window.addEventListener('resize', () => {
 if (cartridgeScreen.classList.contains('is-open')) syncCartridgeScreenBounds();
 });
 async function canOpenCartridgeScreen() {
+if (ownedCartridgeIds.length > 0) return true;
 try {
 const response = await fetch('/api/member', { credentials: 'same-origin', cache: 'no-store' });
 if (response.ok) {
@@ -629,7 +632,7 @@ if (data && data.member) return true;
 } catch (error) {
 console.warn('Unable to verify player account', error);
 }
-showToast('切换卡带需要先登录玩家账号');
+showToast('请先到FC卡带收藏选择卡带');
 if (window.parent && window.parent !== window) {
 window.parent.postMessage({ type: 'fc-member-login-request' }, window.location.origin);
 }

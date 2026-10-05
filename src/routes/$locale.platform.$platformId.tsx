@@ -133,7 +133,6 @@ function PlatformModePage() {
       games={games}
       lang={lang}
       layout={modeId === 'coin' ? 'cards' : modeId === 'mahjong' ? 'library-cards' : 'list'}
-      requireMember={modeId === 'mahjong'}
       showCoinChallenge={modeId === 'coin'}
       title={copy.title}
     />
@@ -168,10 +167,10 @@ function getModeCopy(locale: Locale, modeId: PlatformModeId | undefined) {
 }
 
 function getMahjongModeCopy(locale: Locale) {
-  if (locale === 'zh-TW') return { description: '匯集明星三缺一、全民鬥地主、幸運滿貫、電子基盤等經典街機麻將與休閒棋牌作品。登入玩家帳號後即可免費遊玩，沒有段位限制。', seoTitle: '街機麻將遊戲｜懷舊遊戲廳', subtitle: '精選街機麻將、鬥地主、電子基盤與經典休閒棋牌遊戲；登入後免費遊玩。', title: '街機麻將' }
-  if (locale === 'en') return { description: 'A hand-picked collection of classic arcade mahjong and casual tabletop games. Sign in to play free, with no rank requirement.', seoTitle: 'Arcade Mahjong | Retro Game Hall', subtitle: 'Sign in to play classic mahjong and tabletop games free.', title: 'Arcade Mahjong' }
-  if (locale === 'ja') return { description: '定番のアーケード麻雀やテーブルゲームを集めました。プレイヤーアカウントでログインすると、ランク制限なしで無料プレイできます。', seoTitle: 'アーケード麻雀｜懐かしゲームセンター', subtitle: 'ログイン後、定番の麻雀・テーブルゲームを無料で遊べます。', title: 'アーケード麻雀' }
-  return { description: '汇集明星三缺一、全民斗地主、幸运满贯、电子基盘等经典街机麻将与休闲棋牌作品。登录玩家账号后即可免费游玩，没有等级限制。', seoTitle: '街机麻将游戏｜怀旧游戏厅', subtitle: '精选街机麻将、斗地主、电子基盘与经典休闲棋牌游戏；登录后免费游玩。', title: '街机麻将' }
+  if (locale === 'zh-TW') return { description: '匯集明星三缺一、全民鬥地主、幸運滿貫、電子基盤等經典街機麻將與休閒棋牌作品。遊客每天可試玩10分鐘，登入玩家帳號後不限時間。', seoTitle: '街機麻將遊戲｜懷舊遊戲廳', subtitle: '遊客每天可試玩10分鐘；登入後不限時間免費遊玩。', title: '街機麻將' }
+  if (locale === 'en') return { description: 'A hand-picked collection of classic arcade mahjong and casual tabletop games. Guests can try 10 minutes per day; signed-in players have unlimited access.', seoTitle: 'Arcade Mahjong | Retro Game Hall', subtitle: 'Guests receive a 10-minute daily trial. Sign in for unlimited play.', title: 'Arcade Mahjong' }
+  if (locale === 'ja') return { description: '定番のアーケード麻雀やテーブルゲームを集めました。ゲストは1日10分試遊でき、ログイン後は時間制限なく遊べます。', seoTitle: 'アーケード麻雀｜懐かしゲームセンター', subtitle: 'ゲストは1日10分試遊可能。ログイン後は時間制限なし。', title: 'アーケード麻雀' }
+  return { description: '汇集明星三缺一、全民斗地主、幸运满贯、电子基盘等经典街机麻将与休闲棋牌作品。游客每天可试玩10分钟，登录玩家账号后不限时间。', seoTitle: '街机麻将游戏｜怀旧游戏厅', subtitle: '游客每天可试玩10分钟；登录后不限时间免费游玩。', title: '街机麻将' }
 }
 
 function getSwitchLibraryCopy(locale: Locale) {

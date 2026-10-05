@@ -374,20 +374,16 @@ export function SiteLayout({
                 <i className="ri-search-line text-base" />
               </button>
             ) : null}
-            <div className="hidden h-9 w-[clamp(12rem,18vw,22rem)] shrink-0 items-center rounded-full border border-black/30 text-xs text-black/60 lg:flex">
-              <Link className="flex min-w-0 flex-1 items-center gap-2 px-3" params={{ locale }} search={{ q: '' }} to="/$locale/search">
-                <i className="ri-search-line text-lg" />
-                <span className="truncate">{locale === 'zh-CN' ? '按需求搜索' : t.searchGames}</span>
-              </Link>
-              <button
-                className="flex h-5 shrink-0 items-center border-l border-black/20 px-3 font-medium text-black/75 hover:text-black"
-                disabled={isRandomGameLoading}
-                onClick={showRandomGame}
-                type="button"
-              >
-                {isRandomGameLoading ? (locale === 'en' ? 'Loading…' : '加载中…') : (locale === 'en' ? 'Random Play' : '随机玩玩')}
-              </button>
-            </div>
+            <Link
+              aria-label={t.searchGames}
+              className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full text-black/75 transition hover:bg-black/5 hover:text-black lg:flex"
+              params={{ locale }}
+              search={{ q: '' }}
+              title={t.searchGames}
+              to="/$locale/search"
+            >
+              <i className="ri-search-line text-xl" />
+            </Link>
             <Link
               aria-label={t.watchOthers}
               className={`desktop-watch-button btn h-6 min-h-6 shrink-0 gap-0.5 rounded-full border border-rose-200 bg-rose-100 px-1.5 text-[10px] font-semibold text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 lg:h-9 lg:min-h-9 lg:gap-2 lg:px-4 lg:text-sm max-lg:[&_.live-watch-eye]:scale-75 ${isHomePage ? '' : 'hidden lg:flex'}`}

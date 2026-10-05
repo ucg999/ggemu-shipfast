@@ -13,6 +13,7 @@ import {
   memberDb,
   passwordNeedsRehash,
   releaseInactiveMembers,
+  sha256,
   toMemberView,
   validateCredentials,
   validateNickname,
@@ -20,6 +21,7 @@ import {
   verifyRecoveryCode,
   verifyPassword,
 } from '#/lib/member-auth.server'
+import { MEMBER_INVITATION_CODE_HASHES } from '#/lib/member-invitation-codes.server'
 
 export const Route = createFileRoute('/api/member')({
   server: {
@@ -42,6 +44,13 @@ export const Route = createFileRoute('/api/member')({
           if ('error' in credentials) return jsonError(credentials.error ?? '账号信息不符合要求')
 
           if (action === 'register') {
+            const normalizedInvitationCode = typeof body.invitationCode === 'string' ? body.invitationCode.trim().toUpperCase() : ''
+            const invitationHash = await sha256(normalizedInvitationCode)
+            if (!MEMBER_INVITATION_CODE_HASHES.has(invitationHash)) return jsonError('群邀请码无效，请向群主索取')
+            const invitationKey = `invite:${invitationHash}`
+            if (await memberDb().prepare('SELECT key FROM member_auth_limits WHERE key = ?').bind(invitationKey).first()) {
+              return jsonError('这个群邀请码已经使用过，请向群主索取新的邀请码', 409)
+            }
             if (await findMemberByUsername(credentials.normalizedUsername)) return jsonError('这个用户名已被使用', 409)
             const password = await hashPassword(credentials.password)
             const recovery = await createRecoveryCode()
@@ -51,14 +60,17 @@ export const Route = createFileRoute('/api/member')({
             if (!Number.isInteger(playerNumber) || playerNumber < 1 || playerNumber > 99_999) return jsonError('玩家 ID 已达到上限', 503)
             const generatedNickname = `玩家${String(playerNumber).padStart(5, '0')}`
             try {
-              await memberDb().prepare(`
+              await memberDb().batch([
+                memberDb().prepare('INSERT INTO member_auth_limits (key, attempts, window_started_at) VALUES (?, 1, ?)').bind(invitationKey, Date.now()),
+                memberDb().prepare(`
                   INSERT INTO members (id, username, display_name, password_hash, password_salt, password_iterations,
                     recovery_hash, recovery_salt, recovery_iterations, coin_balance, player_number, last_login_at)
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, CURRENT_TIMESTAMP)
                 `).bind(memberId, credentials.normalizedUsername, generatedNickname, password.hash, password.salt, password.iterations,
-                  recovery.password.hash, recovery.password.salt, recovery.password.iterations, playerNumber).run()
+                  recovery.password.hash, recovery.password.salt, recovery.password.iterations, playerNumber),
+              ])
             } catch {
-              return jsonError('用户名已被使用', 409)
+              return jsonError('用户名已被使用，或群邀请码刚刚被其他玩家使用', 409)
             }
             const session = await createSession(memberId, request)
             return Response.json({ member: { id: memberId, username: credentials.normalizedUsername, displayName: generatedNickname, coinBalance, playerNumber, needsNickname: false }, recoveryCode: recovery.code, needsNickname: false }, { status: 201, headers: { 'Set-Cookie': session.cookie } })

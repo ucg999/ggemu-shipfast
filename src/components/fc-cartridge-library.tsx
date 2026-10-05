@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Locale } from '#/lib/ggemu'
 import { SiteLayout } from '#/components/site-layout'
 import { addCoinBalance, readSpendableCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
-import { requestMemberLogin, useMemberSession } from '#/lib/member-client'
+import { useMemberSession } from '#/lib/member-client'
 
 const OWNED_CARTRIDGES_KEY = 'ucg999-fc-owned-cartridges'
 const OWNED_CARTRIDGES_MIGRATION_KEY = 'ucg999-fc-owned-cartridges-migrated'
@@ -91,7 +91,10 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
 
   useEffect(() => {
     if (!member) {
-      setOwned([])
+      try {
+        const stored = JSON.parse(window.localStorage.getItem(OWNED_CARTRIDGES_KEY) || '[]')
+        setOwned(Array.isArray(stored) ? stored.filter((value): value is string => typeof value === 'string').slice(0, 2) : [])
+      } catch { setOwned([]) }
       return
     }
     let cancelled = false
@@ -158,13 +161,13 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
   ] as const
 
   function handleCartridge(cartridgeId: string) {
-    if (!member) {
-      setNotice(copy.loginRequired)
-      requestMemberLogin()
-      return
-    }
     if (owned.includes(cartridgeId)) {
       window.location.assign(`/fc?cartridge=${encodeURIComponent(cartridgeId)}`)
+      return
+    }
+    if (!member && owned.length >= 2) {
+      setNotice(lang === 'en' ? 'Guests can collect up to 2 cartridges. Sign in for unlimited collections.' : '游客最多只能收藏2款卡带，登录后可继续收藏')
+      window.setTimeout(() => setNotice(''), 2800)
       return
     }
     setPendingPurchase(cartridgeId)
@@ -184,14 +187,20 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
         setNotice(copy.failed)
         return
       }
-      const response = await fetch('/api/fc-cartridges', {
-        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cartridgeId }),
-      })
-      if (!response.ok) throw new Error('collection_save_failed')
-      const result = await response.json() as { owned?: string[] }
-      const next = Array.isArray(result.owned) ? result.owned : [...new Set([...owned, cartridgeId])]
-      window.localStorage.setItem(`${OWNED_CARTRIDGES_KEY}:${member.id}`, JSON.stringify(next))
+      let next = [...new Set([...owned, cartridgeId])]
+      if (member) {
+        const response = await fetch('/api/fc-cartridges', {
+          method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cartridgeId }),
+        })
+        if (!response.ok) throw new Error('collection_save_failed')
+        const result = await response.json() as { owned?: string[] }
+        next = Array.isArray(result.owned) ? result.owned : next
+        window.localStorage.setItem(`${OWNED_CARTRIDGES_KEY}:${member.id}`, JSON.stringify(next))
+      } else {
+        window.localStorage.setItem(OWNED_CARTRIDGES_KEY, JSON.stringify(next.slice(0, 2)))
+        next = next.slice(0, 2)
+      }
       setOwned(next)
       setNotice(copy.purchased)
     } catch {

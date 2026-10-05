@@ -8,6 +8,7 @@ import { SWITCH_LIBRARY_GAMES } from '#/lib/switch-library'
 import { PSP_LIBRARY_GAMES } from '#/lib/psp-library'
 import updates from '#/lib/library-updates.json'
 import { requestMemberLogin, useMemberSession } from '#/lib/member-client'
+import { claimGuestLibraryDetail } from '#/lib/guest-access'
 
 export function SwitchDownloadLibrary({ lang }: { lang: Locale }) {
   return <DownloadLibrary lang={lang} platform="switch" />
@@ -72,13 +73,21 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
     })
   }, [sortField, reverse, randomIds, searchQuery, searchField, library, platform, platformName, lang, likeCounts])
 
-  function requireLogin(event: React.MouseEvent<HTMLElement>) {
+  function requireArchiveLogin(event: React.MouseEvent<HTMLElement>) {
     if (member) return
     event.preventDefault()
     event.stopPropagation()
     setLoginNotice(lang === 'en' ? 'Sign in to open game details and the complete archive.' : '登录玩家账号后才能打开游戏详情和全游戏档案')
     requestMemberLogin()
     window.setTimeout(() => setLoginNotice(''), 2400)
+  }
+
+  function openGameDetail(event: React.MouseEvent<HTMLElement>, gameId: string) {
+    if (member || claimGuestLibraryDetail(platform, gameId)) return
+    event.preventDefault()
+    event.stopPropagation()
+    setLoginNotice(lang === 'en' ? 'Guests can open one game detail per day. Sign in for unlimited access.' : '游客每天只能进入一款游戏详情，登录玩家账号后可无限查看')
+    window.setTimeout(() => setLoginNotice(''), 2800)
   }
   const pageCount = Math.max(1, Math.ceil(games.length / 20))
   const visibleGames = games.slice((page - 1) * 20, page * 20)
@@ -119,7 +128,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                   href={platform === 'psp' ? 'https://www.kdocs.cn/l/coH3Z1VLgop3' : 'https://www.kdocs.cn/l/cs8H4NUI4lC4'}
                   rel="noreferrer"
                   target="_blank"
-                  onClickCapture={requireLogin}
+                  onClickCapture={requireArchiveLogin}
                 >
                   {platform === 'psp'
                     ? (lang === 'en' ? 'PSP Complete Game Archive' : lang === 'zh-TW' ? 'PSP全遊戲檔案' : 'PSP全游戏档案')
@@ -202,7 +211,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                 : undefined
               return (
               <article className={`group relative ${platform === 'psp' ? 'psp-library-card' : 'overflow-hidden rounded-xl bg-base-100'}`} key={game.id}>
-              <Link onClick={requireLogin} params={{ gameId: game.id, locale: lang }} to={platform === 'psp' ? '/$locale/platform/psp/$gameId' : '/$locale/platform/switch/$gameId'}>
+              <Link onClick={event => openGameDetail(event, game.id)} params={{ gameId: game.id, locale: lang }} to={platform === 'psp' ? '/$locale/platform/psp/$gameId' : '/$locale/platform/switch/$gameId'}>
                 <SwitchLibraryImage
                   clickable
                   className={`${platform === 'psp' ? 'psp-library-cover aspect-[353/600] [&_img]:object-contain' : 'aspect-[616/353] transition group-hover:scale-[1.02]'} w-full`}

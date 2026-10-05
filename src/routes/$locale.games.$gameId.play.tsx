@@ -19,6 +19,7 @@ import {
   spendCoinBalance,
 } from '#/lib/coin-wallet'
 import { getMemberSession, requestMemberLogin } from '#/lib/member-client'
+import { addGuestMahjongTrialMs, readGuestMahjongTrialMs } from '#/lib/guest-access'
 
 const trialDragDocuments = new WeakSet<Document>()
 
@@ -74,6 +75,7 @@ function LocalizedPlayGamePage() {
   const minimumCoinBalance = getCoinModeGameMinimumBalance(game)
   const [rankAccessGranted, setRankAccessGranted] = useState(requiredCoinRank === null)
   const [memberAccessGranted, setMemberAccessGranted] = useState(!isMahjongCoinChargeGame)
+  const [guestMahjongTrial, setGuestMahjongTrial] = useState(false)
   const embedId = encodeURIComponent(game._id || game.url_slug || gameId)
   const refcode = encodeURIComponent(siteConfig.GGEMU_REFCODE)
   const isPsp = isPspGame(game)
@@ -115,20 +117,57 @@ function LocalizedPlayGamePage() {
     void getMemberSession().then(({ member }) => {
       if (cancelled) return
       if (member) {
+        setGuestMahjongTrial(false)
+        setMemberAccessGranted(true)
+        return
+      }
+      if (readGuestMahjongTrialMs() < 10 * 60_000) {
+        setGuestMahjongTrial(true)
         setMemberAccessGranted(true)
         return
       }
       setMemberAccessGranted(false)
+      window.alert(lang === 'en' ? 'Today’s 10-minute guest trial has ended. Sign in to keep playing.' : '今天的游客试玩10分钟已用完，登录后可继续游玩。')
       requestMemberLogin()
       void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
     }).catch(() => {
       if (cancelled) return
-      setMemberAccessGranted(false)
-      requestMemberLogin()
-      void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
+      if (readGuestMahjongTrialMs() < 10 * 60_000) {
+        setGuestMahjongTrial(true)
+        setMemberAccessGranted(true)
+      } else {
+        setMemberAccessGranted(false)
+        requestMemberLogin()
+        void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
+      }
     })
     return () => { cancelled = true }
   }, [gameId, isMahjongCoinChargeGame, isProGame, lang, navigate])
+
+  useEffect(() => {
+    if (!guestMahjongTrial || !memberAccessGranted) return
+    let lastTick = Date.now()
+    let finished = false
+    const tick = () => {
+      const now = Date.now()
+      const elapsed = document.visibilityState === 'visible' ? Math.min(2_000, now - lastTick) : 0
+      lastTick = now
+      if (elapsed <= 0 || finished) return
+      if (addGuestMahjongTrialMs(elapsed) < 10 * 60_000) return
+      finished = true
+      setMemberAccessGranted(false)
+      window.alert(lang === 'en' ? 'Today’s 10-minute guest trial has ended. Sign in to keep playing.' : '今天的游客试玩10分钟已用完，登录后可继续游玩。')
+      requestMemberLogin()
+      void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
+    }
+    const timer = window.setInterval(tick, 1_000)
+    const resetTick = () => { lastTick = Date.now() }
+    document.addEventListener('visibilitychange', resetTick)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', resetTick)
+    }
+  }, [gameId, guestMahjongTrial, isProGame, lang, memberAccessGranted, navigate])
 
   useEffect(() => {
     if (!requiredCoinRank || (hasCoinRank(requiredCoinRank) && readCoinBalance() >= minimumCoinBalance)) {

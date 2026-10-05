@@ -1,5 +1,6 @@
 import { Link, createFileRoute, notFound, useRouterState } from '@tanstack/react-router'
 import { SiteLayout } from '#/components/site-layout'
+import { GuestLibraryDetailGate } from '#/components/guest-library-detail-gate'
 import { GameFavoriteButton } from '#/components/game-favorite-button'
 import { addPspGameLike } from '#/components/psp-like-button'
 import { SwitchLibraryImage } from '#/components/switch-library-image'
@@ -35,7 +36,7 @@ function PspGameDetailPage() {
   const lang = normalizeLocale(Route.useParams().locale)
   const copy = getCopy(lang)
   const isProStandalone = useRouterState({ select: state => state.location.hash === 'PRO' || state.location.hash === '#PRO' })
-  return (
+  return <GuestLibraryDetailGate gameId={game.id} locale={lang} platform="psp">
     <SiteLayout locale={lang} hideFooter>
       <main className="min-h-screen bg-base-200 px-3 py-5 sm:px-6 lg:px-8">
         <article className="mx-auto max-w-6xl">
@@ -98,7 +99,7 @@ function PspGameDetailPage() {
         </article>
       </main>
     </SiteLayout>
-  )
+  </GuestLibraryDetailGate>
 }
 
 function getCopy(lang: ReturnType<typeof normalizeLocale>) {
