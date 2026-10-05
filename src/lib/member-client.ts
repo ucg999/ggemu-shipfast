@@ -87,12 +87,12 @@ export async function getMemberSession() {
   return memberSessionRequest
 }
 
-export async function submitMemberCredentials(action: 'login' | 'register' | 'reset-password', username: string, password: string, recoveryCode?: string) {
+export async function submitMemberCredentials(action: 'login' | 'register' | 'reset-password', username: string, password: string, recoveryCode?: string, invitationCode?: string) {
   const response = await fetch('/api/member', {
     method: 'POST',
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, username, password, recoveryCode }),
+    body: JSON.stringify({ action, username, password, recoveryCode, invitationCode }),
   })
   const data = await response.json() as { error?: string; member?: MemberSession; recoveryCode?: string; needsNickname?: boolean }
   if (!response.ok || !data.member) throw new Error(data.error || '操作失败')

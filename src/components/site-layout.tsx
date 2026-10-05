@@ -917,6 +917,7 @@ function DesktopUnifiedHeaderNavigation({
       <Link className={linkClass} params={{ locale, platformId: 'mahjong' }} title={getMahjongChargeTip(locale)} to="/$locale/platform/$platformId">{getGameModeLabels(locale).mahjong}</Link>
       <Link className={linkClass} params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
       <Link className={linkClass} params={{ locale, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
+      <Link className={linkClass} params={{ locale, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">{locale === 'en' ? 'FC Cartridges' : locale === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</Link>
       <Link className={`${linkClass} font-semibold text-amber-700`} params={{ locale }} to="/$locale/rankings/coins"><i className="ri-trophy-line mr-1" />{locale === 'en' ? 'Rankings' : '排行榜'}</Link>
       <Link className={`${linkClass} font-semibold text-[#7a2f23]`} params={{ locale }} to="/$locale/wanted"><i className="ri-file-warning-line mr-1" />{locale === 'en' ? 'Wanted' : '悬赏令'}</Link>
     </nav>

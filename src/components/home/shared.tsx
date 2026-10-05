@@ -423,6 +423,7 @@ export function SearchForm({
         </div>
         <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
         <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
+        <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">{lang === 'en' ? 'FC Cartridges' : lang === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</Link>
         <div className="flex h-9 min-w-40 flex-1 items-center rounded-full border border-rose-200 bg-rose-50 shadow-sm transition focus-within:border-rose-300 focus-within:bg-white lg:max-w-md">
           <label className="flex h-full min-w-0 flex-1 items-center gap-2 pl-3">
             <i className="ri-search-line text-lg text-gray-500" />

@@ -8,6 +8,7 @@ import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 import { PlatformModeContent } from './$locale.arcade'
 import { SwitchDownloadLibrary } from '#/components/switch-download-library'
 import { PspDownloadLibrary } from '#/components/psp-download-library'
+import { FcCartridgeLibrary } from '#/components/fc-cartridge-library'
 import { ARCADE_MAHJONG_GAME_QUERIES, normalizeArcadeMahjongGameName } from '#/lib/arcade-mahjong-games'
 
 const PAGE_SIZE = 100
@@ -60,6 +61,13 @@ const PLATFORM_MODES = {
     seoTitleKey: 'gbaSeoTitle',
     subtitleKey: 'gbaSubtitle',
     titleKey: 'gbaTitle',
+  },
+  'fc-cartridges': {
+    apiPlatform: 'fc-cartridge-library',
+    descriptionKey: 'famicomDescription',
+    seoTitleKey: 'famicomSeoTitle',
+    subtitleKey: 'famicomSubtitle',
+    titleKey: 'famicomTitle',
   },
 } as const
 
@@ -114,6 +122,7 @@ function PlatformModePage() {
 
   if (modeId === 'switch') return <SwitchDownloadLibrary lang={lang} />
   if (modeId === 'psp') return <PspDownloadLibrary lang={lang} />
+  if (modeId === 'fc-cartridges') return <FcCartridgeLibrary lang={lang} />
 
   return (
     <>
@@ -146,6 +155,7 @@ function getModeCopy(locale: Locale, modeId: PlatformModeId | undefined) {
     const copy = getSwitchLibraryCopy(locale)
     return { description: copy.description.replaceAll('Switch', 'PSP'), seoTitle: copy.seoTitle.replaceAll('Switch', 'PSP'), subtitle: copy.subtitle.replaceAll('Switch', 'PSP'), title: copy.title.replaceAll('Switch', 'PSP') }
   }
+  if (modeId === 'fc-cartridges') return getFcCartridgeLibraryCopy(locale)
   const t = getI18n(locale).arcade
   const mode = modeId ? PLATFORM_MODES[modeId] : PLATFORM_MODES.famicom
 
@@ -171,8 +181,15 @@ function getSwitchLibraryCopy(locale: Locale) {
   return { description: 'Switch 游戏库，集中展示中文 Switch 游戏。', seoTitle: 'Switch游戏库｜怀旧游戏厅', subtitle: '浏览 Switch 游戏。', title: 'Switch游戏库' }
 }
 
+function getFcCartridgeLibraryCopy(locale: Locale) {
+  if (locale === 'en') return { description: 'Browse collected FC cartridges and launch them in FC Collection.', seoTitle: 'FC Cartridge Collection | Retro Game Hall', subtitle: 'Browse collected FC cartridges.', title: 'FC Cartridge Collection' }
+  if (locale === 'zh-TW') return { description: '瀏覽已收藏的 FC 卡帶，並在 FC 收藏館中直接遊玩。', seoTitle: 'FC卡帶收藏｜懷舊遊戲廳', subtitle: '瀏覽已收藏的 FC 卡帶。', title: 'FC卡帶收藏' }
+  if (locale === 'ja') return { description: '収集したFCカセットを閲覧してプレイできます。', seoTitle: 'FCカセットコレクション｜懐かしゲームセンター', subtitle: 'FCカセット一覧。', title: 'FCカセットコレクション' }
+  return { description: '浏览已收藏的 FC 卡带，并在 FC 收藏馆中直接游玩。', seoTitle: 'FC卡带收藏｜怀旧游戏厅', subtitle: '浏览已收藏的 FC 卡带。', title: 'FC卡带收藏' }
+}
+
 async function loadModeGames(locale: Locale, platform: string) {
-  if (platform === 'switch-library' || platform === 'psp-library') return []
+  if (platform === 'switch-library' || platform === 'psp-library' || platform === 'fc-cartridge-library') return []
   if (platform === 'mahjong-curated') return loadMahjongGames(locale)
   if (platform === 'coin') {
     return (await searchCoinModeGames({ data: { locale } })).games

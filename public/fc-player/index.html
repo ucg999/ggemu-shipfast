@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>FC收藏馆｜超级马里奥兄弟</title>
     <link rel="stylesheet" href="./assets/style.css" />
+    <link rel="stylesheet" href="./assets/cartridges.css" />
   </head>
   <body>
     <div id="toast" class="toast"></div>
@@ -32,9 +33,44 @@
     <div id="toolbar">
       <button id="btn-save">存档</button>
       <button id="btn-load">读档</button>
-      <button id="btn-shot">录像</button>
+      <button id="btn-shot">换卡带</button>
       <button id="btn-record">暂停</button>
     </div>
+    <section id="cartridge-screen" class="cartridge-screen" aria-hidden="true" aria-label="FC卡带选择">
+      <div class="cartridge-panel" role="dialog" aria-modal="true" aria-labelledby="cartridge-title">
+        <header>
+          <div>
+            <small>FC COLLECTION</small>
+            <h1 id="cartridge-title">选择卡带 <span id="cartridge-count">（已收集0款）</span></h1>
+          </div>
+          <button id="btn-close-cartridges" type="button" aria-label="关闭卡带界面">×</button>
+        </header>
+        <div class="cartridge-carousel">
+          <button id="cartridge-prev" class="cartridge-arrow" type="button" aria-label="上一张卡带">‹</button>
+          <div class="cartridge-viewport">
+            <div id="cartridge-list" class="cartridge-list">
+              <figure class="cartridge-slide" data-cartridge-id="urban-champion">
+                <button class="cartridge-card" type="button" data-game-id="urban-champion" data-game-name="街头格斗" data-rom="./assets/urban-champion.nes">
+                  <span class="cartridge-number">026号</span>
+                  <img src="./assets/cartridges/urban-champion.min.webp" alt="街头格斗 FC卡带" decoding="async" />
+                </button>
+                <figcaption>街头格斗</figcaption>
+              </figure>
+              <figure class="cartridge-slide" data-cartridge-id="happy-cat">
+                <button class="cartridge-card" type="button" data-game-id="happy-cat" data-game-name="快乐猫" data-rom="./assets/happy-cat.nes">
+                  <span class="cartridge-number">027号</span>
+                  <img src="./assets/cartridges/happy-cat.min.webp" alt="快乐猫 FC卡带" decoding="async" />
+                </button>
+                <figcaption>快乐猫</figcaption>
+              </figure>
+            </div>
+            <p id="cartridge-empty" hidden>还没有收藏卡带<br /><small>请到FC卡带收藏使用金币购买</small></p>
+          </div>
+          <button id="cartridge-next" class="cartridge-arrow" type="button" aria-label="下一张卡带">›</button>
+        </div>
+        <div id="cartridge-dots" class="cartridge-dots" aria-label="卡带位置"></div>
+      </div>
+    </section>
     <canvas id="main-canvas"></canvas>
     <script src="./assets/jsnes.min.js"></script>
     <script src="./assets/config.js"></script>

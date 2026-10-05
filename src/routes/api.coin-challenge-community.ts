@@ -65,7 +65,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
           SELECT p.nickname AS display_name, ${leaderboardMetric} AS score, s.wins, s.losses, s.updated_at
           FROM leaderboard_scores s JOIN leaderboard_players p ON p.player_id = s.player_id
           WHERE s.game_id = ? AND s.period_type = 'all' AND s.period_key = ? AND ${channel === 'red-blue-arena' ? '(s.wins + s.losses)' : leaderboardMetric} > 0
-          ORDER BY ${leaderboardMetric} DESC, s.losses ASC, s.updated_at ASC LIMIT 20
+          ORDER BY ${leaderboardMetric} DESC, s.losses ASC, s.updated_at ASC LIMIT 10
         `).bind(leaderboardGame, leaderboardPeriodKey).all<RankRow>()
         const [onlineResult, sharedRound, competition, rankResult] = await Promise.all([
           memberDb().prepare(`
@@ -95,10 +95,21 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
               `).bind(weeklyKey).all<WeeklyCoinRow>(),
             ])
           : [{ results: [] as WeeklyCoinRow[] }, { results: [] as WeeklyCoinRow[] }]
+        const lastWeekChampion = channel === 'red-blue-arena'
+          ? await leaderboardDb().prepare(`
+              SELECT CASE WHEN x.reward_coins > 0 THEN arrest.nickname ELSE bounty.nickname END AS display_name
+              FROM arena_weekly_settlements x
+              LEFT JOIN leaderboard_players bounty ON bounty.player_id = x.bounty_player_id
+              LEFT JOIN leaderboard_players arrest ON arrest.player_id = x.arrest_player_id
+              WHERE x.period_key < ?
+              ORDER BY x.period_key DESC LIMIT 1
+            `).bind(weeklyKey).first<{ display_name: string | null }>()
+          : null
         return Response.json({
           leaderboard: rankResult.results.map((row: RankRow, index: number) => ({ rank: index + 1, displayName: row.display_name, score: row.score, wins: row.wins, losses: row.losses, updatedAt: row.updated_at })),
           bountyLeaderboard: bountyResult.results.map((row, index) => ({ rank: index + 1, displayName: row.display_name, coins: row.coins })),
           arrestLeaderboard: arrestResult.results.map((row, index) => ({ rank: index + 1, displayName: row.display_name, coins: row.coins })),
+          lastWeekChampion: lastWeekChampion?.display_name ?? null,
           member,
           online: onlineResult.results.length,
           winCounts: parseWinCounts(competition?.win_counts_json),

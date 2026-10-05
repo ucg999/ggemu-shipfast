@@ -221,13 +221,7 @@ export function DefaultHomeTemplate(
         <span>{lang === 'en' ? 'Rankings could not refresh.' : lang === 'ja' ? 'ランキングを更新できませんでした。' : lang === 'zh-TW' ? '榜單更新失敗，已保留原卡片。' : '榜单更新失败，已保留原卡片。'}</span>
         <button type="button" className="underline" onClick={() => setRankingRetry((value) => value + 1)}>{lang === 'en' ? 'Retry' : lang === 'ja' ? '再試行' : '重试'}</button>
       </div> : null}
-      <nav aria-label="FC, PSP and Switch" className="grid w-full grid-cols-3 bg-blue-600 text-white lg:hidden">
-        <a
-          className="flex h-9 items-center justify-center border-r border-white/25 text-sm font-medium transition hover:bg-blue-700"
-          href="/fc"
-        >
-          FC收藏馆
-        </a>
+      <nav aria-label="PSP and Switch" className="grid w-full grid-cols-2 bg-blue-600 text-white lg:hidden">
         <Link
           className="flex h-9 items-center justify-center border-r border-white/25 text-sm font-medium transition hover:bg-blue-700"
           params={{ locale: lang, platformId: 'psp' }}
@@ -241,6 +235,21 @@ export function DefaultHomeTemplate(
           to="/$locale/platform/$platformId"
         >
           Switch
+        </Link>
+      </nav>
+      <nav aria-label="FC时光机和FC卡带收藏" className="grid w-full grid-cols-2 bg-amber-300 text-black lg:hidden">
+        <a
+          className="flex h-9 items-center justify-center border-r border-black/15 text-sm font-semibold transition hover:bg-amber-400"
+          href="/fc"
+        >
+          {lang === 'en' ? 'FC Time Machine' : lang === 'zh-TW' ? 'FC時光機' : 'FC时光机'}
+        </a>
+        <Link
+          className="flex h-9 items-center justify-center text-sm font-semibold transition hover:bg-amber-400"
+          params={{ locale: lang, platformId: 'fc-cartridges' }}
+          to="/$locale/platform/$platformId"
+        >
+          {lang === 'en' ? 'FC Cartridges' : lang === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}
         </Link>
       </nav>
       <nav

@@ -7,7 +7,7 @@ import { addCoinBalance } from '#/lib/coin-wallet'
 import { normalizeLocale } from '#/lib/i18n'
 
 type Leader = { rank: number; displayName: string; rawMinutes: number; minutes: number }
-type WantedData = { periodKey: string; leaders: Leader[]; pendingRewards: Array<{ periodKey: string; rank: number; coins: number }> }
+type WantedData = { periodKey: string; leaders: Leader[]; pendingRewards: Array<{ periodKey: string; rank: number; coins: number }>; lastWeekChampion?: string | null }
 
 export const Route = createFileRoute('/$locale/wanted')({
   head: () => ({ meta: [{ title: '悬赏令｜每周游玩时长排行榜｜怀旧游戏厅' }, { name: 'description', content: '按有效游玩时间统计的每周悬赏令排行榜，前三名可获得金币奖励。' }] }),
@@ -51,14 +51,17 @@ function WantedPage() {
   }
 
   return <SiteLayout hideFooter locale={lang}>
-    <main className="grid h-[calc(100dvh-61px)] min-h-0 place-items-start justify-center overflow-hidden bg-[#f0f0ed] text-[#35231d]">
-      <section className="wanted-poster-board relative mx-auto overflow-hidden">
-        <img alt="每周悬赏令前三名海报" className="block h-auto w-full" src="/images/wanted/wanted-board.png" />
-        {displayOrder.map((rank, slot) => {
-          const leader = data?.leaders.find(item => item.rank === rank)
-          return <WantedPosterText key={rank} rank={rank} slot={slot} leader={leader} />
-        })}
-      </section>
+    <main className="flex h-[calc(100dvh-61px)] min-h-0 flex-col items-center justify-start overflow-hidden bg-[#f0f0ed] text-[#35231d]">
+      <div className="min-h-0 w-full">
+        <section className="wanted-poster-board relative mx-auto overflow-hidden">
+          <img alt="每周悬赏令前三名海报" className="block h-auto w-full" src="/images/wanted/wanted-board.png" />
+          {displayOrder.map((rank, slot) => {
+            const leader = data?.leaders.find(item => item.rank === rank)
+            return <WantedPosterText key={rank} rank={rank} slot={slot} leader={leader} />
+          })}
+        </section>
+        <p className="mx-auto -mt-1 px-4 text-center text-sm font-semibold sm:text-base">上周冠军获得者：<span className="text-[#9a281d]">{data?.lastWeekChampion || '暂无记录'}</span></p>
+      </div>
     </main>
   </SiteLayout>
 }

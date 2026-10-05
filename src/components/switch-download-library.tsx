@@ -127,7 +127,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                 </a>
               ) : null}
             </div>
-            <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-1 max-sm:w-full max-sm:justify-center max-sm:gap-0 max-sm:[&>.btn]:h-7 max-sm:[&>.btn]:min-h-7 max-sm:[&>.btn]:min-w-0 max-sm:[&>.btn]:shrink max-sm:[&>.btn]:gap-0.5 max-sm:[&>.btn]:px-1 max-sm:[&>.btn]:text-[clamp(11px,3vw,13px)] max-sm:[&>.btn]:whitespace-nowrap max-sm:[&>.btn-square]:w-7 max-sm:[&>.btn-square]:shrink-0 max-sm:[&>.btn>i]:text-sm">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-1 max-sm:w-full max-sm:flex-nowrap max-sm:justify-start max-sm:gap-0 max-sm:overflow-x-auto max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden max-sm:[&>.btn]:h-7 max-sm:[&>.btn]:min-h-7 max-sm:[&>.btn]:shrink-0 max-sm:[&>.btn]:gap-0.5 max-sm:[&>.btn]:px-1.5 max-sm:[&>.btn]:text-xs max-sm:[&>.btn]:whitespace-nowrap max-sm:[&>.btn-square]:w-7 max-sm:[&>.btn-square]:shrink-0 max-sm:[&>.btn>i]:text-sm">
               {filters.map(({ field, label }) => (
                 <button
                   className={`btn btn-ghost btn-sm shrink-0 px-2 text-sm font-medium ${sortField === field || (searchField === field && searchQuery) ? 'text-error' : ''}`}

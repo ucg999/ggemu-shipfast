@@ -32,10 +32,16 @@ export const Route = createFileRoute('/api/wanted')({
         SELECT period_key, rank, reward_coins FROM wanted_weekly_awards
         WHERE participant_key = ? AND claimed_at IS NULL ORDER BY period_key ASC
       `).bind(participantKey).all<{ period_key: string; rank: number; reward_coins: number }>() : { results: [] }
+      const lastWeekChampion = await leaderboardDb().prepare(`
+        SELECT display_name FROM wanted_weekly_awards
+        WHERE period_key < ? AND rank = 1
+        ORDER BY period_key DESC LIMIT 1
+      `).bind(periodKey).first<{ display_name: string }>()
       return Response.json({
         periodKey,
         leaders: rows.results.map((row, index) => ({ rank: index + 1, displayName: row.display_name, rawMinutes: row.raw_minutes, minutes: row.weighted_minutes })),
         pendingRewards: pending.results.map(row => ({ periodKey: row.period_key, rank: row.rank, coins: row.reward_coins })),
+        lastWeekChampion: lastWeekChampion?.display_name ?? null,
       }, { headers: { 'Cache-Control': 'private, no-store' } })
     },
     POST: async ({ request }) => {

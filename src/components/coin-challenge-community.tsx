@@ -39,6 +39,7 @@ export function CoinChallengeCommunity({
   const [leaderboard, setLeaderboard] = useState<Array<LeaderboardEntry>>([])
   const [bountyLeaderboard, setBountyLeaderboard] = useState<Array<WeeklyCoinEntry>>([])
   const [arrestLeaderboard, setArrestLeaderboard] = useState<Array<WeeklyCoinEntry>>([])
+  const [lastWeekChampion, setLastWeekChampion] = useState<string | null>(null)
   const uploadedWinsRef = useRef<Set<string>>(new Set())
   const uploadedGameScoresRef = useRef<Set<string>>(new Set())
 
@@ -46,10 +47,11 @@ export function CoinChallengeCommunity({
     const modeQuery = leaderboardMode ? `&mode=${encodeURIComponent(leaderboardMode)}` : ''
     const response = await fetch(`/api/coin-challenge-community?channel=${encodeURIComponent(channel)}${modeQuery}`, { credentials: 'same-origin', cache: 'no-store' })
     if (!response.ok) return
-    const next = await response.json() as { leaderboard?: Array<LeaderboardEntry>; bountyLeaderboard?: Array<WeeklyCoinEntry>; arrestLeaderboard?: Array<WeeklyCoinEntry> }
-    setLeaderboard(next.leaderboard ?? [])
+    const next = await response.json() as { leaderboard?: Array<LeaderboardEntry>; bountyLeaderboard?: Array<WeeklyCoinEntry>; arrestLeaderboard?: Array<WeeklyCoinEntry>; lastWeekChampion?: string | null }
+    setLeaderboard((next.leaderboard ?? []).slice(0, 10))
     setBountyLeaderboard(next.bountyLeaderboard ?? [])
     setArrestLeaderboard(next.arrestLeaderboard ?? [])
+    setLastWeekChampion(next.lastWeekChampion ?? null)
   }
 
   async function post(body: Record<string, unknown>) {
@@ -111,7 +113,7 @@ export function CoinChallengeCommunity({
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {leaderboardTitle ? <p className="mb-2 text-center text-xs font-bold text-amber-300">{leaderboardTitle}</p> : null}
             <div className="space-y-1">
-              {leaderboard.map(item => <div className="grid grid-cols-[36px_1fr_auto] items-center rounded-xl bg-white/5 px-3 py-2 text-sm" key={`${item.rank}-${item.displayName}`}><b className={item.rank <= 3 ? 'text-amber-300' : 'text-white/40'}>#{item.rank}</b><span className="truncate">{item.displayName}</span><strong>{channel === 'red-blue-arena' ? `胜 ${item.wins ?? 0} · 负 ${item.losses ?? 0}` : item.score}</strong></div>)}
+              {leaderboard.slice(0, 10).map(item => <div className="grid grid-cols-[36px_1fr_auto] items-center rounded-xl bg-white/5 px-3 py-2 text-sm" key={`${item.rank}-${item.displayName}`}><b className={item.rank <= 3 ? 'text-amber-300' : 'text-white/40'}>#{item.rank}</b><span className="truncate">{item.displayName}</span><strong>{channel === 'red-blue-arena' ? `胜 ${item.wins ?? 0} · 负 ${item.losses ?? 0}` : item.score}</strong></div>)}
               {!leaderboard.length ? <p className="py-10 text-center text-sm text-white/40">暂时还没有挑战成绩</p> : null}
             </div>
             <p className="mt-4 text-center text-xs text-white/45">{channel === 'ghost-hunter' ? '自动记录登录玩家的最高连续过关数' : channel === 'red-blue-arena' ? '自动累计登录玩家在当前模式的胜利次数' : '按本游戏单局获得的金币数自动排名，0 金币不计入'}</p>
@@ -119,6 +121,7 @@ export function CoinChallengeCommunity({
               <WeeklyCoinRanking title="悬赏令 · 本周赢得金币" entries={bountyLeaderboard} tone="bounty" />
               <WeeklyCoinRanking title="逮捕令 · 本周输掉金币" entries={arrestLeaderboard} tone="arrest" />
               <p className="mt-3 text-center text-[11px] leading-5 text-white/45">北京时间每周一 03:00 结算；当逮捕令累计总和高于悬赏令累计总和时，逮捕令第一名获得两榜总和的差额金币。同一玩家同时位列两榜第一，也可以正常领取奖励。</p>
+              <p className="mt-3 text-center text-xs font-semibold text-amber-200">上周冠军获得者：{lastWeekChampion || '暂无记录'}</p>
             </> : null}
           </div>
         </aside>

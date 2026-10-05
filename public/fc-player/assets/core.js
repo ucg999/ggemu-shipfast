@@ -3,7 +3,7 @@
 const WIDTH = 256;
 const HEIGHT = 240;
 const FRAMEBUFFER_SIZE = WIDTH * HEIGHT;
-const STATE_KEY = 'nes_save_state_super_mario_bros_world';
+let stateKey = 'nes_save_state_super_mario_bros_world';
 let nes = null;
 let ready = false;
 let paused = false;
@@ -120,6 +120,7 @@ capsules: [{ id: 'select', label: 'SELECT' }, { id: 'start', label: 'START' }]
 video: function () { return { w: WIDTH, h: HEIGHT }; },
 source: function () { return offscreen; },
 boot: function (romData, api) {
+stateKey = 'nes_save_state_' + String(api.gameId || 'super_mario_bros_world').replace(/[^a-z0-9_-]/gi, '_');
 nes = new window.jsnes.NES({ onFrame: onFrame, onAudioSample: onAudioSample });
 try {
 let binary = '';
@@ -169,7 +170,7 @@ if (audioCtx && audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
 saveState: function () {
 if (!nes) return;
 try {
-localStorage.setItem(STATE_KEY, JSON.stringify(nes.toJSON()));
+localStorage.setItem(stateKey, JSON.stringify(nes.toJSON()));
 window.GGEMU_TOAST('存档成功！');
 } catch (e) {
 window.GGEMU_TOAST('存档失败：' + e.message);
@@ -178,7 +179,7 @@ window.GGEMU_TOAST('存档失败：' + e.message);
 loadState: function () {
 if (!nes) return;
 try {
-const s = localStorage.getItem(STATE_KEY);
+const s = localStorage.getItem(stateKey);
 if (!s) { window.GGEMU_TOAST('没有找到存档记录！'); return; }
 nes.fromJSON(JSON.parse(s));
 window.GGEMU_TOAST('读档成功！');

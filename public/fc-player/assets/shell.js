@@ -495,76 +495,125 @@ try { core.saveState(); } catch (e) { showToast('存档失败'); console.error(e
 document.getElementById('btn-load').addEventListener('click', () => {
 try { core.loadState(); } catch (e) { showToast('读档失败'); console.error(e); }
 });
-const videoButton = document.getElementById('btn-shot');
-let mediaRecorder = null;
-let recordedChunks = [];
-let isRecording = false;
-let recordingTimeout = 0;
-function stopVideoRecord() {
-if (!isRecording) return;
-isRecording = false;
-clearTimeout(recordingTimeout);
-videoButton.textContent = '录像';
-if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-}
-videoButton.addEventListener('click', () => {
-if (isRecording) {
-stopVideoRecord();
-return;
-}
-if (!window.xhs || !window.xhs.miniTool) {
-showToast('请在小红书 App 中使用录像');
-return;
-}
-if (!window.MediaRecorder || typeof mainCanvas.captureStream !== 'function') {
-showToast('当前设备不支持录像');
-return;
-}
-recordedChunks = [];
-const stream = mainCanvas.captureStream(30);
-const options = { videoBitsPerSecond: 1500000 };
-const types = ['video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp8', 'video/webm'];
-const mimeType = typeof MediaRecorder.isTypeSupported === 'function' ? (types.find(type => MediaRecorder.isTypeSupported(type)) || '') : '';
-if (mimeType) options.mimeType = mimeType;
+const cartridgeButton = document.getElementById('btn-shot');
+const cartridgeScreen = document.getElementById('cartridge-screen');
+const closeCartridgeButton = document.getElementById('btn-close-cartridges');
+const cartridgeList = document.getElementById('cartridge-list');
+const allCartridgeCards = Array.from(document.querySelectorAll('.cartridge-card'));
+const ownedCartridgesKey = 'ucg999-fc-owned-cartridges';
+let ownedCartridgeIds = [];
 try {
-mediaRecorder = new MediaRecorder(stream, options);
-} catch (error) {
-showToast('录像启动失败');
-return;
-}
-mediaRecorder.ondataavailable = event => {
-if (event.data && event.data.size > 0) recordedChunks.push(event.data);
-};
-mediaRecorder.onstop = () => {
-const type = (mediaRecorder.mimeType || mimeType || 'video/webm').split(';')[0];
-const blob = new Blob(recordedChunks, { type: type });
-if (!blob.size) {
-showToast('没有生成有效录像');
-return;
-}
-const reader = new FileReader();
-reader.onloadend = async () => {
-try {
-const tempFile = await window.xhs.miniTool.writeTempFile({ data: reader.result });
-await window.xhs.miniTool.postNote({
-title: CONFIG.shareTitle || CONFIG.title,
-content: CONFIG.shareContent || '',
-pageType: 'video_publish',
-mediaInfo: { video_resources: { video_url: tempFile.filePath } }
+const parsedOwnedCartridges = JSON.parse(localStorage.getItem(ownedCartridgesKey) || '[]');
+ownedCartridgeIds = Array.isArray(parsedOwnedCartridges) ? parsedOwnedCartridges.filter(value => typeof value === 'string') : [];
+} catch (error) {}
+allCartridgeCards.forEach(card => {
+const slide = card.closest('.cartridge-slide');
+if (slide) slide.hidden = !ownedCartridgeIds.includes(card.dataset.gameId);
 });
-showToast('即将打开发布页面');
-} catch (error) {
-showToast('录像处理失败');
-console.error(error);
+const cartridgeCards = allCartridgeCards
+.filter(card => ownedCartridgeIds.includes(card.dataset.gameId))
+.sort((left, right) => Number.parseInt(left.querySelector('.cartridge-number')?.textContent || '0', 10) - Number.parseInt(right.querySelector('.cartridge-number')?.textContent || '0', 10));
+cartridgeCards.forEach(card => cartridgeList.appendChild(card.closest('.cartridge-slide')));
+const cartridgeDots = document.getElementById('cartridge-dots');
+const cartridgeCount = document.getElementById('cartridge-count');
+const previousCartridgeButton = document.getElementById('cartridge-prev');
+const nextCartridgeButton = document.getElementById('cartridge-next');
+const cartridgeEmpty = document.getElementById('cartridge-empty');
+let cartridgeIndex = 0;
+let cartridgeTouchStartX = 0;
+let cartridgeLoading = false;
+cartridgeCount.textContent = '（已收集' + cartridgeCards.length + '款）';
+cartridgeEmpty.hidden = cartridgeCards.length > 0;
+function syncCartridgeScreenBounds() {
+const game = hitboxes.game;
+if (!game) return;
+const canvasRect = mainCanvas.getBoundingClientRect();
+const scaleX = canvasRect.width / mainCanvas.width;
+const scaleY = canvasRect.height / mainCanvas.height;
+cartridgeScreen.style.left = Math.round(canvasRect.left + game.x * scaleX) + 'px';
+cartridgeScreen.style.top = Math.round(canvasRect.top + game.y * scaleY) + 'px';
+cartridgeScreen.style.width = Math.round(game.w * scaleX) + 'px';
+cartridgeScreen.style.height = Math.round(game.h * scaleY) + 'px';
 }
-};
-reader.readAsDataURL(blob);
-};
-mediaRecorder.start();
-isRecording = true;
-videoButton.textContent = '停止';
-showToast('开始录像');
-recordingTimeout = setTimeout(stopVideoRecord, 60000);
+function renderCartridgeSelection() {
+cartridgeList.style.transform = 'translateX(' + (-cartridgeIndex * 100) + '%)';
+previousCartridgeButton.disabled = cartridgeIndex === 0;
+nextCartridgeButton.disabled = cartridgeCards.length < 2 || cartridgeIndex === cartridgeCards.length - 1;
+Array.from(cartridgeDots.children).forEach((dot, index) => dot.classList.toggle('is-active', index === cartridgeIndex));
+}
+cartridgeCards.forEach((card, index) => {
+const dot = document.createElement('button');
+dot.type = 'button';
+dot.setAttribute('aria-label', '查看第' + (index + 1) + '张卡带');
+dot.addEventListener('click', () => { cartridgeIndex = index; renderCartridgeSelection(); });
+cartridgeDots.appendChild(dot);
+card.addEventListener('click', async () => {
+if (cartridgeLoading) return;
+cartridgeLoading = true;
+card.classList.add('is-inserting');
+showToast('正在插入《' + card.dataset.gameName + '》');
+await new Promise(resolve => setTimeout(resolve, 620));
+setCartridgeScreen(false);
+try {
+await loadRom(card.dataset.rom, card.dataset.gameId, card.dataset.gameName);
+showToast('《' + card.dataset.gameName + '》已启动');
+} catch (error) {
+// loadRom already reports the failure without interrupting the current page.
+} finally {
+card.classList.remove('is-inserting');
+cartridgeLoading = false;
+}
+});
+});
+previousCartridgeButton.addEventListener('click', () => {
+cartridgeIndex = Math.max(0, cartridgeIndex - 1);
+renderCartridgeSelection();
+});
+nextCartridgeButton.addEventListener('click', () => {
+cartridgeIndex = Math.min(cartridgeCards.length - 1, cartridgeIndex + 1);
+renderCartridgeSelection();
+});
+cartridgeList.addEventListener('touchstart', event => {
+cartridgeTouchStartX = event.touches[0].clientX;
+}, { passive: true });
+cartridgeList.addEventListener('touchend', event => {
+const distance = event.changedTouches[0].clientX - cartridgeTouchStartX;
+if (Math.abs(distance) < 36) return;
+cartridgeIndex = Math.max(0, Math.min(cartridgeCards.length - 1, cartridgeIndex + (distance < 0 ? 1 : -1)));
+renderCartridgeSelection();
+}, { passive: true });
+renderCartridgeSelection();
+function setCartridgeScreen(open) {
+if (open) syncCartridgeScreenBounds();
+cartridgeScreen.classList.toggle('is-open', open);
+cartridgeScreen.setAttribute('aria-hidden', String(!open));
+core.setPaused(open || isPaused);
+}
+window.addEventListener('resize', () => {
+if (cartridgeScreen.classList.contains('is-open')) syncCartridgeScreenBounds();
+});
+async function canOpenCartridgeScreen() {
+try {
+const response = await fetch('/api/member', { credentials: 'same-origin', cache: 'no-store' });
+if (response.ok) {
+const data = await response.json();
+if (data && data.member) return true;
+}
+} catch (error) {
+console.warn('Unable to verify player account', error);
+}
+showToast('切换卡带需要先登录玩家账号');
+if (window.parent && window.parent !== window) {
+window.parent.postMessage({ type: 'fc-member-login-request' }, window.location.origin);
+}
+return false;
+}
+cartridgeButton.addEventListener('click', async () => {
+if (await canOpenCartridgeScreen()) setCartridgeScreen(true);
+});
+closeCartridgeButton.addEventListener('click', () => setCartridgeScreen(false));
+cartridgeScreen.addEventListener('click', event => {
+if (event.target === cartridgeScreen) setCartridgeScreen(false);
 });
 let isPaused = false;
 const pauseButton = document.getElementById('btn-record');
@@ -576,22 +625,37 @@ showToast(isPaused ? '游戏已暂停' : '继续游戏');
 });
 resize();
 bindControls();
-fetch('./assets/super-mario-bros-world.nes')
+async function loadRom(url, gameId, gameName) {
+return fetch(url)
 .then(function (response) {
 if (!response.ok) throw new Error('ROM request failed: ' + response.status);
 return response.arrayBuffer();
 })
 .then(function (buffer) {
 core.boot(new Uint8Array(buffer), {
+gameId: gameId,
 toast: showToast,
 onReady: function () {
+document.title = 'FC收藏馆｜' + gameName;
 renderUI();
 startRenderLoop();
 }
 });
 })
 .catch(function (error) {
-showToast('游戏加载失败，请刷新重试');
+showToast('游戏加载失败，请重试');
 console.error(error);
+throw error;
 });
+}
+const requestedCartridge = new URLSearchParams(window.location.search).get('cartridge');
+const requestedCard = cartridgeCards.find(card => card.dataset.gameId === requestedCartridge && card.dataset.rom);
+if (requestedCard) {
+canOpenCartridgeScreen().then(allowed => {
+if (allowed) loadRom(requestedCard.dataset.rom, requestedCard.dataset.gameId, requestedCard.dataset.gameName).catch(() => {});
+else loadRom('./assets/super-mario-bros-world.nes', 'super-mario-bros-world', '超级马里奥兄弟').catch(() => {});
+});
+} else {
+loadRom('./assets/super-mario-bros-world.nes', 'super-mario-bros-world', '超级马里奥兄弟').catch(() => {});
+}
 })();
