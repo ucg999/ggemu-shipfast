@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Locale } from '#/lib/ggemu'
 import { SiteLayout } from '#/components/site-layout'
-import { readSpendableCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
+import { addCoinBalance, readSpendableCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
 import { requestMemberLogin, useMemberSession } from '#/lib/member-client'
 
 const OWNED_CARTRIDGES_KEY = 'ucg999-fc-owned-cartridges'
+const OWNED_CARTRIDGES_MIGRATION_KEY = 'ucg999-fc-owned-cartridges-migrated'
 const CARTRIDGE_PRICE = 50
 
 const FC_CARTRIDGES = [
@@ -27,6 +28,15 @@ const FC_CARTRIDGES = [
     releaseDate: '1984.11.14',
     publisher: 'NAMCO',
   },
+  {
+    id: 'karateka-street-fighter',
+    number: '082号',
+    title: '空手道 街霸版',
+    cover: '/fc-player/assets/cartridges/karateka-street-fighter.min.webp',
+    genre: '格斗',
+    releaseDate: '1985.12.05',
+    publisher: 'Soft Pro',
+  },
 ] as const
 
 export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
@@ -44,13 +54,44 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
   const searchRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
-    try {
-      const stored = JSON.parse(window.localStorage.getItem(OWNED_CARTRIDGES_KEY) || '[]')
-      setOwned(Array.isArray(stored) ? stored.filter(value => typeof value === 'string') : [])
-    } catch {
+    if (!member) {
       setOwned([])
+      return
     }
-  }, [])
+    let cancelled = false
+    void (async () => {
+      let legacyOwned: string[] = []
+      let cachedOwned: string[] = []
+      const accountCacheKey = `${OWNED_CARTRIDGES_KEY}:${member.id}`
+      try {
+        const cached = JSON.parse(window.localStorage.getItem(accountCacheKey) || '[]')
+        cachedOwned = Array.isArray(cached) ? cached.filter((value): value is string => typeof value === 'string') : []
+        if (window.localStorage.getItem(`${OWNED_CARTRIDGES_MIGRATION_KEY}:${member.id}`) !== 'yes') {
+          const stored = JSON.parse(window.localStorage.getItem(OWNED_CARTRIDGES_KEY) || '[]')
+          legacyOwned = Array.isArray(stored) ? stored.filter((value): value is string => typeof value === 'string') : []
+        }
+      } catch {}
+      try {
+        if (legacyOwned.length) {
+          const migrationResponse = await fetch('/api/fc-cartridges', {
+            method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cartridgeIds: legacyOwned }),
+          })
+          if (migrationResponse.ok) window.localStorage.setItem(`${OWNED_CARTRIDGES_MIGRATION_KEY}:${member.id}`, 'yes')
+        }
+        const response = await fetch('/api/fc-cartridges', { credentials: 'same-origin', cache: 'no-store' })
+        if (!response.ok) throw new Error('collection_load_failed')
+        const result = await response.json() as { owned?: string[] }
+        const next = Array.isArray(result.owned) ? result.owned : []
+        if (cancelled) return
+        setOwned(next)
+        window.localStorage.setItem(accountCacheKey, JSON.stringify(next))
+      } catch {
+        if (!cancelled) setOwned(cachedOwned.length ? cachedOwned : legacyOwned)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [member?.id])
 
   useEffect(() => {
     if (!searchOpen) return
@@ -93,7 +134,7 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
     setPendingPurchase(cartridgeId)
   }
 
-  function confirmPurchase() {
+  async function confirmPurchase() {
     const cartridgeId = pendingPurchase
     if (!cartridgeId) return
     setPendingPurchase(null)
@@ -101,17 +142,25 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
       setNotice(copy.insufficient)
       return
     }
-    const next = [...new Set([...owned, cartridgeId])]
+    const previous = owned
     try {
-      window.localStorage.setItem(OWNED_CARTRIDGES_KEY, JSON.stringify(next))
       if (!spendCoinBalance(CARTRIDGE_PRICE)) {
-        window.localStorage.setItem(OWNED_CARTRIDGES_KEY, JSON.stringify(owned))
         setNotice(copy.failed)
         return
       }
+      const response = await fetch('/api/fc-cartridges', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cartridgeId }),
+      })
+      if (!response.ok) throw new Error('collection_save_failed')
+      const result = await response.json() as { owned?: string[] }
+      const next = Array.isArray(result.owned) ? result.owned : [...new Set([...owned, cartridgeId])]
+      window.localStorage.setItem(`${OWNED_CARTRIDGES_KEY}:${member.id}`, JSON.stringify(next))
       setOwned(next)
       setNotice(copy.purchased)
     } catch {
+      addCoinBalance(CARTRIDGE_PRICE)
+      setOwned(previous)
       setNotice(copy.failed)
     }
   }

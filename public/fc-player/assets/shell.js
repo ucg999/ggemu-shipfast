@@ -1,4 +1,4 @@
-(function () {
+(async function () {
 'use strict';
 const core = window.GGEMU_CORE;
 const CONFIG = window.GGEMU_CONFIG || {};
@@ -501,11 +501,38 @@ const closeCartridgeButton = document.getElementById('btn-close-cartridges');
 const cartridgeList = document.getElementById('cartridge-list');
 const allCartridgeCards = Array.from(document.querySelectorAll('.cartridge-card'));
 const ownedCartridgesKey = 'ucg999-fc-owned-cartridges';
+const ownedCartridgesMigrationKey = 'ucg999-fc-owned-cartridges-migrated';
 let ownedCartridgeIds = [];
+let legacyOwnedCartridgeIds = [];
 try {
 const parsedOwnedCartridges = JSON.parse(localStorage.getItem(ownedCartridgesKey) || '[]');
-ownedCartridgeIds = Array.isArray(parsedOwnedCartridges) ? parsedOwnedCartridges.filter(value => typeof value === 'string') : [];
+legacyOwnedCartridgeIds = Array.isArray(parsedOwnedCartridges) ? parsedOwnedCartridges.filter(value => typeof value === 'string') : [];
 } catch (error) {}
+try {
+const collectionResponse = await fetch('/api/fc-cartridges', { credentials: 'same-origin', cache: 'no-store' });
+if (collectionResponse.ok) {
+let collection = await collectionResponse.json();
+if (collection.authenticated === true && Array.isArray(collection.owned)) {
+const accountKey = ownedCartridgesKey + ':' + collection.memberId;
+const migrationKey = ownedCartridgesMigrationKey + ':' + collection.memberId;
+if (legacyOwnedCartridgeIds.length && localStorage.getItem(migrationKey) !== 'yes') {
+const migrationResponse = await fetch('/api/fc-cartridges', {
+method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ cartridgeIds: legacyOwnedCartridgeIds })
+});
+if (migrationResponse.ok) {
+collection = await migrationResponse.json();
+localStorage.setItem(migrationKey, 'yes');
+}
+}
+ownedCartridgeIds = collection.owned.filter(value => typeof value === 'string');
+try { localStorage.setItem(accountKey, JSON.stringify(ownedCartridgeIds)); } catch (error) {}
+}
+}
+} catch (error) {
+console.warn('Unable to synchronize FC cartridges', error);
+ownedCartridgeIds = legacyOwnedCartridgeIds;
+}
 allCartridgeCards.forEach(card => {
 const slide = card.closest('.cartridge-slide');
 if (slide) slide.hidden = !ownedCartridgeIds.includes(card.dataset.gameId);

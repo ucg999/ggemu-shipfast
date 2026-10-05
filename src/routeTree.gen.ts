@@ -44,6 +44,7 @@ import { Route as LocaleThemeModeRouteImport } from './routes/$locale.theme-mode
 import { Route as LocaleWantedRouteImport } from './routes/$locale.wanted'
 import { Route as ApiCoinChallengeCommunityRouteImport } from './routes/api.coin-challenge-community'
 import { Route as ApiCoinRankingsRouteImport } from './routes/api.coin-rankings'
+import { Route as ApiFcCartridgesRouteImport } from './routes/api.fc-cartridges'
 import { Route as ApiLocaleSuggestionRouteImport } from './routes/api/locale-suggestion'
 import { Route as ApiMemberRouteImport } from './routes/api.member'
 import { Route as ApiPspLikesRouteImport } from './routes/api.psp-likes'
@@ -240,6 +241,11 @@ const ApiCoinRankingsRoute = ApiCoinRankingsRouteImport.update({
   path: '/api/coin-rankings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiFcCartridgesRoute = ApiFcCartridgesRouteImport.update({
+  id: '/api/fc-cartridges',
+  path: '/api/fc-cartridges',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiLocaleSuggestionRoute = ApiLocaleSuggestionRouteImport.update({
   id: '/api/locale-suggestion',
   path: '/api/locale-suggestion',
@@ -375,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/$locale/wanted': typeof LocaleWantedRoute
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
+  '/api/fc-cartridges': typeof ApiFcCartridgesRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
@@ -430,6 +437,7 @@ export interface FileRoutesByTo {
   '/$locale/wanted': typeof LocaleWantedRoute
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
+  '/api/fc-cartridges': typeof ApiFcCartridgesRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
@@ -487,6 +495,7 @@ export interface FileRoutesById {
   '/$locale/wanted': typeof LocaleWantedRoute
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
+  '/api/fc-cartridges': typeof ApiFcCartridgesRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
@@ -545,6 +554,7 @@ export interface FileRouteTypes {
     | '/$locale/wanted'
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
+    | '/api/fc-cartridges'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
@@ -600,6 +610,7 @@ export interface FileRouteTypes {
     | '/$locale/wanted'
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
+    | '/api/fc-cartridges'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
@@ -656,6 +667,7 @@ export interface FileRouteTypes {
     | '/$locale/wanted'
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
+    | '/api/fc-cartridges'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
@@ -694,6 +706,7 @@ export interface RootRouteChildren {
   XRoute: typeof XRoute
   ApiCoinChallengeCommunityRoute: typeof ApiCoinChallengeCommunityRoute
   ApiCoinRankingsRoute: typeof ApiCoinRankingsRoute
+  ApiFcCartridgesRoute: typeof ApiFcCartridgesRoute
   ApiLocaleSuggestionRoute: typeof ApiLocaleSuggestionRoute
   ApiMemberRoute: typeof ApiMemberRoute
   ApiPspLikesRoute: typeof ApiPspLikesRoute
@@ -951,6 +964,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCoinRankingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/fc-cartridges': {
+      id: '/api/fc-cartridges'
+      path: '/api/fc-cartridges'
+      fullPath: '/api/fc-cartridges'
+      preLoaderRoute: typeof ApiFcCartridgesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/locale-suggestion': {
       id: '/api/locale-suggestion'
       path: '/api/locale-suggestion'
@@ -1203,6 +1223,7 @@ const rootRouteChildren: RootRouteChildren = {
   XRoute: XRoute,
   ApiCoinChallengeCommunityRoute: ApiCoinChallengeCommunityRoute,
   ApiCoinRankingsRoute: ApiCoinRankingsRoute,
+  ApiFcCartridgesRoute: ApiFcCartridgesRoute,
   ApiLocaleSuggestionRoute: ApiLocaleSuggestionRoute,
   ApiMemberRoute: ApiMemberRoute,
   ApiPspLikesRoute: ApiPspLikesRoute,

@@ -6,7 +6,7 @@ import { requestMemberLogin } from '#/lib/member-client'
 
 export const Route = createFileRoute('/fc')({
   validateSearch: (search: Record<string, unknown>) => ({
-    cartridge: search.cartridge === 'happy-cat' || search.cartridge === 'urban-champion' ? search.cartridge : undefined,
+    cartridge: search.cartridge === 'happy-cat' || search.cartridge === 'urban-champion' || search.cartridge === 'karateka-street-fighter' ? search.cartridge : undefined,
   }),
   head: () => ({
     meta: [
