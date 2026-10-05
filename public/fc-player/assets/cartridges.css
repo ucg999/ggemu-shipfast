@@ -50,6 +50,53 @@
   font-weight: 500;
 }
 
+.cartridge-title-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.cartridge-panel header .cartridge-search-toggle {
+  display: grid;
+  width: 23px;
+  height: 23px;
+  flex: 0 0 23px;
+  padding: 4px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.cartridge-search-toggle svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+#cartridge-search {
+  width: 0;
+  min-width: 0;
+  height: 23px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.55);
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font: 600 11px/1 system-ui;
+  opacity: 0;
+  pointer-events: none;
+  transition: width .18s ease, opacity .18s ease, padding .18s ease;
+}
+
+#cartridge-search::placeholder { color: rgba(255, 255, 255, 0.58); }
+#cartridge-search.is-open { width: min(42vw, 130px); padding: 0 3px; opacity: 1; pointer-events: auto; }
+
 .cartridge-panel header button {
   width: 25px;
   height: 25px;
@@ -90,6 +137,8 @@
   justify-content: center;
   height: 100%;
 }
+
+.cartridge-slide[hidden] { display: none !important; }
 
 .cartridge-card {
   position: relative;

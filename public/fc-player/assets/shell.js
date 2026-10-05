@@ -545,12 +545,15 @@ const cartridgeCards = allCartridgeCards
 cartridgeCards.forEach(card => cartridgeList.appendChild(card.closest('.cartridge-slide')));
 const cartridgeDots = document.getElementById('cartridge-dots');
 const cartridgeCount = document.getElementById('cartridge-count');
+const cartridgeSearchButton = document.getElementById('btn-search-cartridges');
+const cartridgeSearchInput = document.getElementById('cartridge-search');
 const previousCartridgeButton = document.getElementById('cartridge-prev');
 const nextCartridgeButton = document.getElementById('cartridge-next');
 const cartridgeEmpty = document.getElementById('cartridge-empty');
 let cartridgeIndex = 0;
 let cartridgeTouchStartX = 0;
 let cartridgeLoading = false;
+let visibleCartridgeCards = cartridgeCards.slice();
 cartridgeCount.textContent = '（已收集' + cartridgeCards.length + '款）';
 cartridgeEmpty.hidden = cartridgeCards.length > 0;
 function syncCartridgeScreenBounds() {
@@ -567,15 +570,35 @@ cartridgeScreen.style.height = Math.round(game.h * scaleY) + 'px';
 function renderCartridgeSelection() {
 cartridgeList.style.transform = 'translateX(' + (-cartridgeIndex * 100) + '%)';
 previousCartridgeButton.disabled = cartridgeIndex === 0;
-nextCartridgeButton.disabled = cartridgeCards.length < 2 || cartridgeIndex === cartridgeCards.length - 1;
+nextCartridgeButton.disabled = visibleCartridgeCards.length < 2 || cartridgeIndex === visibleCartridgeCards.length - 1;
 Array.from(cartridgeDots.children).forEach((dot, index) => dot.classList.toggle('is-active', index === cartridgeIndex));
 }
-cartridgeCards.forEach((card, index) => {
+function rebuildCartridgeDots() {
+cartridgeDots.replaceChildren();
+visibleCartridgeCards.forEach((card, index) => {
 const dot = document.createElement('button');
 dot.type = 'button';
 dot.setAttribute('aria-label', '查看第' + (index + 1) + '张卡带');
 dot.addEventListener('click', () => { cartridgeIndex = index; renderCartridgeSelection(); });
 cartridgeDots.appendChild(dot);
+});
+}
+function filterCollectedCartridges(value) {
+const keyword = String(value || '').trim().toLocaleLowerCase();
+visibleCartridgeCards = cartridgeCards.filter(card => {
+const number = card.querySelector('.cartridge-number')?.textContent || '';
+const matches = !keyword || card.dataset.gameName.toLocaleLowerCase().includes(keyword) || number.toLocaleLowerCase().includes(keyword);
+const slide = card.closest('.cartridge-slide');
+if (slide) slide.hidden = !matches;
+return matches;
+});
+cartridgeIndex = 0;
+cartridgeEmpty.hidden = visibleCartridgeCards.length > 0;
+cartridgeEmpty.textContent = keyword ? '没有找到已收藏的卡带' : '还没有收藏卡带';
+rebuildCartridgeDots();
+renderCartridgeSelection();
+}
+cartridgeCards.forEach(card => {
 card.addEventListener('click', async () => {
 if (cartridgeLoading) return;
 cartridgeLoading = true;
@@ -599,7 +622,7 @@ cartridgeIndex = Math.max(0, cartridgeIndex - 1);
 renderCartridgeSelection();
 });
 nextCartridgeButton.addEventListener('click', () => {
-cartridgeIndex = Math.min(cartridgeCards.length - 1, cartridgeIndex + 1);
+cartridgeIndex = Math.min(visibleCartridgeCards.length - 1, cartridgeIndex + 1);
 renderCartridgeSelection();
 });
 cartridgeList.addEventListener('touchstart', event => {
@@ -608,9 +631,21 @@ cartridgeTouchStartX = event.touches[0].clientX;
 cartridgeList.addEventListener('touchend', event => {
 const distance = event.changedTouches[0].clientX - cartridgeTouchStartX;
 if (Math.abs(distance) < 36) return;
-cartridgeIndex = Math.max(0, Math.min(cartridgeCards.length - 1, cartridgeIndex + (distance < 0 ? 1 : -1)));
+cartridgeIndex = Math.max(0, Math.min(visibleCartridgeCards.length - 1, cartridgeIndex + (distance < 0 ? 1 : -1)));
 renderCartridgeSelection();
 }, { passive: true });
+cartridgeSearchButton.addEventListener('click', () => {
+const open = !cartridgeSearchInput.classList.contains('is-open');
+cartridgeSearchInput.classList.toggle('is-open', open);
+cartridgeSearchButton.setAttribute('aria-expanded', String(open));
+if (open) cartridgeSearchInput.focus();
+else {
+cartridgeSearchInput.value = '';
+filterCollectedCartridges('');
+}
+});
+cartridgeSearchInput.addEventListener('input', () => filterCollectedCartridges(cartridgeSearchInput.value));
+rebuildCartridgeDots();
 renderCartridgeSelection();
 function setCartridgeScreen(open) {
 if (open) syncCartridgeScreenBounds();
