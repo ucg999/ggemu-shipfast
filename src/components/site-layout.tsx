@@ -374,16 +374,39 @@ export function SiteLayout({
                 <i className="ri-search-line text-base" />
               </button>
             ) : null}
-            <Link
-              aria-label={t.searchGames}
-              className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full text-black/75 transition hover:bg-black/5 hover:text-black lg:flex"
-              params={{ locale }}
-              search={{ q: '' }}
-              title={t.searchGames}
-              to="/$locale/search"
-            >
-              <i className="ri-search-line text-xl" />
-            </Link>
+            {isHomePage ? (
+              <div className="hidden h-9 w-[190px] shrink-0 items-center overflow-hidden rounded-full border border-rose-200 bg-rose-50 text-black shadow-sm lg:flex">
+                <Link
+                  aria-label={t.searchGames}
+                  className="flex h-full min-w-0 flex-1 items-center gap-1.5 pl-3 text-xs text-gray-600 transition hover:bg-white"
+                  params={{ locale }}
+                  search={{ q: '' }}
+                  title={t.searchGames}
+                  to="/$locale/search"
+                >
+                  <i className="ri-search-line shrink-0 text-base" />
+                  <span className="truncate">{locale === 'en' ? 'Search by need' : '按需求搜索'}</span>
+                </Link>
+                <button
+                  className="mr-1 flex h-6 shrink-0 items-center whitespace-nowrap border-l border-rose-200 px-1.5 text-[10px] font-medium text-gray-700 hover:text-black"
+                  onClick={() => void showRandomGame()}
+                  type="button"
+                >
+                  {locale === 'en' ? 'Random play' : locale === 'zh-TW' ? '隨機玩玩' : '随机玩一玩'}
+                </button>
+              </div>
+            ) : (
+              <Link
+                aria-label={t.searchGames}
+                className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full text-black/75 transition hover:bg-black/5 hover:text-black lg:flex"
+                params={{ locale }}
+                search={{ q: '' }}
+                title={t.searchGames}
+                to="/$locale/search"
+              >
+                <i className="ri-search-line text-xl" />
+              </Link>
+            )}
             <Link
               aria-label={t.watchOthers}
               className={`desktop-watch-button btn h-6 min-h-6 shrink-0 gap-0.5 rounded-full border border-rose-200 bg-rose-100 px-1.5 text-[10px] font-semibold text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 lg:h-9 lg:min-h-9 lg:gap-2 lg:px-4 lg:text-sm max-lg:[&_.live-watch-eye]:scale-75 ${isHomePage ? '' : 'hidden lg:flex'}`}
@@ -543,6 +566,18 @@ export function SiteLayout({
                       <i className="ri-trophy-line text-base" />
                     </span>
                     <span className="sidebar-label min-w-0 flex-1">{locale === 'en' ? 'Rankings' : '排行榜'}</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    className={`group flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition hover:bg-base-200 ${location.pathname === `/${locale}/wanted` ? 'bg-base-200 font-semibold text-[#7a2f23]' : ''}`}
+                    params={{ locale }}
+                    to="/$locale/wanted"
+                  >
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#eadfd3] text-[#7a2f23] group-hover:bg-[#dfcebf]">
+                      <i className="ri-file-warning-line text-base" />
+                    </span>
+                    <span className="sidebar-label min-w-0 flex-1">{locale === 'en' ? 'Wanted' : '悬赏令'}</span>
                   </Link>
                 </li>
                 <li>

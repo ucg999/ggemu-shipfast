@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { SiteLayout } from '#/components/site-layout'
 import { getWantedGuestKey } from '#/components/wanted-playtime-tracker'
@@ -16,10 +16,29 @@ export const Route = createFileRoute('/$locale/wanted')({
 
 const displayOrder = [2, 1, 3] as const
 const rewards: Record<number, number> = { 1: 5_000, 2: 2_000, 3: 500 }
+const wantedPosterCount = 18
+
+function getWeeklyPosterSet(data: WantedData | null) {
+  const used = new Set<number>()
+  return displayOrder.map((rank) => {
+    const leader = data?.leaders.find(item => item.rank === rank)
+    const seed = `${data?.periodKey || 'current'}:${rank}:${leader?.displayName || `waiting-${rank}`}`
+    let hash = 2166136261
+    for (const character of seed) {
+      hash ^= character.charCodeAt(0)
+      hash = Math.imul(hash, 16777619)
+    }
+    let posterNumber = (hash >>> 0) % wantedPosterCount + 1
+    while (used.has(posterNumber)) posterNumber = posterNumber % wantedPosterCount + 1
+    used.add(posterNumber)
+    return `/images/wanted/posters/${String(posterNumber).padStart(3, '0')}.webp`
+  })
+}
 
 function WantedPage() {
   const lang = normalizeLocale(Route.useParams().locale)
   const [data, setData] = useState<WantedData | null>(null)
+  const posterImages = useMemo(() => getWeeklyPosterSet(data), [data])
   const claimingRef = useRef(false)
 
   async function refresh() {
@@ -51,13 +70,15 @@ function WantedPage() {
   }
 
   return <SiteLayout hideFooter locale={lang}>
-    <main className="flex h-[calc(100dvh-61px)] min-h-0 flex-col items-center justify-start overflow-hidden bg-[#f0f0ed] text-[#35231d]">
+    <main className="wanted-page-main flex h-[calc(100dvh-61px)] min-h-0 flex-col items-center justify-start overflow-hidden bg-[#f0f0ed] text-[#35231d]">
       <div className="min-h-0 w-full">
         <section className="wanted-poster-board relative mx-auto overflow-hidden">
-          <img alt="每周悬赏令前三名海报" className="block h-auto w-full" src="/images/wanted/wanted-board.png" />
           {displayOrder.map((rank, slot) => {
             const leader = data?.leaders.find(item => item.rank === rank)
-            return <WantedPosterText key={rank} rank={rank} slot={slot} leader={leader} />
+            return <div className={`wanted-poster-slot wanted-poster-slot-${slot + 1}`} key={rank}>
+              <img alt={`悬赏令第${rank}名海报`} className="wanted-poster-image" decoding="async" fetchPriority={slot === 1 ? 'high' : 'auto'} src={posterImages[slot]} />
+              <WantedPosterText rank={rank} slot={slot} leader={leader} />
+            </div>
           })}
         </section>
         <p className="mx-auto -mt-1 px-4 text-center text-sm font-semibold sm:text-base">上周冠军获得者：<span className="text-[#9a281d]">{data?.lastWeekChampion || '暂无记录'}</span></p>

@@ -424,16 +424,27 @@ export function SearchForm({
         <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
         <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
         <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">{lang === 'en' ? 'FC Cartridges' : lang === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</Link>
-        <Link
-          aria-label={lang === 'en' ? 'Search games' : lang === 'ja' ? 'ゲームを検索' : '搜索游戏'}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/95 transition hover:bg-white/10 hover:text-white"
-          params={{ locale: lang }}
-          search={{ q: '' }}
-          title={lang === 'en' ? 'Search games' : lang === 'ja' ? 'ゲームを検索' : '搜索游戏'}
-          to="/$locale/search"
-        >
-          <i className="ri-search-line text-xl" />
-        </Link>
+        <div className="flex h-9 w-[172px] shrink-0 items-center rounded-full border border-rose-200 bg-rose-50 shadow-sm transition focus-within:border-rose-300 focus-within:bg-white">
+          <label className="flex h-full min-w-0 flex-1 items-center gap-1.5 pl-2.5">
+            <i className="ri-search-line shrink-0 text-base text-gray-500" />
+            <input
+              aria-label={lang === 'en' ? 'Search games' : lang === 'ja' ? 'ゲームを検索' : '搜索游戏'}
+              className="h-full min-w-0 flex-1 bg-transparent text-xs text-black caret-black outline-none placeholder:text-gray-500"
+              onFocus={() => window.location.assign(`/${lang}/search`)}
+              onChange={(event) => onQueryChange(event.currentTarget.value)}
+              placeholder={lang === 'zh-CN' ? '按需求搜索' : searchPlaceholder}
+              type="search"
+              value={filters.query}
+            />
+          </label>
+          <button
+            className="mr-1 flex h-6 shrink-0 items-center whitespace-nowrap border-l border-rose-200 px-1.5 text-[10px] font-medium text-gray-700 hover:text-black"
+            onClick={() => window.dispatchEvent(new Event('home-random-game-request'))}
+            type="button"
+          >
+            {lang === 'zh-TW' ? '隨機玩玩' : lang === 'en' ? 'Random play' : lang === 'ja' ? 'ランダムプレイ' : '随机玩一玩'}
+          </button>
+        </div>
 
       </div>
     </form>
