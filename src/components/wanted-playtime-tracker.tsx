@@ -12,7 +12,6 @@ export function WantedPlaytimeTracker() {
   const sentRef = useRef(false)
 
   useEffect(() => {
-    if (!playing) return
     elapsedRef.current = 0
     previousTickRef.current = Date.now()
     sessionRef.current = crypto.randomUUID()
@@ -31,7 +30,8 @@ export function WantedPlaytimeTracker() {
       const minutes = Math.floor(elapsedRef.current / 60_000)
       if (minutes < 1) return
       sentRef.current = true
-      const payload = JSON.stringify({ action: 'session', guestKey, guestName, minutes, submissionKey: `wanted:${sessionRef.current}` })
+      const sessionType = playing ? 'game' : 'online'
+      const payload = JSON.stringify({ action: 'session', sessionType, guestKey, guestName, minutes, submissionKey: `wanted:${sessionType}:${sessionRef.current}` })
       if (!navigator.sendBeacon('/api/wanted', new Blob([payload], { type: 'application/json' }))) {
         void fetch('/api/wanted', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true })
       }
@@ -43,7 +43,7 @@ export function WantedPlaytimeTracker() {
       window.removeEventListener('pagehide', submitSession)
       submitSession()
     }
-  }, [playing, pathname])
+  }, [playing])
 
   return null
 }
@@ -61,6 +61,7 @@ export function getWantedGuestKey() {
 }
 
 function isPlayableRoute(pathname: string) {
-  return /\/games\/[^/]+\/play(?:\/|$)/.test(pathname)
+  return /^\/fc(?:\/|$)/.test(pathname)
+    || /\/games\/[^/]+\/play(?:\/|$)/.test(pathname)
     || /\/(coin-challenge|lucky-grand-slam|ghost-hunter|red-blue-arena)(?:\/|$)/.test(pathname)
 }

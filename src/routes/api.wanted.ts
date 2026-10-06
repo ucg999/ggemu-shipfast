@@ -45,7 +45,7 @@ export const Route = createFileRoute('/api/wanted')({
       }, { headers: { 'Cache-Control': 'private, no-store' } })
     },
     POST: async ({ request }) => {
-      const body = await request.json() as { action?: unknown; guestKey?: unknown; guestName?: unknown; minutes?: unknown; submissionKey?: unknown }
+      const body = await request.json() as { action?: unknown; sessionType?: unknown; guestKey?: unknown; guestName?: unknown; minutes?: unknown; submissionKey?: unknown }
       const member = await getMemberFromRequest(request)
       const guestKey = normalizeGuestKey(body.guestKey)
       const participantKey = member ? `member:${member.id}` : guestKey
@@ -57,7 +57,9 @@ export const Route = createFileRoute('/api/wanted')({
         if (!/^[a-zA-Z0-9:_-]{8,160}$/.test(submissionKey)) return jsonError('计时记录无效')
         if (minutes < 1) return jsonError('本局未完成有效计时')
         const displayName = member?.displayName || normalizeGuestName(body.guestName, participantKey)
-        const multiplier = member ? getCoinRank(member.coinBalance).multiplier : 1
+        // Older cached clients did not send a type and only recorded game sessions.
+        const sessionType = body.sessionType === 'online' ? 'online' : 'game'
+        const multiplier = sessionType === 'game' && member ? getCoinRank(member.coinBalance).multiplier : 1
         const periodKey = getWantedWeekKey(Date.now())
         const db = leaderboardDb()
         const accepted = await db.prepare(`INSERT OR IGNORE INTO wanted_playtime_submissions (submission_key, participant_key, period_key) VALUES (?, ?, ?)`)
@@ -72,7 +74,7 @@ export const Route = createFileRoute('/api/wanted')({
             weighted_minutes = weighted_minutes + excluded.weighted_minutes,
             updated_at = CURRENT_TIMESTAMP
         `).bind(participantKey, periodKey, member?.id ?? null, displayName, minutes, minutes * multiplier).run()
-        return Response.json({ ok: true, multiplier })
+        return Response.json({ ok: true, sessionType, multiplier })
       }
 
       if (body.action === 'claim') {

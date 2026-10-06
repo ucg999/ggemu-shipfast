@@ -12,39 +12,39 @@ const CARTRIDGE_PRICE = 50
 const FC_CARTRIDGES = [
   {
     id: 'donkey-kong', number: '001号', title: '森喜刚', cover: '/fc-player/assets/cartridges/donkey-kong.min.webp',
-    genre: '动作', releaseDate: '1983-07-15', publisher: '任天堂',
+    genre: '动作', releaseDate: '1983-07-15', publisher: '任天堂', initial: 'S', edition: '原版',
   },
   {
     id: 'donkey-kong-jr', number: '002号', title: '森喜刚JR.', cover: '/fc-player/assets/cartridges/donkey-kong-jr.min.webp',
-    genre: '动作', releaseDate: '1983-07-15', publisher: '任天堂',
+    genre: '动作', releaseDate: '1983-07-15', publisher: '任天堂', initial: 'S', edition: '原版',
   },
   {
     id: 'popeye', number: '003号', title: '大力水手', cover: '/fc-player/assets/cartridges/popeye.min.webp',
-    genre: '动作', releaseDate: '1983-07-15', publisher: '任天堂',
+    genre: '动作', releaseDate: '1983-07-15', publisher: '任天堂', initial: 'D', edition: '原版',
   },
   {
     id: 'gomoku-narabe', number: '004号', title: '五子棋', cover: '/fc-player/assets/cartridges/gomoku-narabe.min.webp',
-    genre: '益智', releaseDate: '1983-08-27', publisher: '任天堂',
+    genre: '益智', releaseDate: '1983-08-27', publisher: '任天堂', initial: 'W', edition: '原版',
   },
   {
     id: 'mahjong', number: '005号', title: '麻将', cover: '/fc-player/assets/cartridges/mahjong.min.webp',
-    genre: '益智', releaseDate: '1983-08-27', publisher: '任天堂',
+    genre: '益智', releaseDate: '1983-08-27', publisher: '任天堂', initial: 'M', edition: '原版',
   },
   {
     id: 'mario-bros', number: '006号', title: '水管玛丽', cover: '/fc-player/assets/cartridges/mario-bros.min.webp',
-    genre: '动作', releaseDate: '1983-09-09', publisher: '任天堂',
+    genre: '动作', releaseDate: '1983-09-09', publisher: '任天堂', initial: 'S', edition: '原版',
   },
   {
     id: 'popeye-english', number: '007号', title: '大力水手学英语', cover: '/fc-player/assets/cartridges/popeye-english.min.webp',
-    genre: '教育', releaseDate: '1983-11-22', publisher: '任天堂',
+    genre: '教育', releaseDate: '1983-11-22', publisher: '任天堂', initial: 'D', edition: '原版',
   },
   {
     id: 'baseball', number: '008号', title: '棒球', cover: '/fc-player/assets/cartridges/baseball.min.webp',
-    genre: '体育', releaseDate: '1983-12-07', publisher: '任天堂',
+    genre: '体育', releaseDate: '1983-12-07', publisher: '任天堂', initial: 'B', edition: '原版',
   },
   {
     id: 'donkey-kong-jr-math', number: '009号', title: '森喜刚学算数', cover: '/fc-player/assets/cartridges/donkey-kong-jr-math.min.webp',
-    genre: '教育', releaseDate: '1983-12-12', publisher: '任天堂',
+    genre: '教育', releaseDate: '1983-12-12', publisher: '任天堂', initial: 'S', edition: '原版',
   },
   {
     id: 'urban-champion',
@@ -54,6 +54,8 @@ const FC_CARTRIDGES = [
     genre: '格斗',
     releaseDate: '1984-11-14',
     publisher: '任天堂',
+    initial: 'J',
+    edition: '原版',
   },
   {
     id: 'happy-cat',
@@ -63,6 +65,8 @@ const FC_CARTRIDGES = [
     genre: '动作',
     releaseDate: '1984-11-14',
     publisher: 'NAMCO',
+    initial: 'K',
+    edition: '原版',
   },
   {
     id: 'karateka-street-fighter',
@@ -72,6 +76,8 @@ const FC_CARTRIDGES = [
     genre: '格斗',
     releaseDate: '1985-12-05',
     publisher: 'Soft Pro',
+    initial: 'K',
+    edition: '改版',
   },
 ] as const
 
@@ -81,12 +87,15 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
   const [owned, setOwned] = useState<string[]>([])
   const [notice, setNotice] = useState('')
   const [pendingPurchase, setPendingPurchase] = useState<string | null>(null)
-  const [sortField, setSortField] = useState<'name' | 'random' | 'popular' | 'updatedAt' | 'releaseDate'>('releaseDate')
+  const [sortField, setSortField] = useState<'name' | 'random' | 'releaseDate'>('releaseDate')
   const [reverse, setReverse] = useState(false)
   const [searchField, setSearchField] = useState<'genre' | 'publisher' | null>(null)
   const [query, setQuery] = useState('')
   const [draftQuery, setDraftQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const [letterOpen, setLetterOpen] = useState(false)
+  const [selectedInitial, setSelectedInitial] = useState('')
+  const [modifiedOnly, setModifiedOnly] = useState(false)
   const searchRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
@@ -145,19 +154,20 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
     const keyword = query.trim().toLocaleLowerCase()
     const filtered = FC_CARTRIDGES.filter((cartridge) => {
       const values = searchField ? [cartridge[searchField]] : [cartridge.title, cartridge.number, cartridge.genre, cartridge.publisher, cartridge.releaseDate]
-      return !keyword || values.some(value => value.toLocaleLowerCase().includes(keyword))
+      return (!selectedInitial || cartridge.initial === selectedInitial)
+        && (!modifiedOnly || cartridge.edition === '改版')
+        && (!keyword || values.some(value => value.toLocaleLowerCase().includes(keyword)))
     })
     const result = [...filtered]
     if (sortField === 'random') result.sort(() => Math.random() - 0.5)
     else if (sortField === 'name') result.sort((a, b) => a.title.localeCompare(b.title, lang))
-    else if (sortField === 'popular') result.sort((a, b) => Number(owned.includes(b.id)) - Number(owned.includes(a.id)) || a.number.localeCompare(b.number))
     else result.sort((a, b) => a.releaseDate.localeCompare(b.releaseDate) || a.number.localeCompare(b.number))
     return reverse ? result.reverse() : result
-  }, [lang, owned, query, reverse, searchField, sortField])
+  }, [lang, modifiedOnly, query, reverse, searchField, selectedInitial, sortField])
 
   const filters = [
-    ['name', copy.gameName], ['random', copy.random], ['popular', copy.popular], ['updatedAt', copy.updatedAt],
-    ['genre', copy.genre], ['publisher', copy.publisher], ['releaseDate', copy.releaseDate],
+    ['name', copy.gameName], ['random', copy.random], ['genre', copy.genre], ['publisher', copy.publisher],
+    ['releaseDate', copy.releaseDate], ['modified', copy.modified],
   ] as const
 
   function handleCartridge(cartridgeId: string) {
@@ -224,7 +234,7 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
             <div className="relative flex w-full max-w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:w-auto sm:justify-end">
               {filters.map(([field, label]) => (
                 <button
-                  className={`btn btn-ghost btn-sm shrink-0 whitespace-nowrap px-2 text-sm font-medium ${(sortField === field || (searchField === field && query)) ? 'text-error' : ''}`}
+                  className={`btn btn-ghost btn-sm shrink-0 whitespace-nowrap px-2 text-sm font-medium ${(sortField === field || (field === 'modified' && modifiedOnly) || (searchField === field && query)) ? 'text-error' : ''}`}
                   data-fc-filter=""
                   key={field}
                   type="button"
@@ -233,6 +243,16 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
                       setSearchField(field)
                       setDraftQuery(searchField === field ? query : '')
                       setSearchOpen(true)
+                      return
+                    }
+                    if (field === 'name') {
+                      setSortField('name')
+                      setReverse(false)
+                      setLetterOpen(value => !value)
+                      return
+                    }
+                    if (field === 'modified') {
+                      setModifiedOnly(value => !value)
                       return
                     }
                     setReverse(sortField === field && field !== 'random' ? !reverse : false)
@@ -248,6 +268,10 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
                 <button className="btn btn-error btn-xs text-white" type="submit">{copy.confirm}</button>
               </form> : null}
             </div>
+            {letterOpen ? <div className="mt-2 flex w-full flex-wrap items-center gap-1 sm:justify-end">
+              <button className={`btn btn-xs ${!selectedInitial ? 'btn-neutral' : 'btn-ghost'}`} type="button" onClick={() => setSelectedInitial('')}>{copy.allLetters}</button>
+              {[...new Set(FC_CARTRIDGES.map(item => item.initial))].sort().map(letter => <button className={`btn btn-xs ${selectedInitial === letter ? 'btn-neutral' : 'btn-ghost'}`} key={letter} type="button" onClick={() => setSelectedInitial(letter)}>{letter}</button>)}
+            </div> : null}
           </header>
 
           <div className="grid grid-cols-3 gap-2.5 sm:gap-4 lg:grid-cols-6">
@@ -268,7 +292,7 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
                   <h2 className="truncate text-center text-sm font-semibold text-base-content sm:text-base" title={cartridge.title}>{cartridge.title}</h2>
                   <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[10px] text-base-content/60 sm:text-xs">
                     <div className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-center">
-                      <span>{cartridge.number}</span>{' · '}<time>{cartridge.releaseDate}</time>{' · '}<span>{cartridge.publisher}</span>
+                      <span>{cartridge.number}</span>{cartridge.edition === '改版' ? <> · <span className="font-semibold text-error">{copy.modified}</span></> : null}{' · '}<time>{cartridge.releaseDate}</time>{' · '}<span>{cartridge.publisher}</span>
                     </div>
                     <button
                       aria-label={`${owned.includes(cartridge.id) ? copy.open : copy.buy}${cartridge.title}`}
@@ -304,8 +328,8 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
 }
 
 function getCopy(lang: Locale) {
-  if (lang === 'en') return { title: 'FC Cartridge Collection', chinese: 'Chinese', gameName: 'Game name', random: 'Random', popular: 'Most popular', updatedAt: 'Last updated', genre: 'Game genre', publisher: 'Publisher', releaseDate: 'Release date', search: 'Search', searchPlaceholder: 'Game name or keyword', confirm: 'Confirm', confirmTitle: 'Collect cartridge?', confirmMessage: (title: string, price: number) => `Spend ${price} coins to collect ${title}?`, cancel: 'Cancel', confirmCollect: 'Collect', open: 'Play ', buy: 'Collect ', buyLabel: 'Collect', play: 'Collected · Play', loginRequired: 'Sign in before collecting cartridges', insufficient: 'Not enough coins. 50 coins required.', purchased: 'Cartridge added to FC Collection', failed: 'Collection could not be saved', count: (count: number) => `${count} cartridges available`, collectionHint: 'collected cartridges can be switched and played directly in the mobile FC Collection', ownedCount: (count: number) => `${count} collected` }
-  if (lang === 'zh-TW') return { title: 'FC卡帶收藏', chinese: '中文', gameName: '遊戲名稱', random: '隨機', popular: '最受歡迎', updatedAt: '更新時間', genre: '遊戲類型', publisher: '遊戲廠商', releaseDate: '發行日期', search: '搜尋', searchPlaceholder: '遊戲名稱或關鍵詞', confirm: '確認', confirmTitle: '確認收藏卡帶？', confirmMessage: (title: string, price: number) => `將花費 ${price} 個金幣收藏《${title}》，是否繼續？`, cancel: '取消', confirmCollect: '確認收藏', open: '遊玩', buy: '收藏', buyLabel: '收藏', play: '已收藏 · 遊玩', loginRequired: '請先登入玩家帳號再收藏卡帶', insufficient: '金幣不足，需要50個金幣', purchased: '收藏成功，卡帶已加入FC時光機', failed: '卡帶收藏記錄保存失敗', count: (count: number) => `目前共有 ${count} 款卡帶`, collectionHint: '收藏後可直接在手機FC時光機換卡帶遊玩', ownedCount: (count: number) => `已收藏 ${count} 款` }
-  if (lang === 'ja') return { title: 'FCカセットコレクション', chinese: '中国語', gameName: 'ゲーム名', random: 'ランダム', popular: '人気順', updatedAt: '更新日時', genre: 'ジャンル', publisher: 'メーカー', releaseDate: '発売日', search: '検索', searchPlaceholder: 'ゲーム名またはキーワード', confirm: '確認', confirmTitle: 'カセットをコレクションしますか？', confirmMessage: (title: string, price: number) => `${price}コインで「${title}」をコレクションしますか？`, cancel: 'キャンセル', confirmCollect: 'コレクション', open: 'プレイ：', buy: 'コレクション：', buyLabel: 'コレクション', play: '収集済み・プレイ', loginRequired: 'カセットのコレクションにはログインが必要です', insufficient: 'コインが不足しています（50枚必要）', purchased: 'FCコレクションに追加しました', failed: 'コレクション情報を保存できませんでした', count: (count: number) => `${count}本のカセット`, collectionHint: 'コレクション後はスマホのFCコレクションで交換して遊べます', ownedCount: (count: number) => `${count}本収集済み` }
-  return { title: 'FC卡带收藏', chinese: '中文', gameName: '游戏名称', random: '随机', popular: '最受欢迎', updatedAt: '更新时间', genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', search: '搜索', searchPlaceholder: '游戏名称或关键词', confirm: '确认', confirmTitle: '确认收藏卡带？', confirmMessage: (title: string, price: number) => `将花费 ${price} 个金币收藏《${title}》，是否继续？`, cancel: '取消', confirmCollect: '确认收藏', open: '游玩', buy: '收藏', buyLabel: '收藏', play: '已收藏 · 游玩', loginRequired: '请先登录玩家账号再收藏卡带', insufficient: '金币不足，需要50个金币', purchased: '收藏成功，卡带已加入FC时光机', failed: '卡带收藏记录保存失败', count: (count: number) => `目前共有 ${count} 款卡带`, collectionHint: '收藏可直接在手机FC时光机换卡带游玩', ownedCount: (count: number) => `已收藏 ${count} 款` }
+  if (lang === 'en') return { title: 'FC Cartridge Collection', chinese: 'Chinese', gameName: 'Game name', random: 'Random', genre: 'Game genre', publisher: 'Publisher', releaseDate: 'Release date', modified: 'Modified', allLetters: 'All', search: 'Search', searchPlaceholder: 'Game name or keyword', confirm: 'Confirm', confirmTitle: 'Collect cartridge?', confirmMessage: (title: string, price: number) => `Spend ${price} coins to collect ${title}?`, cancel: 'Cancel', confirmCollect: 'Collect', open: 'Play ', buy: 'Collect ', buyLabel: 'Collect', play: 'Collected · Play', loginRequired: 'Sign in before collecting cartridges', insufficient: 'Not enough coins. 50 coins required.', purchased: 'Cartridge added to FC Collection', failed: 'Collection could not be saved', count: (count: number) => `${count} cartridges available`, collectionHint: 'collected cartridges can be switched and played directly in the mobile FC Collection', ownedCount: (count: number) => `${count} collected` }
+  if (lang === 'zh-TW') return { title: 'FC卡帶收藏', chinese: '中文', gameName: '遊戲名稱', random: '隨機', genre: '遊戲類型', publisher: '遊戲廠商', releaseDate: '發行日期', modified: '改版', allLetters: '全部', search: '搜尋', searchPlaceholder: '遊戲名稱或關鍵詞', confirm: '確認', confirmTitle: '確認收藏卡帶？', confirmMessage: (title: string, price: number) => `將花費 ${price} 個金幣收藏《${title}》，是否繼續？`, cancel: '取消', confirmCollect: '確認收藏', open: '遊玩', buy: '收藏', buyLabel: '收藏', play: '已收藏 · 遊玩', loginRequired: '請先登入玩家帳號再收藏卡帶', insufficient: '金幣不足，需要50個金幣', purchased: '收藏成功，卡帶已加入FC時光機', failed: '卡帶收藏記錄保存失敗', count: (count: number) => `目前共有 ${count} 款卡帶`, collectionHint: '收藏後可直接在手機FC時光機換卡帶遊玩', ownedCount: (count: number) => `已收藏 ${count} 款` }
+  if (lang === 'ja') return { title: 'FCカセットコレクション', chinese: '中国語', gameName: 'ゲーム名', random: 'ランダム', genre: 'ジャンル', publisher: 'メーカー', releaseDate: '発売日', modified: '改造版', allLetters: 'すべて', search: '検索', searchPlaceholder: 'ゲーム名またはキーワード', confirm: '確認', confirmTitle: 'カセットをコレクションしますか？', confirmMessage: (title: string, price: number) => `${price}コインで「${title}」をコレクションしますか？`, cancel: 'キャンセル', confirmCollect: 'コレクション', open: 'プレイ：', buy: 'コレクション：', buyLabel: 'コレクション', play: '収集済み・プレイ', loginRequired: 'カセットのコレクションにはログインが必要です', insufficient: 'コインが不足しています（50枚必要）', purchased: 'FCコレクションに追加しました', failed: 'コレクション情報を保存できませんでした', count: (count: number) => `${count}本のカセット`, collectionHint: 'コレクション後はスマホのFCコレクションで交換して遊べます', ownedCount: (count: number) => `${count}本収集済み` }
+  return { title: 'FC卡带收藏', chinese: '中文', gameName: '游戏名称', random: '随机', genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', modified: '改版', allLetters: '全部', search: '搜索', searchPlaceholder: '游戏名称或关键词', confirm: '确认', confirmTitle: '确认收藏卡带？', confirmMessage: (title: string, price: number) => `将花费 ${price} 个金币收藏《${title}》，是否继续？`, cancel: '取消', confirmCollect: '确认收藏', open: '游玩', buy: '收藏', buyLabel: '收藏', play: '已收藏 · 游玩', loginRequired: '请先登录玩家账号再收藏卡带', insufficient: '金币不足，需要50个金币', purchased: '收藏成功，卡带已加入FC时光机', failed: '卡带收藏记录保存失败', count: (count: number) => `目前共有 ${count} 款卡带`, collectionHint: '收藏可直接在手机FC时光机换卡带游玩', ownedCount: (count: number) => `已收藏 ${count} 款` }
 }
