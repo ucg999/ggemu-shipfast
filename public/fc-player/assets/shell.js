@@ -41,7 +41,7 @@ const CAPSULES = core.pad.capsules || [];
 const DIRECTIONS = ['up', 'down', 'left', 'right'];
 const ACTION_IDS = ACTIONS.map(b => b.id);
 const uiState = {};
-DIRECTIONS.concat(ACTION_IDS, CAPSULES.map(b => b.id)).forEach(k => { uiState[k] = false; });
+DIRECTIONS.concat(ACTION_IDS, ['ab'], CAPSULES.map(b => b.id)).forEach(k => { uiState[k] = false; });
 const hitboxes = {};
 let layoutKey = '';
 let animationFrameId = 0;
@@ -104,6 +104,17 @@ ACTIONS.forEach((btn, i) => {
 const t = i - (n - 1) / 2;
 hitboxes[btn.id] = { type: 'circle', x: clusterCx + t * sx + (btn.id === 'a' ? r * 0.45 : 0), y: cy - t * sy, r: r, hr: hr };
 });
+const aButton = hitboxes.a;
+if (aButton) {
+const abWidth = 66;
+const abHeight = 34;
+const abX = aButton.x - abWidth / 2;
+const abY = controlsY + 18;
+hitboxes.ab = {
+type: 'rect', x: abX, y: abY, w: abWidth, h: abHeight,
+hx: abX - 8, hy: abY - 7, hw: abWidth + 16, hh: abHeight + 14
+};
+}
 const actionBottom = ACTIONS.reduce((bottom, btn) => {
 const box = hitboxes[btn.id];
 return Math.max(bottom, box ? box.y + box.r + 22 : 0);
@@ -304,6 +315,20 @@ mainCtx.textBaseline = 'middle';
 mainCtx.fillText(text, hb.x + hb.w / 2, hb.y + hb.h + 15);
 };
 CAPSULES.forEach(btn => drawCapsule(hitboxes[btn.id], uiState[btn.id], btn.label));
+if (hitboxes.ab) {
+const combo = hitboxes.ab;
+mainCtx.fillStyle = uiState.ab ? 'rgba(96, 96, 103, 0.58)' : 'rgba(178, 178, 184, 0.72)';
+drawRoundRect(mainCtx, combo.x, combo.y, combo.w, combo.h, combo.h / 2);
+mainCtx.fill();
+mainCtx.strokeStyle = 'rgba(255, 255, 255, 0.72)';
+mainCtx.lineWidth = 1.5;
+mainCtx.stroke();
+mainCtx.fillStyle = '#4b4b52';
+mainCtx.font = '400 14px sans-serif';
+mainCtx.textAlign = 'center';
+mainCtx.textBaseline = 'middle';
+mainCtx.fillText('AB', combo.x + combo.w / 2, combo.y + combo.h / 2);
+}
 if (hitboxes.capsuleRowY !== undefined) {
 mainCtx.fillStyle = 'rgba(17, 17, 20, 0.92)';
 mainCtx.font = '12px sans-serif';
@@ -354,6 +379,7 @@ if (nearest) hits.push(nearest);
 CAPSULES.forEach(btn => {
 if (pointInRect(x, y, hitboxes[btn.id])) hits.push(btn.id);
 });
+if (pointInRect(x, y, hitboxes.ab)) hits.push('ab');
 return hits;
 }
 function activateAudio() {
@@ -366,6 +392,10 @@ const updateTouches = (touches) => {
 const newActive = new Set();
 for (let i = 0; i < touches.length; i++) {
 hitTest(touches[i].clientX, touches[i].clientY).forEach(k => newActive.add(k));
+}
+if (newActive.has('ab')) {
+newActive.add('a');
+newActive.add('b');
 }
 let changed = false;
 Object.keys(uiState).forEach(key => {
@@ -447,21 +477,6 @@ clearTimeout(toastTimeout);
 toastTimeout = setTimeout(() => { el.classList.remove('show'); }, 2000);
 }
 window.GGEMU_TOAST = showToast;
-const favoriteButton = document.getElementById('btn-favorite');
-let isFavorite = false;
-try { isFavorite = localStorage.getItem('ggemu-fc-favorite') === 'yes'; } catch (error) {}
-function updateFavoriteButton() {
-favoriteButton.setAttribute('aria-pressed', String(isFavorite));
-favoriteButton.setAttribute('aria-label', isFavorite ? '取消收藏FC收藏馆' : '收藏FC收藏馆');
-favoriteButton.title = isFavorite ? '取消收藏' : '收藏';
-}
-updateFavoriteButton();
-favoriteButton.addEventListener('click', () => {
-isFavorite = !isFavorite;
-try { localStorage.setItem('ggemu-fc-favorite', isFavorite ? 'yes' : 'no'); } catch (error) {}
-updateFavoriteButton();
-showToast(isFavorite ? '已收藏' : '已取消收藏');
-});
 document.getElementById('btn-share').addEventListener('click', async () => {
 let shareUrl = window.location.href;
 try {
@@ -651,7 +666,7 @@ function setCartridgeScreen(open) {
 if (open) syncCartridgeScreenBounds();
 cartridgeScreen.classList.toggle('is-open', open);
 cartridgeScreen.setAttribute('aria-hidden', String(!open));
-core.setPaused(open || isPaused);
+core.setPaused(open);
 }
 window.addEventListener('resize', () => {
 if (cartridgeScreen.classList.contains('is-open')) syncCartridgeScreenBounds();
@@ -679,14 +694,6 @@ if (await canOpenCartridgeScreen()) setCartridgeScreen(true);
 closeCartridgeButton.addEventListener('click', () => setCartridgeScreen(false));
 cartridgeScreen.addEventListener('click', event => {
 if (event.target === cartridgeScreen) setCartridgeScreen(false);
-});
-let isPaused = false;
-const pauseButton = document.getElementById('btn-record');
-pauseButton.addEventListener('click', () => {
-isPaused = !isPaused;
-core.setPaused(isPaused);
-pauseButton.textContent = isPaused ? '继续' : '暂停';
-showToast(isPaused ? '游戏已暂停' : '继续游戏');
 });
 resize();
 bindControls();

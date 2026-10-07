@@ -17,24 +17,11 @@
       <strong>请竖屏游玩</strong>
       <span>旋转手机回到竖屏后即可继续操作</span>
     </div>
-    <div id="top-actions" aria-label="页面操作">
-      <button id="btn-favorite" type="button" aria-label="收藏FC收藏馆" aria-pressed="false" title="收藏">
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z" />
-        </svg>
-      </button>
-      <span aria-hidden="true"></span>
-      <button id="btn-share" type="button" aria-label="分享FC收藏馆" title="分享">
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="M12 3v12m0-12-4 4m4-4 4 4M6 11v8h12v-8" />
-        </svg>
-      </button>
-    </div>
     <div id="toolbar">
       <button id="btn-save">存档</button>
       <button id="btn-load">读档</button>
       <button id="btn-shot">换卡带</button>
-      <button id="btn-record">暂停</button>
+      <button id="btn-share">分享</button>
     </div>
     <section id="cartridge-screen" class="cartridge-screen" aria-hidden="true" aria-label="FC卡带选择">
       <div class="cartridge-panel" role="dialog" aria-modal="true" aria-labelledby="cartridge-title">
@@ -80,10 +67,17 @@
               </figure>
               <figure class="cartridge-slide" data-cartridge-id="karateka-street-fighter">
                 <button class="cartridge-card" type="button" data-game-id="karateka-street-fighter" data-game-name="空手道 街霸版" data-rom="./assets/karateka-street-fighter.nes">
-                  <span class="cartridge-number">082号</span>
+                  <span class="cartridge-number">1054号</span>
                   <img src="./assets/cartridges/karateka-street-fighter.min.webp" alt="空手道 街霸版 FC卡带" decoding="async" />
                 </button>
                 <figcaption>空手道 街霸版</figcaption>
+              </figure>
+              <figure class="cartridge-slide" data-cartridge-id="baoxiao-sanguo">
+                <button class="cartridge-card" type="button" data-game-id="baoxiao-sanguo" data-game-name="爆笑三国" data-rom="./assets/baoxiao-sanguo.nes">
+                  <span class="cartridge-number">1055号</span>
+                  <img src="./assets/cartridges/baoxiao-sanguo.min.webp" alt="爆笑三国 FC卡带" decoding="async" />
+                </button>
+                <figcaption>爆笑三国</figcaption>
               </figure>
             </div>
             <p id="cartridge-empty" hidden>还没有收藏卡带<br /><small>请到FC卡带收藏使用金币购买</small></p>
