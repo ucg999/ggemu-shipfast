@@ -43,6 +43,7 @@ request.onerror = function () { reject(request.error || new Error('读取存档�
 let nes = null;
 let ready = false;
 let paused = false;
+let activeMapper = 0;
 const offscreen = document.createElement('canvas');
 offscreen.width = WIDTH;
 offscreen.height = HEIGHT;
@@ -108,7 +109,7 @@ patched += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + step, 
 }
 return patched;
 }
-function installMapper15() {
+function installMapper15(initializeBanks) {
 const mapper = nes.mmap;
 const originalWrite = mapper.write.bind(mapper);
 mapper.write = function (address, value) {
@@ -149,6 +150,7 @@ mapper.load8kRomBank(base8 + 1, 0xe000);
 }
 nes.ppu.setMirroring((value & 0x40) ? nes.rom.HORIZONTAL_MIRRORING : nes.rom.VERTICAL_MIRRORING);
 };
+if (!initializeBanks) return;
 mapper.load8kRomBank(0, 0x8000);
 mapper.load8kRomBank(1, 0xa000);
 mapper.load8kRomBank(2, 0xc000);
@@ -172,6 +174,7 @@ boot: function (romData, api) {
 stateKey = 'nes_save_state_' + String(api.gameId || 'super_mario_bros_world').replace(/[^a-z0-9_-]/gi, '_');
 const previousNes = nes;
 const previousReady = ready;
+const previousMapper = activeMapper;
 ready = false;
 paused = false;
 writeCursor = 0;
@@ -195,10 +198,12 @@ const mapper = ((binary.charCodeAt(6) >> 4) | (binary.charCodeAt(7) & 0xf0));
 if (mapper !== 0 && mapper !== 4 && mapper !== 15) throw new Error('暂不支持Mapper ' + mapper);
 nes = new window.jsnes.NES({ onFrame: onFrame, onAudioSample: onAudioSample });
 nes.loadROM(mapper === 15 ? prepareMapper15Rom(binary) : binary);
-if (mapper === 15) installMapper15();
+activeMapper = mapper;
+if (mapper === 15) installMapper15(true);
 } catch (e) {
 nes = previousNes;
 ready = previousReady;
+activeMapper = previousMapper;
 api.toast('ROM 解析失败');
 console.error(e);
 throw e;
@@ -253,6 +258,9 @@ try { localStorage.removeItem(stateKey); } catch (error) {}
 }
 if (!state) { window.GGEMU_TOAST('没有找到存档记录！'); return; }
 nes.fromJSON(state);
+// fromJSON rebuilds jsnes' stock mapper. Reattach Mapper 15 without
+// replacing the restored PRG banks, otherwise this cartridge may crash later.
+if (activeMapper === 15) installMapper15(false);
 window.GGEMU_TOAST('读档成功！');
 } catch (e) {
 window.GGEMU_TOAST('读档失败：' + e.message);
