@@ -116,25 +116,38 @@ if (address < 0x8000) {
 originalWrite(address, value);
 return;
 }
-const bank = (value & 0x3f) * 2;
-const reverse = (value & 0x80) !== 0;
-if (address === 0x8000) {
-mapper.load8kRomBank(bank + (reverse ? 1 : 0), 0x8000);
-mapper.load8kRomBank(bank + (reverse ? 0 : 1), 0xa000);
-mapper.load8kRomBank(bank + (reverse ? 3 : 2), 0xc000);
-mapper.load8kRomBank(bank + (reverse ? 2 : 3), 0xe000);
-nes.ppu.setMirroring((value & 0x40) ? nes.rom.HORIZONTAL_MIRRORING : nes.rom.VERTICAL_MIRRORING);
-} else if (address === 0x8001 || address === 0x8003) {
-mapper.load8kRomBank(bank + (reverse ? 1 : 0), 0xc000);
-mapper.load8kRomBank(bank + (reverse ? 0 : 1), 0xe000);
-if (address === 0x8003) nes.ppu.setMirroring((value & 0x40) ? nes.rom.HORIZONTAL_MIRRORING : nes.rom.VERTICAL_MIRRORING);
-} else if (address === 0x8002) {
-const selected = bank + (reverse ? 1 : 0);
+const mode = address & 0x03;
+const prg16 = value & 0x3f;
+const base8 = prg16 * 2;
+if (mode === 0) {
+// NROM-256: bit 0 comes from CPU A14, so select an aligned 32 KiB pair.
+const aligned = (prg16 & 0x3e) * 2;
+mapper.load8kRomBank(aligned, 0x8000);
+mapper.load8kRomBank(aligned + 1, 0xa000);
+mapper.load8kRomBank(aligned + 2, 0xc000);
+mapper.load8kRomBank(aligned + 3, 0xe000);
+} else if (mode === 1) {
+// UNROM: switch the lower 16 KiB and keep the last bank of its 128 KiB block fixed.
+const fixed8 = ((prg16 & 0x38) | 0x07) * 2;
+mapper.load8kRomBank(base8, 0x8000);
+mapper.load8kRomBank(base8 + 1, 0xa000);
+mapper.load8kRomBank(fixed8, 0xc000);
+mapper.load8kRomBank(fixed8 + 1, 0xe000);
+} else if (mode === 2) {
+// NROM-64: bit 7 supplies PRG A13; mirror one 8 KiB bank four times.
+const selected = base8 + ((value >> 7) & 1);
 mapper.load8kRomBank(selected, 0x8000);
 mapper.load8kRomBank(selected, 0xa000);
 mapper.load8kRomBank(selected, 0xc000);
 mapper.load8kRomBank(selected, 0xe000);
+} else {
+// NROM-128: mirror the selected 16 KiB bank into both halves.
+mapper.load8kRomBank(base8, 0x8000);
+mapper.load8kRomBank(base8 + 1, 0xa000);
+mapper.load8kRomBank(base8, 0xc000);
+mapper.load8kRomBank(base8 + 1, 0xe000);
 }
+nes.ppu.setMirroring((value & 0x40) ? nes.rom.HORIZONTAL_MIRRORING : nes.rom.VERTICAL_MIRRORING);
 };
 mapper.load8kRomBank(0, 0x8000);
 mapper.load8kRomBank(1, 0xa000);
@@ -157,28 +170,42 @@ video: function () { return { w: WIDTH, h: HEIGHT }; },
 source: function () { return offscreen; },
 boot: function (romData, api) {
 stateKey = 'nes_save_state_' + String(api.gameId || 'super_mario_bros_world').replace(/[^a-z0-9_-]/gi, '_');
-nes = new window.jsnes.NES({ onFrame: onFrame, onAudioSample: onAudioSample });
+const previousNes = nes;
+const previousReady = ready;
+ready = false;
+paused = false;
+writeCursor = 0;
+readCursor = 0;
+samplesL.fill(0);
+samplesR.fill(0);
 try {
+const bytes = typeof romData === 'string'
+? Uint8Array.from(window.atob(romData), char => char.charCodeAt(0))
+: (romData instanceof Uint8Array ? romData : new Uint8Array(romData));
+if (bytes.length < 16 || bytes[0] !== 0x4e || bytes[1] !== 0x45 || bytes[2] !== 0x53 || bytes[3] !== 0x1a) throw new Error('无效的NES文件头');
+const trainerSize = (bytes[6] & 0x04) ? 512 : 0;
+const expectedSize = 16 + trainerSize + bytes[4] * 16384 + bytes[5] * 8192;
+if (bytes.length < expectedSize) throw new Error('ROM文件不完整');
 let binary = '';
-if (typeof romData === 'string') {
-binary = window.atob(romData);
-} else {
-const bytes = romData instanceof Uint8Array ? romData : new Uint8Array(romData);
 const chunkSize = 0x8000;
 for (let offset = 0; offset < bytes.length; offset += chunkSize) {
 binary += String.fromCharCode.apply(null, bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length)));
 }
-}
 const mapper = ((binary.charCodeAt(6) >> 4) | (binary.charCodeAt(7) & 0xf0));
+if (mapper !== 0 && mapper !== 4 && mapper !== 15) throw new Error('暂不支持Mapper ' + mapper);
+nes = new window.jsnes.NES({ onFrame: onFrame, onAudioSample: onAudioSample });
 nes.loadROM(mapper === 15 ? prepareMapper15Rom(binary) : binary);
 if (mapper === 15) installMapper15();
 } catch (e) {
+nes = previousNes;
+ready = previousReady;
 api.toast('ROM 解析失败');
 console.error(e);
-return;
+throw e;
 }
 ready = true;
 api.onReady();
+return true;
 },
 tick: function () {
 if (!ready || paused || document.hidden) return;

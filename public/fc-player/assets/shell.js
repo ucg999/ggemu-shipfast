@@ -452,11 +452,23 @@ animationRunning = false;
 return;
 }
 if (core.tick) {
-try { core.tick(); } catch (e) { console.error(e); }
+try {
+core.tick();
+runtimeErrorCount = 0;
+} catch (e) {
+runtimeErrorCount += 1;
+console.error(e);
+if (runtimeErrorCount >= 3) {
+stopRenderLoop();
+showToast('游戏运行异常，请重新插入卡带');
+return;
+}
+}
 }
 renderUI();
 animationFrameId = requestAnimationFrame(renderFrame);
 }
+let runtimeErrorCount = 0;
 function startRenderLoop() {
 if (animationRunning) return;
 animationRunning = true;
@@ -698,12 +710,13 @@ if (event.target === cartridgeScreen) setCartridgeScreen(false);
 resize();
 bindControls();
 async function loadRom(url, gameId, gameName) {
-return fetch(url)
+runtimeErrorCount = 0;
+return fetchRomWithRetry(url)
 .then(function (response) {
-if (!response.ok) throw new Error('ROM request failed: ' + response.status);
 return response.arrayBuffer();
 })
 .then(function (buffer) {
+if (buffer.byteLength < 16) throw new Error('ROM response is incomplete');
 core.boot(new Uint8Array(buffer), {
 gameId: gameId,
 toast: showToast,
@@ -719,6 +732,23 @@ showToast('游戏加载失败，请重试');
 console.error(error);
 throw error;
 });
+}
+async function fetchRomWithRetry(url) {
+let firstError = null;
+for (let attempt = 0; attempt < 2; attempt += 1) {
+const controller = new AbortController();
+const timeout = window.setTimeout(() => controller.abort(), 12000);
+try {
+const response = await fetch(url, { cache: attempt === 0 ? 'default' : 'reload', signal: controller.signal });
+if (!response.ok) throw new Error('ROM request failed: ' + response.status);
+return response;
+} catch (error) {
+firstError = firstError || error;
+} finally {
+window.clearTimeout(timeout);
+}
+}
+throw firstError || new Error('ROM request failed');
 }
 const requestedCartridge = new URLSearchParams(window.location.search).get('cartridge');
 const requestedCard = cartridgeCards.find(card => card.dataset.gameId === requestedCartridge && card.dataset.rom);
