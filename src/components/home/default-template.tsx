@@ -231,20 +231,19 @@ export function DefaultHomeTemplate(
           Switch
         </Link>
       </nav>
-      <nav aria-label="FC时光机和FC卡带收藏" className="grid w-full grid-cols-2 bg-amber-300 text-black lg:hidden">
+      <nav aria-label="FC时光机和GB游戏机" className="grid w-full grid-cols-2 bg-amber-300 text-black lg:hidden">
         <a
           className="flex h-9 items-center justify-center border-r border-black/15 text-sm font-semibold transition hover:bg-amber-400"
           href="/fc"
         >
           {lang === 'en' ? 'FC Time Machine' : lang === 'zh-TW' ? 'FC時光機' : 'FC时光机'}
         </a>
-        <Link
+        <a
           className="flex h-9 items-center justify-center text-sm font-semibold transition hover:bg-amber-400"
-          params={{ locale: lang, platformId: 'fc-cartridges' }}
-          to="/$locale/platform/$platformId"
+          href="/gb"
         >
-          {lang === 'en' ? 'FC Cartridges' : lang === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}
-        </Link>
+          {lang === 'en' ? 'GB Console' : lang === 'zh-TW' ? 'GB遊戲機' : 'GB游戏机'}
+        </a>
       </nav>
       <nav
         aria-label={modeCopyLabel(lang)}

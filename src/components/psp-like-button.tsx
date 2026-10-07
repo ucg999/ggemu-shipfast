@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import type { Locale } from '#/lib/ggemu'
-import { getMemberSession, requestMemberLogin, useMemberSession } from '#/lib/member-client'
+import { fetchWithTimeoutRetry } from '#/lib/fetch-with-timeout-retry'
 
 let cachedLikes: Record<string, number> | null = null
 let cachedLiked = new Set<string>()
 let likesRequest: Promise<Record<string, number>> | null = null
 const listeners = new Set<(likes: Record<string, number>) => void>()
-let memberSessionRequest: ReturnType<typeof getMemberSession> | null = null
 
 function publish(likes: Record<string, number>) {
   cachedLikes = likes
@@ -16,7 +15,7 @@ function publish(likes: Record<string, number>) {
 
 function loadLikes() {
   if (cachedLikes) return Promise.resolve(cachedLikes)
-  if (!likesRequest) likesRequest = fetch('/api/psp-likes').then(async response => {
+  if (!likesRequest) likesRequest = fetchWithTimeoutRetry('/api/psp-likes').then(async response => {
     if (!response.ok) throw new Error('psp_likes_unavailable')
     const data = await response.json() as { likes?: Record<string, number>; liked?: string[] }
     const likes = data.likes ?? {}
@@ -38,7 +37,7 @@ export function useGameLikeCounts() {
 }
 
 export async function addPspGameLike(gameId: string) {
-  const response = await fetch('/api/psp-likes', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gameId }) })
+  const response = await fetchWithTimeoutRetry('/api/psp-likes', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gameId }) })
   const data = await response.json() as { error?: string; likeCount?: number; liked?: boolean; incremented?: boolean }
   if (!response.ok || typeof data.likeCount !== 'number') throw new Error(data.error || 'like_failed')
   cachedLiked.add(gameId)
@@ -46,39 +45,32 @@ export async function addPspGameLike(gameId: string) {
   return data
 }
 
+export function useAutomaticGameLike(gameId: string) {
+  const recordedGameId = useRef('')
+  useEffect(() => {
+    if (recordedGameId.current === gameId) return
+    recordedGameId.current = gameId
+    void addPspGameLike(gameId).catch(() => {})
+  }, [gameId])
+}
+
 export function PspLikeButton({ gameId, locale, className = '' }: { gameId: string; locale: Locale; className?: string }) {
-  const member = useMemberSession()
   const [count, setCount] = useState(() => cachedLikes?.[gameId] ?? 0)
   const [liked, setLiked] = useState(() => cachedLiked.has(gameId))
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
 
   useEffect(() => {
-    if (!memberSessionRequest) memberSessionRequest = getMemberSession().catch(() => ({ member: null, remainingToday: 999 }))
     const sync = (likes: Record<string, number>) => { setCount(likes[gameId] ?? 0); setLiked(cachedLiked.has(gameId)) }
     listeners.add(sync)
     void loadLikes().then(sync).catch(() => {})
     return () => { listeners.delete(sync) }
   }, [gameId])
 
-  const loginRequired = locale === 'en' ? 'Sign in to like' : '登录玩家账号后即可点赞'
   const label = locale === 'en' ? `Like this game, ${count} likes` : `给这款游戏点赞，当前 ${count} 个赞`
 
   async function like(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault(); event.stopPropagation()
-    const activeMember = member ?? (await getMemberSession().catch(() => ({ member: null, remainingToday: 999 }))).member
-    if (!activeMember) {
-      setNotice(loginRequired)
-      requestMemberLogin()
-      window.setTimeout(() => setNotice(''), 1800)
-      return
-    }
-    if (activeMember.needsNickname) {
-      setNotice(locale === 'en' ? 'Set your nickname first' : '请先在玩家账号中设置昵称')
-      requestMemberLogin()
-      window.setTimeout(() => setNotice(''), 2200)
-      return
-    }
     if (busy) return
     setBusy(true); setCount(value => value + 1)
     try {
@@ -95,6 +87,6 @@ export function PspLikeButton({ gameId, locale, className = '' }: { gameId: stri
 
   return <span className={`psp-like-wrap ${className}`}>
     {notice ? <span className="psp-like-notice" role="status">{notice}</span> : null}
-    <button aria-label={label} className={`psp-like-button ${liked ? 'is-liked' : ''}`} disabled={busy} onClick={like} title={member ? label : loginRequired} type="button"><i aria-hidden="true" className={liked ? 'ri-heart-fill' : 'ri-heart-line'} /><span>{count.toLocaleString()}</span></button>
+    <button aria-label={label} className={`psp-like-button ${liked ? 'is-liked' : ''}`} disabled={busy} onClick={like} title={label} type="button"><i aria-hidden="true" className={liked ? 'ri-heart-fill' : 'ri-heart-line'} /><span>{count.toLocaleString()}</span></button>
   </span>
 }

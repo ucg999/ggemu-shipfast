@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LocaleRouteImport } from './routes/$locale'
 import { Route as FcRouteImport } from './routes/fc'
+import { Route as GbRouteImport } from './routes/gb'
 import { Route as GbaRouteImport } from './routes/gba'
 import { Route as ManifestDotwebmanifestRouteImport } from './routes/manifest[.]webmanifest'
 import { Route as RandomRouteImport } from './routes/random'
@@ -45,6 +46,7 @@ import { Route as LocaleWantedRouteImport } from './routes/$locale.wanted'
 import { Route as ApiCoinChallengeCommunityRouteImport } from './routes/api.coin-challenge-community'
 import { Route as ApiCoinRankingsRouteImport } from './routes/api.coin-rankings'
 import { Route as ApiFcCartridgesRouteImport } from './routes/api.fc-cartridges'
+import { Route as ApiGbCartridgesRouteImport } from './routes/api.gb-cartridges'
 import { Route as ApiLocaleSuggestionRouteImport } from './routes/api/locale-suggestion'
 import { Route as ApiMemberRouteImport } from './routes/api.member'
 import { Route as ApiPspLikesRouteImport } from './routes/api.psp-likes'
@@ -78,6 +80,11 @@ const LocaleRoute = LocaleRouteImport.update({
 const FcRoute = FcRouteImport.update({
   id: '/fc',
   path: '/fc',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GbRoute = GbRouteImport.update({
+  id: '/gb',
+  path: '/gb',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GbaRoute = GbaRouteImport.update({
@@ -246,6 +253,11 @@ const ApiFcCartridgesRoute = ApiFcCartridgesRouteImport.update({
   path: '/api/fc-cartridges',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGbCartridgesRoute = ApiGbCartridgesRouteImport.update({
+  id: '/api/gb-cartridges',
+  path: '/api/gb-cartridges',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiLocaleSuggestionRoute = ApiLocaleSuggestionRouteImport.update({
   id: '/api/locale-suggestion',
   path: '/api/locale-suggestion',
@@ -350,6 +362,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$locale': typeof LocaleRouteWithChildren
   '/fc': typeof FcRoute
+  '/gb': typeof GbRoute
   '/gba': typeof GbaRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/random': typeof RandomRoute
@@ -382,6 +395,7 @@ export interface FileRoutesByFullPath {
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
+  '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
@@ -406,6 +420,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/fc': typeof FcRoute
+  '/gb': typeof GbRoute
   '/gba': typeof GbaRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/random': typeof RandomRoute
@@ -438,6 +453,7 @@ export interface FileRoutesByTo {
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
+  '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
@@ -464,6 +480,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$locale': typeof LocaleRouteWithChildren
   '/fc': typeof FcRoute
+  '/gb': typeof GbRoute
   '/gba': typeof GbaRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/random': typeof RandomRoute
@@ -496,6 +513,7 @@ export interface FileRoutesById {
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
+  '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
@@ -523,6 +541,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$locale'
     | '/fc'
+    | '/gb'
     | '/gba'
     | '/manifest.webmanifest'
     | '/random'
@@ -555,6 +574,7 @@ export interface FileRouteTypes {
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
     | '/api/fc-cartridges'
+    | '/api/gb-cartridges'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
@@ -579,6 +599,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/fc'
+    | '/gb'
     | '/gba'
     | '/manifest.webmanifest'
     | '/random'
@@ -611,6 +632,7 @@ export interface FileRouteTypes {
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
     | '/api/fc-cartridges'
+    | '/api/gb-cartridges'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
@@ -636,6 +658,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$locale'
     | '/fc'
+    | '/gb'
     | '/gba'
     | '/manifest.webmanifest'
     | '/random'
@@ -668,6 +691,7 @@ export interface FileRouteTypes {
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
     | '/api/fc-cartridges'
+    | '/api/gb-cartridges'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
@@ -694,6 +718,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LocaleRoute: typeof LocaleRouteWithChildren
   FcRoute: typeof FcRoute
+  GbRoute: typeof GbRoute
   GbaRoute: typeof GbaRoute
   ManifestDotwebmanifestRoute: typeof ManifestDotwebmanifestRoute
   RandomRoute: typeof RandomRoute
@@ -707,6 +732,7 @@ export interface RootRouteChildren {
   ApiCoinChallengeCommunityRoute: typeof ApiCoinChallengeCommunityRoute
   ApiCoinRankingsRoute: typeof ApiCoinRankingsRoute
   ApiFcCartridgesRoute: typeof ApiFcCartridgesRoute
+  ApiGbCartridgesRoute: typeof ApiGbCartridgesRoute
   ApiLocaleSuggestionRoute: typeof ApiLocaleSuggestionRoute
   ApiMemberRoute: typeof ApiMemberRoute
   ApiPspLikesRoute: typeof ApiPspLikesRoute
@@ -738,6 +764,13 @@ declare module '@tanstack/react-router' {
       path: '/fc'
       fullPath: '/fc'
       preLoaderRoute: typeof FcRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gb': {
+      id: '/gb'
+      path: '/gb'
+      fullPath: '/gb'
+      preLoaderRoute: typeof GbRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gba': {
@@ -969,6 +1002,13 @@ declare module '@tanstack/react-router' {
       path: '/api/fc-cartridges'
       fullPath: '/api/fc-cartridges'
       preLoaderRoute: typeof ApiFcCartridgesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/gb-cartridges': {
+      id: '/api/gb-cartridges'
+      path: '/api/gb-cartridges'
+      fullPath: '/api/gb-cartridges'
+      preLoaderRoute: typeof ApiGbCartridgesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/locale-suggestion': {
@@ -1211,6 +1251,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LocaleRoute: LocaleRouteWithChildren,
   FcRoute: FcRoute,
+  GbRoute: GbRoute,
   GbaRoute: GbaRoute,
   ManifestDotwebmanifestRoute: ManifestDotwebmanifestRoute,
   RandomRoute: RandomRoute,
@@ -1224,6 +1265,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCoinChallengeCommunityRoute: ApiCoinChallengeCommunityRoute,
   ApiCoinRankingsRoute: ApiCoinRankingsRoute,
   ApiFcCartridgesRoute: ApiFcCartridgesRoute,
+  ApiGbCartridgesRoute: ApiGbCartridgesRoute,
   ApiLocaleSuggestionRoute: ApiLocaleSuggestionRoute,
   ApiMemberRoute: ApiMemberRoute,
   ApiPspLikesRoute: ApiPspLikesRoute,

@@ -275,9 +275,7 @@ function addOptionalParam(
 
 async function fetchJson<T>(path: string, params: URLSearchParams) {
   const query = params.toString()
-  const response = await fetch(`${API_BASE_URL}${path}${query ? `?${query}` : ''}`, {
-    signal: AbortSignal.timeout(8_000),
-  })
+  const response = await fetchWithTimeoutRetry(`${API_BASE_URL}${path}${query ? `?${query}` : ''}`)
 
   if (!response.ok) {
     throw new Error(`GGEMU API request failed with ${response.status}`)
@@ -776,3 +774,4 @@ export const getBlogPostDetailPageData = createServerFn({ method: 'GET' })
       ),
     } satisfies BlogPostDetailPageData
   })
+import { fetchWithTimeoutRetry } from '#/lib/fetch-with-timeout-retry'

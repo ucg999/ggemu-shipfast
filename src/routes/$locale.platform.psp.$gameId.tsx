@@ -2,7 +2,7 @@ import { Link, createFileRoute, notFound, useRouterState } from '@tanstack/react
 import { SiteLayout } from '#/components/site-layout'
 import { GuestLibraryDetailGate } from '#/components/guest-library-detail-gate'
 import { GameFavoriteButton } from '#/components/game-favorite-button'
-import { addPspGameLike } from '#/components/psp-like-button'
+import { useAutomaticGameLike } from '#/components/psp-like-button'
 import { SwitchLibraryImage } from '#/components/switch-library-image'
 import { normalizeLocale } from '#/lib/i18n'
 import { PSP_LIBRARY_GAMES } from '#/lib/psp-library'
@@ -35,6 +35,7 @@ function PspGameDetailPage() {
   const game = Route.useLoaderData()
   const lang = normalizeLocale(Route.useParams().locale)
   const copy = getCopy(lang)
+  useAutomaticGameLike(game.id)
   const isProStandalone = useRouterState({ select: state => state.location.hash === 'PRO' || state.location.hash === '#PRO' })
   return <GuestLibraryDetailGate gameId={game.id} locale={lang} platform="psp">
     <SiteLayout locale={lang} hideFooter>
@@ -89,7 +90,7 @@ function PspGameDetailPage() {
                 <p>解压密码：进群可见</p>
                 <p>游戏交流Q群：62119057</p>
               </div>
-              {game.downloadUrl ? <a className="btn btn-error text-white" href={game.downloadUrl} onClick={() => { void addPspGameLike(game.id).catch(() => {}) }} target="_blank" rel="noopener noreferrer">{copy.downloadButton}</a> : <button className="btn" disabled type="button">{game.downloadStatus ?? copy.preparing}</button>}
+              {game.downloadUrl ? <a className="btn btn-error text-white" href={game.downloadUrl} target="_blank" rel="noopener noreferrer">{copy.downloadButton}</a> : <button className="btn" disabled type="button">{game.downloadStatus ?? copy.preparing}</button>}
               {game.shareVersion ? <span className="text-sm text-base-content/60">{game.shareVersion}</span> : null}
             </div>
           </section>

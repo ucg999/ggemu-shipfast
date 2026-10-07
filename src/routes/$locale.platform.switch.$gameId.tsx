@@ -2,6 +2,7 @@ import { Link, createFileRoute, notFound, useRouterState } from '@tanstack/react
 import { SiteLayout } from '#/components/site-layout'
 import { GuestLibraryDetailGate } from '#/components/guest-library-detail-gate'
 import { GameFavoriteButton } from '#/components/game-favorite-button'
+import { useAutomaticGameLike } from '#/components/psp-like-button'
 import { SwitchLibraryImage } from '#/components/switch-library-image'
 import { normalizeLocale } from '#/lib/i18n'
 import { SWITCH_LIBRARY_GAMES } from '#/lib/switch-library'
@@ -34,6 +35,7 @@ function SwitchGameDetailPage() {
   const game = Route.useLoaderData()
   const lang = normalizeLocale(Route.useParams().locale)
   const copy = getCopy(lang)
+  useAutomaticGameLike(game.id)
   const isProStandalone = useRouterState({ select: state => state.location.hash === 'PRO' || state.location.hash === '#PRO' })
   return <GuestLibraryDetailGate gameId={game.id} locale={lang} platform="switch">
     <SiteLayout locale={lang} hideFooter>

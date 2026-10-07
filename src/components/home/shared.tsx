@@ -347,6 +347,7 @@ export function SearchForm({
   t,
 }: SearchFormProps) {
   const searchPlaceholder = getSearchPlaceholder(t, pagination.total)
+  const [explorePanel, setExplorePanel] = useState<'games' | 'cartridges'>('games')
 
   if (mode === 'sidebar') {
     return (
@@ -386,13 +387,14 @@ export function SearchForm({
           <div className="dropdown-content z-50 mt-2 flex w-max overflow-hidden bg-[#f0f0ed] text-sm text-black shadow-xl">
             <ul className="menu w-52 shrink-0 p-2">
               <li><Link params={{ locale: lang }} to="/$locale">{getI18n(lang).layout.games}</Link></li>
-              <li><span>{getI18n(lang).layout.gameLibrary}</span></li>
+              <li><button className={explorePanel === 'games' ? 'active' : ''} type="button" onClick={() => setExplorePanel('games')}>{getI18n(lang).layout.gameLibrary}<i className="ri-arrow-right-s-line ml-auto" /></button></li>
+              <li><button className={explorePanel === 'cartridges' ? 'active' : ''} type="button" onClick={() => setExplorePanel('cartridges')}>{lang === 'en' ? 'Game Cartridges' : lang === 'zh-TW' ? '遊戲卡帶' : '游戏卡带'}<i className="ri-arrow-right-s-line ml-auto" /></button></li>
               <li><Link params={{ locale: lang }} search={{ region: undefined }} to="/$locale/deals">{getI18n(lang).layout.gameDeals}</Link></li>
               <li><Link params={{ locale: lang }} search={{}} to="/$locale/play-my-rom">{t.superEmulator}</Link></li>
               <li><Link params={{ locale: lang }} to="/$locale/blog">{getI18n(lang).layout.blog}</Link></li>
               <li><Link params={{ locale: lang }} to="/$locale/original-games">{getOriginalGamesTitle(lang)}</Link></li>
             </ul>
-            <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
+            {explorePanel === 'games' ? <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
               <li><Link params={{ locale: lang }} search={{ page: 1 }} to="/$locale/all-games">{getI18n(lang).layout.allGames}</Link></li>
               <li>
                 <Link params={{ locale: lang }} search={{ platform: undefined }} title={lang === 'en' ? 'A beautiful visual guide to classic game consoles' : lang === 'zh-TW' ? '各種遊戲機的精美圖鑑' : '各种游戏机的精美图鉴'} to="/$locale/PRO">
@@ -403,7 +405,10 @@ export function SearchForm({
               <li><Link params={{ locale: lang, rankingId: 'popular' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.mostPopularGames}</Link></li>
               <li><Link params={{ locale: lang, rankingId: 'weekly' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.weeklyPopularGames}</Link></li>
               <li><Link params={{ locale: lang, rankingId: 'rising' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.fastestGrowingGames}</Link></li>
-            </ul>
+            </ul> : <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
+              <li><Link params={{ locale: lang, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">{lang === 'en' ? 'FC Cartridge Collection' : lang === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</Link></li>
+              <li><Link params={{ locale: lang, platformId: 'gb-cartridges' }} to="/$locale/platform/$platformId">{lang === 'en' ? 'GB Cartridge Collection' : lang === 'zh-TW' ? 'GB卡帶收藏' : 'GB卡带收藏'}</Link></li>
+            </ul>}
           </div>
         </details>
         {(lang === 'zh-CN' || lang === 'zh-TW' || lang === 'en') ? <Link className="desktop-theme-mode-link tooltip tooltip-bottom flex h-9 items-center gap-1 whitespace-nowrap rounded-full border border-cyan-300/50 bg-cyan-400/15 px-3 text-sm text-white" data-tip={lang === 'en' ? 'A beautiful visual guide to classic game consoles' : lang === 'zh-TW' ? '各種遊戲機的精美圖鑑' : '各种游戏机的精美图鉴'} params={{ locale: lang }} search={{ platform: undefined }} to="/$locale/PRO">

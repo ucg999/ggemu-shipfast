@@ -9,6 +9,7 @@ import { PlatformModeContent } from './$locale.arcade'
 import { SwitchDownloadLibrary } from '#/components/switch-download-library'
 import { PspDownloadLibrary } from '#/components/psp-download-library'
 import { FcCartridgeLibrary } from '#/components/fc-cartridge-library'
+import { GbCartridgeLibrary } from '#/components/gb-cartridge-library'
 import { ARCADE_MAHJONG_GAME_QUERIES, normalizeArcadeMahjongGameName } from '#/lib/arcade-mahjong-games'
 
 const PAGE_SIZE = 100
@@ -69,6 +70,13 @@ const PLATFORM_MODES = {
     subtitleKey: 'famicomSubtitle',
     titleKey: 'famicomTitle',
   },
+  'gb-cartridges': {
+    apiPlatform: 'gb-cartridge-library',
+    descriptionKey: 'famicomDescription',
+    seoTitleKey: 'famicomSeoTitle',
+    subtitleKey: 'famicomSubtitle',
+    titleKey: 'famicomTitle',
+  },
 } as const
 
 type PlatformModeId = keyof typeof PLATFORM_MODES
@@ -123,6 +131,7 @@ function PlatformModePage() {
   if (modeId === 'switch') return <SwitchDownloadLibrary lang={lang} />
   if (modeId === 'psp') return <PspDownloadLibrary lang={lang} />
   if (modeId === 'fc-cartridges') return <FcCartridgeLibrary lang={lang} />
+  if (modeId === 'gb-cartridges') return <GbCartridgeLibrary lang={lang} />
 
   return (
     <>
@@ -155,6 +164,7 @@ function getModeCopy(locale: Locale, modeId: PlatformModeId | undefined) {
     return { description: copy.description.replaceAll('Switch', 'PSP'), seoTitle: copy.seoTitle.replaceAll('Switch', 'PSP'), subtitle: copy.subtitle.replaceAll('Switch', 'PSP'), title: copy.title.replaceAll('Switch', 'PSP') }
   }
   if (modeId === 'fc-cartridges') return getFcCartridgeLibraryCopy(locale)
+  if (modeId === 'gb-cartridges') return getGbCartridgeLibraryCopy(locale)
   const t = getI18n(locale).arcade
   const mode = modeId ? PLATFORM_MODES[modeId] : PLATFORM_MODES.famicom
 
@@ -187,8 +197,15 @@ function getFcCartridgeLibraryCopy(locale: Locale) {
   return { description: '浏览已收藏的 FC 卡带，并在 FC 收藏馆中直接游玩。', seoTitle: 'FC卡带收藏｜怀旧游戏厅', subtitle: '浏览已收藏的 FC 卡带。', title: 'FC卡带收藏' }
 }
 
+function getGbCartridgeLibraryCopy(locale: Locale) {
+  if (locale === 'en') return { description: 'Collect GB cartridges and play them in the GB handheld player.', seoTitle: 'GB Cartridge Collection | Retro Game Hall', subtitle: 'Browse collectible GB cartridges.', title: 'GB Cartridge Collection' }
+  if (locale === 'zh-TW') return { description: '收藏 GB 卡帶，並在手機 GB 遊戲機中換卡遊玩。', seoTitle: 'GB卡帶收藏｜懷舊遊戲廳', subtitle: '瀏覽可收藏的 GB 卡帶。', title: 'GB卡帶收藏' }
+  if (locale === 'ja') return { description: 'GBカセットを収集し、GBプレイヤーで遊べます。', seoTitle: 'GBカセットコレクション｜懐かしゲームセンター', subtitle: 'GBカセット一覧。', title: 'GBカセットコレクション' }
+  return { description: '收藏 GB 卡带，并在手机 GB 游戏机中换卡游玩。', seoTitle: 'GB卡带收藏｜怀旧游戏厅', subtitle: '浏览可收藏的 GB 卡带。', title: 'GB卡带收藏' }
+}
+
 async function loadModeGames(locale: Locale, platform: string) {
-  if (platform === 'switch-library' || platform === 'psp-library' || platform === 'fc-cartridge-library') return []
+  if (platform === 'switch-library' || platform === 'psp-library' || platform === 'fc-cartridge-library' || platform === 'gb-cartridge-library') return []
   if (platform === 'mahjong-curated') return loadMahjongGames(locale)
   if (platform === 'coin') {
     return (await searchCoinModeGames({ data: { locale } })).games

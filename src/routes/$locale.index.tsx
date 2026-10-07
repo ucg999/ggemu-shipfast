@@ -253,6 +253,7 @@ function LocalizedHomePage() {
     sort: normalizeHomeSort(homeSearch.sort) ?? 'popular',
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [runtimeLoadFailed, setRuntimeLoadFailed] = useState(false)
   const coinRewards = useHomeCoinRewards()
 
   useEffect(() => {
@@ -363,6 +364,7 @@ function LocalizedHomePage() {
 
   async function loadGames(nextFilters: Filters, nextPage: number) {
     setIsLoading(true)
+    setRuntimeLoadFailed(false)
 
     try {
       const isMobileHome =
@@ -407,6 +409,9 @@ function LocalizedHomePage() {
       })
 
       setResult(nextResult)
+    } catch {
+      // Keep the currently visible cards when a refresh or filter request fails.
+      setRuntimeLoadFailed(true)
     } finally {
       setIsLoading(false)
     }
@@ -475,7 +480,7 @@ function LocalizedHomePage() {
         locale={lang}
         onOpenSearch={() => window.location.assign(`/${lang}/search`)}
       >
-        {initialResult.loadFailed || initialResult.videoLoadFailed ? (
+        {initialResult.loadFailed || initialResult.videoLoadFailed || runtimeLoadFailed ? (
           <div role="status" className="mx-4 my-3 flex items-center justify-between gap-3 rounded-lg bg-base-200 p-3 text-sm">
             <span>{lang === 'en' ? 'Games could not be loaded. Please retry.' : lang === 'ja' ? 'ゲームを読み込めませんでした。再試行してください。' : lang === 'zh-TW' ? '遊戲暫時載入失敗，請重新載入。' : '游戏暂时加载失败，请重新加载。'}</span>
             <button
@@ -483,7 +488,10 @@ function LocalizedHomePage() {
               disabled={isRetrying}
               onClick={async () => {
                 setIsRetrying(true)
-                try { await router.invalidate({ sync: true }) } finally { setIsRetrying(false) }
+                try {
+                  if (runtimeLoadFailed) await loadGames(filters, page)
+                  else await router.invalidate({ sync: true })
+                } finally { setIsRetrying(false) }
               }}
               type="button"
             >{lang === 'en' ? 'Retry' : lang === 'ja' ? '再試行' : lang === 'zh-TW' ? '重新載入' : '重新加载'}</button>

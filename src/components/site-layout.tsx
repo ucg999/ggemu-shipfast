@@ -581,7 +581,7 @@ export function SiteLayout({
                   </Link>
                 </li>
                 <li>
-                  <details open>
+                  <details>
                     <summary className="group min-h-12 gap-3 rounded-xl px-3 py-2.5 font-medium">
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
                         <i className="ri-gamepad-line text-base" />
@@ -652,6 +652,28 @@ export function SiteLayout({
                         <a href={`/${locale}/rankings/rising`}>
                           {t.fastestGrowingGames}
                         </a>
+                      </li>
+                    </ul>
+                  </details>
+                </li>
+                <li>
+                  <details>
+                    <summary className="group min-h-12 gap-3 rounded-xl px-3 py-2.5 font-medium">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-800 group-hover:bg-amber-200">
+                        <i className="ri-album-line text-base" />
+                      </span>
+                      <span className="sidebar-label min-w-0 flex-1">{locale === 'en' ? 'Game Cartridges' : locale === 'zh-TW' ? '遊戲卡帶' : '游戏卡带'}</span>
+                    </summary>
+                    <ul className="sidebar-submenu">
+                      <li>
+                        <Link params={{ locale, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">
+                          {locale === 'en' ? 'FC Cartridge Collection' : locale === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}
+                        </Link>
+                      </li>
+                      <li>
+                        <Link params={{ locale, platformId: 'gb-cartridges' }} to="/$locale/platform/$platformId">
+                          {locale === 'en' ? 'GB Cartridge Collection' : locale === 'zh-TW' ? 'GB卡帶收藏' : 'GB卡带收藏'}
+                        </Link>
                       </li>
                     </ul>
                   </details>
@@ -902,6 +924,7 @@ function DesktopUnifiedHeaderNavigation({
 }) {
   const layout = getI18n(locale).layout
   const home = getI18n(locale).home
+  const [explorePanel, setExplorePanel] = useState<'games' | 'cartridges'>('games')
   const linkClass = 'flex h-9 shrink-0 items-center whitespace-nowrap px-1.5 text-[13px] font-normal xl:px-2 xl:text-sm'
 
   return (
@@ -917,15 +940,14 @@ function DesktopUnifiedHeaderNavigation({
           <ul className="menu w-52 shrink-0 p-2">
             <li><Link params={{ locale }} to="/$locale">{layout.games}</Link></li>
             <li><Link params={{ locale }} to="/$locale/rankings/coins"><i className="ri-trophy-line text-amber-700" />{locale === 'en' ? 'Rankings' : '排行榜'}</Link></li>
-            <li>
-              <span>{layout.gameLibrary}</span>
-            </li>
+            <li><button className={explorePanel === 'games' ? 'active' : ''} type="button" onClick={() => setExplorePanel('games')}>{layout.gameLibrary}<i className="ri-arrow-right-s-line ml-auto" /></button></li>
+            <li><button className={explorePanel === 'cartridges' ? 'active' : ''} type="button" onClick={() => setExplorePanel('cartridges')}>{locale === 'en' ? 'Game Cartridges' : locale === 'zh-TW' ? '遊戲卡帶' : '游戏卡带'}<i className="ri-arrow-right-s-line ml-auto" /></button></li>
             <li><Link params={{ locale }} search={{ region: undefined }} to="/$locale/deals">{layout.gameDeals}</Link></li>
             <li><Link params={{ locale }} search={{}} to="/$locale/play-my-rom">{home.superEmulator}</Link></li>
             <li><Link params={{ locale }} to="/$locale/blog">{layout.blog}</Link></li>
             <li><Link params={{ locale }} to="/$locale/original-games">{getOriginalGamesTitle(locale)}</Link></li>
           </ul>
-          <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
+          {explorePanel === 'games' ? <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
               <li><Link params={{ locale }} search={{ page: 1 }} to="/$locale/all-games">{layout.allGames}</Link></li>
               <li>
                 <Link className="tooltip tooltip-bottom" data-tip={locale === 'en' ? 'A beautiful visual guide to classic game consoles' : locale === 'zh-TW' ? '各種遊戲機的精美圖鑑' : '各种游戏机的精美图鉴'} params={{ locale }} search={{ platform: undefined }} to="/$locale/PRO">
@@ -936,7 +958,10 @@ function DesktopUnifiedHeaderNavigation({
               <li><Link params={{ locale, rankingId: 'popular' }} to="/$locale/rankings/$rankingId">{layout.mostPopularGames}</Link></li>
               <li><Link params={{ locale, rankingId: 'weekly' }} to="/$locale/rankings/$rankingId">{layout.weeklyPopularGames}</Link></li>
               <li><Link params={{ locale, rankingId: 'rising' }} to="/$locale/rankings/$rankingId">{layout.fastestGrowingGames}</Link></li>
-          </ul>
+          </ul> : <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
+            <li><Link params={{ locale, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">{locale === 'en' ? 'FC Cartridge Collection' : locale === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</Link></li>
+            <li><Link params={{ locale, platformId: 'gb-cartridges' }} to="/$locale/platform/$platformId">{locale === 'en' ? 'GB Cartridge Collection' : locale === 'zh-TW' ? 'GB卡帶收藏' : 'GB卡带收藏'}</Link></li>
+          </ul>}
         </div>
       </details>
       {(locale === 'zh-CN' || locale === 'zh-TW' || locale === 'en') ? (
