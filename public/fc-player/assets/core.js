@@ -4,6 +4,42 @@ const WIDTH = 256;
 const HEIGHT = 240;
 const FRAMEBUFFER_SIZE = WIDTH * HEIGHT;
 let stateKey = 'nes_save_state_super_mario_bros_world';
+const STATE_DB_NAME = 'ucg999-fc-save-states';
+const STATE_DB_STORE = 'states';
+function openStateDb() {
+return new Promise((resolve, reject) => {
+if (!window.indexedDB) { reject(new Error('当前浏览器不支持本地存档')); return; }
+const request = window.indexedDB.open(STATE_DB_NAME, 1);
+request.onupgradeneeded = function () {
+if (!request.result.objectStoreNames.contains(STATE_DB_STORE)) request.result.createObjectStore(STATE_DB_STORE);
+};
+request.onsuccess = function () { resolve(request.result); };
+request.onerror = function () { reject(request.error || new Error('无法打开本地存档')); };
+});
+}
+async function writeState(value) {
+const db = await openStateDb();
+try {
+await new Promise((resolve, reject) => {
+const transaction = db.transaction(STATE_DB_STORE, 'readwrite');
+transaction.objectStore(STATE_DB_STORE).put(value, stateKey);
+transaction.oncomplete = resolve;
+transaction.onerror = function () { reject(transaction.error || new Error('写入存档失败')); };
+transaction.onabort = function () { reject(transaction.error || new Error('写入存档中断')); };
+});
+} finally { db.close(); }
+}
+async function readState() {
+const db = await openStateDb();
+try {
+return await new Promise((resolve, reject) => {
+const transaction = db.transaction(STATE_DB_STORE, 'readonly');
+const request = transaction.objectStore(STATE_DB_STORE).get(stateKey);
+request.onsuccess = function () { resolve(request.result || null); };
+request.onerror = function () { reject(request.error || new Error('读取存档失败')); };
+});
+} finally { db.close(); }
+}
 let nes = null;
 let ready = false;
 let paused = false;
@@ -167,21 +203,29 @@ if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {}
 resumeAudio: function () {
 if (audioCtx && audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
 },
-saveState: function () {
+saveState: async function () {
 if (!nes) return;
 try {
-localStorage.setItem(stateKey, JSON.stringify(nes.toJSON()));
+await writeState(nes.toJSON());
 window.GGEMU_TOAST('存档成功！');
 } catch (e) {
 window.GGEMU_TOAST('存档失败：' + e.message);
 }
 },
-loadState: function () {
+loadState: async function () {
 if (!nes) return;
 try {
-const s = localStorage.getItem(stateKey);
-if (!s) { window.GGEMU_TOAST('没有找到存档记录！'); return; }
-nes.fromJSON(JSON.parse(s));
+let state = await readState();
+if (!state) {
+const legacyState = localStorage.getItem(stateKey);
+if (legacyState) {
+state = JSON.parse(legacyState);
+await writeState(state);
+try { localStorage.removeItem(stateKey); } catch (error) {}
+}
+}
+if (!state) { window.GGEMU_TOAST('没有找到存档记录！'); return; }
+nes.fromJSON(state);
 window.GGEMU_TOAST('读档成功！');
 } catch (e) {
 window.GGEMU_TOAST('读档失败：' + e.message);

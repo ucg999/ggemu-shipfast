@@ -504,11 +504,11 @@ showToast('页面链接已复制');
 showToast('请复制浏览器地址分享');
 }
 });
-document.getElementById('btn-save').addEventListener('click', () => {
-try { core.saveState(); } catch (e) { showToast('存档失败'); console.error(e); }
+document.getElementById('btn-save').addEventListener('click', async () => {
+try { await core.saveState(); } catch (e) { showToast('存档失败'); console.error(e); }
 });
-document.getElementById('btn-load').addEventListener('click', () => {
-try { core.loadState(); } catch (e) { showToast('读档失败'); console.error(e); }
+document.getElementById('btn-load').addEventListener('click', async () => {
+try { await core.loadState(); } catch (e) { showToast('读档失败'); console.error(e); }
 });
 const cartridgeButton = document.getElementById('btn-shot');
 const cartridgeScreen = document.getElementById('cartridge-screen');
