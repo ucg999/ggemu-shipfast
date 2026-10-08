@@ -175,11 +175,16 @@ function RootComponent() {
   return <><WantedPlaytimeTracker /><Outlet /></>
 }
 
-function MaintenanceErrorComponent() {
+function MaintenanceErrorComponent({ error, reset }: { error: unknown; reset?: () => void }) {
   const [isSecretGameVisible, setIsSecretGameVisible] = useState(false)
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const locale = getDocumentLang(pathname)
-  const messages = getMaintenanceMessages(locale)
+  const maintenance = isMaintenanceError(error)
+  const messages = maintenance ? getMaintenanceMessages(locale) : getLoadFailureMessages(locale)
+
+  useEffect(() => {
+    console.error('[page-error]', { pathname, maintenance, error })
+  }, [error, maintenance, pathname])
 
   if (isSecretGameVisible) {
     return (
@@ -234,15 +239,31 @@ function MaintenanceErrorComponent() {
         <button
           className="btn btn-primary mt-8"
           onClick={() => {
-            setIsSecretGameVisible(true)
+            if (maintenance) setIsSecretGameVisible(true)
+            else if (reset) reset()
+            else window.location.reload()
           }}
           type="button"
         >
-          Play A Secret Game
+          {maintenance ? 'Play A Secret Game' : messages.retry}
         </button>
       </section>
     </main>
   )
+}
+
+function isMaintenanceError(error: unknown) {
+  if (error instanceof Response) return error.status === 503
+  if (!error || typeof error !== 'object') return false
+  const value = error as { status?: unknown; statusCode?: unknown }
+  return value.status === 503 || value.statusCode === 503
+}
+
+function getLoadFailureMessages(locale: string) {
+  if (locale === 'en') return { title: 'Page temporarily failed to load', description: 'Your current page has been preserved. Please try loading it again.', retry: 'Reload' }
+  if (locale === 'ja') return { title: 'ページを一時的に読み込めません', description: '現在のページ内容は保持されています。もう一度お試しください。', retry: '再読み込み' }
+  if (locale === 'zh-TW') return { title: '頁面暫時載入失敗', description: '已保留當前頁面內容，請重新載入。', retry: '重新載入' }
+  return { title: '页面暂时加载失败', description: '已保留当前页面内容，请重新加载。', retry: '重新加载' }
 }
 
 function getMaintenanceMessages(locale: string) {
@@ -250,6 +271,7 @@ function getMaintenanceMessages(locale: string) {
     return {
       title: 'The server is under maintenance',
       description: 'Scheduled maintenance is in progress. We will be back online shortly.',
+      retry: 'Play A Secret Game',
     }
   }
 
@@ -257,12 +279,14 @@ function getMaintenanceMessages(locale: string) {
     return {
       title: 'サーバーは現在メンテナンス中です',
       description: '予定されたメンテナンスを実施しています。まもなく再開します。',
+      retry: 'Play A Secret Game',
     }
   }
 
   return {
     title: '当前服务器正在维护',
     description: '我们正在进行计划维护，很快就会恢复访问。',
+    retry: 'Play A Secret Game',
   }
 }
 
