@@ -625,10 +625,7 @@ function ThemeMode() {
                 onClick={() => offset === 0 ? enter() : move(offset)}>
                 {itemAsset.logo && shouldLoadLogo ? <img src={getOptimizedThemeLogo(itemAsset.logo)} alt={themePlatformLabel(item, lang) || getPlatformLabel(item.name, lang)} decoding="async" draggable={false} fetchPriority={offset === 0 ? 'high' : 'low'} /> : <span>{themePlatformLabel(item, lang) || getPlatformLabel(item.name, lang)}</span>}
                 {offset === 0 && platformCoinDrop ? <span className="kt-platform-coin-drop" key={platformCoinDrop.id} aria-label={`+${platformCoinDrop.amount}`}>
-                  {Array.from({ length: Math.min(platformCoinDrop.amount, 12) }, (_, coinIndex) => {
-                    const visibleCoinCount = Math.min(platformCoinDrop.amount, 12)
-                    return <span key={coinIndex} style={{ '--coin-index': coinIndex, '--coin-start-x': `${(coinIndex - (visibleCoinCount - 1) / 2) * 10}px`, '--coin-end-x': `${(coinIndex - (visibleCoinCount - 1) / 2) * 18}px` } as CSSProperties}>●</span>
-                  })}
+                  <span style={{ '--coin-index': 0, '--coin-start-x': '0px', '--coin-end-x': '0px' } as CSSProperties}>●</span>
                   <strong>+{platformCoinDrop.amount}</strong>
                 </span> : null}
               </button>
