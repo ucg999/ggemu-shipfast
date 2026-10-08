@@ -32,6 +32,7 @@ import { Route as LocaleBlogRouteImport } from './routes/$locale.blog'
 import { Route as LocaleCoinChallengeRouteImport } from './routes/$locale.coin-challenge'
 import { Route as LocaleDealsRouteImport } from './routes/$locale.deals'
 import { Route as LocaleGhostHunterRouteImport } from './routes/$locale.ghost-hunter'
+import { Route as LocaleLakesideFishingRouteImport } from './routes/$locale.lakeside-fishing'
 import { Route as LocaleLiveRouteImport } from './routes/$locale.live'
 import { Route as LocaleLuckyGrandSlamRouteImport } from './routes/$locale.lucky-grand-slam'
 import { Route as LocaleOriginalGamesRouteImport } from './routes/$locale.original-games'
@@ -46,6 +47,7 @@ import { Route as LocaleWantedRouteImport } from './routes/$locale.wanted'
 import { Route as ApiCoinChallengeCommunityRouteImport } from './routes/api.coin-challenge-community'
 import { Route as ApiCoinRankingsRouteImport } from './routes/api.coin-rankings'
 import { Route as ApiFcCartridgesRouteImport } from './routes/api.fc-cartridges'
+import { Route as ApiFcSaveRouteImport } from './routes/api.fc-save'
 import { Route as ApiGbCartridgesRouteImport } from './routes/api.gb-cartridges'
 import { Route as ApiLocaleSuggestionRouteImport } from './routes/api/locale-suggestion'
 import { Route as ApiMemberRouteImport } from './routes/api.member'
@@ -182,6 +184,11 @@ const LocaleGhostHunterRoute = LocaleGhostHunterRouteImport.update({
   path: '/ghost-hunter',
   getParentRoute: () => LocaleRoute,
 } as any)
+const LocaleLakesideFishingRoute = LocaleLakesideFishingRouteImport.update({
+  id: '/lakeside-fishing',
+  path: '/lakeside-fishing',
+  getParentRoute: () => LocaleRoute,
+} as any)
 const LocaleLiveRoute = LocaleLiveRouteImport.update({
   id: '/live',
   path: '/live',
@@ -251,6 +258,11 @@ const ApiCoinRankingsRoute = ApiCoinRankingsRouteImport.update({
 const ApiFcCartridgesRoute = ApiFcCartridgesRouteImport.update({
   id: '/api/fc-cartridges',
   path: '/api/fc-cartridges',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFcSaveRoute = ApiFcSaveRouteImport.update({
+  id: '/api/fc-save',
+  path: '/api/fc-save',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiGbCartridgesRoute = ApiGbCartridgesRouteImport.update({
@@ -381,6 +393,7 @@ export interface FileRoutesByFullPath {
   '/$locale/coin-challenge': typeof LocaleCoinChallengeRoute
   '/$locale/deals': typeof LocaleDealsRoute
   '/$locale/ghost-hunter': typeof LocaleGhostHunterRoute
+  '/$locale/lakeside-fishing': typeof LocaleLakesideFishingRoute
   '/$locale/live': typeof LocaleLiveRoute
   '/$locale/lucky-grand-slam': typeof LocaleLuckyGrandSlamRoute
   '/$locale/original-games': typeof LocaleOriginalGamesRoute
@@ -395,6 +408,7 @@ export interface FileRoutesByFullPath {
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
+  '/api/fc-save': typeof ApiFcSaveRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
@@ -439,6 +453,7 @@ export interface FileRoutesByTo {
   '/$locale/coin-challenge': typeof LocaleCoinChallengeRoute
   '/$locale/deals': typeof LocaleDealsRoute
   '/$locale/ghost-hunter': typeof LocaleGhostHunterRoute
+  '/$locale/lakeside-fishing': typeof LocaleLakesideFishingRoute
   '/$locale/live': typeof LocaleLiveRoute
   '/$locale/lucky-grand-slam': typeof LocaleLuckyGrandSlamRoute
   '/$locale/original-games': typeof LocaleOriginalGamesRoute
@@ -453,6 +468,7 @@ export interface FileRoutesByTo {
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
+  '/api/fc-save': typeof ApiFcSaveRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
@@ -499,6 +515,7 @@ export interface FileRoutesById {
   '/$locale/coin-challenge': typeof LocaleCoinChallengeRoute
   '/$locale/deals': typeof LocaleDealsRoute
   '/$locale/ghost-hunter': typeof LocaleGhostHunterRoute
+  '/$locale/lakeside-fishing': typeof LocaleLakesideFishingRoute
   '/$locale/live': typeof LocaleLiveRoute
   '/$locale/lucky-grand-slam': typeof LocaleLuckyGrandSlamRoute
   '/$locale/original-games': typeof LocaleOriginalGamesRoute
@@ -513,6 +530,7 @@ export interface FileRoutesById {
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
+  '/api/fc-save': typeof ApiFcSaveRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
@@ -560,6 +578,7 @@ export interface FileRouteTypes {
     | '/$locale/coin-challenge'
     | '/$locale/deals'
     | '/$locale/ghost-hunter'
+    | '/$locale/lakeside-fishing'
     | '/$locale/live'
     | '/$locale/lucky-grand-slam'
     | '/$locale/original-games'
@@ -574,6 +593,7 @@ export interface FileRouteTypes {
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
     | '/api/fc-cartridges'
+    | '/api/fc-save'
     | '/api/gb-cartridges'
     | '/api/locale-suggestion'
     | '/api/member'
@@ -618,6 +638,7 @@ export interface FileRouteTypes {
     | '/$locale/coin-challenge'
     | '/$locale/deals'
     | '/$locale/ghost-hunter'
+    | '/$locale/lakeside-fishing'
     | '/$locale/live'
     | '/$locale/lucky-grand-slam'
     | '/$locale/original-games'
@@ -632,6 +653,7 @@ export interface FileRouteTypes {
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
     | '/api/fc-cartridges'
+    | '/api/fc-save'
     | '/api/gb-cartridges'
     | '/api/locale-suggestion'
     | '/api/member'
@@ -677,6 +699,7 @@ export interface FileRouteTypes {
     | '/$locale/coin-challenge'
     | '/$locale/deals'
     | '/$locale/ghost-hunter'
+    | '/$locale/lakeside-fishing'
     | '/$locale/live'
     | '/$locale/lucky-grand-slam'
     | '/$locale/original-games'
@@ -691,6 +714,7 @@ export interface FileRouteTypes {
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
     | '/api/fc-cartridges'
+    | '/api/fc-save'
     | '/api/gb-cartridges'
     | '/api/locale-suggestion'
     | '/api/member'
@@ -732,6 +756,7 @@ export interface RootRouteChildren {
   ApiCoinChallengeCommunityRoute: typeof ApiCoinChallengeCommunityRoute
   ApiCoinRankingsRoute: typeof ApiCoinRankingsRoute
   ApiFcCartridgesRoute: typeof ApiFcCartridgesRoute
+  ApiFcSaveRoute: typeof ApiFcSaveRoute
   ApiGbCartridgesRoute: typeof ApiGbCartridgesRoute
   ApiLocaleSuggestionRoute: typeof ApiLocaleSuggestionRoute
   ApiMemberRoute: typeof ApiMemberRoute
@@ -906,6 +931,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleGhostHunterRouteImport
       parentRoute: typeof LocaleRoute
     }
+    '/$locale/lakeside-fishing': {
+      id: '/$locale/lakeside-fishing'
+      path: '/lakeside-fishing'
+      fullPath: '/$locale/lakeside-fishing'
+      preLoaderRoute: typeof LocaleLakesideFishingRouteImport
+      parentRoute: typeof LocaleRoute
+    }
     '/$locale/live': {
       id: '/$locale/live'
       path: '/live'
@@ -1002,6 +1034,13 @@ declare module '@tanstack/react-router' {
       path: '/api/fc-cartridges'
       fullPath: '/api/fc-cartridges'
       preLoaderRoute: typeof ApiFcCartridgesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/fc-save': {
+      id: '/api/fc-save'
+      path: '/api/fc-save'
+      fullPath: '/api/fc-save'
+      preLoaderRoute: typeof ApiFcSaveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/gb-cartridges': {
@@ -1179,6 +1218,7 @@ interface LocaleRouteChildren {
   LocaleCoinChallengeRoute: typeof LocaleCoinChallengeRoute
   LocaleDealsRoute: typeof LocaleDealsRoute
   LocaleGhostHunterRoute: typeof LocaleGhostHunterRoute
+  LocaleLakesideFishingRoute: typeof LocaleLakesideFishingRoute
   LocaleLiveRoute: typeof LocaleLiveRoute
   LocaleLuckyGrandSlamRoute: typeof LocaleLuckyGrandSlamRoute
   LocaleOriginalGamesRoute: typeof LocaleOriginalGamesRoute
@@ -1210,6 +1250,7 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleCoinChallengeRoute: LocaleCoinChallengeRoute,
   LocaleDealsRoute: LocaleDealsRoute,
   LocaleGhostHunterRoute: LocaleGhostHunterRoute,
+  LocaleLakesideFishingRoute: LocaleLakesideFishingRoute,
   LocaleLiveRoute: LocaleLiveRoute,
   LocaleLuckyGrandSlamRoute: LocaleLuckyGrandSlamRoute,
   LocaleOriginalGamesRoute: LocaleOriginalGamesRoute,
@@ -1265,6 +1306,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCoinChallengeCommunityRoute: ApiCoinChallengeCommunityRoute,
   ApiCoinRankingsRoute: ApiCoinRankingsRoute,
   ApiFcCartridgesRoute: ApiFcCartridgesRoute,
+  ApiFcSaveRoute: ApiFcSaveRoute,
   ApiGbCartridgesRoute: ApiGbCartridgesRoute,
   ApiLocaleSuggestionRoute: ApiLocaleSuggestionRoute,
   ApiMemberRoute: ApiMemberRoute,

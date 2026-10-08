@@ -231,12 +231,12 @@ export function DefaultHomeTemplate(
           Switch
         </Link>
       </nav>
-      <nav aria-label="FC时光机和GB游戏机" className="grid w-full grid-cols-2 bg-amber-300 text-black lg:hidden">
+      <nav aria-label="FC游戏机和GB游戏机" className="grid w-full grid-cols-2 bg-amber-300 text-black lg:hidden">
         <a
           className="flex h-9 items-center justify-center border-r border-black/15 text-sm font-semibold transition hover:bg-amber-400"
           href="/fc"
         >
-          {lang === 'en' ? 'FC Time Machine' : lang === 'zh-TW' ? 'FC時光機' : 'FC时光机'}
+          {lang === 'en' ? 'FC Console' : lang === 'zh-TW' ? 'FC遊戲機' : 'FC游戏机'}
         </a>
         <a
           className="flex h-9 items-center justify-center text-sm font-semibold transition hover:bg-amber-400"

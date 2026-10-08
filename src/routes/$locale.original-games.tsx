@@ -3,6 +3,7 @@ import { SiteLayout } from '#/components/site-layout'
 import { CoinFruitCard } from '#/components/coin-fruit-card'
 import { GhostHunterCard } from '#/components/ghost-hunter-card'
 import { RedBlueArenaCard } from '#/components/red-blue-arena-card'
+import { FishingCard } from '#/components/fishing-card'
 import { normalizeLocale } from '#/lib/i18n'
 import { getOriginalGamesTitle } from '#/lib/original-games'
 
@@ -22,6 +23,7 @@ function OriginalGamesPage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           <RedBlueArenaCard lang={lang} />
           <GhostHunterCard lang={lang} />
+          <FishingCard lang={lang} />
           <CoinFruitCard lang={lang} />
         </div>
       </section>

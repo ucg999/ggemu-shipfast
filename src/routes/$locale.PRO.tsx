@@ -34,7 +34,8 @@ const themeFirstPagesCache = createThemeGameCache<Array<GameSearchResult>>()
 const DAILY_CHALLENGE_STORAGE_KEY = 'game-adventure-daily-challenge'
 const PLATFORM_COIN_DROP_CHANCE = 0.3
 const PLATFORM_COIN_DROP_COOLDOWN_MS = 3_000
-const PLATFORM_COIN_AMOUNT_WEIGHTS = [40, 27, 18, 10, 5] as const
+const PLATFORM_COIN_DAILY_JACKPOT_KEY = 'ucg999-pro-platform-coin-jackpot'
+let fallbackDailyPlatformCoinJackpot: DailyPlatformCoinJackpot | null = null
 
 type PlatformCoinDrop = {
   id: number
@@ -42,13 +43,39 @@ type PlatformCoinDrop = {
 }
 
 function pickPlatformCoinDropAmount() {
-  const totalWeight = PLATFORM_COIN_AMOUNT_WEIGHTS.reduce((sum, weight) => sum + weight, 0)
-  let roll = Math.random() * totalWeight
-  for (let index = 0; index < PLATFORM_COIN_AMOUNT_WEIGHTS.length; index += 1) {
-    roll -= PLATFORM_COIN_AMOUNT_WEIGHTS[index]
-    if (roll < 0) return index + 1
+  return Math.random() < 0.5 ? 1 : 2
+}
+
+type DailyPlatformCoinJackpot = {
+  day: string
+  unlockAt: number
+  claimed: boolean
+}
+
+function getLocalDay(date: Date) {
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-')
+}
+
+function getDailyPlatformCoinJackpot(now: number): DailyPlatformCoinJackpot {
+  const current = new Date(now)
+  const day = getLocalDay(current)
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(PLATFORM_COIN_DAILY_JACKPOT_KEY) || 'null') as DailyPlatformCoinJackpot | null
+    if (stored?.day === day && Number.isFinite(stored.unlockAt)) return stored
+  } catch {
+    if (fallbackDailyPlatformCoinJackpot?.day === day) return fallbackDailyPlatformCoinJackpot
   }
-  return 1
+  const dayStart = new Date(current.getFullYear(), current.getMonth(), current.getDate()).getTime()
+  const nextDay = new Date(current.getFullYear(), current.getMonth(), current.getDate() + 1).getTime()
+  const schedule = { day, unlockAt: dayStart + Math.floor(Math.random() * (nextDay - dayStart)), claimed: false }
+  fallbackDailyPlatformCoinJackpot = schedule
+  try { window.localStorage.setItem(PLATFORM_COIN_DAILY_JACKPOT_KEY, JSON.stringify(schedule)) } catch {}
+  return schedule
+}
+
+function claimDailyPlatformCoinJackpot(jackpot: DailyPlatformCoinJackpot) {
+  fallbackDailyPlatformCoinJackpot = { ...jackpot, claimed: true }
+  try { window.localStorage.setItem(PLATFORM_COIN_DAILY_JACKPOT_KEY, JSON.stringify(fallbackDailyPlatformCoinJackpot)) } catch {}
 }
 
 export const Route = createFileRoute('/$locale/PRO')({
@@ -328,13 +355,16 @@ function ThemeMode() {
     const firstMove = !hasMovedPlatformWheel.current
     hasMovedPlatformWheel.current = true
     if (platformCoinDropTimer.current !== null || (!firstMove && now - lastPlatformCoinDrop.current < PLATFORM_COIN_DROP_COOLDOWN_MS)) return
-    if (!firstMove && Math.random() >= PLATFORM_COIN_DROP_CHANCE) return
+    const dailyJackpot = getDailyPlatformCoinJackpot(now)
+    const isDailyJackpot = !dailyJackpot.claimed && now >= dailyJackpot.unlockAt
+    if (!firstMove && !isDailyJackpot && Math.random() >= PLATFORM_COIN_DROP_CHANCE) return
 
-    const amount = pickPlatformCoinDropAmount()
+    const amount = isDailyJackpot ? 100 : pickPlatformCoinDropAmount()
     lastPlatformCoinDrop.current = now
     setPlatformCoinDrop({ id: now, amount })
     platformCoinDropTimer.current = window.setTimeout(() => {
       coinRewards.addCoins(amount, true, false)
+      if (isDailyJackpot) claimDailyPlatformCoinJackpot(dailyJackpot)
       setPlatformCoinDrop(null)
       platformCoinDropTimer.current = null
     }, 1_050)
@@ -595,7 +625,7 @@ function ThemeMode() {
                 onClick={() => offset === 0 ? enter() : move(offset)}>
                 {itemAsset.logo && shouldLoadLogo ? <img src={getOptimizedThemeLogo(itemAsset.logo)} alt={themePlatformLabel(item, lang) || getPlatformLabel(item.name, lang)} decoding="async" draggable={false} fetchPriority={offset === 0 ? 'high' : 'low'} /> : <span>{themePlatformLabel(item, lang) || getPlatformLabel(item.name, lang)}</span>}
                 {offset === 0 && platformCoinDrop ? <span className="kt-platform-coin-drop" key={platformCoinDrop.id} aria-label={`+${platformCoinDrop.amount}`}>
-                  {Array.from({ length: platformCoinDrop.amount }, (_, coinIndex) => <span key={coinIndex} style={{ '--coin-index': coinIndex, '--coin-start-x': `${(coinIndex - 2) * 10}px`, '--coin-end-x': `${(coinIndex - 2) * 18}px` } as CSSProperties}>●</span>)}
+                  {Array.from({ length: Math.min(platformCoinDrop.amount, 12) }, (_, coinIndex, coins) => <span key={coinIndex} style={{ '--coin-index': coinIndex, '--coin-start-x': `${(coinIndex - (coins.length - 1) / 2) * 10}px`, '--coin-end-x': `${(coinIndex - (coins.length - 1) / 2) * 18}px` } as CSSProperties}>●</span>)}
                   <strong>+{platformCoinDrop.amount}</strong>
                 </span> : null}
               </button>

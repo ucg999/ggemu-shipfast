@@ -22,7 +22,15 @@ const db = await openStateDb();
 try {
 await new Promise((resolve, reject) => {
 const transaction = db.transaction(STATE_DB_STORE, 'readwrite');
-transaction.objectStore(STATE_DB_STORE).put(value, stateKey);
+const store = transaction.objectStore(STATE_DB_STORE);
+const currentKey = stateKey + ':current';
+const backupKey = stateKey + ':backup';
+const request = store.get(currentKey);
+request.onsuccess = function () {
+if (request.result) store.put(request.result, backupKey);
+store.put(value, currentKey);
+};
+request.onerror = function () { transaction.abort(); };
 transaction.oncomplete = resolve;
 transaction.onerror = function () { reject(transaction.error || new Error('写入存档失败')); };
 transaction.onabort = function () { reject(transaction.error || new Error('写入存档中断')); };
@@ -34,16 +42,63 @@ const db = await openStateDb();
 try {
 return await new Promise((resolve, reject) => {
 const transaction = db.transaction(STATE_DB_STORE, 'readonly');
-const request = transaction.objectStore(STATE_DB_STORE).get(stateKey);
-request.onsuccess = function () { resolve(request.result || null); };
-request.onerror = function () { reject(request.error || new Error('读取存档失败')); };
+const store = transaction.objectStore(STATE_DB_STORE);
+const current = store.get(stateKey + ':current');
+current.onsuccess = function () {
+if (current.result) { resolve(current.result); return; }
+const legacy = store.get(stateKey);
+legacy.onsuccess = function () {
+if (legacy.result) { resolve(legacy.result); return; }
+const backup = store.get(stateKey + ':backup');
+backup.onsuccess = function () { resolve(backup.result || null); };
+backup.onerror = function () { reject(backup.error || new Error('读取备份存档失败')); };
+};
+legacy.onerror = function () { reject(legacy.error || new Error('读取旧存档失败')); };
+};
+current.onerror = function () { reject(current.error || new Error('读取存档失败')); };
 });
 } finally { db.close(); }
+}
+function bytesToBase64(bytes) {
+let value = '';
+const chunkSize = 0x8000;
+for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+value += String.fromCharCode.apply(null, bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length)));
+}
+return window.btoa(value);
+}
+function base64ToBytes(value) {
+const binary = window.atob(value);
+const bytes = new Uint8Array(binary.length);
+for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+return bytes;
+}
+async function checksumBytes(bytes) {
+const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+async function encodeCloudState(state) {
+if (!window.CompressionStream || !window.crypto || !window.crypto.subtle) throw new Error('当前浏览器不支持云存档压缩');
+const raw = new TextEncoder().encode(JSON.stringify(state));
+const compressed = new Uint8Array(await new Response(
+new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))
+).arrayBuffer());
+return { format: 'gzip-base64-v1', data: bytesToBase64(compressed), checksum: await checksumBytes(compressed), rawSize: raw.length };
+}
+async function decodeCloudState(payload) {
+if (!payload || payload.format !== 'gzip-base64-v1' || typeof payload.data !== 'string' || typeof payload.checksum !== 'string') throw new Error('云存档格式无效');
+if (!window.DecompressionStream || !window.crypto || !window.crypto.subtle) throw new Error('当前浏览器不支持云存档解压');
+const compressed = base64ToBytes(payload.data);
+if (await checksumBytes(compressed) !== payload.checksum) throw new Error('云存档校验失败');
+const raw = await new Response(new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+if (Number.isFinite(payload.rawSize) && new TextEncoder().encode(raw).length !== payload.rawSize) throw new Error('云存档长度不正确');
+return JSON.parse(raw);
 }
 let nes = null;
 let ready = false;
 let paused = false;
 let activeMapper = 0;
+let activeGameId = 'super_mario_bros_world';
 const offscreen = document.createElement('canvas');
 offscreen.width = WIDTH;
 offscreen.height = HEIGHT;
@@ -171,7 +226,8 @@ capsules: [{ id: 'select', label: 'SELECT' }, { id: 'start', label: 'START' }]
 video: function () { return { w: WIDTH, h: HEIGHT }; },
 source: function () { return offscreen; },
 boot: function (romData, api) {
-stateKey = 'nes_save_state_' + String(api.gameId || 'super_mario_bros_world').replace(/[^a-z0-9_-]/gi, '_');
+activeGameId = String(api.gameId || 'super_mario_bros_world').replace(/[^a-z0-9_-]/gi, '_');
+stateKey = 'nes_save_state_' + activeGameId;
 const previousNes = nes;
 const previousReady = ready;
 const previousMapper = activeMapper;
@@ -238,8 +294,20 @@ if (audioCtx && audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
 saveState: async function () {
 if (!nes) return;
 try {
-await writeState(nes.toJSON());
-window.GGEMU_TOAST('存档成功！');
+const state = nes.toJSON();
+await writeState(state);
+let cloudSaved = false;
+try {
+const payload = await encodeCloudState(state);
+const response = await fetch('/api/fc-save', {
+method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ gameId: activeGameId, payload: payload })
+});
+cloudSaved = response.ok;
+} catch (error) {
+console.warn('Unable to save FC cloud state', error);
+}
+window.GGEMU_TOAST(cloudSaved ? '存档成功，已同步玩家账号！' : '本机存档成功！');
 } catch (e) {
 window.GGEMU_TOAST('存档失败：' + e.message);
 }
@@ -247,7 +315,26 @@ window.GGEMU_TOAST('存档失败：' + e.message);
 loadState: async function () {
 if (!nes) return;
 try {
-let state = await readState();
+let state = null;
+let cloudLoaded = false;
+try {
+const response = await fetch('/api/fc-save?gameId=' + encodeURIComponent(activeGameId), { credentials: 'same-origin', cache: 'no-store' });
+if (response.ok) {
+const data = await response.json();
+if (data && data.payload) {
+try {
+state = await decodeCloudState(data.payload);
+cloudLoaded = true;
+} catch (primaryError) {
+console.warn('Primary FC cloud state is invalid, trying backup', primaryError);
+if (data.backup) { state = await decodeCloudState(data.backup); cloudLoaded = true; }
+}
+}
+}
+} catch (error) {
+console.warn('Unable to load FC cloud state', error);
+}
+if (!state) state = await readState();
 if (!state) {
 const legacyState = localStorage.getItem(stateKey);
 if (legacyState) {
@@ -261,7 +348,10 @@ nes.fromJSON(state);
 // fromJSON rebuilds jsnes' stock mapper. Reattach Mapper 15 without
 // replacing the restored PRG banks, otherwise this cartridge may crash later.
 if (activeMapper === 15) installMapper15(false);
-window.GGEMU_TOAST('读档成功！');
+if (cloudLoaded) {
+try { await writeState(state); } catch (error) {}
+}
+window.GGEMU_TOAST(cloudLoaded ? '会员云存档读取成功！' : '本机存档读取成功！');
 } catch (e) {
 window.GGEMU_TOAST('读档失败：' + e.message);
 }

@@ -497,7 +497,7 @@ shareUrl = window.parent.location.origin + '/fc';
 }
 } catch (error) {}
 const shareData = {
-title: CONFIG.shareTitle || CONFIG.title || 'FC收藏馆',
+title: CONFIG.shareTitle || CONFIG.title || 'FC游戏机',
 text: CONFIG.shareContent || '手机打开即可玩的 FC 小工具',
 url: shareUrl
 };
@@ -721,7 +721,7 @@ core.boot(new Uint8Array(buffer), {
 gameId: gameId,
 toast: showToast,
 onReady: function () {
-document.title = 'FC收藏馆｜' + gameName;
+document.title = 'FC游戏机｜' + gameName;
 renderUI();
 startRenderLoop();
 }
