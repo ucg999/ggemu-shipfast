@@ -7,6 +7,8 @@
   background: rgba(12, 13, 15, 0.96);
 }
 
+#gb-boot-layer{position:fixed;z-index:89;display:none;place-items:center;overflow:hidden;background:#fff;pointer-events:none}#gb-boot-layer.is-playing{display:grid}#gb-boot-video{display:block;width:88%;height:88%;background:inherit;object-fit:contain;pointer-events:none}
+
 .cartridge-screen::after {
   content: none;
 }
@@ -143,8 +145,8 @@
 .cartridge-card {
   position: relative;
   display: grid;
-  width: min(88%, 330px);
-  height: calc(100% - 30px);
+  width: min(68%, 250px);
+  height: calc(82% - 30px);
   min-width: 0;
   padding: 0;
   overflow: visible;

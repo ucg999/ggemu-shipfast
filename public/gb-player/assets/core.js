@@ -2,7 +2,8 @@
 'use strict';
 var WIDTH = 160;
 var HEIGHT = 144;
-var STATE_KEY = 'gb_kof96_save_state';
+var activeGameId = 'kof-96';
+var currentRomBase64 = '';
 var FRAME_MS = 8;
 var emulator = null;
 var ready = false;
@@ -12,6 +13,67 @@ var offscreen = document.createElement('canvas');
 offscreen.width = WIDTH;
 offscreen.height = HEIGHT;
 var audioServer = null;
+var STATE_DB_NAME = 'ucg999-gb-save-states';
+var STATE_DB_STORE = 'states';
+
+function stateKey() { return 'gb_save_state_' + activeGameId; }
+function openStateDb() {
+return new Promise(function (resolve, reject) {
+if (!window.indexedDB) { reject(new Error('当前浏览器不支持本地存档')); return; }
+var request = window.indexedDB.open(STATE_DB_NAME, 1);
+request.onupgradeneeded = function () { if (!request.result.objectStoreNames.contains(STATE_DB_STORE)) request.result.createObjectStore(STATE_DB_STORE); };
+request.onsuccess = function () { resolve(request.result); };
+request.onerror = function () { reject(request.error || new Error('无法打开本地存档')); };
+});
+}
+async function writeState(value) {
+var db = await openStateDb();
+try {
+await new Promise(function (resolve, reject) {
+var transaction = db.transaction(STATE_DB_STORE, 'readwrite');
+var store = transaction.objectStore(STATE_DB_STORE);
+var currentKey = stateKey() + ':current';
+var request = store.get(currentKey);
+request.onsuccess = function () { if (request.result) store.put(request.result, stateKey() + ':backup'); store.put(value, currentKey); };
+request.onerror = function () { transaction.abort(); };
+transaction.oncomplete = resolve;
+transaction.onerror = function () { reject(transaction.error || new Error('写入存档失败')); };
+transaction.onabort = function () { reject(transaction.error || new Error('写入存档中断')); };
+});
+} finally { db.close(); }
+}
+async function readState() {
+var db = await openStateDb();
+try {
+return await new Promise(function (resolve, reject) {
+var store = db.transaction(STATE_DB_STORE, 'readonly').objectStore(STATE_DB_STORE);
+var current = store.get(stateKey() + ':current');
+current.onsuccess = function () {
+if (current.result) { resolve(current.result); return; }
+var backup = store.get(stateKey() + ':backup');
+backup.onsuccess = function () { resolve(backup.result || null); };
+backup.onerror = function () { reject(backup.error || new Error('读取备份存档失败')); };
+};
+current.onerror = function () { reject(current.error || new Error('读取存档失败')); };
+});
+} finally { db.close(); }
+}
+function bytesToBase64(bytes) { var value = ''; for (var offset = 0; offset < bytes.length; offset += 0x8000) value += String.fromCharCode.apply(null, bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length))); return window.btoa(value); }
+function base64ToBytes(value) { var binary = window.atob(value); var bytes = new Uint8Array(binary.length); for (var index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index); return bytes; }
+async function checksumBytes(bytes) { var digest = await window.crypto.subtle.digest('SHA-256', bytes); return Array.from(new Uint8Array(digest), function (byte) { return byte.toString(16).padStart(2, '0'); }).join(''); }
+async function encodeCloudState(state) {
+if (!window.CompressionStream || !window.crypto || !window.crypto.subtle) throw new Error('当前浏览器不支持云存档压缩');
+var raw = new TextEncoder().encode(JSON.stringify(state));
+var compressed = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+return { format: 'gzip-base64-v1', data: bytesToBase64(compressed), checksum: await checksumBytes(compressed), rawSize: raw.length };
+}
+async function decodeCloudState(payload) {
+if (!payload || payload.format !== 'gzip-base64-v1') throw new Error('云存档格式无效');
+var compressed = base64ToBytes(payload.data);
+if (await checksumBytes(compressed) !== payload.checksum) throw new Error('云存档校验失败');
+var raw = await new Response(new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+return JSON.parse(raw);
+}
 
 window.XAudioServer = function (channels, sampleRate, minBuffer, maxBuffer, underRunCallback, volume, onFailure) {
 this.channels = channels;
@@ -88,7 +150,27 @@ lastTick = 0;
 accumulated = 0;
 }
 
+function disposeEmulator() {
+ready = false;
+lastTick = 0;
+accumulated = 0;
+if (typeof window.GGEMU_RUMBLE === 'function') window.GGEMU_RUMBLE(false);
+if (emulator) emulator.stopEmulator |= 2;
+emulator = null;
+if (audioServer) {
+if (audioServer.processor) {
+audioServer.processor.onaudioprocess = null;
+try { audioServer.processor.disconnect(); } catch (error) {}
+}
+if (audioServer.context) {
+try { audioServer.context.close().catch(function () {}); } catch (error) {}
+}
+audioServer = null;
+}
+}
+
 function createEmulator(romString) {
+disposeEmulator();
 emulator = new window.GameBoyCore(offscreen, romString);
 emulator.openMBC = function () { return []; };
 emulator.openRTC = function () { return []; };
@@ -111,6 +193,8 @@ video: function () { return { w: WIDTH, h: HEIGHT }; },
 source: function () { return offscreen; },
 boot: function (romBase64, api) {
 try {
+activeGameId = String(api.gameId || 'kof-96').replace(/[^a-z0-9_-]/gi, '-');
+currentRomBase64 = romBase64;
 var instance = createEmulator(window.atob(romBase64));
 instance.start();
 resumeCore();
@@ -153,30 +237,48 @@ if (paused) emulator.stopEmulator |= 2;
 else resumeCore();
 },
 reset: function () {
-if (typeof window.GGEMU_RUMBLE === 'function') window.GGEMU_RUMBLE(false);
-if (emulator) emulator.stopEmulator |= 2;
-var instance = createEmulator(window.atob(window.ROM_DATA));
+if (!currentRomBase64) return;
+var instance = createEmulator(window.atob(currentRomBase64));
 instance.start();
 resumeCore();
 instance.run();
 ready = true;
 },
-saveState: function () {
+saveState: async function () {
 if (!emulator) return;
 try {
 var state = emulator.saveState();
 state[0] = null;
-localStorage.setItem(STATE_KEY, JSON.stringify(state));
-window.GGEMU_TOAST('存档成功！');
+await writeState(state);
+var cloudSaved = false;
+try {
+var payload = await encodeCloudState(state);
+var response = await fetch('/api/fc-save', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gameId: 'gb-' + activeGameId, payload: payload }) });
+cloudSaved = response.ok;
+} catch (cloudError) { if (window.console && console.warn) console.warn('Unable to save GB cloud state', cloudError); }
+window.GGEMU_TOAST(cloudSaved ? '存档成功，已同步玩家账号！' : '本机存档成功！');
 } catch (error) {
-window.GGEMU_TOAST('存档失败：存储空间不足');
+window.GGEMU_TOAST('存档失败');
 if (window.console && console.error) console.error(error);
 }
 },
-loadState: function () {
+loadState: async function () {
 try {
-var saved = localStorage.getItem(STATE_KEY);
-if (!saved) {
+var state = null;
+var cloudLoaded = false;
+try {
+var response = await fetch('/api/fc-save?gameId=' + encodeURIComponent('gb-' + activeGameId), { credentials: 'same-origin', cache: 'no-store' });
+if (response.ok) {
+var data = await response.json();
+if (data.payload) { try { state = await decodeCloudState(data.payload); cloudLoaded = true; } catch (primaryError) { if (data.backup) { state = await decodeCloudState(data.backup); cloudLoaded = true; } } }
+}
+} catch (cloudError) { if (window.console && console.warn) console.warn('Unable to load GB cloud state', cloudError); }
+if (!state) state = await readState();
+if (!state) {
+var legacy = localStorage.getItem(stateKey());
+if (legacy) { state = JSON.parse(legacy); await writeState(state); try { localStorage.removeItem(stateKey()); } catch (removeError) {} }
+}
+if (!state) {
 window.GGEMU_TOAST('没有找到存档记录！');
 return;
 }
@@ -184,12 +286,12 @@ if (!emulator || !emulator.ROM || !emulator.ROM.length) {
 window.GGEMU_TOAST('读档失败：游戏尚未载入');
 return;
 }
-var state = JSON.parse(saved);
 state[0] = emulator.fromTypedArray(emulator.ROM);
 emulator.returnFromState(state);
 resumeCore();
 ready = true;
-window.GGEMU_TOAST('读档成功！');
+if (cloudLoaded) { var localCopy = state.slice(); localCopy[0] = null; await writeState(localCopy); }
+window.GGEMU_TOAST(cloudLoaded ? '云存档读取成功！' : '读档成功！');
 } catch (error) {
 window.GGEMU_TOAST('读档失败：存档已损坏');
 if (window.console && console.error) console.error(error);

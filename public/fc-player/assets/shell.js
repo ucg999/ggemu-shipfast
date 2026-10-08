@@ -530,6 +530,7 @@ const allCartridgeCards = Array.from(document.querySelectorAll('.cartridge-card'
 const ownedCartridgesKey = 'ucg999-fc-owned-cartridges';
 const ownedCartridgesMigrationKey = 'ucg999-fc-owned-cartridges-migrated';
 let ownedCartridgeIds = [];
+let cartridgeMemberAuthenticated = false;
 let legacyOwnedCartridgeIds = [];
 try {
 const parsedOwnedCartridges = JSON.parse(localStorage.getItem(ownedCartridgesKey) || '[]');
@@ -540,6 +541,7 @@ const collectionResponse = await fetch('/api/fc-cartridges', { credentials: 'sam
 if (collectionResponse.ok) {
 let collection = await collectionResponse.json();
 if (collection.authenticated === true && Array.isArray(collection.owned)) {
+cartridgeMemberAuthenticated = true;
 const accountKey = ownedCartridgesKey + ':' + collection.memberId;
 const migrationKey = ownedCartridgesMigrationKey + ':' + collection.memberId;
 if (legacyOwnedCartridgeIds.length && localStorage.getItem(migrationKey) !== 'yes') {
@@ -555,12 +557,12 @@ localStorage.setItem(migrationKey, 'yes');
 ownedCartridgeIds = collection.owned.filter(value => typeof value === 'string');
 try { localStorage.setItem(accountKey, JSON.stringify(ownedCartridgeIds)); } catch (error) {}
 } else {
-ownedCartridgeIds = legacyOwnedCartridgeIds.slice(0, 2);
+ownedCartridgeIds = [];
 }
 }
 } catch (error) {
 console.warn('Unable to synchronize FC cartridges', error);
-ownedCartridgeIds = legacyOwnedCartridgeIds;
+ownedCartridgeIds = [];
 }
 allCartridgeCards.forEach(card => {
 const slide = card.closest('.cartridge-slide');
@@ -684,17 +686,17 @@ window.addEventListener('resize', () => {
 if (cartridgeScreen.classList.contains('is-open')) syncCartridgeScreenBounds();
 });
 async function canOpenCartridgeScreen() {
-if (ownedCartridgeIds.length > 0) return true;
+if (cartridgeMemberAuthenticated) return true;
 try {
 const response = await fetch('/api/member', { credentials: 'same-origin', cache: 'no-store' });
 if (response.ok) {
 const data = await response.json();
-if (data && data.member) return true;
+if (data && data.member) { cartridgeMemberAuthenticated = true; return true; }
 }
 } catch (error) {
 console.warn('Unable to verify player account', error);
 }
-showToast('请先到FC卡带收藏选择卡带');
+showToast('请先登录玩家账号后换卡带');
 if (window.parent && window.parent !== window) {
 window.parent.postMessage({ type: 'fc-member-login-request' }, window.location.origin);
 }

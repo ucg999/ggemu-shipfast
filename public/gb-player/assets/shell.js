@@ -464,7 +464,155 @@ try { core.loadState(); } catch (e) { showToast('读档失败'); console.error(e
 });
 const cartridgeScreen = document.getElementById('cartridge-screen');
 const closeCartridgeButton = document.getElementById('btn-close-cartridges');
-const gbCartridge = document.getElementById('gb-kof96-cartridge');
+const cartridgeList = cartridgeScreen.querySelector('.cartridge-list');
+const cartridgeDots = cartridgeScreen.querySelector('.cartridge-dots');
+const cartridgeArrows = cartridgeScreen.querySelectorAll('.cartridge-arrow');
+const cartridgeCount = document.querySelector('#cartridge-title span');
+const GB_CARTRIDGES = [
+{ id: 'pokemon-gold', number: '1050号', title: '宝可梦 金', rom: './assets/roms/pokemon-gold.gbc', cover: './assets/cartridges/pokemon-gold.webp' },
+{ id: 'pokemon-silver', number: '1051号', title: '宝可梦 银', rom: './assets/roms/pokemon-silver.gbc', cover: './assets/cartridges/pokemon-silver.webp' }
+];
+let availableCartridges = [];
+let cartridgeIndex = 0;
+let switchingCartridge = false;
+let cartridgeMemberAuthenticated = false;
+const bootVideo = document.createElement('video');
+const bootLayer = document.createElement('div');
+bootLayer.id = 'gb-boot-layer';
+bootVideo.id = 'gb-boot-video';
+bootVideo.src = './assets/gbc-boot.mp4';
+bootVideo.preload = 'auto';
+bootVideo.playsInline = true;
+bootVideo.muted = false;
+bootVideo.volume = 1;
+bootVideo.setAttribute('playsinline', '');
+bootVideo.setAttribute('webkit-playsinline', '');
+bootLayer.appendChild(bootVideo);
+document.body.appendChild(bootLayer);
+
+function syncBootBackdropColor() {
+try {
+if (!bootVideo.videoWidth || !bootVideo.videoHeight) return;
+const sampler = document.createElement('canvas');
+sampler.width = bootVideo.videoWidth;
+sampler.height = bootVideo.videoHeight;
+const context = sampler.getContext('2d', { willReadFrequently: true });
+if (!context) return;
+context.drawImage(bootVideo, 0, 0);
+const insetX = Math.max(2, Math.round(sampler.width * 0.02));
+const insetY = Math.max(2, Math.round(sampler.height * 0.02));
+const points = [[insetX, insetY], [sampler.width - insetX - 1, insetY], [insetX, sampler.height - insetY - 1], [sampler.width - insetX - 1, sampler.height - insetY - 1]];
+const colors = points.map(function (point) { return context.getImageData(point[0], point[1], 1, 1).data; });
+const channel = function (index) { return Math.round(colors.reduce(function (sum, color) { return sum + color[index]; }, 0) / colors.length); };
+const background = 'rgb(' + channel(0) + ',' + channel(1) + ',' + channel(2) + ')';
+bootLayer.style.backgroundColor = background;
+bootVideo.style.backgroundColor = background;
+} catch (error) {}
+}
+bootVideo.addEventListener('loadeddata', syncBootBackdropColor);
+
+function cartridgeMarkup(cartridge) {
+const visual = cartridge.cover
+? '<img alt="" src="' + cartridge.cover + '">'
+: '<span class="gb-cartridge-shell"><strong>GAME BOY</strong><b>热斗96</b><small>格斗之王96</small></span>';
+return '<figure class="cartridge-slide"><button class="cartridge-card" data-cartridge="' + cartridge.id + '" type="button"><span class="cartridge-number">' + cartridge.number + '</span>' + visual + '</button><figcaption>' + cartridge.title + '</figcaption></figure>';
+}
+
+function renderCartridges() {
+cartridgeList.innerHTML = availableCartridges.map(cartridgeMarkup).join('');
+cartridgeDots.innerHTML = availableCartridges.map(function (_, index) { return '<button class="' + (index === cartridgeIndex ? 'is-active' : '') + '" data-index="' + index + '" type="button" aria-label="第' + (index + 1) + '张卡带"></button>'; }).join('');
+if (cartridgeCount) cartridgeCount.textContent = '（已收集' + availableCartridges.length + '款）';
+cartridgeList.style.transform = 'translateX(-' + cartridgeIndex * 100 + '%)';
+cartridgeArrows[0].disabled = cartridgeIndex <= 0;
+cartridgeArrows[1].disabled = cartridgeIndex >= availableCartridges.length - 1;
+cartridgeList.querySelectorAll('[data-cartridge]').forEach(function (button) {
+button.addEventListener('click', function () { void switchCartridge(button.dataset.cartridge, button); });
+});
+cartridgeDots.querySelectorAll('[data-index]').forEach(function (button) {
+button.addEventListener('click', function () { cartridgeIndex = Number(button.dataset.index) || 0; renderCartridges(); });
+});
+}
+
+async function loadOwnedCartridges() {
+let owned = [];
+try {
+const response = await fetch('/api/gb-cartridges', { credentials: 'same-origin', cache: 'no-store' });
+const result = response.ok ? await response.json() : null;
+if (result && result.authenticated) { cartridgeMemberAuthenticated = true; owned = Array.isArray(result.owned) ? result.owned : []; }
+else owned = [];
+} catch (error) {
+owned = [];
+}
+const allowed = new Set(owned);
+availableCartridges = GB_CARTRIDGES.filter(function (cartridge) { return allowed.has(cartridge.id); });
+const requested = new URLSearchParams(location.search).get('cartridge');
+const requestedIndex = availableCartridges.findIndex(function (cartridge) { return cartridge.id === requested; });
+cartridgeIndex = requestedIndex >= 0 ? requestedIndex : 0;
+renderCartridges();
+if (requestedIndex > 0) window.setTimeout(function () { void switchCartridge(requested); }, 250);
+}
+
+function bytesToBase64(bytes) {
+let binary = '';
+for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode.apply(null, bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
+return btoa(binary);
+}
+
+async function loadCartridgeRom(cartridge) {
+if (!cartridge.rom) return window.ROM_DATA;
+const response = await fetch(cartridge.rom, { cache: 'force-cache' });
+if (!response.ok) throw new Error('ROM ' + response.status);
+return bytesToBase64(new Uint8Array(await response.arrayBuffer()));
+}
+
+function syncBootVideoBounds() {
+if (!hitboxes.game) return;
+const canvasRect = mainCanvas.getBoundingClientRect();
+const scaleX = canvasRect.width / mainCanvas.width;
+const scaleY = canvasRect.height / mainCanvas.height;
+bootLayer.style.left = Math.round(canvasRect.left + hitboxes.game.x * scaleX) + 'px';
+bootLayer.style.top = Math.round(canvasRect.top + hitboxes.game.y * scaleY) + 'px';
+bootLayer.style.width = Math.round(hitboxes.game.w * scaleX) + 'px';
+bootLayer.style.height = Math.round(hitboxes.game.h * scaleY) + 'px';
+}
+
+function playBootVideo() {
+return new Promise(function (resolve) {
+let finished = false;
+const finish = function () { if (finished) return; finished = true; clearTimeout(fallback); bootVideo.onended = null; bootVideo.onerror = null; bootLayer.classList.remove('is-playing'); resolve(); };
+const fallback = setTimeout(finish, 5000);
+syncBootVideoBounds();
+bootVideo.currentTime = 0;
+bootLayer.classList.add('is-playing');
+bootVideo.onended = finish;
+bootVideo.onerror = finish;
+bootVideo.play().catch(finish);
+});
+}
+
+async function switchCartridge(cartridgeId, button) {
+if (switchingCartridge) return;
+const cartridge = availableCartridges.find(function (item) { return item.id === cartridgeId; });
+if (!cartridge) return;
+switchingCartridge = true;
+if (button) button.classList.add('is-inserting');
+showToast('正在插入《' + cartridge.title + '》');
+try {
+const romPromise = loadCartridgeRom(cartridge);
+setCartridgeScreen(false);
+if (core.setPaused) core.setPaused(true);
+await playBootVideo();
+const rom = await romPromise;
+core.boot(rom, { gameId: cartridge.id, toast: showToast, onReady: function () { renderUI(); startRenderLoop(); } });
+showToast('《' + cartridge.title + '》已启动');
+} catch (error) {
+showToast('卡带读取失败');
+console.error(error);
+} finally {
+if (button) button.classList.remove('is-inserting');
+switchingCartridge = false;
+}
+}
 function syncCartridgeScreenBounds() {
 if (!cartridgeScreen || !hitboxes.game) return;
 const canvasRect = mainCanvas.getBoundingClientRect();
@@ -483,21 +631,31 @@ cartridgeScreen.setAttribute('aria-hidden', open ? 'false' : 'true');
 if (core.setPaused) core.setPaused(open);
 }
 window.addEventListener('resize', syncCartridgeScreenBounds);
-document.getElementById('btn-shot').addEventListener('click', event => {
+window.addEventListener('resize', syncBootVideoBounds);
+async function canOpenCartridgeScreen() {
+if (cartridgeMemberAuthenticated) return true;
+try {
+const response = await fetch('/api/member', { credentials: 'same-origin', cache: 'no-store' });
+if (response.ok) {
+const data = await response.json();
+if (data && data.member) { cartridgeMemberAuthenticated = true; await loadOwnedCartridges(); return true; }
+}
+} catch (error) {
+console.warn('Unable to verify player account', error);
+}
+showToast('请先登录玩家账号后换卡带');
+if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'gb-member-login-request' }, window.location.origin);
+return false;
+}
+document.getElementById('btn-shot').addEventListener('click', async event => {
 event.stopImmediatePropagation();
-setCartridgeScreen(true);
+if (await canOpenCartridgeScreen()) setCartridgeScreen(true);
 }, true);
 closeCartridgeButton.addEventListener('click', () => setCartridgeScreen(false));
-gbCartridge.addEventListener('click', () => {
-gbCartridge.classList.add('is-inserting');
-showToast('正在插入《热斗 格斗之王96》');
-window.setTimeout(() => {
-try { core.reset(); } catch (error) { console.error(error); }
-gbCartridge.classList.remove('is-inserting');
-setCartridgeScreen(false);
-showToast('《热斗 格斗之王96》已启动');
-}, 620);
-});
+cartridgeArrows[0].addEventListener('click', function () { if (cartridgeIndex > 0) { cartridgeIndex--; renderCartridges(); } });
+cartridgeArrows[1].addEventListener('click', function () { if (cartridgeIndex < availableCartridges.length - 1) { cartridgeIndex++; renderCartridges(); } });
+renderCartridges();
+void loadOwnedCartridges();
 document.getElementById('btn-record').addEventListener('click', async event => {
 event.stopImmediatePropagation();
 const shareUrl = window.parent && window.parent !== window ? window.parent.location.origin + '/gb' : window.location.href;
@@ -594,6 +752,7 @@ return;
 resize();
 bindControls();
 core.boot(window.ROM_DATA, {
+gameId: 'kof-96',
 toast: showToast,
 onReady: function () {
 renderUI();
