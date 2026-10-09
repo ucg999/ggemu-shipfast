@@ -436,6 +436,9 @@ updateTouches([]);
 });
 document.addEventListener('touchstart', activateAudio, { passive: true, capture: true });
 document.addEventListener('click', activateAudio);
+document.addEventListener('keydown', activateAudio, { capture: true });
+window.addEventListener('pageshow', activateAudio);
+window.addEventListener('focus', activateAudio);
 document.addEventListener('visibilitychange', () => {
 if (document.visibilityState !== 'visible') {
 stopRenderLoop();
@@ -522,7 +525,50 @@ try { await core.saveState(); } catch (e) { showToast('存档失败'); console.e
 document.getElementById('btn-load').addEventListener('click', async () => {
 try { await core.loadState(); } catch (e) { showToast('读档失败'); console.error(e); }
 });
+let currentGameId = 'super-mario-bros-world';
+const cheatButton = document.createElement('button');
+cheatButton.id = 'btn-cheats';
+cheatButton.type = 'button';
+cheatButton.textContent = '金手指';
+const toolbar = document.getElementById('toolbar');
+toolbar.insertBefore(cheatButton, document.getElementById('btn-shot'));
+const cheatPanel = document.createElement('section');
+cheatPanel.id = 'cheat-panel';
+cheatPanel.setAttribute('aria-hidden', 'true');
+cheatPanel.innerHTML = '<div class="cheat-dialog"><header><div><small>GAME GENIE</small><h2>金手指</h2></div><button id="btn-close-cheats" type="button" aria-label="关闭">×</button></header><p>支持 FC Game Genie 代码（6位或8位）以及“地址:数值”格式，每行一个。</p><textarea id="cheat-codes" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 SXIOPO 或 8123:FF"></textarea><div class="cheat-actions"><button id="btn-clear-cheats" type="button">清除</button><button id="btn-apply-cheats" type="button">启用</button></div></div>';
+document.body.appendChild(cheatPanel);
+const cheatInput = document.getElementById('cheat-codes');
+function cheatStorageKey() { return 'ucg999-fc-cheats:' + currentGameId; }
+function applyStoredCheats(gameId) {
+currentGameId = gameId;
+let stored = '';
+try { stored = localStorage.getItem(cheatStorageKey()) || ''; } catch (error) {}
+if (core.setCheatCodes) core.setCheatCodes(stored);
+return stored;
+}
+function setCheatPanel(open) {
+cheatPanel.classList.toggle('is-open', open);
+cheatPanel.setAttribute('aria-hidden', open ? 'false' : 'true');
+if (open) { cheatInput.value = applyStoredCheats(currentGameId); core.setPaused(true); window.setTimeout(() => cheatInput.focus(), 50); }
+else core.setPaused(false);
+}
+cheatButton.addEventListener('click', () => setCheatPanel(true));
+document.getElementById('btn-close-cheats').addEventListener('click', () => setCheatPanel(false));
+document.getElementById('btn-clear-cheats').addEventListener('click', () => {
+cheatInput.value = '';
+try { localStorage.removeItem(cheatStorageKey()); } catch (error) {}
+if (core.clearCheats) core.clearCheats();
+showToast('已关闭金手指');
+});
+document.getElementById('btn-apply-cheats').addEventListener('click', () => {
+const codes = cheatInput.value.trim();
+const count = core.setCheatCodes ? core.setCheatCodes(codes) : 0;
+try { if (codes) localStorage.setItem(cheatStorageKey(), codes); else localStorage.removeItem(cheatStorageKey()); } catch (error) {}
+showToast(count ? '已启用 ' + count + ' 条金手指' : '没有识别到有效代码');
+if (count) setCheatPanel(false);
+});
 const cartridgeButton = document.getElementById('btn-shot');
+const isLocalDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const cartridgeScreen = document.getElementById('cartridge-screen');
 const closeCartridgeButton = document.getElementById('btn-close-cartridges');
 const cartridgeList = document.getElementById('cartridge-list');
@@ -564,6 +610,7 @@ ownedCartridgeIds = [];
 console.warn('Unable to synchronize FC cartridges', error);
 ownedCartridgeIds = [];
 }
+if (isLocalDevelopment) ownedCartridgeIds = allCartridgeCards.map(card => card.dataset.gameId).filter(Boolean);
 allCartridgeCards.forEach(card => {
 const slide = card.closest('.cartridge-slide');
 if (slide) slide.hidden = !ownedCartridgeIds.includes(card.dataset.gameId);
@@ -686,6 +733,7 @@ window.addEventListener('resize', () => {
 if (cartridgeScreen.classList.contains('is-open')) syncCartridgeScreenBounds();
 });
 async function canOpenCartridgeScreen() {
+if (isLocalDevelopment) return true;
 if (cartridgeMemberAuthenticated) return true;
 try {
 const response = await fetch('/api/member', { credentials: 'same-origin', cache: 'no-store' });
@@ -728,6 +776,7 @@ renderUI();
 startRenderLoop();
 }
 });
+applyStoredCheats(gameId);
 })
 .catch(function (error) {
 showToast('游戏加载失败，请重试');

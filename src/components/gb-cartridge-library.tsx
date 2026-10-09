@@ -8,8 +8,8 @@ import { useMemberSession } from '#/lib/member-client'
 const PRICE = 50
 const LOCAL_KEY = 'ucg999-gb-owned-cartridges'
 const CARTRIDGES = [
-  { id: 'pokemon-gold', number: '1050号', title: '宝可梦 金', genre: '角色扮演', releaseDate: '1999', publisher: 'Nintendo', cover: '/gb-player/assets/cartridges/pokemon-gold.webp' },
-  { id: 'pokemon-silver', number: '1051号', title: '宝可梦 银', genre: '角色扮演', releaseDate: '1999', publisher: 'Nintendo', cover: '/gb-player/assets/cartridges/pokemon-silver.webp' },
+  { id: 'pokemon-gold', number: '1050号', title: '宝可梦 金', genre: '角色扮演', releaseDate: '1999-11-21', publisher: 'Nintendo', cover: '/gb-player/assets/cartridges/pokemon-gold.webp' },
+  { id: 'pokemon-silver', number: '1051号', title: '宝可梦 银', genre: '角色扮演', releaseDate: '1999-11-21', publisher: 'Nintendo', cover: '/gb-player/assets/cartridges/pokemon-silver.webp' },
 ] as const
 const VISIBLE_CARTRIDGE_IDS = new Set(CARTRIDGES.map(cartridge => cartridge.id))
 const visibleOwned = (ids: string[]) => ids.filter(id => VISIBLE_CARTRIDGE_IDS.has(id as (typeof CARTRIDGES)[number]['id']))

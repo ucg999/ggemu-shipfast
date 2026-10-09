@@ -9,6 +9,8 @@
 
 #gb-boot-layer{position:fixed;z-index:89;display:none;place-items:center;overflow:hidden;background:#fff;pointer-events:none}#gb-boot-layer.is-playing{display:grid}#gb-boot-video{display:block;width:88%;height:88%;background:inherit;object-fit:contain;pointer-events:none}
 
+#cheat-panel{position:fixed;inset:0;z-index:120;display:none;place-items:center;padding:18px;background:rgba(12,13,15,.64)}#cheat-panel.is-open{display:grid}.cheat-dialog{width:min(100%,360px);padding:16px;border:1px solid rgba(255,255,255,.8);border-radius:18px;background:#e8e8ea;color:#29292d;box-shadow:0 22px 60px rgba(0,0,0,.4)}.cheat-dialog header{display:flex;align-items:flex-start;justify-content:space-between}.cheat-dialog header small{display:block;color:#77777e;font:800 9px/1.2 system-ui;letter-spacing:.16em}.cheat-dialog h2{margin-top:3px;font:700 21px/1.1 system-ui}.cheat-dialog header button{width:30px;height:30px;border:0;border-radius:50%;background:#d1d1d5;color:#45454a;font-size:23px}.cheat-dialog p{margin:12px 0 8px;color:#68686f;font:500 11px/1.55 system-ui}.cheat-dialog textarea{display:block;width:100%;height:118px;resize:none;padding:10px;border:1px solid #bfc0c5;border-radius:10px;background:#fff;color:#202024;font:600 13px/1.5 monospace;text-transform:uppercase;outline:none}.cheat-dialog textarea:focus{border-color:#777982;box-shadow:0 0 0 2px rgba(90,92,100,.14)}.cheat-actions{display:flex;gap:9px;margin-top:10px}.cheat-actions button{flex:1;height:36px;border:0;border-radius:9px;background:#cfd0d4;color:#303036;font-weight:700}.cheat-actions #btn-apply-cheats{background:#7d1939;color:#fff}
+
 .cartridge-screen::after {
   content: none;
 }
@@ -136,8 +138,10 @@
   min-width: 0;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   height: 100%;
+  padding-top: 22px;
+  padding-bottom: 6px;
 }
 
 .cartridge-slide[hidden] { display: none !important; }
@@ -146,7 +150,8 @@
   position: relative;
   display: grid;
   width: min(68%, 250px);
-  height: calc(82% - 30px);
+  height: calc(100% - 58px);
+  max-height: 250px;
   min-width: 0;
   padding: 0;
   overflow: visible;
@@ -164,7 +169,7 @@
 
 .cartridge-number {
   position: absolute;
-  top: 8px;
+  top: -28px;
   left: 50%;
   z-index: 2;
   padding: 0;
@@ -197,7 +202,8 @@
 }
 
 .cartridge-slide figcaption {
-  margin-top: 4px;
+  flex: 0 0 auto;
+  margin-top: 14px;
   color: #fff;
   font-size: 14px;
   font-weight: 800;

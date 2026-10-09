@@ -265,6 +265,8 @@ console.error(e);
 throw e;
 }
 ready = true;
+initAudio();
+if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
 api.onReady();
 return true;
 },
@@ -283,6 +285,23 @@ const name = BUTTONS[id];
 if (!name) return;
 const code = window.jsnes.Controller[name];
 if (pressed) nes.buttonDown(1, code); else nes.buttonUp(1, code);
+},
+setCheatCodes: function (codes) {
+if (!nes || !nes.gameGenie) return 0;
+nes.gameGenie.removeAllCodes();
+let count = 0;
+String(codes || '').toUpperCase().split(/[\s,;]+/).forEach(rawCode => {
+const code = rawCode.replace(/-/g, '');
+if (!code) return;
+try { nes.gameGenie.addCode(code); count += 1; } catch (error) {}
+});
+nes.gameGenie.setEnabled(count > 0);
+return count;
+},
+clearCheats: function () {
+if (!nes || !nes.gameGenie) return;
+nes.gameGenie.removeAllCodes();
+nes.gameGenie.setEnabled(false);
 },
 activateAudio: function () {
 initAudio();

@@ -13,6 +13,7 @@ var offscreen = document.createElement('canvas');
 offscreen.width = WIDTH;
 offscreen.height = HEIGHT;
 var audioServer = null;
+var activeCheats = [];
 var STATE_DB_NAME = 'ucg999-gb-save-states';
 var STATE_DB_STORE = 'states';
 
@@ -180,6 +181,29 @@ if (typeof window.GGEMU_RUMBLE === 'function') window.GGEMU_RUMBLE(active);
 return emulator;
 }
 
+function parseCheatCodes(input) {
+var parsed = [];
+String(input || '').toUpperCase().split(/[\s,;]+/).forEach(function (rawCode) {
+var code = rawCode.replace(/[^0-9A-F:=\-]/g, '');
+var match = /^01([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})$/.exec(code);
+if (match) {
+parsed.push({ address: parseInt(match[3] + match[2], 16), value: parseInt(match[1], 16), code: rawCode });
+return;
+}
+match = /^([0-9A-F]{4})[:=\-]([0-9A-F]{2})$/.exec(code);
+if (match) parsed.push({ address: parseInt(match[1], 16), value: parseInt(match[2], 16), code: rawCode });
+});
+return parsed.slice(0, 32);
+}
+
+function applyCheats() {
+if (!emulator || !activeCheats.length) return;
+for (var index = 0; index < activeCheats.length; index++) {
+var cheat = activeCheats[index];
+try { emulator.memoryWrite(cheat.address, cheat.value); } catch (error) {}
+}
+}
+
 var KEY_INDEX = { right: 0, left: 1, up: 2, down: 3, a: 4, b: 5, select: 6, start: 7 };
 
 window.GGEMU_CORE = {
@@ -215,6 +239,7 @@ lastTick = now;
 var steps = 0;
 while (accumulated >= FRAME_MS && steps < 7) {
 emulator.run();
+applyCheats();
 accumulated -= FRAME_MS;
 steps++;
 }
@@ -223,6 +248,12 @@ setButton: function (id, pressed) {
 if (!emulator || KEY_INDEX[id] === undefined) return;
 emulator.JoyPadEvent(KEY_INDEX[id], pressed);
 },
+setCheatCodes: function (codes) {
+activeCheats = parseCheatCodes(codes);
+applyCheats();
+return activeCheats.length;
+},
+clearCheats: function () { activeCheats = []; },
 activateAudio: function () {
 if (audioServer) audioServer.resume();
 },
