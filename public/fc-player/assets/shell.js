@@ -52,9 +52,11 @@ const v = core.video ? core.video() : null;
 return { w: (v && v.w) || 256, h: (v && v.h) || 240 };
 }
 function resize() {
-const viewport = window.visualViewport;
-const viewportWidth = Math.round((viewport && viewport.width) || window.innerWidth);
-const viewportHeight = Math.round((viewport && viewport.height) || window.innerHeight);
+if (document.body.classList.contains('cheat-open')) return;
+const viewportWidth = Math.round(document.documentElement.clientWidth || window.innerWidth);
+const viewportHeight = Math.round(document.documentElement.clientHeight || window.innerHeight);
+document.documentElement.style.setProperty('--app-width', viewportWidth + 'px');
+document.documentElement.style.setProperty('--app-height', viewportHeight + 'px');
 mainCanvas.width = viewportWidth;
 mainCanvas.height = viewportHeight;
 mainCanvas.style.width = viewportWidth + 'px';
@@ -63,7 +65,7 @@ layoutKey = '';
 renderUI();
 }
 window.addEventListener('resize', resize);
-if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+window.addEventListener('orientationchange', function () { window.setTimeout(resize, 180); });
 function calculateLayout() {
 const w = mainCanvas.width;
 const h = mainCanvas.height;
@@ -549,8 +551,9 @@ return stored;
 function setCheatPanel(open) {
 cheatPanel.classList.toggle('is-open', open);
 cheatPanel.setAttribute('aria-hidden', open ? 'false' : 'true');
-if (open) { cheatInput.value = applyStoredCheats(currentGameId); core.setPaused(true); window.setTimeout(() => cheatInput.focus(), 50); }
-else core.setPaused(false);
+document.body.classList.toggle('cheat-open', open);
+if (open) { cheatInput.value = applyStoredCheats(currentGameId); core.setPaused(true); window.setTimeout(() => cheatInput.focus({ preventScroll: true }), 50); }
+else { cheatInput.blur(); core.setPaused(false); window.setTimeout(resize, 320); }
 }
 cheatButton.addEventListener('click', () => setCheatPanel(true));
 document.getElementById('btn-close-cheats').addEventListener('click', () => setCheatPanel(false));

@@ -1,4 +1,4 @@
-import { getCurrentMemberSession, spendMemberCoinsOptimistic } from './member-client'
+import { getCurrentMemberSession, spendMemberCoinsOptimistic } from './member-client.ts'
 
 export const COIN_BALANCE_STORAGE_KEY = 'game-adventure-coin-balance'
 export const COIN_BALANCE_EVENT = 'game-adventure-coin-balance-change'

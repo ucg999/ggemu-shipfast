@@ -39,9 +39,23 @@ const ARCADE_MAHJONG_GAME_ALIASES = [
   '州長撲克',
 ].map(normalizeArcadeMahjongGameName)
 
+const MEMBER_ONLY_ARCADE_MAHJONG_GAMES = [
+  'Mahjong G-Taste',
+  '御姐麻将',
+  '御姐麻將',
+  'VS Mahjong Otome Ryouran',
+  '乙女缭乱',
+  '乙女繚亂',
+].map(normalizeArcadeMahjongGameName)
+
 export function isArcadeMahjongGame(game: PublicGame) {
   const name = normalizeArcadeMahjongGameName(game.name)
   return ARCADE_MAHJONG_GAME_ALIASES.some(alias => name === alias || name.includes(alias))
+}
+
+export function requiresArcadeMahjongLogin(game: PublicGame) {
+  const name = normalizeArcadeMahjongGameName(game.name)
+  return MEMBER_ONLY_ARCADE_MAHJONG_GAMES.some(alias => name === alias || name.includes(alias))
 }
 
 export function normalizeArcadeMahjongGameName(value: string | undefined) {

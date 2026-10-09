@@ -7,14 +7,14 @@ const API_BASE_URL = 'https://ggemu.com'
 const PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
 const NON_GCOIN_GAME = '0'
-export type CoinModeRequiredRank = 'bronze' | 'silver' | 'gold'
+export type CoinModeRequiredRank = 'bronze' | 'silver' | 'gold' | 'platinum'
 const COIN_MODE_GAME_RANKS: Readonly<Record<string, CoinModeRequiredRank>> = {
-  'wiggie waggie': 'silver',
-  'wow new fantasia': 'gold',
-  excelsior: 'silver',
-  '美女弹珠打砖块': 'silver',
-  '美女天蚕变': 'gold',
-  '美女打钻': 'silver',
+  'wiggie waggie': 'platinum',
+  'wow new fantasia': 'platinum',
+  excelsior: 'platinum',
+  '美女弹珠打砖块': 'platinum',
+  '美女天蚕变': 'platinum',
+  '美女打钻': 'platinum',
 }
 const COIN_MODE_GAME_QUERIES = ['wiggie waggie', 'wow new fantasia', 'excelsior'] as const
 const COIN_MODE_CHINESE_NAMES: Readonly<Record<string, string>> = {

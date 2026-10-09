@@ -231,19 +231,35 @@ export function DefaultHomeTemplate(
           Switch
         </Link>
       </nav>
-      <nav aria-label="FC游戏机和GB游戏机" className="grid w-full grid-cols-2 bg-amber-300 text-black lg:hidden">
+      <nav aria-label="FC游戏机和FC卡带收藏" className="grid w-full grid-cols-2 bg-amber-300 text-black lg:hidden">
         <a
           className="flex h-9 items-center justify-center border-r border-black/15 text-sm font-semibold transition hover:bg-amber-400"
           href="/fc"
         >
           {lang === 'en' ? 'FC Console' : lang === 'zh-TW' ? 'FC遊戲機' : 'FC游戏机'}
         </a>
-        <a
+        <Link
           className="flex h-9 items-center justify-center text-sm font-semibold transition hover:bg-amber-400"
+          params={{ locale: lang, platformId: 'fc-cartridges' }}
+          to="/$locale/platform/$platformId"
+        >
+          {lang === 'en' ? 'FC Cartridges' : lang === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}
+        </Link>
+      </nav>
+      <nav aria-label="GB游戏机和GB卡带收藏" className="grid w-full grid-cols-2 bg-gray-300 text-gray-900 lg:hidden">
+        <a
+          className="flex h-9 items-center justify-center border-r border-black/15 text-sm font-semibold transition hover:bg-gray-400"
           href="/gb"
         >
           {lang === 'en' ? 'GB Console' : lang === 'zh-TW' ? 'GB遊戲機' : 'GB游戏机'}
         </a>
+        <Link
+          className="flex h-9 items-center justify-center text-sm font-semibold transition hover:bg-gray-400"
+          params={{ locale: lang, platformId: 'gb-cartridges' }}
+          to="/$locale/platform/$platformId"
+        >
+          {lang === 'en' ? 'GB Cartridges' : lang === 'zh-TW' ? 'GB卡帶收藏' : 'GB卡带收藏'}
+        </Link>
       </nav>
       <nav
         aria-label={modeCopyLabel(lang)}

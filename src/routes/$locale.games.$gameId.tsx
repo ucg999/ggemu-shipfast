@@ -53,8 +53,8 @@ type InstallPromptWindow = Window & {
 const defaultManifestHref = '/manifest.webmanifest'
 const SHOW_EXTENDED_GAME_DETAILS = false
 
-function getRankGameCopy(locale: Locale, rank: 'bronze' | 'silver' | 'gold') {
-  const names = rank === 'gold' ? ['黄金', '黃金', 'Gold', 'ゴールド'] : rank === 'silver' ? ['白银', '白銀', 'Silver', 'シルバー'] : ['青铜', '青銅', 'Bronze', 'ブロンズ']
+function getRankGameCopy(locale: Locale, rank: 'bronze' | 'silver' | 'gold' | 'platinum') {
+  const names = rank === 'platinum' ? ['铂金', '鉑金', 'Platinum', 'プラチナ'] : rank === 'gold' ? ['黄金', '黃金', 'Gold', 'ゴールド'] : rank === 'silver' ? ['白银', '白銀', 'Silver', 'シルバー'] : ['青铜', '青銅', 'Bronze', 'ブロンズ']
   const name = locale === 'zh-TW' ? names[1] : locale === 'en' ? names[2] : locale === 'ja' ? names[3] : names[0]
   if (locale === 'zh-TW') return { label: `${name}段位`, insufficient: `需要達到${name}段位才可以開始遊戲。` }
   if (locale === 'en') return { label: `${name} rank`, insufficient: `${name} rank is required to start this game.` }

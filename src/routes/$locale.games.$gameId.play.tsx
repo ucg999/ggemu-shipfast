@@ -8,7 +8,7 @@ import { getPlatformLabel } from '#/lib/platform-label'
 import { siteConfig } from '#/lib/site-config'
 import { useCurrentSiteTheme } from '#/lib/use-site-theme'
 import { calculateGameCoinAward, GAME_SESSION_COIN_CAP, PRO_GAME_SESSION_COIN_CAP, resolveGameSessionMultiplier } from '#/lib/game-session-coins'
-import { ARCADE_MAHJONG_COINS_PER_MINUTE, ARCADE_MAHJONG_FREE_TRIAL_MINUTES, isArcadeMahjongGame } from '#/lib/arcade-mahjong-games'
+import { ARCADE_MAHJONG_COINS_PER_MINUTE, ARCADE_MAHJONG_FREE_TRIAL_MINUTES, isArcadeMahjongGame, requiresArcadeMahjongLogin } from '#/lib/arcade-mahjong-games'
 import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
 import {
   addCoinReward,
@@ -71,6 +71,7 @@ function LocalizedPlayGamePage() {
   const lang = normalizeLocale(locale)
   const requiredCoinRank = getCoinModeGameRequiredRank(game)
   const isMahjongCoinChargeGame = isArcadeMahjongGame(game)
+  const memberOnlyMahjongGame = requiresArcadeMahjongLogin(game)
   const loadingTrialDisabled = isMahjongCoinChargeGame
   const minimumCoinBalance = getCoinModeGameMinimumBalance(game)
   const [rankAccessGranted, setRankAccessGranted] = useState(requiredCoinRank === null)
@@ -121,6 +122,12 @@ function LocalizedPlayGamePage() {
         setMemberAccessGranted(true)
         return
       }
+      if (memberOnlyMahjongGame) {
+        setMemberAccessGranted(false)
+        requestMemberLogin()
+        void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
+        return
+      }
       if (readGuestMahjongTrialMs() < 10 * 60_000) {
         setGuestMahjongTrial(true)
         setMemberAccessGranted(true)
@@ -132,6 +139,12 @@ function LocalizedPlayGamePage() {
       void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
     }).catch(() => {
       if (cancelled) return
+      if (memberOnlyMahjongGame) {
+        setMemberAccessGranted(false)
+        requestMemberLogin()
+        void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
+        return
+      }
       if (readGuestMahjongTrialMs() < 10 * 60_000) {
         setGuestMahjongTrial(true)
         setMemberAccessGranted(true)
@@ -142,7 +155,7 @@ function LocalizedPlayGamePage() {
       }
     })
     return () => { cancelled = true }
-  }, [gameId, isMahjongCoinChargeGame, isProGame, lang, navigate])
+  }, [gameId, isMahjongCoinChargeGame, isProGame, lang, memberOnlyMahjongGame, navigate])
 
   useEffect(() => {
     if (!guestMahjongTrial || !memberAccessGranted) return
@@ -174,7 +187,7 @@ function LocalizedPlayGamePage() {
       setRankAccessGranted(true)
       return
     }
-    const rankName = requiredCoinRank === 'gold' ? '黄金' : requiredCoinRank === 'silver' ? '白银' : '青铜'
+    const rankName = requiredCoinRank === 'platinum' ? '铂金' : requiredCoinRank === 'gold' ? '黄金' : requiredCoinRank === 'silver' ? '白银' : '青铜'
     window.alert(minimumCoinBalance > 0 ? `需要达到青铜段位并拥有至少 ${minimumCoinBalance} 个金币才可以开始游戏，金币不会扣除。` : `需要达到${rankName}段位才可以开始游戏。`)
     void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
   }, [gameId, isProGame, lang, minimumCoinBalance, navigate, requiredCoinRank])

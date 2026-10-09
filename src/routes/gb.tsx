@@ -6,7 +6,7 @@ import { requestMemberLogin } from '#/lib/member-client'
 
 export const Route = createFileRoute('/gb')({
   validateSearch: (search: Record<string, unknown>) => ({
-    cartridge: typeof search.cartridge === 'string' && ['pokemon-gold', 'pokemon-silver'].includes(search.cartridge) ? search.cartridge : undefined,
+    cartridge: typeof search.cartridge === 'string' && ['pokemon-gold', 'pokemon-silver', 'pokemon-crystal'].includes(search.cartridge) ? search.cartridge : undefined,
   }),
   head: () => ({
     meta: [
