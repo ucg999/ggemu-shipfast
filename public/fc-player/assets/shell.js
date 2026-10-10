@@ -436,6 +436,31 @@ if (!isMouseDown) return;
 isMouseDown = false;
 updateTouches([]);
 });
+const keyboardMap = {
+KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right',
+KeyK: 'a', KeyJ: 'b', ShiftLeft: 'select', ShiftRight: 'select', Enter: 'start'
+};
+const setKeyboardButton = (event, pressed) => {
+const button = keyboardMap[event.code];
+if (!button) return;
+event.preventDefault();
+if (uiState[button] === pressed) return;
+activateAudio();
+uiState[button] = pressed;
+try { core.setButton(button, pressed); } catch (error) { console.error(error); }
+renderUI();
+};
+document.addEventListener('keydown', event => setKeyboardButton(event, true));
+document.addEventListener('keyup', event => setKeyboardButton(event, false));
+window.addEventListener('blur', () => {
+Object.keys(keyboardMap).forEach(code => {
+const button = keyboardMap[code];
+if (!uiState[button]) return;
+uiState[button] = false;
+try { core.setButton(button, false); } catch (error) { console.error(error); }
+});
+renderUI();
+});
 document.addEventListener('touchstart', activateAudio, { passive: true, capture: true });
 document.addEventListener('click', activateAudio);
 document.addEventListener('keydown', activateAudio, { capture: true });

@@ -51,6 +51,14 @@ export function readSpendableCoinBalance() {
   return readCoinBalance() + (getCurrentMemberSession()?.coinBalance ?? 0)
 }
 
+export function readMemberCoinBalance() {
+  return getCurrentMemberSession()?.coinBalance ?? 0
+}
+
+export function spendMemberCoinBalance(amount: number) {
+  return spendMemberCoinsOptimistic(Math.max(0, Math.floor(amount)))
+}
+
 export function addCoinBalance(amount: number) {
   if (!Number.isFinite(amount) || amount <= 0) return readCoinBalance()
   const next = Math.min(MAX_COIN_BALANCE, readCoinBalance() + Math.floor(amount))

@@ -1,7 +1,6 @@
 import { Link, createFileRoute, notFound, useRouterState } from '@tanstack/react-router'
 import { SiteLayout } from '#/components/site-layout'
-import { GuestLibraryDetailGate } from '#/components/guest-library-detail-gate'
-import { GameFavoriteButton } from '#/components/game-favorite-button'
+import { PspDiscCollectionButton } from '#/components/psp-disc-collection-button'
 import { useAutomaticGameLike } from '#/components/psp-like-button'
 import { SwitchLibraryImage } from '#/components/switch-library-image'
 import { normalizeLocale } from '#/lib/i18n'
@@ -37,8 +36,7 @@ function PspGameDetailPage() {
   const copy = getCopy(lang)
   useAutomaticGameLike(game.id)
   const isProStandalone = useRouterState({ select: state => state.location.hash === 'PRO' || state.location.hash === '#PRO' })
-  return <GuestLibraryDetailGate gameId={game.id} locale={lang} platform="psp">
-    <SiteLayout locale={lang} hideFooter>
+  return <SiteLayout locale={lang} hideFooter>
       <main className="min-h-screen bg-base-200 px-3 py-5 sm:px-6 lg:px-8">
         <article className="mx-auto max-w-6xl">
           {!isProStandalone ? <Link className="mb-4 inline-flex items-center gap-1 text-sm text-base-content/65" params={{ locale: lang, platformId: 'psp' }} to="/$locale/platform/$platformId">← {copy.back}</Link> : null}
@@ -78,7 +76,6 @@ function PspGameDetailPage() {
                 <div className="flex justify-between gap-4 py-3"><dt className="text-base-content/50">{copy.release}</dt><dd>{game.releaseDate}</dd></div>
                 <div className="flex justify-between gap-4 py-3"><dt className="text-base-content/50">{copy.language}</dt><dd>{game.language}</dd></div>
               </dl>
-              <GameFavoriteButton className="mt-4 w-full" cover={game.cover} gameId={game.id} locale={lang} name={game.title} platform="PSP" />
             </aside>
             <div className="mt-4 flex flex-col gap-3">
               {game.videoUrl ? <a className="btn btn-outline" href={game.videoUrl} target="_blank" rel="noopener noreferrer">{copy.videoButton}</a> : <button className="btn btn-outline" disabled type="button">{copy.videoPending}</button>}
@@ -90,7 +87,7 @@ function PspGameDetailPage() {
                 <p>解压密码：进群可见</p>
                 <p>游戏交流Q群：62119057</p>
               </div>
-              {game.downloadUrl ? <a className="btn btn-error text-white" href={game.downloadUrl} target="_blank" rel="noopener noreferrer">{copy.downloadButton}</a> : <button className="btn" disabled type="button">{game.downloadStatus ?? copy.preparing}</button>}
+              <PspDiscCollectionButton downloadUrl={game.downloadUrl} gameId={game.id} locale={lang} platform="psp" />
               {game.shareVersion ? <span className="text-sm text-base-content/60">{game.shareVersion}</span> : null}
             </div>
           </section>
@@ -100,7 +97,6 @@ function PspGameDetailPage() {
         </article>
       </main>
     </SiteLayout>
-  </GuestLibraryDetailGate>
 }
 
 function getCopy(lang: ReturnType<typeof normalizeLocale>) {

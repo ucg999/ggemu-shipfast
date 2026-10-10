@@ -415,6 +415,31 @@ if (!isMouseDown) return;
 isMouseDown = false;
 updateTouches([]);
 });
+const keyboardMap = {
+KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right',
+KeyK: 'a', KeyJ: 'b', ShiftLeft: 'select', ShiftRight: 'select', Enter: 'start'
+};
+const setKeyboardButton = (event, pressed) => {
+const button = keyboardMap[event.code];
+if (!button) return;
+event.preventDefault();
+if (uiState[button] === pressed) return;
+activateAudio();
+uiState[button] = pressed;
+try { core.setButton(button, pressed); } catch (error) { console.error(error); }
+renderUI();
+};
+document.addEventListener('keydown', event => setKeyboardButton(event, true));
+document.addEventListener('keyup', event => setKeyboardButton(event, false));
+window.addEventListener('blur', () => {
+Object.keys(keyboardMap).forEach(code => {
+const button = keyboardMap[code];
+if (!uiState[button]) return;
+uiState[button] = false;
+try { core.setButton(button, false); } catch (error) { console.error(error); }
+});
+renderUI();
+});
 document.addEventListener('touchstart', activateAudio, { passive: true, capture: true });
 document.addEventListener('click', activateAudio);
 document.addEventListener('visibilitychange', () => {
@@ -514,9 +539,11 @@ const cartridgeDots = cartridgeScreen.querySelector('.cartridge-dots');
 const cartridgeArrows = cartridgeScreen.querySelectorAll('.cartridge-arrow');
 const cartridgeCount = document.querySelector('#cartridge-title span');
 const GB_CARTRIDGES = [
-{ id: 'pokemon-gold', number: '908号', title: '宝可梦 金', rom: './assets/roms/pokemon-gold.gbc', cover: './assets/cartridges/pokemon-gold.webp' },
-{ id: 'pokemon-silver', number: '909号', title: '宝可梦 银', rom: './assets/roms/pokemon-silver.gbc', cover: './assets/cartridges/pokemon-silver.webp' },
-{ id: 'pokemon-crystal', number: '1119号', title: '宝可梦 水晶', rom: './assets/roms/pokemon-crystal.gbc', cover: './assets/cartridges/pokemon-crystal.webp' }
+{ id: 'castlevania-2', number: '198号', title: '恶魔城传说2', system: 'gb', rom: './assets/roms/castlevania-2.gb', cover: './assets/cartridges/castlevania-2.webp' },
+{ id: 'pokemon-gold', number: '908号', title: '宝可梦 金', system: 'gbc', rom: './assets/roms/pokemon-gold.gbc', cover: './assets/cartridges/pokemon-gold.webp' },
+{ id: 'pokemon-silver', number: '909号', title: '宝可梦 银', system: 'gbc', rom: './assets/roms/pokemon-silver.gbc', cover: './assets/cartridges/pokemon-silver.webp' },
+{ id: 'cyborg-kuro-chan-2', number: '1066号', title: '霹雳酷乐猫2', system: 'gbc', rom: './assets/roms/cyborg-kuro-chan-2.gbc', cover: './assets/cartridges/cyborg-kuro-chan-2.webp' },
+{ id: 'pokemon-crystal', number: '1119号', title: '宝可梦 水晶', system: 'gbc', rom: './assets/roms/pokemon-crystal.gbc', cover: './assets/cartridges/pokemon-crystal.webp' }
 ];
 const isLocalDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 let availableCartridges = [];
@@ -527,8 +554,7 @@ const bootVideo = document.createElement('video');
 const bootLayer = document.createElement('div');
 bootLayer.id = 'gb-boot-layer';
 bootVideo.id = 'gb-boot-video';
-bootVideo.src = './assets/gbc-boot.mp4';
-bootVideo.preload = 'auto';
+bootVideo.preload = 'metadata';
 bootVideo.playsInline = true;
 bootVideo.muted = false;
 bootVideo.volume = 1;
@@ -537,26 +563,11 @@ bootVideo.setAttribute('webkit-playsinline', '');
 bootLayer.appendChild(bootVideo);
 document.body.appendChild(bootLayer);
 
-function syncBootBackdropColor() {
-try {
-if (!bootVideo.videoWidth || !bootVideo.videoHeight) return;
-const sampler = document.createElement('canvas');
-sampler.width = bootVideo.videoWidth;
-sampler.height = bootVideo.videoHeight;
-const context = sampler.getContext('2d', { willReadFrequently: true });
-if (!context) return;
-context.drawImage(bootVideo, 0, 0);
-const insetX = Math.max(2, Math.round(sampler.width * 0.02));
-const insetY = Math.max(2, Math.round(sampler.height * 0.02));
-const points = [[insetX, insetY], [sampler.width - insetX - 1, insetY], [insetX, sampler.height - insetY - 1], [sampler.width - insetX - 1, sampler.height - insetY - 1]];
-const colors = points.map(function (point) { return context.getImageData(point[0], point[1], 1, 1).data; });
-const channel = function (index) { return Math.round(colors.reduce(function (sum, color) { return sum + color[index]; }, 0) / colors.length); };
-const background = 'rgb(' + channel(0) + ',' + channel(1) + ',' + channel(2) + ')';
+function syncBootBackdropColor(system) {
+const background = system === 'gb' ? '#fffbff' : '#f8f3f7';
 bootLayer.style.backgroundColor = background;
 bootVideo.style.backgroundColor = background;
-} catch (error) {}
 }
-bootVideo.addEventListener('loadeddata', syncBootBackdropColor);
 
 function cartridgeMarkup(cartridge) {
 const visual = cartridge.cover
@@ -597,7 +608,7 @@ const requested = new URLSearchParams(location.search).get('cartridge');
 const requestedIndex = availableCartridges.findIndex(function (cartridge) { return cartridge.id === requested; });
 cartridgeIndex = requestedIndex >= 0 ? requestedIndex : 0;
 renderCartridges();
-if (requestedIndex > 0) window.setTimeout(function () { void switchCartridge(requested); }, 250);
+if (requested && requestedIndex >= 0) window.setTimeout(function () { void switchCartridge(requested); }, 250);
 }
 
 function bytesToBase64(bytes) {
@@ -624,17 +635,28 @@ bootLayer.style.width = Math.round(hitboxes.game.w * scaleX) + 'px';
 bootLayer.style.height = Math.round(hitboxes.game.h * scaleY) + 'px';
 }
 
-function playBootVideo() {
+function playBootVideo(system) {
 return new Promise(function (resolve) {
 let finished = false;
+const source = system === 'gb' ? './assets/gb-boot.mp4' : './assets/gbc-boot.mp4';
 const finish = function () { if (finished) return; finished = true; clearTimeout(fallback); bootVideo.onended = null; bootVideo.onerror = null; bootLayer.classList.remove('is-playing'); resolve(); };
-const fallback = setTimeout(finish, 5000);
+const start = function () {
+if (finished) return;
+syncBootBackdropColor(system);
 syncBootVideoBounds();
 bootVideo.currentTime = 0;
 bootLayer.classList.add('is-playing');
 bootVideo.onended = finish;
 bootVideo.onerror = finish;
 bootVideo.play().catch(finish);
+};
+const fallback = setTimeout(finish, 7000);
+if (bootVideo.getAttribute('src') !== source) {
+bootVideo.setAttribute('src', source);
+bootVideo.load();
+}
+if (bootVideo.readyState >= 2) start();
+else bootVideo.addEventListener('loadeddata', start, { once: true });
 });
 }
 
@@ -649,7 +671,7 @@ try {
 const romPromise = loadCartridgeRom(cartridge);
 setCartridgeScreen(false);
 if (core.setPaused) core.setPaused(true);
-await playBootVideo();
+await playBootVideo(cartridge.system);
 const rom = await romPromise;
 core.boot(rom, { gameId: cartridge.id, toast: showToast, onReady: function () { renderUI(); startRenderLoop(); } });
 applyStoredCheats(cartridge.id);

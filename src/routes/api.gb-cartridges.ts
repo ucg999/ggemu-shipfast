@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { assertSameOrigin, getMemberFromRequest, jsonError, leaderboardDb, memberDb } from '#/lib/member-auth.server'
 
-const CARTRIDGE_IDS = new Set(['pokemon-gold', 'pokemon-silver', 'pokemon-crystal'])
+const CARTRIDGE_IDS = new Set(['castlevania-2', 'pokemon-gold', 'pokemon-silver', 'cyborg-kuro-chan-2', 'pokemon-crystal'])
 
 export const Route = createFileRoute('/api/gb-cartridges')({
   server: { handlers: {

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Locale } from '#/lib/ggemu'
 import { SiteLayout } from '#/components/site-layout'
-import { addCoinBalance, readSpendableCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
+import { CartridgeControlsDialog, CartridgePlayerDialog } from '#/components/cartridge-controls-dialog'
+import { readMemberCoinBalance, spendMemberCoinBalance } from '#/lib/coin-wallet'
 import { useMemberSession } from '#/lib/member-client'
 
 const OWNED_CARTRIDGES_KEY = 'ucg999-fc-owned-cartridges'
@@ -114,6 +115,8 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
   const [modifiedOnly, setModifiedOnly] = useState(false)
   const [rankings, setRankings] = useState<FcRankings>({ cartridges: [], collectors: [] })
   const [rankingsOpen, setRankingsOpen] = useState(false)
+  const [previewing, setPreviewing] = useState<string | null>(null)
+  const [playing, setPlaying] = useState<string | null>(null)
   const searchRef = useRef<HTMLFormElement>(null)
 
   function applyRankings(result: { rankings?: Partial<FcRankings> }) {
@@ -210,28 +213,38 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
       window.location.assign(`/fc?cartridge=${encodeURIComponent(cartridgeId)}`)
       return
     }
-    if (!member && owned.length >= 2) {
-      setNotice(lang === 'en' ? 'Guests can collect up to 2 cartridges. Sign in for unlimited collections.' : '游客最多只能收藏2款卡带，登录后可继续收藏')
+    if (!member) {
+      setNotice(lang === 'en' ? 'Sign in to collect cartridges with member coins.' : '请先登录玩家账号，收藏只可使用会员金币')
       window.setTimeout(() => setNotice(''), 2800)
       return
     }
     setPendingPurchase(cartridgeId)
   }
 
+  function openCartridge(cartridgeId: string) {
+    if (window.matchMedia('(min-width: 1024px)').matches) setPreviewing(cartridgeId)
+    else handleCartridge(cartridgeId)
+  }
+
+  function playOrCollect(cartridgeId: string) {
+    if (owned.includes(cartridgeId) && window.matchMedia('(min-width: 1024px)').matches) setPlaying(cartridgeId)
+    else handleCartridge(cartridgeId)
+  }
+
   async function confirmPurchase() {
     const cartridgeId = pendingPurchase
     if (!cartridgeId) return
     setPendingPurchase(null)
-    if (readSpendableCoinBalance() < CARTRIDGE_PRICE) {
+    if (!member) {
+      setNotice(lang === 'en' ? 'Sign in to use member coins.' : '请先登录玩家账号')
+      return
+    }
+    if (readMemberCoinBalance() < CARTRIDGE_PRICE || !spendMemberCoinBalance(CARTRIDGE_PRICE)) {
       setNotice(copy.insufficient)
       return
     }
     const previous = owned
     try {
-      if (!spendCoinBalance(CARTRIDGE_PRICE)) {
-        setNotice(copy.failed)
-        return
-      }
       let next = [...new Set([...owned, cartridgeId])]
       if (member) {
         const response = await fetch('/api/fc-cartridges', {
@@ -250,7 +263,6 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
       setNotice(copy.purchased)
       void refreshRankings()
     } catch {
-      addCoinBalance(CARTRIDGE_PRICE)
       setOwned(previous)
       setNotice(copy.failed)
     }
@@ -314,7 +326,7 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
           <div className="grid grid-cols-3 gap-2.5 sm:gap-4 lg:grid-cols-6">
             {cartridges.map((cartridge) => (
               <article className="psp-library-card group relative" key={cartridge.id}>
-                <button aria-label={`${owned.includes(cartridge.id) ? copy.open : copy.buy}${cartridge.title}`} className="block w-full" onClick={() => handleCartridge(cartridge.id)} type="button">
+                <button aria-label={`${owned.includes(cartridge.id) ? copy.open : copy.buy}${cartridge.title}`} className="block w-full" onClick={() => openCartridge(cartridge.id)} type="button">
                   <div className="fc-cartridge-cover psp-library-cover aspect-[3/2] w-full overflow-hidden rounded-lg bg-transparent">
                     <img
                       alt={`${cartridge.title} FC卡带`}
@@ -335,7 +347,7 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
                       aria-label={`${owned.includes(cartridge.id) ? copy.open : copy.buy}${cartridge.title}`}
                       className={`ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-sm transition sm:h-7 sm:w-7 ${owned.includes(cartridge.id) ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-amber-300 text-black hover:bg-amber-200'}`}
                       title={owned.includes(cartridge.id) ? copy.play : `${CARTRIDGE_PRICE} ${copy.buyLabel}`}
-                      onClick={() => handleCartridge(cartridge.id)}
+                      onClick={() => playOrCollect(cartridge.id)}
                       type="button"
                     >
                       {owned.includes(cartridge.id)
@@ -352,6 +364,11 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
               </article>
             ))}
           </div>
+          {previewing ? (() => {
+            const cartridge = FC_CARTRIDGES.find(item => item.id === previewing)
+            return cartridge ? <CartridgeControlsDialog actionLabel={owned.includes(cartridge.id) ? copy.play : copy.buyLabel} cover={cartridge.cover} details={`${cartridge.number} · ${cartridge.genre} · ${cartridge.releaseDate} · ${cartridge.publisher}`} onAction={() => { setPreviewing(null); if (owned.includes(cartridge.id)) setPlaying(cartridge.id); else handleCartridge(cartridge.id) }} onClose={() => setPreviewing(null)} title={cartridge.title} /> : null
+          })() : null}
+          {playing ? <CartridgePlayerDialog onClose={() => setPlaying(null)} src={`/fc-player/index.html?cartridge=${encodeURIComponent(playing)}`} title={FC_CARTRIDGES.find(item => item.id === playing)?.title ?? 'FC游戏机'} /> : null}
           {rankingsOpen ? <div className="fixed inset-0 z-[240] flex items-center justify-center bg-black/35 px-4" role="dialog" aria-modal="true" aria-labelledby="fc-rankings-title" onClick={() => setRankingsOpen(false)}>
             <section className="w-full max-w-2xl rounded-2xl bg-[#f0f0ed] p-4 text-base-content shadow-2xl sm:p-6" onClick={event => event.stopPropagation()}>
               <div className="mb-4 flex items-center justify-between"><h2 className="text-xl font-semibold" id="fc-rankings-title">{copy.rankings}</h2><button aria-label={copy.cancel} className="btn btn-ghost btn-sm btn-circle text-xl" type="button" onClick={() => setRankingsOpen(false)}>×</button></div>
