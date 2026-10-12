@@ -253,6 +253,7 @@ function CoinChallengePage() {
   const poolAudioRef = useRef<HTMLAudioElement | null>(null)
   const modeEntryAudioRef = useRef<HTMLAudioElement | null>(null)
   const ghostEntryAudioRef = useRef<HTMLAudioElement | null>(null)
+  const instantAudiosRef = useRef<HTMLAudioElement[]>([])
   const machineRef = useRef<CoinChallengeState>(createEmptyChallengeState())
   const collectibleWinRef = useRef(0)
   const gameModeRef = useRef(gameMode)
@@ -383,7 +384,57 @@ function CoinChallengePage() {
     ghostEntryAudioRef.current = new Audio('/coin-challenge-ghost-entry.mp3')
     ghostEntryAudioRef.current.preload = 'auto'
 
+    const instantAudios = [
+      coinDropAudioRef.current,
+      withdrawAudioRef.current,
+      winAudioRef.current,
+      winAudioAltRef.current,
+      luckyAudioRef.current,
+      penaltyAudioRef.current,
+      jackpotAudioRef.current,
+      poolAudioRef.current,
+      modeEntryAudioRef.current,
+      ghostEntryAudioRef.current,
+    ].filter((audio): audio is HTMLAudioElement => Boolean(audio))
+    instantAudiosRef.current = instantAudios
+
+    // Mobile browsers may defer both downloading and unlocking audio until the
+    // first touch. Load every result sound now, then silently unlock them on the
+    // first interaction so reel-result callbacks can play without a late start.
+    instantAudios.forEach((audio) => {
+      audio.load()
+      // Prime the HTTP cache as some mobile engines treat `preload=auto` only
+      // as a hint and otherwise wait until the result has already landed.
+      void fetch(audio.src, { cache: 'force-cache' }).catch(() => {})
+    })
+    let resultAudioUnlocked = false
+    const unlockResultAudio = () => {
+      if (resultAudioUnlocked) return
+      resultAudioUnlocked = true
+      try {
+        const AudioContextClass = window.AudioContext ??
+          (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+        if (AudioContextClass) {
+          const context = audioContextRef.current ?? new AudioContextClass()
+          audioContextRef.current = context
+          if (context.state === 'suspended') void context.resume().catch(() => {})
+          const source = context.createBufferSource()
+          source.buffer = context.createBuffer(1, 1, context.sampleRate)
+          source.connect(context.destination)
+          source.start()
+        }
+      } catch {
+        // Audio remains optional if a browser declines early initialization.
+      }
+      window.removeEventListener('pointerdown', unlockResultAudio, true)
+      window.removeEventListener('keydown', unlockResultAudio, true)
+    }
+    window.addEventListener('pointerdown', unlockResultAudio, true)
+    window.addEventListener('keydown', unlockResultAudio, true)
+
     return () => {
+      window.removeEventListener('pointerdown', unlockResultAudio, true)
+      window.removeEventListener('keydown', unlockResultAudio, true)
       window.removeEventListener('pagehide', cashOutOnExit)
       cashOutOnExit()
       if (spinTimerRef.current !== null) {
@@ -429,6 +480,7 @@ function CoinChallengePage() {
       ghostEntryAudioRef.current?.pause()
       if (ghostEntryAudioRef.current) ghostEntryAudioRef.current.onended = null
       ghostEntryAudioRef.current = null
+      instantAudiosRef.current = []
     }
   }, [])
 
@@ -515,22 +567,30 @@ function CoinChallengePage() {
         // Fall back to the media element's normal volume.
       }
       winAudio.volume = 1
-      winAudio.currentTime = 0
-      winAudio.onended = () => setWinningLight(null)
-      void winAudio.play().catch(() => {
-        safelyRunAudio(() => {
-        const fallbackAudio = useAlternate ? winAudioRef.current : winAudioAltRef.current
-        if (!fallbackAudio) return
-        fallbackAudio.volume = 1
-        fallbackAudio.currentTime = 0
-        fallbackAudio.onended = () => setWinningLight(null)
-        void fallbackAudio.play().catch(() => {
-          // Winning remains visible when the browser blocks all audio playback.
-        })
-        })
-      })
+      playCompleteAudio(winAudio, () => setWinningLight(null))
     }
     })
+  }
+
+  function playCompleteAudio(audio: HTMLAudioElement | null, onEnded?: () => void) {
+    if (!audio) return
+    // The most recent result always owns the sound channel. Stop any earlier
+    // non-running-light sound so mobile devices immediately announce the cell
+    // that just landed instead of overlapping or waiting.
+    instantAudiosRef.current.forEach((playingAudio) => {
+      if (playingAudio === audio || playingAudio.paused) return
+      playingAudio.onended = null
+      playingAudio.pause()
+      try { playingAudio.currentTime = 0 } catch {}
+    })
+    // Results should sound when the reel actually lands. Re-triggering the same
+    // sound starts it immediately instead of making mobile players wait for a
+    // queued copy left over from an earlier result.
+    audio.onended = onEnded
+      ? () => safelyRunAudio(onEnded)
+      : null
+    try { audio.currentTime = 0 } catch {}
+    void audio.play().catch(() => safelyRunAudio(() => onEnded?.()))
   }
 
   function playBetClick() {
@@ -569,10 +629,7 @@ function CoinChallengePage() {
     if (!audio) return
     try {
     safelyRunAudio(() => window.speechSynthesis?.cancel())
-    audio.currentTime = 0
-    void audio.play().catch(() => {
-      // The lucky animation remains visible if audio playback is blocked.
-    })
+    playCompleteAudio(audio)
     } catch {
       // Audio must never interrupt round settlement.
     }
@@ -583,10 +640,7 @@ function CoinChallengePage() {
     if (!audio) return
     try {
     safelyRunAudio(() => window.speechSynthesis?.cancel())
-    audio.currentTime = 0
-    void audio.play().catch(() => {
-      // The penalty animation remains visible if audio playback is blocked.
-    })
+    playCompleteAudio(audio)
     } catch {
       // Audio must never interrupt round settlement.
     }
@@ -600,27 +654,8 @@ function CoinChallengePage() {
     }
     try {
     safelyRunAudio(() => window.speechSynthesis?.cancel())
-    audio.currentTime = 0
-    audio.onended = () => setSpecialCellEffect(null)
-    void audio.play().catch(() => setSpecialCellEffect(null))
+    playCompleteAudio(audio, () => setSpecialCellEffect(null))
     } catch {
-      setSpecialCellEffect(null)
-    }
-  }
-
-  function stopCelebrationAudio() {
-    for (const audio of [winAudioRef.current, winAudioAltRef.current, luckyAudioRef.current, penaltyAudioRef.current, jackpotAudioRef.current, modeEntryAudioRef.current, ghostEntryAudioRef.current]) {
-      if (!audio) continue
-      audio.onended = null
-      try {
-        audio.pause()
-        audio.currentTime = 0
-      } catch {
-        // Keep controls usable even when media playback is unavailable.
-      }
-    }
-    if (!isSpinning) {
-      setWinningLight(null)
       setSpecialCellEffect(null)
     }
   }
@@ -629,10 +664,7 @@ function CoinChallengePage() {
     safelyRunAudio(() => {
     const poolAudio = poolAudioRef.current
     if (!poolAudio) return
-    poolAudio.currentTime = 0
-    void poolAudio.play().catch(() => {
-      // Prize-pool actions remain usable when the browser blocks audio.
-    })
+    playCompleteAudio(poolAudio)
     })
   }
 
@@ -681,10 +713,7 @@ function CoinChallengePage() {
     const coinDropAudio = coinDropAudioRef.current
     safelyRunAudio(() => {
     if (coinDropAudio) {
-      coinDropAudio.currentTime = 0
-      void coinDropAudio.play().catch(() => {
-        // Coin insertion remains usable when the browser blocks audio.
-      })
+      playCompleteAudio(coinDropAudio)
     }
 
     })
@@ -750,8 +779,7 @@ function CoinChallengePage() {
     safelyRunAudio(() => {
       const audio = coinDropAudioRef.current
       if (audio) {
-        audio.currentTime = 0
-        void audio.play().catch(() => {})
+        playCompleteAudio(audio)
       }
     })
     updateMachine(current => ({
@@ -778,8 +806,7 @@ function CoinChallengePage() {
       safelyRunAudio(() => {
         const withdrawAudio = withdrawAudioRef.current
         if (withdrawAudio) {
-          withdrawAudio.currentTime = 0
-          void withdrawAudio.play().catch(() => {})
+          playCompleteAudio(withdrawAudio)
         }
       })
       if (refund > 0) addCoinBalance(refund)
@@ -805,17 +832,10 @@ function CoinChallengePage() {
     autoRankRefillEnabledRef.current = false
     setIsWithdrawing(true)
     safelyRunAudio(() => {
-    winAudioRef.current?.pause()
-    if (winAudioRef.current) winAudioRef.current.currentTime = 0
-    winAudioAltRef.current?.pause()
-    if (winAudioAltRef.current) winAudioAltRef.current.currentTime = 0
     setWinningLight(null)
     const withdrawAudio = withdrawAudioRef.current
     if (withdrawAudio) {
-      withdrawAudio.currentTime = 0
-      void withdrawAudio.play().catch(() => {
-        // Withdrawal remains usable when the browser blocks audio.
-      })
+      playCompleteAudio(withdrawAudio)
     }
     })
     // One press settles winnings only. CREDIT is returned by a later press once
@@ -832,10 +852,6 @@ function CoinChallengePage() {
       if (remaining < 1) {
         if (transferTimerRef.current !== null) window.clearInterval(transferTimerRef.current)
         transferTimerRef.current = null
-        safelyRunAudio(() => {
-          withdrawAudioRef.current?.pause()
-          if (withdrawAudioRef.current) withdrawAudioRef.current.currentTime = 0
-        })
         setIsWithdrawing(false)
         return
       }
@@ -1110,23 +1126,6 @@ function CoinChallengePage() {
       return true
     }
     safelyRunAudio(() => {
-    winAudioRef.current?.pause()
-    if (winAudioRef.current) {
-      winAudioRef.current.currentTime = 0
-      winAudioRef.current.onended = null
-    }
-    winAudioAltRef.current?.pause()
-    if (winAudioAltRef.current) {
-      winAudioAltRef.current.currentTime = 0
-      winAudioAltRef.current.onended = null
-    }
-    for (const specialAudio of [luckyAudioRef.current, penaltyAudioRef.current, jackpotAudioRef.current, modeEntryAudioRef.current, ghostEntryAudioRef.current]) {
-      specialAudio?.pause()
-      if (specialAudio) {
-        specialAudio.currentTime = 0
-        specialAudio.onended = null
-      }
-    }
     setWinningLight(null)
     setSpecialCellEffect(null)
     window.speechSynthesis?.cancel()
@@ -1306,10 +1305,8 @@ function CoinChallengePage() {
             : ghostEntryAudioRef.current
           if (entryAudio) {
             safelyRunAudio(() => {
-            entryAudio.currentTime = 0
             entryAudio.volume = 1
-            entryAudio.onended = () => setWinningLight(null)
-            void entryAudio.play().catch(() => {})
+            playCompleteAudio(entryAudio, () => setWinningLight(null))
             })
           }
           spinTimerRef.current = window.setTimeout(() => handleStartRef.current(true), 700)
@@ -1567,16 +1564,11 @@ function CoinChallengePage() {
     <section
       className="relative min-h-screen touch-manipulation overflow-hidden bg-black text-white sm:min-h-0 sm:w-full sm:max-w-[760px] sm:overflow-visible sm:rounded-2xl sm:border sm:border-white/20 sm:shadow-2xl"
       onDoubleClick={(event) => event.preventDefault()}
-      onPointerDownCapture={(event) => {
+      onPointerDownCapture={() => {
         unlockGameAudio()
-        if ((event.target as Element).closest('button, a')) stopCelebrationAudio()
-      }}
-      onClickCapture={(event) => {
-        if ((event.target as Element).closest('button, a')) stopCelebrationAudio()
       }}
       onKeyDownCapture={(event) => {
         if (event.key === 'Enter' || event.key === ' ') unlockGameAudio()
-        if ((event.key === 'Enter' || event.key === ' ') && (event.target as Element).closest('button, a')) stopCelebrationAudio()
       }}
     >
       {embed !== '1' ? <Link

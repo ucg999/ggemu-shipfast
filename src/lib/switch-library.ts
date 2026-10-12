@@ -53,7 +53,9 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     releaseDate: '2023-10-26',
     requiredSystem: '待确认',
     language: '中文',
-    downloadStatus: '正在更新',
+    downloadUrl: 'https://pan.baidu.com/s/1Qkx-nyzqj3nqsnnsOPm1yA?pwd=9999',
+    shareVersion: '版本号：1.0.6+6DLC（XCI）',
+    updatedAt: '2026-10-11T11:08:54+08:00',
     screenshots: [
       '/switch-library/dave-the-diver/promo-godzilla.webp',
       '/switch-library/dave-the-diver/promo-jungle.webp',

@@ -105,11 +105,19 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
               ORDER BY x.period_key DESC LIMIT 1
             `).bind(weeklyKey).first<{ display_name: string | null }>()
           : null
+        const pendingArenaRewards = channel === 'red-blue-arena' && member
+          ? await leaderboardDb().prepare(`
+              SELECT period_key, reward_coins FROM arena_weekly_settlements
+              WHERE arrest_player_id = ? AND reward_coins > 0 AND reward_applied = 0
+              ORDER BY period_key ASC
+            `).bind(member.id).all<{ period_key: string; reward_coins: number }>()
+          : { results: [] as Array<{ period_key: string; reward_coins: number }> }
         return Response.json({
           leaderboard: rankResult.results.map((row: RankRow, index: number) => ({ rank: index + 1, displayName: row.display_name, score: row.score, wins: row.wins, losses: row.losses, updatedAt: row.updated_at })),
           bountyLeaderboard: bountyResult.results.map((row, index) => ({ rank: index + 1, displayName: row.display_name, coins: row.coins })),
           arrestLeaderboard: arrestResult.results.map((row, index) => ({ rank: index + 1, displayName: row.display_name, coins: row.coins })),
           lastWeekChampion: lastWeekChampion?.display_name ?? null,
+          pendingRewards: pendingArenaRewards.results.map(row => ({ periodKey: row.period_key, coins: row.reward_coins })),
           member,
           online: onlineResult.results.length,
           winCounts: parseWinCounts(competition?.win_counts_json),
@@ -141,6 +149,28 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
           if (member.needsNickname) return jsonError('请先完成必填昵称设置', 428)
           const body = await request.json() as Record<string, unknown>
           const channel = normalizeChatChannel(body.channel)
+          if (body.action === 'claim-weekly-reward' && channel === 'red-blue-arena') {
+            await settleArenaWeeks()
+            const ranking = leaderboardDb()
+            const awards = await ranking.prepare(`
+              SELECT period_key, reward_coins FROM arena_weekly_settlements
+              WHERE arrest_player_id = ? AND reward_coins > 0 AND reward_applied = 0
+              ORDER BY period_key ASC
+            `).bind(member.id).all<{ period_key: string; reward_coins: number }>()
+            const total = awards.results.reduce((sum, row) => sum + Math.max(0, Number(row.reward_coins) || 0), 0)
+            if (total <= 0) return Response.json({ ok: true, coins: 0 })
+            const rewardKey = `red-blue-weekly:${awards.results.map(row => row.period_key).join(',')}`
+            const account = await memberDb().prepare('SELECT coin_balance FROM members WHERE id = ?').bind(member.id).first<{ coin_balance: number }>()
+            const credited = Math.min(total, Math.max(0, 99_999 - (Number(account?.coin_balance) || 0)))
+            if (account && credited > 0) await memberDb().batch([
+              memberDb().prepare(`UPDATE members SET coin_balance = coin_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND NOT EXISTS (SELECT 1 FROM member_coin_transactions WHERE member_id = ? AND idempotency_key = ?)`)
+                .bind(credited, member.id, member.id, rewardKey),
+              memberDb().prepare(`INSERT OR IGNORE INTO member_coin_transactions (member_id, amount, balance_after, reason, idempotency_key) SELECT id, ?, coin_balance, 'red_blue_weekly_reward', ? FROM members WHERE id = ?`)
+                .bind(credited, rewardKey, member.id),
+            ])
+            await ranking.prepare(`UPDATE arena_weekly_settlements SET reward_applied = 1, settled_at = CURRENT_TIMESTAMP WHERE arrest_player_id = ? AND reward_applied = 0`).bind(member.id).run()
+            return Response.json({ ok: true, coins: credited })
+          }
           if (['presence', 'presence-leave', 'room-join', 'room-leave', 'round-start'].includes(String(body.action))) {
             return jsonError('联机功能已关闭', 410)
           }
@@ -349,7 +379,7 @@ async function settleArenaWeeks() {
     SELECT DISTINCT s.period_key
     FROM arena_weekly_coin_scores s
     LEFT JOIN arena_weekly_settlements x ON x.period_key = s.period_key
-    WHERE s.period_key < ? AND (x.period_key IS NULL OR x.reward_applied = 0)
+    WHERE s.period_key < ? AND x.period_key IS NULL
     ORDER BY s.period_key ASC LIMIT 8
   `).bind(currentKey).all<{ period_key: string }>()
 
@@ -370,22 +400,8 @@ async function settleArenaWeeks() {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).bind(period.period_key, bounty?.player_id ?? null, bountyTotal, arrest?.player_id ?? null, arrestTotal, reward, reward > 0 ? 0 : 1).run()
 
-    if (reward <= 0 || !arrest) continue
-    const rewardKey = `red-blue-arrest:${period.period_key}`
-    const alreadyPaid = await memberDb().prepare('SELECT id FROM member_coin_transactions WHERE member_id = ? AND idempotency_key = ? LIMIT 1').bind(arrest.player_id, rewardKey).first<{ id: number }>()
-    if (!alreadyPaid) {
-      const account = await memberDb().prepare('SELECT coin_balance FROM members WHERE id = ?').bind(arrest.player_id).first<{ coin_balance: number }>()
-      const credited = Math.min(reward, Math.max(0, 99_999 - (Number(account?.coin_balance) || 0)))
-      if (account && credited > 0) {
-        await memberDb().batch([
-          memberDb().prepare(`UPDATE members SET coin_balance = coin_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND NOT EXISTS (SELECT 1 FROM member_coin_transactions WHERE member_id = ? AND idempotency_key = ?)`)
-            .bind(credited, arrest.player_id, arrest.player_id, rewardKey),
-          memberDb().prepare(`INSERT OR IGNORE INTO member_coin_transactions (member_id, amount, balance_after, reason, idempotency_key) SELECT id, ?, coin_balance, 'red_blue_weekly_arrest_reward', ? FROM members WHERE id = ?`)
-            .bind(credited, rewardKey, arrest.player_id),
-        ])
-      }
-    }
-    await ranking.prepare('UPDATE arena_weekly_settlements SET reward_applied = 1, settled_at = CURRENT_TIMESTAMP WHERE period_key = ?').bind(period.period_key).run()
+    // Positive rewards remain pending until the winning player opens the
+    // red-blue arena page and confirms the claim dialog.
   }
 }
 

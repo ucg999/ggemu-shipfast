@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { useMemberSession } from '#/lib/member-client'
+import { getMemberSession, useMemberSession } from '#/lib/member-client'
 
 export type RankableCoinWin = { amount: number; id: string }
 
@@ -14,6 +14,7 @@ type LeaderboardEntry = {
 }
 
 type WeeklyCoinEntry = { rank: number; displayName: string; coins: number }
+type PendingReward = { periodKey: string; coins: number }
 
 export function CoinChallengeCommunity({
   onOpenChange,
@@ -40,6 +41,9 @@ export function CoinChallengeCommunity({
   const [bountyLeaderboard, setBountyLeaderboard] = useState<Array<WeeklyCoinEntry>>([])
   const [arrestLeaderboard, setArrestLeaderboard] = useState<Array<WeeklyCoinEntry>>([])
   const [lastWeekChampion, setLastWeekChampion] = useState<string | null>(null)
+  const [pendingRewards, setPendingRewards] = useState<Array<PendingReward>>([])
+  const [claimingReward, setClaimingReward] = useState(false)
+  const [claimedCoins, setClaimedCoins] = useState(0)
   const uploadedWinsRef = useRef<Set<string>>(new Set())
   const uploadedGameScoresRef = useRef<Set<string>>(new Set())
 
@@ -47,11 +51,12 @@ export function CoinChallengeCommunity({
     const modeQuery = leaderboardMode ? `&mode=${encodeURIComponent(leaderboardMode)}` : ''
     const response = await fetch(`/api/coin-challenge-community?channel=${encodeURIComponent(channel)}${modeQuery}`, { credentials: 'same-origin', cache: 'no-store' })
     if (!response.ok) return
-    const next = await response.json() as { leaderboard?: Array<LeaderboardEntry>; bountyLeaderboard?: Array<WeeklyCoinEntry>; arrestLeaderboard?: Array<WeeklyCoinEntry>; lastWeekChampion?: string | null }
+    const next = await response.json() as { leaderboard?: Array<LeaderboardEntry>; bountyLeaderboard?: Array<WeeklyCoinEntry>; arrestLeaderboard?: Array<WeeklyCoinEntry>; lastWeekChampion?: string | null; pendingRewards?: Array<PendingReward> }
     setLeaderboard((next.leaderboard ?? []).slice(0, 10))
     setBountyLeaderboard(next.bountyLeaderboard ?? [])
     setArrestLeaderboard(next.arrestLeaderboard ?? [])
     setLastWeekChampion(next.lastWeekChampion ?? null)
+    setPendingRewards(next.pendingRewards ?? [])
   }
 
   async function post(body: Record<string, unknown>) {
@@ -97,6 +102,24 @@ export function CoinChallengeCommunity({
     onOpenChange?.(false)
   }
 
+  async function claimWeeklyReward() {
+    if (claimingReward) return
+    setClaimingReward(true)
+    try {
+      const response = await fetch('/api/coin-challenge-community', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'claim-weekly-reward', channel: 'red-blue-arena' }),
+      })
+      const result = await response.json() as { coins?: number; error?: string }
+      if (!response.ok) throw new Error(result.error || '领取失败')
+      setPendingRewards([])
+      setClaimedCoins(Math.max(0, Number(result.coins) || 0))
+      await getMemberSession().catch(() => null)
+    } finally {
+      setClaimingReward(false)
+    }
+  }
+
   return (
     <>
       <div className={inlineLauncher ? 'relative z-30 flex shrink-0 items-center gap-1.5' : standalone ? 'fixed right-3 top-3 z-[180] flex items-center gap-1.5 sm:right-5 sm:top-5' : 'absolute right-20 top-4 z-30 flex items-center gap-1.5 sm:right-28 sm:top-5'}>
@@ -126,6 +149,17 @@ export function CoinChallengeCommunity({
           </div>
         </aside>
       ) : null}
+      {channel === 'red-blue-arena' && (pendingRewards.length > 0 || claimedCoins > 0) ? <div className="fixed inset-0 z-[260] grid place-items-center bg-black/65 p-4">
+        <section className="w-full max-w-sm rounded-3xl border border-red-300/25 bg-[#171111] p-6 text-center text-white shadow-2xl">
+          <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-red-500/15 text-3xl">🪙</div>
+          <h2 className="text-xl font-black">{claimedCoins ? '奖励领取成功' : '红蓝竞技奖励待领取'}</h2>
+          <p className="mt-2 text-sm leading-6 text-white/60">{claimedCoins ? '恭喜你，奖励金币已经计入玩家账号！' : `恭喜你赢得上周红蓝竞技奖励！可领取 ${pendingRewards.reduce((sum, reward) => sum + reward.coins, 0).toLocaleString()} 个金币。`}</p>
+          {claimedCoins ? <strong className="mt-4 block text-3xl text-amber-300">+{claimedCoins.toLocaleString()}</strong> : null}
+          <button className="mt-5 w-full rounded-full bg-red-600 px-5 py-3 font-bold text-white disabled:opacity-50" disabled={claimingReward} onClick={() => claimedCoins ? setClaimedCoins(0) : void claimWeeklyReward()} type="button">
+            {claimedCoins ? '确定' : claimingReward ? '领取中…' : '领取奖励'}
+          </button>
+        </section>
+      </div> : null}
     </>
   )
 }

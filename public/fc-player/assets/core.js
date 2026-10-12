@@ -99,6 +99,7 @@ let ready = false;
 let paused = false;
 let activeMapper = 0;
 let activeGameId = 'super_mario_bros_world';
+let rawCheats = [];
 const offscreen = document.createElement('canvas');
 offscreen.width = WIDTH;
 offscreen.height = HEIGHT;
@@ -113,33 +114,55 @@ for (let i = 0; i < FRAMEBUFFER_SIZE; i++) buf32[i] = 0xff000000 | framebuffer24
 imageData.data.set(buf8);
 offCtx.putImageData(imageData, 0, 0);
 }
-const AUDIO_BUFFERING = 512;
-const SAMPLE_COUNT = 4 * 1024;
+const MOBILE_AUDIO = Boolean(
+(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
+|| (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)
+|| /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
+);
+const AUDIO_BUFFERING = MOBILE_AUDIO ? 2048 : 1024;
+const SAMPLE_COUNT = MOBILE_AUDIO ? 16 * 1024 : 8 * 1024;
 const SAMPLE_MASK = SAMPLE_COUNT - 1;
 const samplesL = new Float32Array(SAMPLE_COUNT);
 const samplesR = new Float32Array(SAMPLE_COUNT);
 let writeCursor = 0;
 let readCursor = 0;
+let audioAvailable = 0;
+let lastOutputL = 0;
+let lastOutputR = 0;
 let audioCtx = null;
 let scriptProcessor = null;
+function resetAudioBuffer() {
+writeCursor = 0;
+readCursor = 0;
+audioAvailable = 0;
+lastOutputL = 0;
+lastOutputR = 0;
+samplesL.fill(0);
+samplesR.fill(0);
+}
 function initAudio() {
 if (audioCtx) return;
 try {
 const Ctor = window.AudioContext || window.webkitAudioContext;
 if (!Ctor) return;
-audioCtx = new Ctor({ sampleRate: 44100 });
+audioCtx = new Ctor({ sampleRate: 44100, latencyHint: MOBILE_AUDIO ? 'balanced' : 'interactive' });
 scriptProcessor = audioCtx.createScriptProcessor(AUDIO_BUFFERING, 0, 2);
 scriptProcessor.onaudioprocess = function (e) {
 const dstL = e.outputBuffer.getChannelData(0);
 const dstR = e.outputBuffer.getChannelData(1);
 for (let i = 0; i < AUDIO_BUFFERING; i++) {
-if (readCursor !== writeCursor) {
-dstL[i] = samplesL[readCursor];
-dstR[i] = samplesR[readCursor];
+if (audioAvailable > 0) {
+lastOutputL = Math.max(-0.82, Math.min(0.82, samplesL[readCursor] * 0.82));
+lastOutputR = Math.max(-0.82, Math.min(0.82, samplesR[readCursor] * 0.82));
+dstL[i] = lastOutputL;
+dstR[i] = lastOutputR;
 readCursor = (readCursor + 1) & SAMPLE_MASK;
+audioAvailable--;
 } else {
-dstL[i] = 0;
-dstR[i] = 0;
+lastOutputL *= 0.985;
+lastOutputR *= 0.985;
+dstL[i] = Math.abs(lastOutputL) < 0.0001 ? 0 : lastOutputL;
+dstR[i] = Math.abs(lastOutputR) < 0.0001 ? 0 : lastOutputR;
 }
 }
 };
@@ -149,9 +172,14 @@ console.log('Web Audio API is not supported');
 }
 }
 function onAudioSample(left, right) {
+if (audioAvailable >= SAMPLE_COUNT) {
+readCursor = (readCursor + 1) & SAMPLE_MASK;
+audioAvailable--;
+}
 samplesL[writeCursor] = left;
 samplesR[writeCursor] = right;
 writeCursor = (writeCursor + 1) & SAMPLE_MASK;
+audioAvailable++;
 }
 function prepareMapper15Rom(binary) {
 const bytes = new Uint8Array(binary.length);
@@ -216,6 +244,10 @@ const BUTTONS = {
 a: 'BUTTON_A', b: 'BUTTON_B', select: 'BUTTON_SELECT', start: 'BUTTON_START',
 up: 'BUTTON_UP', down: 'BUTTON_DOWN', left: 'BUTTON_LEFT', right: 'BUTTON_RIGHT'
 };
+function applyRawCheats() {
+if (!nes || !nes.cpu || !rawCheats.length) return;
+rawCheats.forEach(cheat => nes.cpu.write(cheat.address, cheat.value));
+}
 window.GGEMU_CORE = {
 id: 'nes',
 name: 'NES',
@@ -233,10 +265,7 @@ const previousReady = ready;
 const previousMapper = activeMapper;
 ready = false;
 paused = false;
-writeCursor = 0;
-readCursor = 0;
-samplesL.fill(0);
-samplesR.fill(0);
+resetAudioBuffer();
 try {
 const bytes = typeof romData === 'string'
 ? Uint8Array.from(window.atob(romData), char => char.charCodeAt(0))
@@ -251,8 +280,9 @@ for (let offset = 0; offset < bytes.length; offset += chunkSize) {
 binary += String.fromCharCode.apply(null, bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length)));
 }
 const mapper = ((binary.charCodeAt(6) >> 4) | (binary.charCodeAt(7) & 0xf0));
-if (mapper !== 0 && mapper !== 4 && mapper !== 15) throw new Error('暂不支持Mapper ' + mapper);
-nes = new window.jsnes.NES({ onFrame: onFrame, onAudioSample: onAudioSample });
+if (mapper !== 0 && mapper !== 4 && mapper !== 5 && mapper !== 15) throw new Error('暂不支持Mapper ' + mapper);
+initAudio();
+nes = new window.jsnes.NES({ onFrame: onFrame, onAudioSample: onAudioSample, sampleRate: audioCtx ? audioCtx.sampleRate : 48000 });
 nes.loadROM(mapper === 15 ? prepareMapper15Rom(binary) : binary);
 activeMapper = mapper;
 if (mapper === 15) installMapper15(true);
@@ -265,19 +295,20 @@ console.error(e);
 throw e;
 }
 ready = true;
-initAudio();
-if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+if (audioCtx && audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
 api.onReady();
 return true;
 },
 tick: function () {
 if (!ready || paused || document.hidden) return;
 nes.frame();
+applyRawCheats();
 },
 setPaused: function (value) {
 paused = !!value;
+resetAudioBuffer();
 if (paused && audioCtx && audioCtx.state === 'running') audioCtx.suspend().catch(() => {});
-if (!paused && audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+if (!paused && audioCtx && audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
 },
 setButton: function (id, pressed) {
 if (!nes) return;
@@ -289,23 +320,50 @@ if (pressed) nes.buttonDown(1, code); else nes.buttonUp(1, code);
 setCheatCodes: function (codes) {
 if (!nes || !nes.gameGenie) return 0;
 nes.gameGenie.removeAllCodes();
+rawCheats = [];
 let count = 0;
 String(codes || '').toUpperCase().split(/[\s,;]+/).forEach(rawCode => {
-const code = rawCode.replace(/-/g, '');
+const code = rawCode.trim();
 if (!code) return;
-try { nes.gameGenie.addCode(code); count += 1; } catch (error) {}
+let rawMatch = code.match(/^(?:0X)?([0-9A-F]{1,4})[:=\-\/](?:0X)?([0-9A-F]{1,2})$/);
+if (rawMatch) {
+rawCheats.push({ address: parseInt(rawMatch[1], 16), value: parseInt(rawMatch[2], 16) });
+count += 1;
+return;
+}
+const compactCode = code.replace(/[^0-9A-F]/g, '');
+const gameSharkMatch = /^01([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})$/.exec(compactCode);
+if (gameSharkMatch) {
+rawCheats.push({ address: parseInt(gameSharkMatch[3] + gameSharkMatch[2], 16), value: parseInt(gameSharkMatch[1], 16) });
+count += 1;
+return;
+}
+rawMatch = /^(?:00)?([0-9A-F]{4})([0-9A-F]{2})$/.exec(compactCode);
+if (rawMatch) {
+rawCheats.push({ address: parseInt(rawMatch[1], 16), value: parseInt(rawMatch[2], 16) });
+count += 1;
+return;
+}
+const gameGenieCode = code.replace(/-/g, '');
+try { nes.gameGenie.addCode(gameGenieCode); count += 1; } catch (error) {}
 });
-nes.gameGenie.setEnabled(count > 0);
+nes.gameGenie.setEnabled(count > rawCheats.length);
+applyRawCheats();
 return count;
 },
 clearCheats: function () {
 if (!nes || !nes.gameGenie) return;
 nes.gameGenie.removeAllCodes();
 nes.gameGenie.setEnabled(false);
+rawCheats = [];
+},
+readMemory: function (address) {
+if (!nes || !nes.cpu) return null;
+return nes.cpu.load(Number(address) & 0xffff);
 },
 activateAudio: function () {
 initAudio();
-if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+if (audioCtx && audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
 },
 resumeAudio: function () {
 if (audioCtx && audioCtx.state !== 'running') audioCtx.resume().catch(() => {});

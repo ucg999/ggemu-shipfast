@@ -261,25 +261,25 @@ function getCoinModeCopy(locale: Locale) {
   if (locale === 'zh-TW') return {
     description: '金幣模式遊戲依段位解鎖，只檢查段位與金幣餘額，開始遊戲不會扣除金幣。',
     seoTitle: '金幣模式｜專屬遊戲｜懷舊遊戲廳',
-    subtitle: '美女打鑽、美女彈珠打磚塊需白銀段位；美女天蠶變需黃金段位。達到條件即可遊玩，不扣金幣。',
+    subtitle: '美女打鑽、美女彈珠打磚塊、美女天蠶變均需鉑金段位。達到條件即可遊玩，不扣金幣。',
     title: '金幣模式',
   }
   if (locale === 'en') return {
     description: 'Coin Mode games unlock by rank. Starting a game does not spend coins.',
     seoTitle: 'Coin Mode | Exclusive Games | Retro Game Hall',
-    subtitle: 'Wiggie Waggie and Excelsior require Silver; WOW New Fantasia requires Gold. Coins are not deducted.',
+    subtitle: 'Wiggie Waggie, Excelsior, and WOW New Fantasia all require Platinum. Coins are not deducted.',
     title: 'Coin Mode',
   }
   if (locale === 'ja') return {
     description: 'コインモードのゲームはランクで解放され、開始時にコインは消費されません。',
     seoTitle: 'コインモード｜限定ゲーム｜レトロゲームセンター',
-    subtitle: 'Wiggie WaggieとExcelsiorはシルバー、WOW New Fantasiaはゴールドが必要です。コインは消費されません。',
+    subtitle: 'Wiggie Waggie、Excelsior、WOW New Fantasiaはいずれもプラチナが必要です。コインは消費されません。',
     title: 'コインモード',
   }
   return {
     description: '金币模式游戏按段位解锁，只检查段位和金币余额，开始游戏不会扣除金币。',
     seoTitle: '金币模式｜金币专属游戏｜怀旧游戏厅',
-    subtitle: '美女打钻、美女弹珠打砖块需白银段位；美女天蚕变需黄金段位。达到条件即可游玩，不扣金币。',
+    subtitle: '美女打钻、美女弹珠打砖块、美女天蚕变均需铂金段位。达到条件即可游玩，不扣金币。',
     title: '金币模式',
   }
 }

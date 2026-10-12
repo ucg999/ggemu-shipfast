@@ -5,6 +5,13 @@ type CartridgeControlsDialogProps = {
   onAction: () => void
   onClose: () => void
   title: string
+  guide?: {
+    title: string
+    introduction: readonly string[]
+    highlights: ReadonlyArray<readonly [string, string]>
+    sections: ReadonlyArray<{ readonly title: string; readonly items: ReadonlyArray<readonly [string, string]> }>
+    credit?: string
+  }
 }
 
 const controls = [
@@ -12,9 +19,9 @@ const controls = [
   ['A', 'K'], ['B', 'J'], ['SELECT', 'SHIFT'], ['START', 'ENTER'],
 ] as const
 
-export function CartridgeControlsDialog({ actionLabel, cover, details, onAction, onClose, title }: CartridgeControlsDialogProps) {
+export function CartridgeControlsDialog({ actionLabel, cover, details, guide, onAction, onClose, title }: CartridgeControlsDialogProps) {
   return <div className="fixed inset-0 z-[250] hidden place-items-center bg-black/45 px-6 lg:grid" role="dialog" aria-modal="true" aria-label={title} onClick={onClose}>
-    <section className="w-full max-w-3xl overflow-hidden rounded-2xl bg-[#f0f0ed] text-base-content shadow-2xl" onClick={event => event.stopPropagation()}>
+    <section className={`max-h-[92vh] w-full overflow-y-auto rounded-2xl bg-[#f0f0ed] text-base-content shadow-2xl ${guide ? 'max-w-5xl' : 'max-w-3xl'}`} onClick={event => event.stopPropagation()}>
       <header className="flex items-start justify-between gap-4 border-b border-black/10 px-6 py-4">
         <div><h2 className="text-2xl font-semibold">{title}</h2><p className="mt-1 text-sm text-base-content/55">{details}</p></div>
         <button aria-label="关闭" className="btn btn-ghost btn-sm btn-circle text-xl" type="button" onClick={onClose}>×</button>
@@ -22,7 +29,25 @@ export function CartridgeControlsDialog({ actionLabel, cover, details, onAction,
       <div className="grid gap-7 p-6 md:grid-cols-[minmax(0,1fr)_minmax(260px,.8fr)]">
         <div className="flex min-h-64 items-center justify-center rounded-xl bg-white/60 p-5"><img alt={title} className="max-h-72 w-full object-contain" src={cover} /></div>
         <div className="flex flex-col justify-center">
-          <h3 className="mb-3 text-base font-semibold">键盘操作</h3>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-base font-semibold">键盘操作</h3>
+            {guide ? <details className="group min-w-0 flex-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2">
+              <summary className="cursor-pointer select-none font-semibold text-amber-900">{guide.title}</summary>
+              <div className="mt-3 max-h-[48vh] space-y-4 overflow-y-auto pr-2 text-sm leading-relaxed text-base-content/80">
+                {guide.introduction.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
+                <ul className="space-y-2">
+                  {guide.highlights.map(([label, text]) => <li key={label}><strong>{label}：</strong>{text}</li>)}
+                </ul>
+                {guide.sections.map(section => <section key={section.title}>
+                  <h4 className="mb-2 text-base font-bold text-base-content">{section.title}</h4>
+                  <ul className="space-y-2">
+                    {section.items.map(([label, text]) => <li key={label}><strong>{label}：</strong>{text}</li>)}
+                  </ul>
+                </section>)}
+                {guide.credit ? <p className="border-t border-amber-200 pt-3">本版来自 <strong>{guide.credit}</strong> 的改版游戏，如有侵权请联系删除</p> : null}
+              </div>
+            </details> : null}
+          </div>
           <div className="grid grid-cols-2 gap-2">
             {controls.map(([label, key]) => <div className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm shadow-sm" key={label}><span>{label}</span><kbd className="min-w-12 rounded-md bg-neutral px-2 py-1 text-center text-xs font-semibold text-white">{key}</kbd></div>)}
           </div>

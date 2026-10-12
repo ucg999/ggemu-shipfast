@@ -29,6 +29,9 @@ function cloudflareWorkersClientShim(localPreview = false): Plugin {
 
 const config = defineConfig(({ mode }) => ({
   resolve: { tsconfigPaths: true },
+  optimizeDeps: {
+    exclude: ['@tanstack/router-core', 'seroval', 'seroval-plugins'],
+  },
   plugins: [
     libraryUpdatesPlugin(),
     cloudflareWorkersClientShim(mode === 'local-preview'),

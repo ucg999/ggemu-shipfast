@@ -186,7 +186,7 @@ function ThemeMode() {
   const [inLibrary, setInLibrary] = useState(requestedLibraryIndex >= 0)
   const [page, setPage] = useState(1)
   const [query, setQuery] = useState('')
-  const [librarySort, setLibrarySort] = useState<'random' | 'popular' | 'updatedAt' | 'releaseDate' | 'name'>('releaseDate')
+  const [librarySort, setLibrarySort] = useState<'random' | 'popular' | 'updatedAt' | 'releaseDate' | 'name'>('updatedAt')
   const [librarySortReverse, setLibrarySortReverse] = useState(false)
   const [librarySearchField, setLibrarySearchField] = useState<'all' | 'genre' | 'publisher'>('all')
   const [libraryRandomSeed, setLibraryRandomSeed] = useState(0)
@@ -244,6 +244,13 @@ function ThemeMode() {
   }
   const asset = platform ? getThemeAsset(platform) : null
   const activeGame = result?.games[inLibrary ? gameIndex : showcaseIndex]
+  const activePreviewGame = useMemo(() => {
+    if (!pspPlatform || !activeGame) return activeGame
+    const id = activeGame.url_slug || activeGame._id
+    const pspGame = PSP_LIBRARY_GAMES.find(game => game.id === id)
+    const preview = pspGame?.detailCover ?? pspGame?.cover
+    return preview ? { ...activeGame, game_cover: getLibraryImage(preview) } : activeGame
+  }, [activeGame, pspPlatform])
   const count = result?.pagination.total ?? platform?.count
   const platformLabel = themePlatformLabel(platform, lang) || getPlatformLabel(platform.name, lang)
   const criticalImagesReady = backgroundReady && (consoleReady || !asset.console)
@@ -596,9 +603,9 @@ function ThemeMode() {
           </section>
           <div className="kt-scene" key={platform.name}>
             {asset.console ? <>
-              <div className={`kt-machine-video ${centeredCollectionPreview ? 'is-centered' : ''} ${!preciselyCenteredPlatform && centeredCollectionPreview ? 'is-nudged-left' : ''} ${atariPlatform ? 'is-atari' : ''} ${gbaPlatform ? 'is-gba' : ''} ${sega32xPlatform ? 'is-sega32x' : ''}`} style={{ ...box(asset.videoPosition, asset.videoSize), ...(gbaPlatform ? { height: `calc(${asset.videoSize[1] * 100}% + 3px)` } : {}), ...(sega32xPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 5px)` } : {}), ...(virtualBoyPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 40px)` } : {}) }}><GamePreview allowVideo={criticalImagesReady} game={activeGame} playing={pageVisible} /></div>
+              <div className={`kt-machine-video ${centeredCollectionPreview ? 'is-centered' : ''} ${!preciselyCenteredPlatform && centeredCollectionPreview ? 'is-nudged-left' : ''} ${atariPlatform ? 'is-atari' : ''} ${gbaPlatform ? 'is-gba' : ''} ${sega32xPlatform ? 'is-sega32x' : ''}`} style={{ ...box(asset.videoPosition, asset.videoSize), ...(gbaPlatform ? { height: `calc(${asset.videoSize[1] * 100}% + 3px)` } : {}), ...(sega32xPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 5px)` } : {}), ...(virtualBoyPlatform ? { width: `calc(${asset.videoSize[0] * 100}% + 40px)` } : {}) }}><GamePreview allowVideo={criticalImagesReady} game={activePreviewGame} playing={pageVisible} /></div>
               <img className="kt-console" src={getCompactThemeConsole(asset.console)} decoding="async" fetchPriority="high" alt="" onLoad={() => setConsoleReady(true)} style={box(asset.consolePosition, asset.consoleSize)} />
-            </> : <div className="kt-fallback-preview"><GamePreview allowVideo={criticalImagesReady} game={activeGame} playing={pageVisible} /></div>}
+            </> : <div className="kt-fallback-preview"><GamePreview allowVideo={criticalImagesReady} game={activePreviewGame} playing={pageVisible} /></div>}
           </div>
           <div className="kt-platform-info">
             <dl>
@@ -677,13 +684,7 @@ function ThemeMode() {
                   data-start-game
                   href={switchPlatform ? `/${lang}/platform/switch/${id}#PRO` : pspPlatform ? `/${lang}/platform/psp/${id}#PRO` : `/${lang}/games/${id}#PRO`}
                   onFocus={() => setGameIndex(index)}
-                  onClick={(event) => {
-                    if ((switchPlatform || pspPlatform) && !memberSession) {
-                      event.preventDefault()
-                      setNotice(english ? 'Sign in to open game details.' : '登录玩家账号后才能打开游戏详情')
-                      requestMemberLogin()
-                      return
-                    }
+                  onClick={() => {
                     rememberGameDetailReturnPath(lang, `/${lang}/PRO?platform=${encodeURIComponent(getThemePlatformReturnKey(platform))}`)
                   }}
                 >

@@ -5,7 +5,7 @@ import { assertSameOrigin, getMemberFromRequest, jsonError, leaderboardDb, membe
 const CARTRIDGE_IDS = new Set([
   'donkey-kong', 'donkey-kong-jr', 'popeye', 'gomoku-narabe', 'mahjong', 'mario-bros',
   'popeye-english', 'baseball', 'donkey-kong-jr-math', 'urban-champion', 'happy-cat', 'karateka-street-fighter',
-  'baoxiao-sanguo',
+  'baoxiao-sanguo', 'prison-break-nine-characters',
 ])
 
 export const Route = createFileRoute('/api/fc-cartridges')({

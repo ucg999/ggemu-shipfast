@@ -172,6 +172,38 @@ function RootComponent() {
     }
   }, [])
 
+  useEffect(() => {
+    const protectedMedia = 'img, picture, video, audio, canvas, svg'
+    const isProtectedMedia = (target: EventTarget | null) => target instanceof Element && Boolean(target.closest(protectedMedia))
+    const preventMediaAction = (event: Event) => {
+      if (isProtectedMedia(event.target)) event.preventDefault()
+    }
+    const preventSaveShortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') event.preventDefault()
+    }
+    const protectPlayers = (root: ParentNode) => {
+      root.querySelectorAll<HTMLMediaElement>('video, audio').forEach((media) => {
+        media.setAttribute('controlslist', 'nodownload noremoteplayback')
+        media.setAttribute('disablepictureinpicture', '')
+      })
+    }
+
+    protectPlayers(document)
+    const observer = new MutationObserver(records => records.forEach(record => record.addedNodes.forEach((node) => {
+      if (node instanceof Element) protectPlayers(node)
+    })))
+    observer.observe(document.body, { childList: true, subtree: true })
+    document.addEventListener('contextmenu', preventMediaAction, true)
+    document.addEventListener('dragstart', preventMediaAction, true)
+    window.addEventListener('keydown', preventSaveShortcut, true)
+    return () => {
+      observer.disconnect()
+      document.removeEventListener('contextmenu', preventMediaAction, true)
+      document.removeEventListener('dragstart', preventMediaAction, true)
+      window.removeEventListener('keydown', preventSaveShortcut, true)
+    }
+  }, [])
+
   return <><WantedPlaytimeTracker /><Outlet /></>
 }
 

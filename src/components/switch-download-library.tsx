@@ -20,7 +20,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
   const member = useMemberSession()
   const likeCounts = useGameLikeCounts()
   const [loginNotice, setLoginNotice] = useState('')
-  const [sortField, setSortField] = useState<'random' | 'popular' | 'updatedAt' | 'releaseDate' | 'name'>('releaseDate')
+  const [sortField, setSortField] = useState<'random' | 'popular' | 'updatedAt' | 'releaseDate' | 'name'>('updatedAt')
   const [searchField, setSearchField] = useState<'genre' | 'publisher' | null>(null)
   const [draftField, setDraftField] = useState<'genre' | 'publisher' | null>(null)
   const [reverse, setReverse] = useState(false)
@@ -196,7 +196,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
           {loginNotice ? <div className="fixed left-1/2 top-20 z-[220] -translate-x-1/2 rounded-full bg-black px-5 py-2 text-sm font-medium text-white shadow-xl" role="status">{loginNotice}</div> : null}
           {searchQuery ? <button className="btn btn-ghost btn-sm mb-3" onClick={() => { setSearchQuery(''); setDraftQuery(''); setPage(1) }}>{copy.clear}: {searchQuery} ×</button> : null}
           {games.length === 0 ? <p className="py-12 text-center text-base-content/60">{copy.empty}</p> : null}
-          <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${platform === 'psp' ? 'sm:grid-cols-4 lg:grid-cols-7' : 'sm:grid-cols-3 lg:grid-cols-5'}`}>
+          <div className={`grid gap-3 sm:gap-4 ${platform === 'psp' ? 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-7' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'}`}>
             {visibleGames.map((game) => {
               const pspCover = platform === 'psp' && 'boxCover' in game && typeof game.boxCover === 'string'
                 ? game.boxCover

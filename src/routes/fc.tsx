@@ -2,12 +2,13 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
 import { MemberAccountButton } from '#/components/member-account'
+import { spendCoinBalance } from '#/lib/coin-wallet'
 import { requestMemberLogin } from '#/lib/member-client'
 
 const FC_CARTRIDGE_IDS = new Set([
   'donkey-kong', 'donkey-kong-jr', 'popeye', 'gomoku-narabe', 'mahjong', 'mario-bros',
   'popeye-english', 'baseball', 'donkey-kong-jr-math', 'urban-champion', 'happy-cat', 'karateka-street-fighter',
-  'baoxiao-sanguo',
+  'baoxiao-sanguo', 'prison-break-nine-characters',
 ])
 
 export const Route = createFileRoute('/fc')({
@@ -30,8 +31,20 @@ function FcPlayerPage() {
   const { cartridge } = Route.useSearch()
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin || event.data?.type !== 'fc-member-login-request') return
-      requestMemberLogin()
+      if (event.origin !== window.location.origin) return
+      if (event.data?.type === 'fc-member-login-request') {
+        requestMemberLogin()
+        return
+      }
+      if (event.data?.type === 'fc-spend-coins-request') {
+        const requestId = typeof event.data.requestId === 'string' ? event.data.requestId : ''
+        const amount = Math.max(0, Math.min(100, Math.floor(Number(event.data.amount) || 0)))
+        const success = Boolean(requestId && amount > 0 && spendCoinBalance(amount))
+        ;(event.source as Window | null)?.postMessage(
+          { type: 'fc-spend-coins-result', requestId, success },
+          event.origin,
+        )
+      }
     }
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)

@@ -369,7 +369,7 @@ try { core.activateAudio(); } catch (e) { console.error(e); }
 }
 }
 function bindControls() {
-const updateTouches = (touches) => {
+const updateTouches = (touches, haptic) => {
 const newActive = new Set();
 for (let i = 0; i < touches.length; i++) {
 hitTest(touches[i].clientX, touches[i].clientY).forEach(k => newActive.add(k));
@@ -377,6 +377,11 @@ hitTest(touches[i].clientX, touches[i].clientY).forEach(k => newActive.add(k));
 if (newActive.has('ab')) {
 newActive.add('a');
 newActive.add('b');
+}
+const newlyPressed = Object.keys(uiState).filter(key => newActive.has(key) && !uiState[key]);
+if (haptic && newlyPressed.length && navigator.vibrate) {
+const strongPress = newlyPressed.some(key => key === 'a' || key === 'b' || key === 'start' || key === 'select');
+navigator.vibrate(strongPress ? 18 : 8);
 }
 let changed = false;
 Object.keys(uiState).forEach(key => {
@@ -390,10 +395,10 @@ try { core.setButton(key, isActive); } catch (e) { console.error(e); }
 if (changed) renderUI();
 };
 mainCanvas.addEventListener('touchstart', (e) => {
-e.preventDefault(); activateAudio(); updateTouches(e.touches);
+e.preventDefault(); activateAudio(); updateTouches(e.touches, true);
 }, { passive: false });
 mainCanvas.addEventListener('touchmove', (e) => {
-e.preventDefault(); updateTouches(e.touches);
+e.preventDefault(); updateTouches(e.touches, true);
 }, { passive: false });
 mainCanvas.addEventListener('touchend', (e) => {
 e.preventDefault(); updateTouches(e.touches);
@@ -490,12 +495,14 @@ document.getElementById('btn-load').addEventListener('click', () => {
 try { core.loadState(); } catch (e) { showToast('读档失败'); console.error(e); }
 });
 let currentGameId = 'kof-96';
+const isLocalDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const cheatButton = document.createElement('button');
 cheatButton.id = 'btn-cheats';
 cheatButton.type = 'button';
 cheatButton.textContent = '金手指';
 const toolbar = document.getElementById('toolbar');
 toolbar.insertBefore(cheatButton, document.getElementById('btn-shot'));
+cheatButton.hidden = !isLocalDevelopment;
 const cheatPanel = document.createElement('section');
 cheatPanel.id = 'cheat-panel';
 cheatPanel.setAttribute('aria-hidden', 'true');
@@ -506,7 +513,9 @@ function cheatStorageKey() { return 'ucg999-gb-cheats:' + currentGameId; }
 function applyStoredCheats(gameId) {
 currentGameId = gameId;
 let stored = '';
+if (isLocalDevelopment) {
 try { stored = localStorage.getItem(cheatStorageKey()) || ''; } catch (error) {}
+}
 if (core.setCheatCodes) core.setCheatCodes(stored);
 return stored;
 }
@@ -545,11 +554,13 @@ const GB_CARTRIDGES = [
 { id: 'cyborg-kuro-chan-2', number: '1066号', title: '霹雳酷乐猫2', system: 'gbc', rom: './assets/roms/cyborg-kuro-chan-2.gbc', cover: './assets/cartridges/cyborg-kuro-chan-2.webp' },
 { id: 'pokemon-crystal', number: '1119号', title: '宝可梦 水晶', system: 'gbc', rom: './assets/roms/pokemon-crystal.gbc', cover: './assets/cartridges/pokemon-crystal.webp' }
 ];
-const isLocalDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 let availableCartridges = [];
 let cartridgeIndex = 0;
 let switchingCartridge = false;
 let cartridgeMemberAuthenticated = false;
+let cartridgeMemberId = '';
+let initialCartridgeResolved = false;
+const lastCartridgeKey = 'ucg999-gb-last-cartridge';
 const bootVideo = document.createElement('video');
 const bootLayer = document.createElement('div');
 bootLayer.id = 'gb-boot-layer';
@@ -596,7 +607,11 @@ let owned = [];
 try {
 const response = await fetch('/api/gb-cartridges', { credentials: 'same-origin', cache: 'no-store' });
 const result = response.ok ? await response.json() : null;
-if (result && result.authenticated) { cartridgeMemberAuthenticated = true; owned = Array.isArray(result.owned) ? result.owned : []; }
+if (result && result.authenticated) {
+cartridgeMemberAuthenticated = true;
+cartridgeMemberId = typeof result.memberId === 'string' ? result.memberId : '';
+owned = Array.isArray(result.owned) ? result.owned : [];
+}
 else owned = [];
 } catch (error) {
 owned = [];
@@ -608,7 +623,11 @@ const requested = new URLSearchParams(location.search).get('cartridge');
 const requestedIndex = availableCartridges.findIndex(function (cartridge) { return cartridge.id === requested; });
 cartridgeIndex = requestedIndex >= 0 ? requestedIndex : 0;
 renderCartridges();
-if (requested && requestedIndex >= 0) window.setTimeout(function () { void switchCartridge(requested); }, 250);
+if (!initialCartridgeResolved) {
+initialCartridgeResolved = true;
+const requestedCartridge = requestedIndex >= 0 ? availableCartridges[requestedIndex] : null;
+if (requestedCartridge) window.setTimeout(function () { void switchCartridge(requestedCartridge.id); }, 250);
+}
 }
 
 function bytesToBase64(bytes) {
@@ -675,6 +694,7 @@ await playBootVideo(cartridge.system);
 const rom = await romPromise;
 core.boot(rom, { gameId: cartridge.id, toast: showToast, onReady: function () { renderUI(); startRenderLoop(); } });
 applyStoredCheats(cartridge.id);
+try { localStorage.setItem(lastCartridgeKey + (cartridgeMemberId ? ':' + cartridgeMemberId : ''), cartridge.id); } catch (storageError) {}
 showToast('《' + cartridge.title + '》已启动');
 } catch (error) {
 showToast('卡带读取失败');
@@ -833,3 +853,13 @@ startRenderLoop();
 });
 applyStoredCheats('kof-96');
 })();
+
+document.addEventListener('contextmenu', event => {
+if (event.target instanceof Element && event.target.closest('img,video,audio,canvas,svg')) event.preventDefault();
+}, true);
+document.addEventListener('dragstart', event => {
+if (event.target instanceof Element && event.target.closest('img,video,audio,canvas,svg')) event.preventDefault();
+}, true);
+window.addEventListener('keydown', event => {
+if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') event.preventDefault();
+}, true);

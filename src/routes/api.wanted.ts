@@ -28,7 +28,7 @@ export const Route = createFileRoute('/api/wanted')({
         ORDER BY weighted_minutes DESC, updated_at ASC LIMIT 3
       `).bind(periodKey).all<WantedRow>()
       const participantKey = member ? `member:${member.id}` : guestKey
-      const pending = participantKey ? await leaderboardDb().prepare(`
+      const pending = member && participantKey ? await leaderboardDb().prepare(`
         SELECT period_key, rank, reward_coins FROM wanted_weekly_awards
         WHERE participant_key = ? AND claimed_at IS NULL ORDER BY period_key ASC
       `).bind(participantKey).all<{ period_key: string; rank: number; reward_coins: number }>() : { results: [] }
@@ -78,15 +78,17 @@ export const Route = createFileRoute('/api/wanted')({
       }
 
       if (body.action === 'claim') {
+        if (!member) return jsonError('请先登录玩家账号领取奖励', 401)
         await ensurePreviousWeekAwards()
         const db = leaderboardDb()
         const awards = await db.prepare(`SELECT period_key, rank, reward_coins FROM wanted_weekly_awards WHERE participant_key = ? AND claimed_at IS NULL ORDER BY period_key ASC`).bind(participantKey).all<{ period_key: string; rank: number; reward_coins: number }>()
         const total = awards.results.reduce((sum, row) => sum + Math.max(0, Number(row.reward_coins) || 0), 0)
         if (total <= 0) return Response.json({ ok: true, coins: 0 })
-        if (member) {
+        let credited = 0
+        {
           const rewardKey = `wanted-weekly:${awards.results.map(row => row.period_key).join(',')}`
           const account = await memberDb().prepare('SELECT coin_balance FROM members WHERE id = ?').bind(member.id).first<{ coin_balance: number }>()
-          const credited = Math.min(total, Math.max(0, 99_999 - (Number(account?.coin_balance) || 0)))
+          credited = Math.min(total, Math.max(0, 99_999 - (Number(account?.coin_balance) || 0)))
           if (account && credited > 0) await memberDb().batch([
             memberDb().prepare(`UPDATE members SET coin_balance = coin_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND NOT EXISTS (SELECT 1 FROM member_coin_transactions WHERE member_id = ? AND idempotency_key = ?)`)
               .bind(credited, member.id, member.id, rewardKey),
@@ -95,7 +97,7 @@ export const Route = createFileRoute('/api/wanted')({
           ])
         }
         await db.prepare(`UPDATE wanted_weekly_awards SET claimed_at = CURRENT_TIMESTAMP WHERE participant_key = ? AND claimed_at IS NULL`).bind(participantKey).run()
-        return Response.json({ ok: true, coins: member ? 0 : total })
+        return Response.json({ ok: true, coins: credited })
       }
       return jsonError('不支持的操作')
     },

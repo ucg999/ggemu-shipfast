@@ -359,7 +359,7 @@ export function SiteLayout({
               {topContent}
             </div>
           ) : (
-            <DesktopUnifiedHeaderNavigation locale={locale} />
+            <DesktopUnifiedHeaderNavigation homePage={isHomePage} locale={locale} />
           )}
 
           <div className="navbar-end ml-auto w-auto flex-none flex-nowrap gap-1 sm:gap-2">
@@ -918,8 +918,10 @@ export function SiteLayout({
 }
 
 function DesktopUnifiedHeaderNavigation({
+  homePage,
   locale,
 }: {
+  homePage: boolean
   locale: Locale
 }) {
   const layout = getI18n(locale).layout
@@ -930,7 +932,7 @@ function DesktopUnifiedHeaderNavigation({
   return (
     <nav
       aria-label={layout.mainNavigation}
-      className="hidden min-w-0 items-center gap-1 lg:flex lg:pl-6"
+      className={`desktop-unified-nav hidden min-w-0 items-center gap-1 lg:flex lg:pl-6 ${homePage ? 'desktop-unified-nav-home' : ''}`}
     >
       <details className="dropdown shrink-0">
         <summary className="flex h-9 cursor-pointer list-none items-center gap-1 whitespace-nowrap px-1.5 text-[13px] font-normal xl:px-2 xl:text-sm">
@@ -964,6 +966,7 @@ function DesktopUnifiedHeaderNavigation({
           </ul>}
         </div>
       </details>
+      <div className="desktop-unified-nav-links flex min-w-0 items-center gap-1">
       {(locale === 'zh-CN' || locale === 'zh-TW' || locale === 'en') ? (
         <Link className={`${linkClass} tooltip tooltip-bottom`} data-tip={locale === 'en' ? 'A beautiful visual guide to classic game consoles' : locale === 'zh-TW' ? '各種遊戲機的精美圖鑑' : '各种游戏机的精美图鉴'} params={{ locale }} search={{ platform: undefined }} to="/$locale/PRO">
           <i className="ri-gamepad-line mr-1" />{locale === 'en' ? 'Console Mode' : locale === 'zh-TW' ? '主機模式' : '主机模式'}
@@ -974,8 +977,9 @@ function DesktopUnifiedHeaderNavigation({
       <Link className={linkClass} params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
       <Link className={linkClass} params={{ locale, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
       <Link className={linkClass} params={{ locale, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">{locale === 'en' ? 'FC Cartridges' : locale === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</Link>
-      <Link className={`${linkClass} font-semibold text-amber-700`} params={{ locale }} to="/$locale/rankings/coins"><i className="ri-trophy-line mr-1" />{locale === 'en' ? 'Rankings' : '排行榜'}</Link>
-      <Link className={`${linkClass} font-semibold text-[#7a2f23]`} params={{ locale }} to="/$locale/wanted"><i className="ri-file-warning-line mr-1" />{locale === 'en' ? 'Wanted' : '悬赏令'}</Link>
+      <Link className={`${linkClass} text-amber-700`} params={{ locale }} to="/$locale/rankings/coins"><i className="ri-trophy-line mr-1" />{locale === 'en' ? 'Rankings' : '排行榜'}</Link>
+      <Link className={`${linkClass} text-[#7a2f23]`} params={{ locale }} to="/$locale/wanted"><i className="ri-file-warning-line mr-1" />{locale === 'en' ? 'Wanted' : '悬赏令'}</Link>
+      </div>
     </nav>
   )
 }

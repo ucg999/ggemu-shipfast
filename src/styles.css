@@ -247,6 +247,58 @@ body {
     color: #f0f0ed;
   }
 
+  /* Keep the desktop home navigation readable beside the account controls.
+     Explore owns the first column; wrapped rows therefore begin on the same
+     vertical line as Console Mode instead of drifting beneath Explore. */
+  .desktop-clean-header .desktop-unified-nav {
+    max-width: 100%;
+  }
+
+  .desktop-clean-header .desktop-unified-nav-links {
+    flex-wrap: nowrap;
+  }
+
+  .desktop-clean-header .desktop-unified-nav-home {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .desktop-clean-header .desktop-unified-nav-home > details {
+    align-self: start;
+  }
+
+  .desktop-clean-header .desktop-unified-nav-home .desktop-unified-nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: center;
+    align-items: center;
+    column-gap: 4px;
+    row-gap: 0;
+  }
+
+  @media (max-width: 1439px) {
+    .desktop-clean-header .desktop-unified-nav-home,
+    .desktop-clean-header .desktop-unified-nav-home > details > summary,
+    .desktop-clean-header .desktop-unified-nav-home .desktop-unified-nav-links > a {
+      min-height: 32px;
+    }
+
+    .desktop-clean-header .desktop-unified-nav-home .desktop-unified-nav-links > a,
+    .desktop-clean-header .desktop-unified-nav-home > details > summary {
+      height: 32px;
+      padding-right: 5px;
+      padding-left: 5px;
+      font-size: 11px;
+    }
+  }
+
+  @media (min-width: 1600px) {
+    .desktop-clean-header .desktop-unified-nav-home .desktop-unified-nav-links {
+      flex-wrap: nowrap;
+    }
+  }
+
   .awwwards-home > section,
   .awwwards-home > nav,
   .awwwards-home > div > section,
@@ -618,6 +670,17 @@ body {
 
 .coin-fly-to-box {
   animation: coin-fly-to-box 720ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+img,
+picture,
+video,
+audio,
+canvas,
+svg {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 /* PSP box art stays visually independent from its information panel. */
 .psp-library-card{display:block;min-width:0;background:transparent}

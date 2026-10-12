@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { SiteLayout } from '#/components/site-layout'
 import { CartridgeControlsDialog, CartridgePlayerDialog } from '#/components/cartridge-controls-dialog'
@@ -8,6 +8,9 @@ import { useMemberSession } from '#/lib/member-client'
 
 const PRICE = 50
 const LOCAL_KEY = 'ucg999-gb-owned-cartridges'
+function isLocalDevelopment() {
+  return typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+}
 const CARTRIDGES = [
   { id: 'castlevania-2', number: '198号', title: '恶魔城传说2', genre: '动作冒险', releaseDate: '1991-07-12', publisher: 'Konami', cover: '/gb-player/assets/cartridges/castlevania-2.webp' },
   { id: 'pokemon-gold', number: '908号', title: '宝可梦 金', genre: '角色扮演', releaseDate: '1999-11-21', publisher: 'Nintendo', cover: '/gb-player/assets/cartridges/pokemon-gold.webp' },
@@ -15,6 +18,13 @@ const CARTRIDGES = [
   { id: 'cyborg-kuro-chan-2', number: '1066号', title: '霹雳酷乐猫2', genre: '动作冒险', releaseDate: '2000-10-19', publisher: 'Konami', cover: '/gb-player/assets/cartridges/cyborg-kuro-chan-2.webp' },
   { id: 'pokemon-crystal', number: '1119号', title: '宝可梦 水晶', genre: '角色扮演', releaseDate: '2000-12-14', publisher: 'Nintendo', cover: '/gb-player/assets/cartridges/pokemon-crystal.webp' },
 ] as const
+const CARTRIDGE_UPDATED_AT: Record<string, string> = {
+  'pokemon-silver': '2026-10-08T22:26:28+08:00',
+  'pokemon-gold': '2026-10-08T22:27:44+08:00',
+  'pokemon-crystal': '2026-10-09T17:23:53+08:00',
+  'castlevania-2': '2026-10-10T00:15:26+08:00',
+  'cyborg-kuro-chan-2': '2026-10-10T00:15:28+08:00',
+}
 const VISIBLE_CARTRIDGE_IDS = new Set(CARTRIDGES.map(cartridge => cartridge.id))
 const visibleOwned = (ids: string[]) => ids.filter(id => VISIBLE_CARTRIDGE_IDS.has(id as (typeof CARTRIDGES)[number]['id']))
 type GbRankings = {
@@ -32,6 +42,41 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
   const [rankingsOpen, setRankingsOpen] = useState(false)
   const [previewing, setPreviewing] = useState<string | null>(null)
   const [playing, setPlaying] = useState<string | null>(null)
+  const [sortField, setSortField] = useState<'name' | 'random' | 'updatedAt' | 'releaseDate'>('updatedAt')
+  const [reverse, setReverse] = useState(false)
+  const [searchField, setSearchField] = useState<'genre' | 'publisher' | null>(null)
+  const [query, setQuery] = useState('')
+  const [draftQuery, setDraftQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
+  const searchRef = useRef<HTMLFormElement>(null)
+
+  const visibleCartridges = useMemo(() => {
+    const keyword = query.trim().toLocaleLowerCase()
+    const filtered = CARTRIDGES.filter((cartridge) => {
+      if (!keyword) return true
+      const value = searchField === 'genre'
+        ? cartridge.genre
+        : searchField === 'publisher'
+          ? cartridge.publisher
+          : `${cartridge.title} ${cartridge.number} ${cartridge.genre} ${cartridge.publisher} ${cartridge.releaseDate}`
+      return value.toLocaleLowerCase().includes(keyword)
+    })
+    const result = [...filtered]
+    if (sortField === 'random') result.sort(() => Math.random() - 0.5)
+    else if (sortField === 'name') result.sort((a, b) => a.title.localeCompare(b.title, lang))
+    else if (sortField === 'updatedAt') result.sort((a, b) => Date.parse(CARTRIDGE_UPDATED_AT[b.id]) - Date.parse(CARTRIDGE_UPDATED_AT[a.id]))
+    else result.sort((a, b) => a.releaseDate.localeCompare(b.releaseDate))
+    return reverse ? result.reverse() : result
+  }, [lang, query, reverse, sortField, searchField])
+
+  useEffect(() => {
+    if (!searchOpen) return
+    const close = (event: MouseEvent) => {
+      if (event.target instanceof Element && !searchRef.current?.contains(event.target) && !event.target.closest('[data-gb-filter]')) setSearchOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [searchOpen])
 
   function applyRankings(data: { rankings?: Partial<GbRankings> }) {
     setRankings({
@@ -41,6 +86,11 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
   }
 
   useEffect(() => {
+    if (isLocalDevelopment()) {
+      setOwned(CARTRIDGES.map(cartridge => cartridge.id))
+      void fetch('/api/gb-cartridges', { credentials: 'same-origin', cache: 'no-store' }).then(response => response.ok ? response.json() : Promise.reject()).then(applyRankings).catch(() => {})
+      return
+    }
     if (!member) {
       try { setOwned(visibleOwned(JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'))) } catch { setOwned([]) }
       void fetch('/api/gb-cartridges', { credentials: 'same-origin', cache: 'no-store' }).then(response => response.ok ? response.json() : Promise.reject()).then(applyRankings).catch(() => {})
@@ -55,7 +105,7 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
   }, [member?.id])
 
   function selectCartridge(cartridgeId: string) {
-    if (owned.includes(cartridgeId)) window.location.assign(`/gb?cartridge=${encodeURIComponent(cartridgeId)}`)
+    if (isLocalDevelopment() || owned.includes(cartridgeId)) window.location.assign(`/gb?cartridge=${encodeURIComponent(cartridgeId)}`)
     else if (!member) {
       setNotice(lang === 'en' ? 'Sign in to collect with member coins.' : '请先登录玩家账号，收藏只可使用会员金币')
       window.setTimeout(() => setNotice(''), 2600)
@@ -97,10 +147,35 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
       <div className="mx-auto w-full max-w-[1500px]">
         <header className="mb-6 flex flex-wrap items-end justify-between gap-4 sm:mb-8">
           <div><h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{copy.title}</h1><p className="mt-1 text-sm text-base-content/50">{copy.count(CARTRIDGES.length)}，{copy.hint} <b className="text-amber-500">{copy.owned(owned.length)}</b> <button className="ml-2 font-semibold text-base-content underline underline-offset-2" type="button" onClick={() => setRankingsOpen(true)}>{copy.rankings}</button></p></div>
-          <div className="flex items-center gap-1 text-sm"><button className="btn btn-ghost btn-sm">{copy.gameName}</button><button className="btn btn-ghost btn-sm">{copy.random}</button><button className="btn btn-ghost btn-sm">{copy.genre}</button><button className="btn btn-ghost btn-sm">{copy.publisher}</button><button className="btn btn-ghost btn-sm">{copy.releaseDate}</button><button className="btn btn-ghost btn-sm btn-square"><i className="ri-search-line text-lg" /></button></div>
+          <div className="relative flex items-center gap-1 text-sm">
+            {([['name', copy.gameName], ['random', copy.random], ['updatedAt', copy.updatedAt], ['genre', copy.genre], ['publisher', copy.publisher], ['releaseDate', copy.releaseDate]] as const).map(([field, label]) => <button
+              className={`btn btn-ghost btn-sm ${sortField === field || searchField === field ? 'font-semibold text-error' : ''}`}
+              data-gb-filter=""
+              key={field}
+              type="button"
+              onClick={() => {
+                if (field === 'genre' || field === 'publisher') {
+                  setSearchField(field)
+                  setDraftQuery(searchField === field ? query : '')
+                  setSearchOpen(true)
+                  return
+                }
+                setSearchOpen(false)
+                setSearchField(null)
+                setQuery('')
+                setReverse(sortField === field && field !== 'random' ? !reverse : false)
+                setSortField(field)
+              }}
+            >{label}{sortField === field && field !== 'random' ? <span aria-hidden="true">{reverse ? '↑' : '↓'}</span> : null}</button>)}
+            <button aria-label={copy.search} className="btn btn-ghost btn-sm btn-square" data-gb-filter="" type="button" onClick={() => { setSearchField(null); setDraftQuery(searchField === null ? query : ''); setSearchOpen(true) }}><i className="ri-search-line text-lg" /></button>
+            {searchOpen ? <form ref={searchRef} className="absolute right-0 top-full z-40 mt-1 flex h-10 w-72 items-center rounded-lg bg-white p-1 shadow-lg" onSubmit={(event) => { event.preventDefault(); setQuery(draftQuery); setSearchOpen(false) }}>
+              <input autoFocus className="min-w-0 flex-1 bg-transparent px-2 text-sm text-black outline-none" placeholder={searchField === 'genre' ? copy.genre : searchField === 'publisher' ? copy.publisher : copy.searchPlaceholder} value={draftQuery} onChange={event => setDraftQuery(event.target.value)} />
+              <button className="btn btn-neutral btn-sm" type="submit">{copy.confirm}</button>
+            </form> : null}
+          </div>
         </header>
         <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-4 lg:grid-cols-8">
-          {CARTRIDGES.map(cartridge => <article className="psp-library-card group relative" key={cartridge.id}>
+          {visibleCartridges.map(cartridge => <article className="psp-library-card group relative" key={cartridge.id}>
             <button aria-label={`${owned.includes(cartridge.id) ? copy.play : copy.collect} ${cartridge.title}`} className="block w-full" type="button" onClick={() => openCartridge(cartridge.id)}>
               <div className="gb-cartridge-cover psp-library-cover aspect-[5/6] w-full overflow-visible rounded-lg bg-transparent">
                 <img alt={`${cartridge.title} GB卡带`} className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.025]" decoding="async" loading="lazy" src={cartridge.cover} />
@@ -124,7 +199,8 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
 }
 
 function getCopy(lang: Locale) {
-  if (lang === 'en') return { title: 'GB Cartridge Collection', count: (n: number) => `${n} cartridges available`, hint: 'collected cartridges can be played in the mobile GB console', owned: (n: number) => `${n} collected`, gameName: 'Game name', random: 'Random', genre: 'Genre', publisher: 'Publisher', releaseDate: 'Release date', collect: 'Collect', play: 'Collected · Play', rankings: 'GB rankings', popularRanking: 'Most collected cartridges', collectorRanking: 'Top collectors', noRankings: 'No ranking data yet', peopleCount: (n: number) => `${n} players`, cartridgeCount: (n: number) => `${n} cartridges`, confirmTitle: 'Collect cartridge?', confirmMessage: (title: string) => `Spend 50 coins to collect ${title}?`, cancel: 'Cancel', confirm: 'Collect', insufficient: 'Not enough coins. 50 coins required.', success: 'Added to your GB cartridge collection', failed: 'Collection could not be saved' }
-  if (lang === 'zh-TW') return { title: 'GB卡帶收藏', count: (n: number) => `目前共有 ${n} 款卡帶`, hint: '收藏後可直接在手機GB遊戲機換卡帶遊玩', owned: (n: number) => `已收藏 ${n} 款`, gameName: '遊戲名稱', random: '隨機', genre: '遊戲類型', publisher: '遊戲廠商', releaseDate: '發行日期', collect: '收藏', play: '已收藏 · 遊玩', rankings: 'GB排行榜', popularRanking: '最多人收藏的卡帶', collectorRanking: '收藏卡帶最多的玩家', noRankings: '暫無排行資料', peopleCount: (n: number) => `${n}人收藏`, cartridgeCount: (n: number) => `${n}款`, confirmTitle: '確認收藏卡帶？', confirmMessage: (title: string) => `將花費50個金幣收藏《${title}》，是否繼續？`, cancel: '取消', confirm: '確認收藏', insufficient: '金幣不足，需要50個金幣', success: '收藏成功，卡帶已加入GB遊戲機', failed: '卡帶收藏記錄保存失敗' }
-  return { title: 'GB卡带收藏', count: (n: number) => `目前共有 ${n} 款卡带`, hint: '收藏后可直接在手机GB游戏机换卡带游玩', owned: (n: number) => `已收藏 ${n} 款`, gameName: '游戏名称', random: '随机', genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', collect: '收藏', play: '已收藏 · 游玩', rankings: 'GB排行榜', popularRanking: '最多人收藏的卡带', collectorRanking: '收藏卡带最多的玩家', noRankings: '暂无排行数据', peopleCount: (n: number) => `${n}人收藏`, cartridgeCount: (n: number) => `${n}款`, confirmTitle: '确认收藏卡带？', confirmMessage: (title: string) => `将花费50个金币收藏《${title}》，是否继续？`, cancel: '取消', confirm: '确认收藏', insufficient: '金币不足，需要50个金币', success: '收藏成功，卡带已加入GB游戏机', failed: '卡带收藏记录保存失败' }
+  if (lang === 'en') return { title: 'GB Cartridge Collection', count: (n: number) => `${n} cartridges available`, hint: 'collected cartridges can be played in the mobile GB console', owned: (n: number) => `${n} collected`, gameName: 'Game name', random: 'Random', genre: 'Genre', publisher: 'Publisher', releaseDate: 'Release date', updatedAt: 'Last updated', search: 'Search', searchPlaceholder: 'Game name or keyword', collect: 'Collect', play: 'Collected · Play', rankings: 'GB rankings', popularRanking: 'Most collected cartridges', collectorRanking: 'Top collectors', noRankings: 'No ranking data yet', peopleCount: (n: number) => `${n} players`, cartridgeCount: (n: number) => `${n} cartridges`, confirmTitle: 'Collect cartridge?', confirmMessage: (title: string) => `Spend 50 coins to collect ${title}?`, cancel: 'Cancel', confirm: 'Collect', insufficient: 'Not enough coins. 50 coins required.', success: 'Added to your GB cartridge collection', failed: 'Collection could not be saved' }
+  if (lang === 'zh-TW') return { title: 'GB卡帶收藏', count: (n: number) => `目前共有 ${n} 款卡帶`, hint: '收藏後可直接在手機GB遊戲機換卡帶遊玩', owned: (n: number) => `已收藏 ${n} 款`, gameName: '遊戲名稱', random: '隨機', genre: '遊戲類型', publisher: '遊戲廠商', releaseDate: '發行日期', updatedAt: '更新時間', search: '搜尋', searchPlaceholder: '遊戲名稱或關鍵詞', collect: '收藏', play: '已收藏 · 遊玩', rankings: 'GB排行榜', popularRanking: '最多人收藏的卡帶', collectorRanking: '收藏卡帶最多的玩家', noRankings: '暫無排行資料', peopleCount: (n: number) => `${n}人收藏`, cartridgeCount: (n: number) => `${n}款`, confirmTitle: '確認收藏卡帶？', confirmMessage: (title: string) => `將花費50個金幣收藏《${title}》，是否繼續？`, cancel: '取消', confirm: '確認收藏', insufficient: '金幣不足，需要50個金幣', success: '收藏成功，卡帶已加入GB遊戲機', failed: '卡帶收藏記錄保存失敗' }
+  return { title: 'GB卡带收藏', count: (n: number) => `目前共有 ${n} 款卡带`, hint: '收藏后可直接在手机GB游戏机换卡带游玩', owned: (n: number) => `已收藏 ${n} 款`, gameName: '游戏名称', random: '随机', genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', updatedAt: '更新时间', search: '搜索', searchPlaceholder: '游戏名称或关键词', collect: '收藏', play: '已收藏 · 游玩', rankings: 'GB排行榜', popularRanking: '最多人收藏的卡带', collectorRanking: '收藏卡带最多的玩家', noRankings: '暂无排行数据', peopleCount: (n: number) => `${n}人收藏`, cartridgeCount: (n: number) => `${n}款`, confirmTitle: '确认收藏卡带？', confirmMessage: (title: string) => `将花费50个金币收藏《${title}》，是否继续？`, cancel: '取消', confirm: '确认收藏', insufficient: '金币不足，需要50个金币', success: '收藏成功，卡带已加入GB游戏机', failed: '卡带收藏记录保存失败' }
 }
+

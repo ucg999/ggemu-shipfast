@@ -27,6 +27,7 @@ export const Route = createFileRoute('/api/gb-cartridges')({
       const profileById = new Map(profiles.map(profile => [profile.id, profile]))
       return Response.json({
         authenticated: Boolean(member),
+        memberId: member?.id ?? null,
         owned: rows.results.map(row => row.cartridge_id).filter(id => CARTRIDGE_IDS.has(id)),
         rankings: {
           cartridges: popularRows.results.filter(row => CARTRIDGE_IDS.has(row.cartridge_id)).map((row, index) => ({ rank: index + 1, cartridgeId: row.cartridge_id, count: Number(row.collection_count) || 0 })),

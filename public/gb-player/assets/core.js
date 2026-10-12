@@ -14,6 +14,11 @@ offscreen.width = WIDTH;
 offscreen.height = HEIGHT;
 var audioServer = null;
 var activeCheats = [];
+var MOBILE_AUDIO = Boolean(
+(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
+|| (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)
+|| /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
+);
 var STATE_DB_NAME = 'ucg999-gb-save-states';
 var STATE_DB_STORE = 'states';
 
@@ -89,17 +94,30 @@ this.processor = null;
 try {
 var AudioContextCtor = window.AudioContext || window.webkitAudioContext;
 if (!AudioContextCtor) throw new Error('Web Audio unavailable');
-this.context = new AudioContextCtor({ sampleRate: sampleRate });
-this.processor = this.context.createScriptProcessor(1024, 0, channels);
+this.context = new AudioContextCtor({ sampleRate: sampleRate, latencyHint: MOBILE_AUDIO ? 'balanced' : 'interactive' });
+this.inputSampleRate = sampleRate;
+this.outputSampleRate = this.context.sampleRate || sampleRate;
+this.rateAccumulator = 0;
+this.lastOutputLeft = 0;
+this.lastOutputRight = 0;
+this.processor = this.context.createScriptProcessor(MOBILE_AUDIO ? 2048 : 1024, 0, channels);
 var self = this;
 this.processor.onaudioprocess = function (event) {
 var left = event.outputBuffer.getChannelData(0);
 var right = channels > 1 ? event.outputBuffer.getChannelData(1) : left;
 for (var i = 0; i < left.length; i++) {
-left[i] = self.available > 0 ? self.buffer[self.readIndex] * self.volume : 0;
-if (self.available > 0) { self.readIndex = (self.readIndex + 1) % self.capacity; self.available--; }
-right[i] = self.available > 0 ? self.buffer[self.readIndex] * self.volume : left[i];
-if (self.available > 0) { self.readIndex = (self.readIndex + 1) % self.capacity; self.available--; }
+if (self.available >= self.channels) {
+self.lastOutputLeft = Math.max(-0.82, Math.min(0.82, self.buffer[self.readIndex] * self.volume * 0.82));
+self.readIndex = (self.readIndex + 1) % self.capacity;
+self.available--;
+self.lastOutputRight = self.channels > 1 ? Math.max(-0.82, Math.min(0.82, self.buffer[self.readIndex] * self.volume * 0.82)) : self.lastOutputLeft;
+if (self.channels > 1) { self.readIndex = (self.readIndex + 1) % self.capacity; self.available--; }
+} else {
+self.lastOutputLeft *= 0.985;
+self.lastOutputRight *= 0.985;
+}
+left[i] = Math.abs(self.lastOutputLeft) < 0.0001 ? 0 : self.lastOutputLeft;
+right[i] = Math.abs(self.lastOutputRight) < 0.0001 ? 0 : self.lastOutputRight;
 }
 };
 this.processor.connect(this.context.destination);
@@ -109,20 +127,36 @@ if (typeof onFailure === 'function') onFailure();
 }
 };
 window.XAudioServer.prototype.writeAudioNoCallback = function (samples) {
-for (var i = 0; i < samples.length; i++) {
+var channels = this.channels;
+for (var i = 0; i + channels - 1 < samples.length; i += channels) {
+this.rateAccumulator += this.outputSampleRate;
+while (this.rateAccumulator >= this.inputSampleRate) {
+for (var channel = 0; channel < channels; channel++) {
 if (this.available >= this.capacity) {
 this.readIndex = (this.readIndex + 1) % this.capacity;
 this.available--;
 }
-this.buffer[this.writeIndex] = samples[i];
+this.buffer[this.writeIndex] = samples[i + channel];
 this.writeIndex = (this.writeIndex + 1) % this.capacity;
 this.available++;
+}
+this.rateAccumulator -= this.inputSampleRate;
+}
 }
 };
 window.XAudioServer.prototype.remainingBuffer = function () { return this.available; };
 window.XAudioServer.prototype.changeVolume = function (value) { this.volume = value; };
+window.XAudioServer.prototype.resetBuffer = function () {
+this.readIndex = 0;
+this.writeIndex = 0;
+this.available = 0;
+this.rateAccumulator = 0;
+this.lastOutputLeft = 0;
+this.lastOutputRight = 0;
+this.buffer.fill(0);
+};
 window.XAudioServer.prototype.resume = function () {
-if (this.context && this.context.state === 'suspended') this.context.resume().catch(function () {});
+if (this.context && this.context.state !== 'running') this.context.resume().catch(function () {});
 };
 window.XAudioServer.prototype.recordingTrack = function () {
 if (!this.context || !this.processor || !this.context.createMediaStreamDestination) return null;
@@ -184,14 +218,17 @@ return emulator;
 function parseCheatCodes(input) {
 var parsed = [];
 String(input || '').toUpperCase().split(/[\s,;]+/).forEach(function (rawCode) {
-var code = rawCode.replace(/[^0-9A-F:=\-]/g, '');
-var match = /^01([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})$/.exec(code);
-if (match) {
-parsed.push({ address: parseInt(match[3] + match[2], 16), value: parseInt(match[1], 16), code: rawCode });
+var code = rawCode.trim();
+var rawMatch = /^(?:0X)?([0-9A-F]{1,4})[:=\-](?:0X)?([0-9A-F]{1,2})$/.exec(code);
+if (rawMatch) {
+parsed.push({ address: parseInt(rawMatch[1], 16), value: parseInt(rawMatch[2], 16), code: rawCode });
 return;
 }
-match = /^([0-9A-F]{4})[:=\-]([0-9A-F]{2})$/.exec(code);
-if (match) parsed.push({ address: parseInt(match[1], 16), value: parseInt(match[2], 16), code: rawCode });
+var normalized = code.replace(/[^0-9A-F]/g, '');
+var match = /^01([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})$/.exec(normalized);
+if (match) {
+parsed.push({ address: parseInt(match[3] + match[2], 16), value: parseInt(match[1], 16), code: rawCode });
+}
 });
 return parsed.slice(0, 32);
 }
@@ -232,7 +269,7 @@ if (window.console && console.error) console.error(error);
 },
 tick: function () {
 if (!ready || !emulator || document.hidden) return;
-var now = Date.now();
+var now = window.performance && performance.now ? performance.now() : Date.now();
 if (!lastTick) lastTick = now;
 accumulated += Math.min(now - lastTick, 50);
 lastTick = now;
@@ -254,18 +291,23 @@ applyCheats();
 return activeCheats.length;
 },
 clearCheats: function () { activeCheats = []; },
+readMemory: function (address) {
+if (!emulator) return null;
+return emulator.memoryRead(Number(address) & 0xffff);
+},
 activateAudio: function () {
 if (audioServer) audioServer.resume();
 },
 resumeAudio: function () {
 lastTick = 0;
 accumulated = 0;
-if (audioServer) audioServer.resume();
+if (audioServer) { audioServer.resetBuffer(); audioServer.resume(); }
 },
 setPaused: function (paused) {
 if (!emulator) return;
+if (audioServer) audioServer.resetBuffer();
 if (paused) emulator.stopEmulator |= 2;
-else resumeCore();
+else { resumeCore(); if (audioServer) audioServer.resume(); }
 },
 reset: function () {
 if (!currentRomBase64) return;

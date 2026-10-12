@@ -313,7 +313,9 @@ function CoinModeGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
 }
 
 function getRequiredRankLabel(rank: ReturnType<typeof getCoinModeGameRequiredRank>, lang: Locale) {
-  const labels = rank === 'gold'
+  const labels = rank === 'platinum'
+    ? ['铂金', '鉑金', 'Platinum', 'プラチナ']
+    : rank === 'gold'
     ? ['黄金', '黃金', 'Gold', 'ゴールド']
     : rank === 'silver'
       ? ['白银', '白銀', 'Silver', 'シルバー']

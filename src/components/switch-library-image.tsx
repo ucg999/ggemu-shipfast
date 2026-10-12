@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getLibraryImage } from '#/lib/library-image'
 
 type SwitchLibraryImageProps = {
@@ -13,6 +13,17 @@ type SwitchLibraryImageProps = {
 export function SwitchLibraryImage({ alt, className = '', eager = false, src, transparent = false, clickable = false }: SwitchLibraryImageProps) {
   const [loaded, setLoaded] = useState(false)
   const [failed, setFailed] = useState(false)
+  const imageRef = useRef<HTMLImageElement>(null)
+  const imageSrc = getLibraryImage(src)
+
+  useEffect(() => {
+    setLoaded(false)
+    setFailed(false)
+    const image = imageRef.current
+    if (!image?.complete) return
+    if (image.naturalWidth > 0) setLoaded(true)
+    else setFailed(true)
+  }, [imageSrc])
 
   return (
     <span
@@ -38,7 +49,8 @@ export function SwitchLibraryImage({ alt, className = '', eager = false, src, tr
         loading={eager ? 'eager' : 'lazy'}
         onError={() => setFailed(true)}
         onLoad={() => setLoaded(true)}
-        src={getLibraryImage(src)}
+        ref={imageRef}
+        src={imageSrc}
       />
     </span>
   )

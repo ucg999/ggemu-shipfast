@@ -46,6 +46,10 @@ const hitboxes = {};
 let layoutKey = '';
 let animationFrameId = 0;
 let animationRunning = false;
+const FC_FRAME_INTERVAL = 1000 / 60.0988;
+const MAX_FRAME_CATCH_UP = 3;
+let lastAnimationTime = 0;
+let frameAccumulator = 0;
 const SLOGAN = CONFIG.slogan || '玩怀旧游戏上 ggemu.com';
 function videoSize() {
 const v = core.video ? core.video() : null;
@@ -390,7 +394,7 @@ try { core.activateAudio(); } catch (e) { console.error(e); }
 }
 }
 function bindControls() {
-const updateTouches = (touches) => {
+const updateTouches = (touches, haptic) => {
 const newActive = new Set();
 for (let i = 0; i < touches.length; i++) {
 hitTest(touches[i].clientX, touches[i].clientY).forEach(k => newActive.add(k));
@@ -398,6 +402,11 @@ hitTest(touches[i].clientX, touches[i].clientY).forEach(k => newActive.add(k));
 if (newActive.has('ab')) {
 newActive.add('a');
 newActive.add('b');
+}
+const newlyPressed = Object.keys(uiState).filter(key => newActive.has(key) && !uiState[key]);
+if (haptic && newlyPressed.length && navigator.vibrate) {
+const strongPress = newlyPressed.some(key => key === 'a' || key === 'b' || key === 'start' || key === 'select');
+navigator.vibrate(strongPress ? 18 : 8);
 }
 let changed = false;
 Object.keys(uiState).forEach(key => {
@@ -411,10 +420,10 @@ try { core.setButton(key, isActive); } catch (e) { console.error(e); }
 if (changed) renderUI();
 };
 mainCanvas.addEventListener('touchstart', (e) => {
-e.preventDefault(); activateAudio(); updateTouches(e.touches);
+e.preventDefault(); activateAudio(); updateTouches(e.touches, true);
 }, { passive: false });
 mainCanvas.addEventListener('touchmove', (e) => {
-e.preventDefault(); updateTouches(e.touches);
+e.preventDefault(); updateTouches(e.touches, true);
 }, { passive: false });
 mainCanvas.addEventListener('touchend', (e) => {
 e.preventDefault(); updateTouches(e.touches);
@@ -476,12 +485,22 @@ renderUI();
 startRenderLoop();
 });
 }
-function renderFrame() {
+function renderFrame(timestamp) {
 if (document.hidden) {
 animationRunning = false;
+lastAnimationTime = 0;
+frameAccumulator = 0;
 return;
 }
-if (core.tick) {
+if (!lastAnimationTime) lastAnimationTime = timestamp;
+const elapsed = Math.min(100, Math.max(0, timestamp - lastAnimationTime));
+lastAnimationTime = timestamp;
+frameAccumulator += elapsed;
+let framesRun = 0;
+while (frameAccumulator >= FC_FRAME_INTERVAL && framesRun < MAX_FRAME_CATCH_UP) {
+frameAccumulator -= FC_FRAME_INTERVAL;
+framesRun += 1;
+if (!core.tick) continue;
 try {
 core.tick();
 runtimeErrorCount = 0;
@@ -495,6 +514,7 @@ return;
 }
 }
 }
+if (framesRun >= MAX_FRAME_CATCH_UP) frameAccumulator = Math.min(frameAccumulator, FC_FRAME_INTERVAL);
 renderUI();
 animationFrameId = requestAnimationFrame(renderFrame);
 }
@@ -502,12 +522,16 @@ let runtimeErrorCount = 0;
 function startRenderLoop() {
 if (animationRunning) return;
 animationRunning = true;
+lastAnimationTime = 0;
+frameAccumulator = 0;
 animationFrameId = requestAnimationFrame(renderFrame);
 }
 function stopRenderLoop() {
 if (!animationRunning) return;
 animationRunning = false;
 cancelAnimationFrame(animationFrameId);
+lastAnimationTime = 0;
+frameAccumulator = 0;
 }
 let toastTimeout;
 function showToast(msg) {
@@ -553,6 +577,7 @@ document.getElementById('btn-load').addEventListener('click', async () => {
 try { await core.loadState(); } catch (e) { showToast('读档失败'); console.error(e); }
 });
 let currentGameId = 'super-mario-bros-world';
+const isLocalDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const cheatButton = document.createElement('button');
 cheatButton.id = 'btn-cheats';
 cheatButton.type = 'button';
@@ -562,49 +587,132 @@ toolbar.insertBefore(cheatButton, document.getElementById('btn-shot'));
 const cheatPanel = document.createElement('section');
 cheatPanel.id = 'cheat-panel';
 cheatPanel.setAttribute('aria-hidden', 'true');
-cheatPanel.innerHTML = '<div class="cheat-dialog"><header><div><small>GAME GENIE</small><h2>金手指</h2></div><button id="btn-close-cheats" type="button" aria-label="关闭">×</button></header><p>支持 FC Game Genie 代码（6位或8位）以及“地址:数值”格式，每行一个。</p><textarea id="cheat-codes" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 SXIOPO 或 8123:FF"></textarea><div class="cheat-actions"><button id="btn-clear-cheats" type="button">清除</button><button id="btn-apply-cheats" type="button">启用</button></div></div>';
+cheatPanel.innerHTML = '<div class="cheat-dialog"><header><div><small>CHEATS</small><h2>金手指</h2></div><button id="btn-close-cheats" type="button" aria-label="关闭">×</button></header><div id="mario-built-in-cheats" hidden><div class="built-in-cheat" data-cheat-id="invincible"><div><strong>无敌金身</strong><small>🪙 1</small></div><button type="button" aria-pressed="false">开启</button></div><div class="built-in-cheat" data-cheat-id="grow"><div><strong>变大</strong><small>🪙 1</small></div><button type="button" aria-pressed="false">开启</button></div><div class="built-in-cheat" data-cheat-id="lives"><div><strong>生命无限</strong><small>🪙 1</small></div><button type="button" aria-pressed="false">开启</button></div></div><div id="custom-cheat-editor"><p>支持 Game Genie、GameShark，以及地址:数值、地址-数值、地址=数值等格式，每行一个。</p><textarea id="cheat-codes" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 SXIOPO、079F:40 或 079F-40"></textarea><div class="cheat-actions"><button id="btn-clear-cheats" type="button">清除</button><button id="btn-apply-cheats" type="button">启用</button></div></div></div>';
 document.body.appendChild(cheatPanel);
 const cheatInput = document.getElementById('cheat-codes');
+document.getElementById('custom-cheat-editor').hidden = !isLocalDevelopment;
+const marioBuiltInCheats = document.getElementById('mario-built-in-cheats');
+const builtInCheats = {
+invincible: { name: '无敌金身', codes: ['079F:40'], enabled: false },
+grow: { name: '变大', codes: ['0754:00', '0756:01'], enabled: false },
+lives: { name: '生命无限', codes: ['075A:09'], enabled: false }
+};
 function cheatStorageKey() { return 'ucg999-fc-cheats:' + currentGameId; }
+function getCombinedCheatCodes(codes) {
+const customCodes = String(codes || '').trim();
+const enabledCodes = currentGameId === 'super-mario-bros-world'
+? Object.values(builtInCheats).filter(cheat => cheat.enabled).flatMap(cheat => cheat.codes)
+: [];
+return [customCodes, ...enabledCodes].filter(Boolean).join('\n');
+}
+function applyCurrentCheats(codes) {
+return core.setCheatCodes ? core.setCheatCodes(getCombinedCheatCodes(codes)) : 0;
+}
+function renderBuiltInCheat() {
+const visible = currentGameId === 'super-mario-bros-world';
+marioBuiltInCheats.hidden = !visible;
+cheatButton.hidden = !isLocalDevelopment && !visible;
+if (!visible) Object.values(builtInCheats).forEach(cheat => { cheat.enabled = false; });
+marioBuiltInCheats.querySelectorAll('[data-cheat-id]').forEach(row => {
+const cheat = builtInCheats[row.dataset.cheatId];
+const button = row.querySelector('button');
+button.classList.toggle('is-active', cheat.enabled);
+button.setAttribute('aria-pressed', cheat.enabled ? 'true' : 'false');
+button.textContent = cheat.enabled ? '关闭' : '开启';
+});
+}
+function spendCoins(amount) {
+if (window.parent !== window) {
+return new Promise(resolve => {
+const requestId = 'fc-spend-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+let settled = false;
+const finish = success => { if (settled) return; settled = true; window.removeEventListener('message', onMessage); resolve(Boolean(success)); };
+const onMessage = event => {
+if (event.origin !== window.location.origin || event.data?.type !== 'fc-spend-coins-result' || event.data.requestId !== requestId) return;
+finish(event.data.success);
+};
+window.addEventListener('message', onMessage);
+window.parent.postMessage({ type: 'fc-spend-coins-request', requestId, amount }, window.location.origin);
+window.setTimeout(() => finish(false), 2500);
+});
+}
+try {
+const key = 'game-adventure-coin-balance';
+const balance = Math.max(0, Math.floor(Number(localStorage.getItem(key)) || 0));
+if (balance < amount) return Promise.resolve(false);
+localStorage.setItem(key, String(balance - amount));
+window.dispatchEvent(new CustomEvent('game-adventure-coin-balance-change', { detail: balance - amount }));
+return Promise.resolve(true);
+} catch (error) { return Promise.resolve(false); }
+}
 function applyStoredCheats(gameId) {
 currentGameId = gameId;
+if (gameId !== 'super-mario-bros-world') Object.values(builtInCheats).forEach(cheat => { cheat.enabled = false; });
 let stored = '';
+if (isLocalDevelopment) {
 try { stored = localStorage.getItem(cheatStorageKey()) || ''; } catch (error) {}
-if (core.setCheatCodes) core.setCheatCodes(stored);
+}
+applyCurrentCheats(stored);
+renderBuiltInCheat();
 return stored;
 }
 function setCheatPanel(open) {
 cheatPanel.classList.toggle('is-open', open);
 cheatPanel.setAttribute('aria-hidden', open ? 'false' : 'true');
 document.body.classList.toggle('cheat-open', open);
-if (open) { cheatInput.value = applyStoredCheats(currentGameId); core.setPaused(true); window.setTimeout(() => cheatInput.focus({ preventScroll: true }), 50); }
+if (open) { cheatInput.value = applyStoredCheats(currentGameId); core.setPaused(true); if (isLocalDevelopment) window.setTimeout(() => cheatInput.focus({ preventScroll: true }), 50); }
 else { cheatInput.blur(); core.setPaused(false); window.setTimeout(resize, 320); }
 }
 cheatButton.addEventListener('click', () => setCheatPanel(true));
 document.getElementById('btn-close-cheats').addEventListener('click', () => setCheatPanel(false));
+marioBuiltInCheats.addEventListener('click', async event => {
+const row = event.target.closest('[data-cheat-id]');
+const button = event.target.closest('button');
+if (!row || !button || currentGameId !== 'super-mario-bros-world') return;
+const cheat = builtInCheats[row.dataset.cheatId];
+if (!cheat) return;
+if (cheat.enabled) {
+cheat.enabled = false;
+applyCurrentCheats(cheatInput.value);
+renderBuiltInCheat();
+showToast(cheat.name + '已关闭');
+return;
+}
+button.disabled = true;
+const paid = await spendCoins(1);
+button.disabled = false;
+if (!paid) { showToast('金币不足，无法开启' + cheat.name); return; }
+cheat.enabled = true;
+applyCurrentCheats(cheatInput.value);
+renderBuiltInCheat();
+showToast('已花费 1 个金币，' + cheat.name + '已开启');
+});
 document.getElementById('btn-clear-cheats').addEventListener('click', () => {
 cheatInput.value = '';
+Object.values(builtInCheats).forEach(cheat => { cheat.enabled = false; });
 try { localStorage.removeItem(cheatStorageKey()); } catch (error) {}
 if (core.clearCheats) core.clearCheats();
+renderBuiltInCheat();
 showToast('已关闭金手指');
 });
 document.getElementById('btn-apply-cheats').addEventListener('click', () => {
 const codes = cheatInput.value.trim();
-const count = core.setCheatCodes ? core.setCheatCodes(codes) : 0;
+const count = applyCurrentCheats(codes);
 try { if (codes) localStorage.setItem(cheatStorageKey(), codes); else localStorage.removeItem(cheatStorageKey()); } catch (error) {}
 showToast(count ? '已启用 ' + count + ' 条金手指' : '没有识别到有效代码');
 if (count) setCheatPanel(false);
 });
 const cartridgeButton = document.getElementById('btn-shot');
-const isLocalDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const cartridgeScreen = document.getElementById('cartridge-screen');
 const closeCartridgeButton = document.getElementById('btn-close-cartridges');
 const cartridgeList = document.getElementById('cartridge-list');
 const allCartridgeCards = Array.from(document.querySelectorAll('.cartridge-card'));
 const ownedCartridgesKey = 'ucg999-fc-owned-cartridges';
 const ownedCartridgesMigrationKey = 'ucg999-fc-owned-cartridges-migrated';
+const lastCartridgeKey = 'ucg999-fc-last-cartridge';
 let ownedCartridgeIds = [];
 let cartridgeMemberAuthenticated = false;
+let cartridgeMemberId = '';
 let legacyOwnedCartridgeIds = [];
 try {
 const parsedOwnedCartridges = JSON.parse(localStorage.getItem(ownedCartridgesKey) || '[]');
@@ -616,6 +724,7 @@ if (collectionResponse.ok) {
 let collection = await collectionResponse.json();
 if (collection.authenticated === true && Array.isArray(collection.owned)) {
 cartridgeMemberAuthenticated = true;
+cartridgeMemberId = typeof collection.memberId === 'string' ? collection.memberId : '';
 const accountKey = ownedCartridgesKey + ':' + collection.memberId;
 const migrationKey = ownedCartridgesMigrationKey + ':' + collection.memberId;
 if (legacyOwnedCartridgeIds.length && localStorage.getItem(migrationKey) !== 'yes') {
@@ -800,6 +909,9 @@ gameId: gameId,
 toast: showToast,
 onReady: function () {
 document.title = 'FC游戏机｜' + gameName;
+if (ownedCartridgeIds.includes(gameId)) {
+try { localStorage.setItem(lastCartridgeKey + (cartridgeMemberId ? ':' + cartridgeMemberId : ''), gameId); } catch (error) {}
+}
 renderUI();
 startRenderLoop();
 }
@@ -831,12 +943,23 @@ throw firstError || new Error('ROM request failed');
 }
 const requestedCartridge = new URLSearchParams(window.location.search).get('cartridge');
 const requestedCard = cartridgeCards.find(card => card.dataset.gameId === requestedCartridge && card.dataset.rom);
-if (requestedCard) {
+const defaultOwnedCard = requestedCard || null;
+if (defaultOwnedCard) {
 canOpenCartridgeScreen().then(allowed => {
-if (allowed) loadRom(requestedCard.dataset.rom, requestedCard.dataset.gameId, requestedCard.dataset.gameName).catch(() => {});
+if (allowed) loadRom(defaultOwnedCard.dataset.rom, defaultOwnedCard.dataset.gameId, defaultOwnedCard.dataset.gameName).catch(() => {});
 else loadRom('./assets/super-mario-bros-world.nes', 'super-mario-bros-world', '超级马里奥兄弟').catch(() => {});
 });
 } else {
 loadRom('./assets/super-mario-bros-world.nes', 'super-mario-bros-world', '超级马里奥兄弟').catch(() => {});
 }
 })();
+
+document.addEventListener('contextmenu', event => {
+if (event.target instanceof Element && event.target.closest('img,video,audio,canvas,svg')) event.preventDefault();
+}, true);
+document.addEventListener('dragstart', event => {
+if (event.target instanceof Element && event.target.closest('img,video,audio,canvas,svg')) event.preventDefault();
+}, true);
+window.addEventListener('keydown', event => {
+if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') event.preventDefault();
+}, true);
