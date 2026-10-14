@@ -160,7 +160,7 @@ export function CoinChallengeCommunity({
             <div className="min-w-0 flex-1"><strong>{channel === 'red-blue-arena' ? '红蓝竞技场排行榜' : channel === 'ghost-hunter' ? '幽灵捕手排行榜' : '金币娱乐游戏排行榜'}</strong></div>
             <button aria-label="关闭排行榜" className="grid h-8 w-8 place-items-center rounded-full hover:bg-white/10" onClick={closeLeaderboard} type="button">✕</button>
           </header>
-          <div className={channel === 'coin-challenge' ? "grid min-h-0 flex-1 grid-cols-1 gap-2 overflow-y-auto p-2 md:grid-cols-2 md:gap-4 md:overflow-hidden md:p-3 xl:contents" : "min-h-0 flex-1 overflow-y-auto p-3"}>
+          <div className={channel === 'coin-challenge' ? "grid min-h-0 flex-1 grid-cols-2 gap-1 overflow-hidden p-1 sm:gap-2 sm:p-2 md:gap-4 md:p-3 xl:contents" : "min-h-0 flex-1 overflow-y-auto p-3"}>
             <div className="min-w-0 overflow-y-auto xl:pointer-events-auto xl:absolute xl:bottom-0 xl:right-[calc(100%+12px)] xl:top-0 xl:w-[min(300px,calc((100vw-808px)/2))] xl:rounded-3xl xl:border xl:border-white/15 xl:bg-[#111]/95 xl:p-3 xl:shadow-2xl">
             {leaderboardTitle ? <p className="mb-2 text-center text-xs font-bold text-amber-300">{leaderboardTitle}</p> : null}
             {channel === 'coin-challenge' || channel === 'ghost-hunter' ? <h3 className="mb-2 text-center text-xs font-black text-amber-300">总榜</h3> : null}
@@ -195,7 +195,7 @@ export function CoinChallengeCommunity({
               <p className="mt-3 text-center text-xs font-semibold text-amber-200">上周冠军获得者：{lastWeekChampion || '暂无记录'}</p>
             </> : null}
             </div>
-            {channel === 'coin-challenge' ? <section className="min-w-0 border-t border-white/10 pt-2 md:overflow-y-auto md:border-l md:border-t-0 md:pl-3 md:pt-0 xl:pointer-events-auto xl:absolute xl:bottom-0 xl:left-[calc(100%+12px)] xl:top-[56px] xl:w-[min(300px,calc((100vw-808px)/2))] xl:rounded-3xl xl:border xl:border-white/15 xl:bg-[#111]/95 xl:p-3 xl:shadow-2xl">
+            {channel === 'coin-challenge' ? <section className="min-w-0 overflow-y-auto border-l border-white/10 pl-1 sm:pl-2 md:pl-3 xl:pointer-events-auto xl:absolute xl:bottom-0 xl:left-[calc(100%+12px)] xl:top-[56px] xl:w-[min(300px,calc((100vw-808px)/2))] xl:rounded-3xl xl:border xl:border-white/15 xl:bg-[#111]/95 xl:p-3 xl:shadow-2xl">
               <h3 className="mb-2 mt-4 text-center text-sm font-black text-amber-300">跑灯达人榜</h3>
               {Object.entries(BONUS_RANK_NAMES).map(([kind, name]) => {
                 const champion = bonusChampions.find(item => item.kind === kind)

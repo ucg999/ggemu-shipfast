@@ -11,7 +11,9 @@ const THEMES: Record<BonusKind, { notes: string[]; wave: 'sine' | 'triangle' | '
   five: { notes:['C5','D5','E5','G5','A5'], wave:'triangle', step:.12, release:.26 },
   'random-lights': { notes:['A4','C#5','E5'], wave:'sine', step:.16, release:.18 },
   'big-three': { notes:['C4','G4','C5'], wave:'square', step:.20, release:.30 },
+  'all-fruits': { notes:['C5','E5','G5','C6'], wave:'triangle', step:.17, release:.3 },
   'big-four': { notes:['G4','B4','D5','G5'], wave:'triangle', step:.19, release:.32 },
+  train: { notes:['C4','E4','G4','C5','E5','G5','C6'], wave:'square', step:.1, release:.2 },
   'all-stars': { notes:['C5','E5','G5','C6','E6','G6','C7','G6','E6','C6'], wave:'sine', step:.13, release:.55 },
 }
 type Bank = { context: Tone.Context; voices: Set<Tone.Synth>; timers: Set<ReturnType<typeof setTimeout>> }

@@ -234,6 +234,7 @@ function CoinChallengePage() {
   const forcedBonus = useRef<BonusKind | null>(null)
 
   const [luckyLitLights, setLuckyLitLights] = useState<Array<number>>([])
+  const [bonusResultKind, setBonusResultKind] = useState<BonusKind | null>(null)
   const [winningLight, setWinningLight] = useState<number | null>(null)
   const [specialCellEffect, setSpecialCellEffect] = useState<'lucky' | 'penalty' | 'jackpot' | null>(null)
   const [shouldResetAllBets, setShouldResetAllBets] = useState(false)
@@ -254,6 +255,8 @@ function CoinChallengePage() {
   } | null>(null)
   const spinClockRef = useRef<ReturnType<typeof createSpinAudioClock> | null>(null)
   const spinTimerRef = useRef<number | null>(null)
+  const bonusFlashTimerRef = useRef<number | null>(null)
+  const nextRoundWinStopTimerRef = useRef<number | null>(null)
   const transferTimerRef = useRef<number | null>(null)
   const comparePreviewTimerRef = useRef<number | null>(null)
   const creditHoldTimeoutRef = useRef<number | null>(null)
@@ -277,6 +280,7 @@ function CoinChallengePage() {
   const withdrawAudioRef = useRef<HTMLAudioElement | null>(null)
   const winAudioRef = useRef<HTMLAudioElement | null>(null)
   const winAudioAltRef = useRef<HTMLAudioElement | null>(null)
+  const bonusWinAudioRef = useRef<HTMLAudioElement | null>(null)
   const winAudioSourceRef = useRef<MediaElementAudioSourceNode | null>(null)
   const winAudioGainRef = useRef<GainNode | null>(null)
   const winAudioAltSourceRef = useRef<MediaElementAudioSourceNode | null>(null)
@@ -284,7 +288,6 @@ function CoinChallengePage() {
   const luckyAudioRef = useRef<HTMLAudioElement | null>(null)
   const penaltyAudioRef = useRef<HTMLAudioElement | null>(null)
   const jackpotAudioRef = useRef<HTMLAudioElement | null>(null)
-  const poolAudioRef = useRef<HTMLAudioElement | null>(null)
   const modeEntryAudioRef = useRef<HTMLAudioElement | null>(null)
   const ghostEntryAudioRef = useRef<HTMLAudioElement | null>(null)
   const instantAudiosRef = useRef<HTMLAudioElement[]>([])
@@ -356,6 +359,14 @@ function CoinChallengePage() {
         window.clearTimeout(spinTimerRef.current)
         spinTimerRef.current = null
       }
+      if (bonusFlashTimerRef.current !== null) {
+        window.clearTimeout(bonusFlashTimerRef.current)
+        bonusFlashTimerRef.current = null
+      }
+      if (nextRoundWinStopTimerRef.current !== null) {
+        window.clearTimeout(nextRoundWinStopTimerRef.current)
+        nextRoundWinStopTimerRef.current = null
+      }
       if (transferTimerRef.current !== null) {
         window.clearInterval(transferTimerRef.current)
         transferTimerRef.current = null
@@ -389,6 +400,7 @@ function CoinChallengePage() {
       setPoolTransferDisplay(null)
       setCreditTransferDisplay(null)
       setLuckyLitLights([])
+      setBonusResultKind(null)
     }
     window.addEventListener('pagehide', cashOutOnExit)
     coinDropAudioRef.current = new Audio('/coin-challenge-drop.mp3')
@@ -402,6 +414,8 @@ function CoinChallengePage() {
     winAudioRef.current.preload = 'auto'
     winAudioAltRef.current = new Audio('/coin-challenge-win-alt.mp3')
     winAudioAltRef.current.preload = 'auto'
+    bonusWinAudioRef.current = new Audio('/coin-challenge-bonus-win.mp3')
+    bonusWinAudioRef.current.preload = 'auto'
     luckyAudioRef.current = new Audio('/coin-challenge-lucky.mp3')
     luckyAudioRef.current.preload = 'auto'
     luckyAudioRef.current.volume = 1
@@ -411,8 +425,6 @@ function CoinChallengePage() {
     jackpotAudioRef.current = new Audio('/coin-challenge-jackpot.mp3')
     jackpotAudioRef.current.preload = 'auto'
     jackpotAudioRef.current.volume = 1
-    poolAudioRef.current = new Audio('/coin-challenge-pool.mp3')
-    poolAudioRef.current.preload = 'auto'
     modeEntryAudioRef.current = new Audio('/coin-challenge-mode-entry.mp3')
     modeEntryAudioRef.current.preload = 'auto'
     ghostEntryAudioRef.current = new Audio('/coin-challenge-ghost-entry.mp3')
@@ -423,10 +435,10 @@ function CoinChallengePage() {
       withdrawAudioRef.current,
       winAudioRef.current,
       winAudioAltRef.current,
+      bonusWinAudioRef.current,
       luckyAudioRef.current,
       penaltyAudioRef.current,
       jackpotAudioRef.current,
-      poolAudioRef.current,
       modeEntryAudioRef.current,
       ghostEntryAudioRef.current,
     ].filter((audio): audio is HTMLAudioElement => Boolean(audio))
@@ -474,6 +486,12 @@ function CoinChallengePage() {
       if (spinTimerRef.current !== null) {
         window.clearTimeout(spinTimerRef.current)
       }
+      if (bonusFlashTimerRef.current !== null) {
+        window.clearTimeout(bonusFlashTimerRef.current)
+      }
+      if (nextRoundWinStopTimerRef.current !== null) {
+        window.clearTimeout(nextRoundWinStopTimerRef.current)
+      }
       if (transferTimerRef.current !== null) {
         window.clearInterval(transferTimerRef.current)
       }
@@ -507,8 +525,6 @@ function CoinChallengePage() {
       jackpotAudioRef.current?.pause()
       if (jackpotAudioRef.current) jackpotAudioRef.current.onended = null
       jackpotAudioRef.current = null
-      poolAudioRef.current?.pause()
-      poolAudioRef.current = null
       modeEntryAudioRef.current?.pause()
       if (modeEntryAudioRef.current) modeEntryAudioRef.current.onended = null
       modeEntryAudioRef.current = null
@@ -695,11 +711,10 @@ function CoinChallengePage() {
     }
   }
 
-  function playPoolAudio() {
+  function playBonusWinAnnouncement() {
     safelyRunAudio(() => {
-    const poolAudio = poolAudioRef.current
-    if (!poolAudio) return
-    playCompleteAudio(poolAudio)
+      window.speechSynthesis.cancel()
+      playCompleteAudio(bonusWinAudioRef.current)
     })
   }
 
@@ -711,7 +726,6 @@ function CoinChallengePage() {
     const frames = Math.min(60, amount)
     let frame = 0
 
-    playPoolAudio()
     updateMachine((current) => ({
       ...current,
       bonusWin: Math.min(9999, current.bonusWin + amount),
@@ -794,7 +808,6 @@ function CoinChallengePage() {
         luckyAudioRef.current,
         penaltyAudioRef.current,
         jackpotAudioRef.current,
-        poolAudioRef.current,
         modeEntryAudioRef.current,
         ghostEntryAudioRef.current,
       ]) {
@@ -882,13 +895,22 @@ function CoinChallengePage() {
     let remainingPending = withdrawPrizeOnly ? collectibleWin : 0
     let withdrawTick = 0
     const maximumStep = Math.max(1, Math.ceil(totalCoins / 24))
+    const finishWithdrawal = () => {
+      if (transferTimerRef.current !== null) window.clearInterval(transferTimerRef.current)
+      transferTimerRef.current = null
+      setIsWithdrawing(false)
+      const withdrawAudio = withdrawAudioRef.current
+      if (withdrawAudio) {
+        withdrawAudio.onended = null
+        withdrawAudio.pause()
+        try { withdrawAudio.currentTime = 0 } catch {}
+      }
+    }
     if (transferTimerRef.current !== null) window.clearInterval(transferTimerRef.current)
     transferTimerRef.current = window.setInterval(() => {
       const remaining = remainingCredits + remainingPool + remainingPending
       if (remaining < 1) {
-        if (transferTimerRef.current !== null) window.clearInterval(transferTimerRef.current)
-        transferTimerRef.current = null
-        setIsWithdrawing(false)
+        finishWithdrawal()
         return
       }
       const step = Math.min(remaining, maximumStep, 2 ** Math.floor(withdrawTick / 8))
@@ -911,6 +933,7 @@ function CoinChallengePage() {
         }))
       }
       addCoinBalance(pendingStep + poolStep + creditStep)
+      if (remainingCredits + remainingPool + remainingPending < 1) finishWithdrawal()
     }, 45)
   }
 
@@ -1161,6 +1184,19 @@ function CoinChallengePage() {
       void requestSharedStart()
       return true
     }
+    if (nextRoundWinStopTimerRef.current !== null) window.clearTimeout(nextRoundWinStopTimerRef.current)
+    const hasPlayingWinAudio = [winAudioRef.current, winAudioAltRef.current].some(audio => audio && !audio.paused)
+    if (hasPlayingWinAudio) {
+      nextRoundWinStopTimerRef.current = window.setTimeout(() => {
+        for (const audio of [winAudioRef.current, winAudioAltRef.current]) {
+          if (!audio) continue
+          audio.onended = null
+          audio.pause()
+          try { audio.currentTime = 0 } catch {}
+        }
+        nextRoundWinStopTimerRef.current = null
+      }, 1000)
+    }
     safelyRunAudio(() => {
     setWinningLight(null)
     setSpecialCellEffect(null)
@@ -1216,7 +1252,6 @@ function CoinChallengePage() {
     }
     const carriedWin = collectibleWin
     if (carriedWin > 0) {
-      playPoolAudio()
       updateMachine((current) => ({
         ...current,
         bonusWin: joinedRoom ? current.bonusWin : Math.min(9999, current.bonusWin + carriedWin),
@@ -1294,6 +1329,11 @@ function CoinChallengePage() {
 
     setIsSpinning(true)
     setLuckyLitLights([])
+    setBonusResultKind(null)
+    if (bonusFlashTimerRef.current !== null) {
+      window.clearTimeout(bonusFlashTimerRef.current)
+      bonusFlashTimerRef.current = null
+    }
     setWinningLight(null)
 
     const advance = () => {
@@ -1346,7 +1386,12 @@ function CoinChallengePage() {
           const plan = makeBonusPlan(kind)
           setBonusMessage(`${plan.title} · ${mode === 'gold' ? '黄金' : '幸运'}随机触发`)
           setSpecialCellEffect('lucky')
-          if (mode === 'gold') setGameMode('gold')
+          if (mode === 'gold') {
+            setGameMode('gold')
+            safelyRunAudio(() => playCompleteAudio(modeEntryAudioRef.current))
+          } else {
+            playLuckyAudio()
+          }
           runBonusPlan(plan)
           return
         }
@@ -1482,16 +1527,24 @@ function CoinChallengePage() {
           }])
         }
         setLuckyLitLights(plan.targets)
+        setBonusResultKind(payout > 0 ? plan.kind : null)
+        if (bonusFlashTimerRef.current !== null) window.clearTimeout(bonusFlashTimerRef.current)
+        if (payout > 0) {
+          bonusFlashTimerRef.current = window.setTimeout(() => {
+            setBonusResultKind(null)
+            bonusFlashTimerRef.current = null
+          }, 2200)
+        }
         setBonusMessage(`${plan.title} · 获得 ${payout} 分`)
         setGameMode('normal')
         setModeRounds(0)
         finishRound(payout, 0, 1, plan.targets[plan.targets.length - 1], true)
-        safelyRunAudio(() => playBonusSound(audioContextRef.current, plan.kind, stage, true))
+        if (payout > 0) playBonusWinAnnouncement()
       }
       const runStage = () => {
         const targets = plan.simultaneous ? plan.targets : [plan.targets[stage]]
         const started = performance.now()
-        const duration = plan.allStars ? 2400 : 1800
+        const duration = plan.allStars ? 2400 : plan.train ? 5200 : 1800
         const tick = () => {
           const progress = Math.min(1, (performance.now() - started) / duration)
           if (progress >= 1) {
@@ -1508,12 +1561,30 @@ function CoinChallengePage() {
             }
             return
           }
-          const eased = 1 - (1 - progress) ** 2
-          setLuckyLitLights([...landed, ...targets.map((end, index) => {
-            const start = (previous + index * 5) % trackLength
-            const steps = trackLength * 2 + (end - start + trackLength) % trackLength
-            return (start + Math.floor(steps * eased)) % trackLength
-          })])
+          // The train pulls away slowly, then gathers speed as one connected row.
+          const eased = plan.train ? progress ** 2 : 1 - (1 - progress) ** 2
+          if (plan.allStars) {
+            if (progress < .68) {
+              const travel = progress / .68
+              const backAndForth = travel < .5 ? travel * 2 : (1 - travel) * 2
+              const offset = Math.floor(backAndForth * 12) % 2
+              setLuckyLitLights(Array.from({ length: 12 }, (_, index) => index * 2 + offset))
+            } else {
+              const finalePhase = Math.floor(((progress - .68) / .32) * 6)
+              setLuckyLitLights(finalePhase % 3 === 2
+                ? Array.from({ length: trackLength }, (_, index) => index)
+                : Array.from({ length: 12 }, (_, index) => index * 2 + finalePhase % 2))
+            }
+          } else {
+            const visibleTargetCount = plan.train
+              ? Math.min(targets.length, 1 + Math.floor(Math.max(0, (progress - .1) / .42) * targets.length))
+              : targets.length
+            setLuckyLitLights([...landed, ...targets.slice(0, visibleTargetCount).map((end, index) => {
+              const start = (previous + index * (plan.train ? 1 : 5)) % trackLength
+              const steps = trackLength * 2 + (end - start + trackLength) % trackLength
+              return (start + Math.floor(steps * eased)) % trackLength
+            })])
+          }
           spinTimerRef.current = window.setTimeout(tick, 24)
         }
         tick()
@@ -1764,7 +1835,7 @@ function CoinChallengePage() {
           {Object.entries(BONUS_NAMES).map(([kind, name]) => <option key={kind} value={kind}>{name}</option>)}
         </select>
         <button type="button" disabled={isSpinning || compareMode || isWithdrawing} className="ml-2 rounded bg-amber-500 px-2 py-1 text-black disabled:opacity-40" onClick={() => {
-          const isGold = ['random-lights', 'big-three', 'big-four', 'all-stars'].includes(testBonus)
+          const isGold = ['random-lights', 'big-three', 'all-fruits', 'big-four', 'train', 'all-stars'].includes(testBonus)
           forcedBonus.current = testBonus
           if (!handleStart(true, isGold ? BAR_50_LIGHT_INDEX : LUCKY_LIGHT_INDEX)) forcedBonus.current = null
         }}>测试奖励</button>
@@ -1878,7 +1949,7 @@ function CoinChallengePage() {
         >
           <span className="absolute inset-0">
             <SevenSegmentNumber
-              digits={5}
+              digits={4}
               value={creditTransferDisplay?.credits ?? machine.credits}
             />
           </span>
@@ -1920,6 +1991,8 @@ function CoinChallengePage() {
             className={`pointer-events-none absolute z-[3] block aspect-square w-[2.7%] -translate-x-1/2 -translate-y-1/2 rounded-[18%] transition-[background-color,box-shadow,transform] duration-75 [left:var(--track-x)] max-sm:[left:calc(var(--track-x)_+_var(--mobile-track-shift))] sm:[left:calc(var(--track-x)_+_var(--desktop-track-shift))] ${
               winningLight === index
                 ? 'animate-[pulse_0.18s_linear_infinite] scale-125 bg-yellow-200 shadow-[0_0_16px_6px_rgba(255,230,50,1)]'
+                : bonusResultKind && luckyLitLights.includes(index)
+                  ? 'animate-[pulse_0.16s_linear_infinite] scale-125 bg-yellow-100 shadow-[0_0_18px_7px_rgba(255,235,70,1)]'
                 : activeLight === index || luckyLitLights.includes(index)
                   ? 'scale-110 bg-red-500 shadow-[0_0_10px_3px_rgba(255,20,20,0.95)]'
                 : 'bg-transparent shadow-none'
@@ -1928,7 +2001,8 @@ function CoinChallengePage() {
             style={{
               '--mobile-track-shift': getMobileTrackShift(light),
               '--desktop-track-shift': getDesktopTrackShift(light),
-              '--track-x': `${light.x}%`,
+              '--track-x': getTrackColumnX(light.x),
+              animationDelay: bonusResultKind === 'all-stars' && luckyLitLights.includes(index) ? `${index % 2 ? .11 : 0}s` : undefined,
               top: `${light.y}%`,
             } as CSSProperties}
           />
@@ -2195,6 +2269,13 @@ const SEVEN_SEGMENT_DIGITS: Record<string, Array<number>> = {
   '9': [0, 1, 2, 3, 5, 6],
 }
 
+function getTrackColumnX(x: number) {
+  if (x === 21.7 || x === 26.93) return `calc(${x}% - 1px)`
+  if (x === 38.47) return `calc(${x}% - 2px)`
+  if (x === 73.15 || x === 78.27) return `calc(${x}% + 1px)`
+  return `${x}%`
+}
+
 function createTrackLights() {
   const lights: Array<{
     multiplier: number
@@ -2306,12 +2387,20 @@ function getMobileTrackShift(light: { x: number; y: number }) {
 }
 
 function getDesktopTrackShift(light: { x: number; y: number }) {
+  const isFirstColumn = Math.abs(light.x - 21.7) < 0.1
+  const isThirdColumn = Math.abs(light.x - 38.47) < 0.1
+  const isSixthColumn = Math.abs(light.x - 73.15) < 0.1
+  const isSeventhColumn = Math.abs(light.x - 78.27) < 0.1
   let shift = light.x < 49.9 ? -3.33 : light.x > 50.1 ? 3.33 : 0
 
   if (Math.abs(light.x - 26.93) < 0.1) shift += 0.67
   if (Math.abs(light.x - 38.47) < 0.1) shift += 2
   if (Math.abs(light.x - 61.53) < 0.1) shift -= 2
   if (Math.abs(light.x - 73.15) < 0.1) shift -= 0.67
+  if (isFirstColumn) return `calc(${shift}% + 1px)`
+  if (isThirdColumn) return `calc(${shift}% + 1px)`
+  if (isSixthColumn) return `calc(${shift}% - 1px)`
+  if (isSeventhColumn) return `calc(${shift}% - 1px)`
   return `${shift}%`
 }
 
