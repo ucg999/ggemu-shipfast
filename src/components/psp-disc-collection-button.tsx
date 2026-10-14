@@ -4,7 +4,7 @@ import { readMemberCoinBalance, spendMemberCoinBalance } from '#/lib/coin-wallet
 import type { Locale } from '#/lib/ggemu'
 import { useMemberSession } from '#/lib/member-client'
 
-const PRICE = 50
+const PRICE = 100
 const STORAGE_KEY = 'ucg999-game-disc-collection'
 
 export function PspDiscCollectionButton({ downloadUrl, gameId, locale, platform }: { downloadUrl?: string; gameId: string; locale: Locale; platform: 'psp' | 'switch' }) {
@@ -65,16 +65,16 @@ export function PspDiscCollectionButton({ downloadUrl, gameId, locale, platform 
 function getCopy(locale: Locale, platform: 'psp' | 'switch') {
   if (locale === 'en') {
     const item = platform === 'switch' ? 'game cartridge' : 'game disc'
-    return { collect: `Collect ${item} · 50 coins`, open: 'Collected · Open resource', confirmTitle: `Collect this ${item}?`, confirmMessage: '50 coins will be deducted after confirmation.', cancel: 'Cancel', confirm: 'Collect', insufficient: 'Not enough coins. 50 coins required.', success: `${item[0].toUpperCase()}${item.slice(1)} collected`, failed: 'Collection could not be saved', preparing: 'Resource updating' }
+    return { collect: `Collect ${item} · ${PRICE} coins`, open: 'Collected · Open resource', confirmTitle: `Collect this ${item}?`, confirmMessage: `${PRICE} coins will be deducted after confirmation.`, cancel: 'Cancel', confirm: 'Collect', insufficient: `Not enough coins. ${PRICE} coins required.`, success: `${item[0].toUpperCase()}${item.slice(1)} collected`, failed: 'Collection could not be saved', preparing: 'Resource updating' }
   }
   if (locale === 'zh-TW') {
     const item = platform === 'switch' ? '遊戲卡帶' : '遊戲碟'
-    return { collect: `${item}收藏 · 50金幣`, open: '已收藏 · 打開資源', confirmTitle: `確認收藏${item}？`, confirmMessage: '確認後將扣除50個金幣。', cancel: '取消', confirm: '確認收藏', insufficient: '金幣不足，需要50個金幣', success: `${item}收藏成功`, failed: '收藏記錄保存失敗', preparing: '資源更新中' }
+    return { collect: `${item}收藏 · ${PRICE}金幣`, open: '已收藏 · 打開資源', confirmTitle: `確認收藏${item}？`, confirmMessage: `確認後將扣除${PRICE}個金幣。`, cancel: '取消', confirm: '確認收藏', insufficient: `金幣不足，需要${PRICE}個金幣`, success: `${item}收藏成功`, failed: '收藏記錄保存失敗', preparing: '資源更新中' }
   }
   if (locale === 'ja') {
     const item = platform === 'switch' ? 'ゲームカード' : 'ゲームディスク'
-    return { collect: `${item}収集・50コイン`, open: '収集済み・リソースを開く', confirmTitle: `${item}を収集しますか？`, confirmMessage: '確認後、50コインを消費します。', cancel: 'キャンセル', confirm: '収集', insufficient: 'コインが不足しています（50枚必要）', success: `${item}を収集しました`, failed: '収集情報を保存できませんでした', preparing: '更新中' }
+    return { collect: `${item}収集・${PRICE}コイン`, open: '収集済み・リソースを開く', confirmTitle: `${item}を収集しますか？`, confirmMessage: `確認後、${PRICE}コインを消費します。`, cancel: 'キャンセル', confirm: '収集', insufficient: `コインが不足しています（${PRICE}枚必要）`, success: `${item}を収集しました`, failed: '収集情報を保存できませんでした', preparing: '更新中' }
   }
   const item = platform === 'switch' ? '游戏卡带' : '游戏碟'
-  return { collect: `${item}收藏 · 50金币`, open: '已收藏 · 打开资源', confirmTitle: `确认收藏${item}？`, confirmMessage: '确认后将扣除50个金币。', cancel: '取消', confirm: '确认收藏', insufficient: '金币不足，需要50个金币', success: `${item}收藏成功`, failed: '收藏记录保存失败', preparing: '资源更新中' }
+  return { collect: `${item}收藏 · ${PRICE}金币`, open: '已收藏 · 打开资源', confirmTitle: `确认收藏${item}？`, confirmMessage: `确认后将扣除${PRICE}个金币。`, cancel: '取消', confirm: '确认收藏', insufficient: `金币不足，需要${PRICE}个金币`, success: `${item}收藏成功`, failed: '收藏记录保存失败', preparing: '资源更新中' }
 }

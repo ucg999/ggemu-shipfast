@@ -97,6 +97,7 @@ return JSON.parse(raw);
 let nes = null;
 let ready = false;
 let paused = false;
+let speedMultiplier = 1;
 let activeMapper = 0;
 let activeGameId = 'super_mario_bros_world';
 let rawCheats = [];
@@ -131,6 +132,7 @@ let lastOutputL = 0;
 let lastOutputR = 0;
 let audioCtx = null;
 let scriptProcessor = null;
+let audioMuted = false;
 function resetAudioBuffer() {
 writeCursor = 0;
 readCursor = 0;
@@ -150,6 +152,7 @@ scriptProcessor = audioCtx.createScriptProcessor(AUDIO_BUFFERING, 0, 2);
 scriptProcessor.onaudioprocess = function (e) {
 const dstL = e.outputBuffer.getChannelData(0);
 const dstR = e.outputBuffer.getChannelData(1);
+if (audioMuted) { dstL.fill(0); dstR.fill(0); return; }
 for (let i = 0; i < AUDIO_BUFFERING; i++) {
 if (audioAvailable > 0) {
 lastOutputL = Math.max(-0.82, Math.min(0.82, samplesL[readCursor] * 0.82));
@@ -301,14 +304,18 @@ return true;
 },
 tick: function () {
 if (!ready || paused || document.hidden) return;
-nes.frame();
-applyRawCheats();
+for (let step = 0; step < speedMultiplier; step++) { nes.frame(); applyRawCheats(); }
 },
+setSpeed: function (value) { speedMultiplier = value === 4 ? 4 : value === 2 ? 2 : 1; },
 setPaused: function (value) {
 paused = !!value;
 resetAudioBuffer();
 if (paused && audioCtx && audioCtx.state === 'running') audioCtx.suspend().catch(() => {});
 if (!paused && audioCtx && audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
+},
+setMuted: function (value) {
+audioMuted = !!value;
+resetAudioBuffer();
 },
 setButton: function (id, pressed) {
 if (!nes) return;

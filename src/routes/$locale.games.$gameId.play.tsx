@@ -55,6 +55,7 @@ export const Route = createFileRoute('/$locale/games/$gameId/play')({
   },
   headers: ({ loaderData }) => ({
     ...noindexHeaders,
+    'Cache-Control': 'public, max-age=30, s-maxage=600, stale-while-revalidate=3600',
     ...(loaderData && isPspGame(loaderData.game) ? pspCrossOriginIsolationHeaders : {}),
   }),
   component: LocalizedPlayGamePage,
@@ -78,10 +79,13 @@ function LocalizedPlayGamePage() {
   const [memberAccessGranted, setMemberAccessGranted] = useState(!isMahjongCoinChargeGame)
   const [guestMahjongTrial, setGuestMahjongTrial] = useState(false)
   const embedId = encodeURIComponent(game._id || game.url_slug || gameId)
+  const forceAutoplay = gameId === 'mahjong-nes-1983'
+    || game.url_slug === 'mahjong-nes-1983'
+    || (game.name ?? '').trim().toLocaleLowerCase() === 'mahjong'
   const refcode = encodeURIComponent(siteConfig.GGEMU_REFCODE)
   const isPsp = isPspGame(game)
   const theme = useCurrentSiteTheme()
-  const embedSrc = rankAccessGranted && memberAccessGranted ? `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp, theme, autoplay === '1')}` : 'about:blank'
+  const embedSrc = rankAccessGranted && memberAccessGranted ? `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp, theme, autoplay === '1' || forceAutoplay)}` : 'about:blank'
   const [showRecommendations, setShowRecommendations] = useState(false)
   const [recommendations, setRecommendations] = useState<Array<PublicGame>>([])
   const [recommendationType, setRecommendationType] = useState<'series' | 'category'>('category')

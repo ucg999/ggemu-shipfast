@@ -175,7 +175,7 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
 
       {isOpen ? (
         <div className="fixed inset-0 z-[180] grid place-items-center bg-black/55 p-4" onClick={() => { if (!member?.needsNickname) setIsOpen(false) }} role="presentation">
-          <section aria-modal="true" className="w-full max-w-sm rounded-3xl bg-white p-6 text-black shadow-2xl" onClick={(event) => event.stopPropagation()} role="dialog">
+          <section aria-modal="true" className="max-h-[calc(100vh-2rem)] w-full max-w-sm overflow-y-auto rounded-3xl bg-white p-6 text-black shadow-2xl" onClick={(event) => event.stopPropagation()} role="dialog">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-semibold">{member ? copy.account : mode === 'login' ? copy.login : copy.register}</h2>
@@ -183,6 +183,8 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
               </div>
               {!member?.needsNickname ? <button aria-label={copy.close} className="grid h-8 w-8 place-items-center rounded-full hover:bg-black/5" onClick={() => setIsOpen(false)} type="button">✕</button> : null}
             </div>
+
+            <CoinEarningGuide locale={locale} />
 
             {member ? (
               <div className="mt-6">
@@ -261,6 +263,60 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
         </div>
       ) : null}
     </>
+  )
+}
+
+function CoinEarningGuide({ locale }: { locale: Locale }) {
+  const isEnglish = locale === 'en'
+  return (
+    <details className="mt-4 overflow-hidden rounded-2xl border border-amber-300 bg-amber-50/70">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm font-semibold text-amber-950">
+        <span className="flex items-center gap-2"><i className="ri-coin-line text-amber-600" />{isEnglish ? 'How to earn game coins' : '游戏币如何获得？'}</span>
+        <i className="ri-arrow-down-s-line text-lg" />
+      </summary>
+      <div className="border-t border-amber-200 px-4 py-3 text-xs leading-5 text-black/70">
+        {isEnglish ? (
+          <><ul className="list-disc space-y-1.5 pl-4">
+            <li><b>Play games:</b> rewards settle after each complete 5-minute period. Incomplete periods do not award coins, and ordinary sessions are capped at 100 coins.</li>
+            <li><b>Console Mode:</b> game rewards use a 2× bonus and are capped at 200 coins per session.</li>
+            <li><b>Daily check-in and watching others:</b> both can award coins; consecutive check-ins increase the check-in multiplier.</li>
+            <li><b>Share the website:</b> after completing and confirming a share, receive 100 coins once per account or IP each day.</li>
+            <li><b>Page coins:</b> collect coins appearing on the home page or inner pages. These fixed/random pickups do not use multipliers.</li>
+            <li><b>Member bonuses:</b> rank and check-in multipliers are added together for eligible game and viewing rewards. Guests always use 1×.</li>
+            <li><b>Saving coins:</b> browser coins and player coins are separate. After signing in, you can save up to 999 browser coins into your player account each day.</li>
+          </ul>
+          <div className="mt-3 rounded-xl border border-amber-300 bg-white/80 p-3">
+            <strong className="flex items-center gap-1.5 text-sm text-amber-800"><i className="ri-trophy-line" />Weekly grand prizes</strong>
+            <ul className="mt-2 list-disc space-y-1.5 pl-4">
+              <li><b>Weekly Wanted:</b> ranked by valid time. First place receives 5,000 coins, second 2,000, and third 500. Guests may participate and claim rewards into the current browser.</li>
+              <li><b>Coin Entertainment weekly:</b> the highest single bonus-pool cash-out of the week wins 5,000 coins. It is not based on accumulated cash-outs.</li>
+              <li><b>Red–Blue Arena weekly:</b> if the total Arrest value exceeds the total Bounty value, the top Arrest player receives the difference between the two totals.</li>
+              <li><b>Settlement and claim:</b> weekly boards settle every Monday at 03:00 China time. Winners must open the corresponding page and claim within 24 hours; expired rewards cannot be recovered.</li>
+            </ul>
+          </div></>
+        ) : (
+          <><ul className="list-disc space-y-1.5 pl-4">
+            <li><b>游玩游戏：</b>每完整游玩5分钟结算一次，不足5分钟不发币；普通游戏单局最多获得100币。</li>
+            <li><b>主机模式：</b>游玩结算享受双倍金币，单局最高200币。</li>
+            <li><b>每日签到、看别人玩：</b>都可以获得金币；连续签到会提高签到倍数。</li>
+            <li><b>分享网站：</b>完成分享并确认发送后获得100币，同一账号或IP每天限领一次。</li>
+            <li><b>页面捡金币：</b>首页和内页会出现可收集金币；这类固定或随机金币不参与倍数。</li>
+            <li><b>玩家倍数：</b>符合条件的游玩和观看奖励，会将段位倍数与连续签到倍数相加；游客固定为1倍。</li>
+            <li><b>保存金币：</b>浏览器金币与玩家金币相互独立；登录后每天最多可主动转入999个浏览器金币到玩家账号。</li>
+          </ul>
+          <div className="mt-3 rounded-xl border border-amber-300 bg-white/80 p-3">
+            <strong className="flex items-center gap-1.5 text-sm text-amber-800"><i className="ri-trophy-line" />各种周榜大奖</strong>
+            <ul className="mt-2 list-disc space-y-1.5 pl-4">
+              <li><b>悬赏令周榜：</b>按有效时间排名；第一名奖5000币、第二名奖2000币、第三名奖500币。游客也可参赛，获奖后领到当前浏览器。</li>
+              <li><b>金币娱乐周榜：</b>按本周“单次奖池退币”的最高纪录排名，不累计；冠军奖5000币。</li>
+              <li><b>幽灵捕手周榜：</b>按本周最高连续过关数排名；冠军奖1000币，游客可玩但不参与排名。</li>
+              <li><b>红蓝竞技周榜：</b>逮捕令全榜总和高于悬赏令全榜总和时，逮捕令第一名获得“两榜总和的差额”金币。</li>
+              <li><b>结算与领奖：</b>以上周榜均在北京时间每周一03:00结算。获奖后要进入对应页面弹窗领取，必须在24小时内领取，过期无法补领。</li>
+            </ul>
+          </div></>
+        )}
+      </div>
+    </details>
   )
 }
 

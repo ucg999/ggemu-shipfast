@@ -1,3 +1,4 @@
+import { BONUS_RANK_NAMES } from '#/lib/coin-bonus-ranking'
 import { createFileRoute } from '@tanstack/react-router'
 
 import { assertSameOrigin, getMemberFromRequest, jsonError, leaderboardDb, memberDb } from '#/lib/member-auth.server'
@@ -61,11 +62,13 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
         const leaderboardPeriodKey = channel === 'red-blue-arena' ? leaderboardMode : 'all'
         const leaderboardMetric = channel === 'red-blue-arena' ? 's.wins' : 's.score'
         if (channel === 'red-blue-arena') await settleArenaWeeks()
+        if (channel === 'coin-challenge') await settleCoinChallengeWeeks()
+        if (channel === 'ghost-hunter') await settleGhostHunterWeeks()
         const rankPromise = leaderboardDb().prepare(`
           SELECT p.nickname AS display_name, ${leaderboardMetric} AS score, s.wins, s.losses, s.updated_at
           FROM leaderboard_scores s JOIN leaderboard_players p ON p.player_id = s.player_id
           WHERE s.game_id = ? AND s.period_type = 'all' AND s.period_key = ? AND ${channel === 'red-blue-arena' ? '(s.wins + s.losses)' : leaderboardMetric} > 0
-          ORDER BY ${leaderboardMetric} DESC, s.losses ASC, s.updated_at ASC LIMIT 10
+          ORDER BY ${leaderboardMetric} DESC, s.losses ASC, s.updated_at ASC LIMIT ${channel === 'coin-challenge' ? 3 : 10}
         `).bind(leaderboardGame, leaderboardPeriodKey).all<RankRow>()
         const [onlineResult, sharedRound, competition, rankResult] = await Promise.all([
           memberDb().prepare(`
@@ -79,6 +82,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
         ])
         const now = Date.now()
         const weeklyKey = getArenaWeekKey(now)
+        const expiredRewards = member ? await expireCommunityRewards(member.id, channel) : []
         const [bountyResult, arrestResult] = channel === 'red-blue-arena'
           ? await Promise.all([
               leaderboardDb().prepare(`
@@ -109,15 +113,83 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
           ? await leaderboardDb().prepare(`
               SELECT period_key, reward_coins FROM arena_weekly_settlements
               WHERE arrest_player_id = ? AND reward_coins > 0 AND reward_applied = 0
+                AND datetime('now') < datetime(period_key, '+7 days', '+19 hours')
               ORDER BY period_key ASC
             `).bind(member.id).all<{ period_key: string; reward_coins: number }>()
           : { results: [] as Array<{ period_key: string; reward_coins: number }> }
+        const coinWeeklyResult = channel === 'coin-challenge'
+          ? await leaderboardDb().prepare(`
+              SELECT s.player_id, p.nickname AS display_name, s.cashout_coins AS coins
+              FROM coin_challenge_weekly_cashouts s JOIN leaderboard_players p ON p.player_id = s.player_id
+              WHERE s.period_key = ? AND s.cashout_coins > 0
+              ORDER BY s.cashout_coins DESC, s.updated_at ASC LIMIT 10
+            `).bind(weeklyKey).all<WeeklyCoinRow>()
+          : { results: [] as WeeklyCoinRow[] }
+        const lastCoinChampion = channel === 'coin-challenge'
+          ? await leaderboardDb().prepare(`
+              SELECT p.nickname AS display_name
+              FROM coin_challenge_weekly_settlements x
+              LEFT JOIN leaderboard_players p ON p.player_id = x.champion_player_id
+              WHERE x.period_key < ? ORDER BY x.period_key DESC LIMIT 1
+            `).bind(weeklyKey).first<{ display_name: string | null }>()
+          : null
+        const pendingCoinRewards = channel === 'coin-challenge' && member
+          ? await leaderboardDb().prepare(`
+              SELECT period_key, reward_coins FROM coin_challenge_weekly_settlements
+              WHERE champion_player_id = ? AND reward_coins > 0 AND reward_applied = 0
+                AND datetime('now') < datetime(period_key, '+7 days', '+19 hours')
+              ORDER BY period_key ASC
+            `).bind(member.id).all<{ period_key: string; reward_coins: number }>()
+          : { results: [] as Array<{ period_key: string; reward_coins: number }> }
+        const ghostWeeklyResult = channel === 'ghost-hunter'
+          ? await leaderboardDb().prepare(`
+              SELECT s.player_id, p.nickname AS display_name, s.score AS coins
+              FROM leaderboard_scores s JOIN leaderboard_players p ON p.player_id = s.player_id
+              WHERE s.game_id = 'ghost-hunter' AND s.period_type = 'weekly' AND s.period_key = ? AND s.score > 0
+              ORDER BY s.score DESC, s.updated_at ASC LIMIT 10
+            `).bind(weeklyKey).all<WeeklyCoinRow>()
+          : { results: [] as WeeklyCoinRow[] }
+        const lastGhostChampion = channel === 'ghost-hunter'
+          ? await leaderboardDb().prepare(`
+              SELECT p.nickname AS display_name
+              FROM ghost_hunter_weekly_settlements x
+              LEFT JOIN leaderboard_players p ON p.player_id = x.champion_player_id
+              WHERE x.period_key < ? ORDER BY x.period_key DESC LIMIT 1
+            `).bind(weeklyKey).first<{ display_name: string | null }>()
+          : null
+        const pendingGhostRewards = channel === 'ghost-hunter' && member
+          ? await leaderboardDb().prepare(`
+              SELECT period_key, reward_coins FROM ghost_hunter_weekly_settlements
+              WHERE champion_player_id = ? AND reward_coins > 0 AND reward_applied = 0
+                AND datetime('now') < datetime(period_key, '+7 days', '+19 hours')
+              ORDER BY period_key ASC
+            `).bind(member.id).all<{ period_key: string; reward_coins: number }>()
+          : { results: [] as Array<{ period_key: string; reward_coins: number }> }
+        const singleCashouts = channel === 'coin-challenge' ? await leaderboardDb().prepare(`
+          SELECT p.nickname AS display_name, MAX(s.score) AS coins
+          FROM leaderboard_submissions s JOIN leaderboard_players p ON p.player_id = s.player_id
+          WHERE s.game_id = 'coin-challenge' AND s.score > 0
+          GROUP BY s.player_id, p.nickname ORDER BY coins DESC, s.player_id ASC LIMIT 3
+        `).all<WeeklyCoinRow>() : { results: [] }
+        const bonusChampions = channel === 'coin-challenge' ? await Promise.all(Object.keys(BONUS_RANK_NAMES).map(async kind => {
+          const row = await leaderboardDb().prepare(`
+            SELECT p.nickname AS display_name, COUNT(*) AS hits
+            FROM leaderboard_submissions s JOIN leaderboard_players p ON p.player_id = s.player_id
+            WHERE s.game_id = ? GROUP BY s.player_id, p.nickname
+            ORDER BY hits DESC, MAX(s.created_at) ASC, s.player_id ASC LIMIT 1
+          `).bind('coin-bonus:' + kind).first<{ display_name: string; hits: number }>()
+          return { kind, displayName: row?.display_name ?? '', count: Number(row?.hits ?? 0) }
+        })) : []
         return Response.json({
+          singleCashoutLeaderboard: singleCashouts.results.map((row: WeeklyCoinRow, index: number) => ({ rank: index + 1, displayName: row.display_name, coins: row.coins })),
+          bonusChampions,
           leaderboard: rankResult.results.map((row: RankRow, index: number) => ({ rank: index + 1, displayName: row.display_name, score: row.score, wins: row.wins, losses: row.losses, updatedAt: row.updated_at })),
           bountyLeaderboard: bountyResult.results.map((row, index) => ({ rank: index + 1, displayName: row.display_name, coins: row.coins })),
           arrestLeaderboard: arrestResult.results.map((row, index) => ({ rank: index + 1, displayName: row.display_name, coins: row.coins })),
-          lastWeekChampion: lastWeekChampion?.display_name ?? null,
-          pendingRewards: pendingArenaRewards.results.map(row => ({ periodKey: row.period_key, coins: row.reward_coins })),
+          weeklyLeaderboard: (channel === 'ghost-hunter' ? ghostWeeklyResult.results : coinWeeklyResult.results).map((row, index) => ({ rank: index + 1, displayName: row.display_name, coins: row.coins })),
+          lastWeekChampion: channel === 'coin-challenge' ? lastCoinChampion?.display_name ?? null : channel === 'ghost-hunter' ? lastGhostChampion?.display_name ?? null : lastWeekChampion?.display_name ?? null,
+          pendingRewards: (channel === 'coin-challenge' ? pendingCoinRewards.results : channel === 'ghost-hunter' ? pendingGhostRewards.results : pendingArenaRewards.results).map(row => ({ periodKey: row.period_key, coins: row.reward_coins })),
+          expiredRewards,
           member,
           online: onlineResult.results.length,
           winCounts: parseWinCounts(competition?.win_counts_json),
@@ -149,12 +221,36 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
           if (member.needsNickname) return jsonError('请先完成必填昵称设置', 428)
           const body = await request.json() as Record<string, unknown>
           const channel = normalizeChatChannel(body.channel)
+          if (body.action === 'claim-weekly-reward' && channel === 'coin-challenge') {
+            await settleCoinChallengeWeeks()
+            const ranking = leaderboardDb()
+            const awards = await ranking.prepare(`
+              SELECT period_key, reward_coins FROM coin_challenge_weekly_settlements
+              WHERE champion_player_id = ? AND reward_coins > 0 AND reward_applied = 0
+                AND datetime('now') < datetime(period_key, '+7 days', '+19 hours')
+              ORDER BY period_key ASC
+            `).bind(member.id).all<{ period_key: string; reward_coins: number }>()
+            const total = awards.results.reduce((sum, row) => sum + Math.max(0, Number(row.reward_coins) || 0), 0)
+            if (total <= 0) return Response.json({ ok: true, coins: 0 })
+            const rewardKey = `coin-challenge-weekly:${awards.results.map(row => row.period_key).join(',')}`
+            const account = await memberDb().prepare('SELECT coin_balance FROM members WHERE id = ?').bind(member.id).first<{ coin_balance: number }>()
+            const credited = Math.min(total, Math.max(0, 99_999 - (Number(account?.coin_balance) || 0)))
+            if (account && credited > 0) await memberDb().batch([
+              memberDb().prepare(`UPDATE members SET coin_balance = coin_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND NOT EXISTS (SELECT 1 FROM member_coin_transactions WHERE member_id = ? AND idempotency_key = ?)`)
+                .bind(credited, member.id, member.id, rewardKey),
+              memberDb().prepare(`INSERT OR IGNORE INTO member_coin_transactions (member_id, amount, balance_after, reason, idempotency_key) SELECT id, ?, coin_balance, 'coin_challenge_weekly_reward', ? FROM members WHERE id = ?`)
+                .bind(credited, rewardKey, member.id),
+            ])
+            await ranking.prepare(`UPDATE coin_challenge_weekly_settlements SET reward_applied = 1, settled_at = CURRENT_TIMESTAMP WHERE champion_player_id = ? AND reward_applied = 0`).bind(member.id).run()
+            return Response.json({ ok: true, coins: credited })
+          }
           if (body.action === 'claim-weekly-reward' && channel === 'red-blue-arena') {
             await settleArenaWeeks()
             const ranking = leaderboardDb()
             const awards = await ranking.prepare(`
               SELECT period_key, reward_coins FROM arena_weekly_settlements
               WHERE arrest_player_id = ? AND reward_coins > 0 AND reward_applied = 0
+                AND datetime('now') < datetime(period_key, '+7 days', '+19 hours')
               ORDER BY period_key ASC
             `).bind(member.id).all<{ period_key: string; reward_coins: number }>()
             const total = awards.results.reduce((sum, row) => sum + Math.max(0, Number(row.reward_coins) || 0), 0)
@@ -169,6 +265,29 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
                 .bind(credited, rewardKey, member.id),
             ])
             await ranking.prepare(`UPDATE arena_weekly_settlements SET reward_applied = 1, settled_at = CURRENT_TIMESTAMP WHERE arrest_player_id = ? AND reward_applied = 0`).bind(member.id).run()
+            return Response.json({ ok: true, coins: credited })
+          }
+          if (body.action === 'claim-weekly-reward' && channel === 'ghost-hunter') {
+            await settleGhostHunterWeeks()
+            const ranking = leaderboardDb()
+            const awards = await ranking.prepare(`
+              SELECT period_key, reward_coins FROM ghost_hunter_weekly_settlements
+              WHERE champion_player_id = ? AND reward_coins > 0 AND reward_applied = 0
+                AND datetime('now') < datetime(period_key, '+7 days', '+19 hours')
+              ORDER BY period_key ASC
+            `).bind(member.id).all<{ period_key: string; reward_coins: number }>()
+            const total = awards.results.reduce((sum, row) => sum + Math.max(0, Number(row.reward_coins) || 0), 0)
+            if (total <= 0) return Response.json({ ok: true, coins: 0 })
+            const rewardKey = `ghost-hunter-weekly:${awards.results.map(row => row.period_key).join(',')}`
+            const account = await memberDb().prepare('SELECT coin_balance FROM members WHERE id = ?').bind(member.id).first<{ coin_balance: number }>()
+            const credited = Math.min(total, Math.max(0, 99_999 - (Number(account?.coin_balance) || 0)))
+            if (account && credited > 0) await memberDb().batch([
+              memberDb().prepare(`UPDATE members SET coin_balance = coin_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND NOT EXISTS (SELECT 1 FROM member_coin_transactions WHERE member_id = ? AND idempotency_key = ?)`)
+                .bind(credited, member.id, member.id, rewardKey),
+              memberDb().prepare(`INSERT OR IGNORE INTO member_coin_transactions (member_id, amount, balance_after, reason, idempotency_key) SELECT id, ?, coin_balance, 'ghost_hunter_weekly_reward', ? FROM members WHERE id = ?`)
+                .bind(credited, rewardKey, member.id),
+            ])
+            await ranking.prepare(`UPDATE ghost_hunter_weekly_settlements SET reward_applied = 1, settled_at = CURRENT_TIMESTAMP WHERE champion_player_id = ? AND reward_applied = 0`).bind(member.id).run()
             return Response.json({ ok: true, coins: credited })
           }
           if (['presence', 'presence-leave', 'room-join', 'room-leave', 'round-start'].includes(String(body.action))) {
@@ -261,6 +380,17 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             ])
             return Response.json({ ok: true, shared: true, round: { token, startsAt, target, ...competition } })
           }
+          if (body.action === 'bonus-hit') {
+            const kind = typeof body.kind === 'string' ? body.kind : ''
+            const eventId = typeof body.submissionKey === 'string' ? body.submissionKey : ''
+            if (channel !== 'coin-challenge' || !Object.hasOwn(BONUS_RANK_NAMES, kind) || !/^[a-f0-9-]{36}$/i.test(eventId)) return jsonError('无效的跑灯记录')
+            const ranking = leaderboardDb()
+            await ranking.batch([
+              ranking.prepare(`INSERT INTO leaderboard_players (player_id, nickname) VALUES (?, ?) ON CONFLICT(player_id) DO UPDATE SET nickname = excluded.nickname, updated_at = CURRENT_TIMESTAMP`).bind(member.id, member.displayName),
+              ranking.prepare(`INSERT OR IGNORE INTO leaderboard_submissions (submission_key, game_id, player_id, score) VALUES (?, ?, ?, 1)`).bind('bonus:' + member.id + ':' + eventId, 'coin-bonus:' + kind, member.id),
+            ])
+            return Response.json({ ok: true })
+          }
           if (body.action === 'score') {
             const score = Math.floor(Number(body.score) || 0)
             const submissionKey = typeof body.submissionKey === 'string' ? body.submissionKey.slice(0, 96) : ''
@@ -276,8 +406,15 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
                 INSERT INTO leaderboard_scores (game_id, player_id, period_type, period_key, score)
                 VALUES ('coin-challenge', ?, 'all', 'all', ?)
                 ON CONFLICT(game_id, player_id, period_type, period_key) DO UPDATE SET
-                  score = MAX(score, excluded.score), updated_at = CURRENT_TIMESTAMP
+                  score = score + excluded.score, updated_at = CURRENT_TIMESTAMP
               `).bind(member.id, score),
+              ranking.prepare(`
+                INSERT INTO coin_challenge_weekly_cashouts (player_id, period_key, cashout_coins)
+                VALUES (?, ?, ?)
+                ON CONFLICT(player_id, period_key) DO UPDATE SET
+                  cashout_coins = MAX(cashout_coins, excluded.cashout_coins),
+                  updated_at = CURRENT_TIMESTAMP
+              `).bind(member.id, getArenaWeekKey(Date.now()), score),
             ])
             return Response.json({ ok: true, score })
           }
@@ -322,6 +459,14 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
                   lost_coins = lost_coins + excluded.lost_coins,
                   updated_at = CURRENT_TIMESTAMP
               `).bind(member.id, getArenaWeekKey(Date.now()), wonCoins, lostCoins))
+            }
+            if (scoreChannel === 'ghost-hunter') {
+              statements.push(ranking.prepare(`
+                INSERT INTO leaderboard_scores (game_id, player_id, period_type, period_key, score, wins, losses)
+                VALUES ('ghost-hunter', ?, 'weekly', ?, ?, 0, 0)
+                ON CONFLICT(game_id, player_id, period_type, period_key) DO UPDATE SET
+                  score = MAX(score, excluded.score), updated_at = CURRENT_TIMESTAMP
+              `).bind(member.id, getArenaWeekKey(Date.now()), score))
             }
             await ranking.batch(statements)
             return Response.json({ ok: true, score })
@@ -372,6 +517,50 @@ function getArenaWeekKey(timestamp: number) {
   return monday.toISOString().slice(0, 10)
 }
 
+async function expireCommunityRewards(memberId: string, channel: string) {
+  const ranking = leaderboardDb()
+  if (channel === 'coin-challenge') {
+    const expired = await ranking.prepare(`
+      SELECT period_key, reward_coins FROM coin_challenge_weekly_settlements
+      WHERE champion_player_id = ? AND reward_coins > 0 AND reward_applied = 0
+        AND datetime('now') >= datetime(period_key, '+7 days', '+19 hours')
+    `).bind(memberId).all<{ period_key: string; reward_coins: number }>()
+    if (expired.results.length) await ranking.prepare(`
+      UPDATE coin_challenge_weekly_settlements SET reward_applied = 1
+      WHERE champion_player_id = ? AND reward_applied = 0
+        AND datetime('now') >= datetime(period_key, '+7 days', '+19 hours')
+    `).bind(memberId).run()
+    return expired.results.map(row => ({ periodKey: row.period_key, coins: row.reward_coins }))
+  }
+  if (channel === 'red-blue-arena') {
+    const expired = await ranking.prepare(`
+      SELECT period_key, reward_coins FROM arena_weekly_settlements
+      WHERE arrest_player_id = ? AND reward_coins > 0 AND reward_applied = 0
+        AND datetime('now') >= datetime(period_key, '+7 days', '+19 hours')
+    `).bind(memberId).all<{ period_key: string; reward_coins: number }>()
+    if (expired.results.length) await ranking.prepare(`
+      UPDATE arena_weekly_settlements SET reward_applied = 1
+      WHERE arrest_player_id = ? AND reward_applied = 0
+        AND datetime('now') >= datetime(period_key, '+7 days', '+19 hours')
+    `).bind(memberId).run()
+    return expired.results.map(row => ({ periodKey: row.period_key, coins: row.reward_coins }))
+  }
+  if (channel === 'ghost-hunter') {
+    const expired = await ranking.prepare(`
+      SELECT period_key, reward_coins FROM ghost_hunter_weekly_settlements
+      WHERE champion_player_id = ? AND reward_coins > 0 AND reward_applied = 0
+        AND datetime('now') >= datetime(period_key, '+7 days', '+19 hours')
+    `).bind(memberId).all<{ period_key: string; reward_coins: number }>()
+    if (expired.results.length) await ranking.prepare(`
+      UPDATE ghost_hunter_weekly_settlements SET reward_applied = 1
+      WHERE champion_player_id = ? AND reward_applied = 0
+        AND datetime('now') >= datetime(period_key, '+7 days', '+19 hours')
+    `).bind(memberId).run()
+    return expired.results.map(row => ({ periodKey: row.period_key, coins: row.reward_coins }))
+  }
+  return []
+}
+
 async function settleArenaWeeks() {
   const ranking = leaderboardDb()
   const currentKey = getArenaWeekKey(Date.now())
@@ -402,6 +591,57 @@ async function settleArenaWeeks() {
 
     // Positive rewards remain pending until the winning player opens the
     // red-blue arena page and confirms the claim dialog.
+  }
+}
+
+async function settleCoinChallengeWeeks() {
+  const ranking = leaderboardDb()
+  const currentKey = getArenaWeekKey(Date.now())
+  const periods = await ranking.prepare(`
+    SELECT DISTINCT s.period_key
+    FROM coin_challenge_weekly_cashouts s
+    LEFT JOIN coin_challenge_weekly_settlements x ON x.period_key = s.period_key
+    WHERE s.period_key < ? AND x.period_key IS NULL
+    ORDER BY s.period_key ASC LIMIT 8
+  `).bind(currentKey).all<{ period_key: string }>()
+
+  for (const period of periods.results) {
+    const champion = await ranking.prepare(`
+      SELECT player_id, cashout_coins FROM coin_challenge_weekly_cashouts
+      WHERE period_key = ? AND cashout_coins > 0
+      ORDER BY cashout_coins DESC, updated_at ASC LIMIT 1
+    `).bind(period.period_key).first<{ player_id: string; cashout_coins: number }>()
+    await ranking.prepare(`
+      INSERT OR IGNORE INTO coin_challenge_weekly_settlements
+        (period_key, champion_player_id, cashout_coins, reward_coins, reward_applied)
+      VALUES (?, ?, ?, 5000, ?)
+    `).bind(period.period_key, champion?.player_id ?? null, Math.max(0, Number(champion?.cashout_coins) || 0), champion ? 0 : 1).run()
+  }
+}
+
+async function settleGhostHunterWeeks() {
+  const ranking = leaderboardDb()
+  const currentKey = getArenaWeekKey(Date.now())
+  const periods = await ranking.prepare(`
+    SELECT DISTINCT s.period_key
+    FROM leaderboard_scores s
+    LEFT JOIN ghost_hunter_weekly_settlements x ON x.period_key = s.period_key
+    WHERE s.game_id = 'ghost-hunter' AND s.period_type = 'weekly'
+      AND s.period_key < ? AND x.period_key IS NULL
+    ORDER BY s.period_key ASC LIMIT 8
+  `).bind(currentKey).all<{ period_key: string }>()
+
+  for (const period of periods.results) {
+    const champion = await ranking.prepare(`
+      SELECT player_id, score FROM leaderboard_scores
+      WHERE game_id = 'ghost-hunter' AND period_type = 'weekly' AND period_key = ? AND score > 0
+      ORDER BY score DESC, updated_at ASC LIMIT 1
+    `).bind(period.period_key).first<{ player_id: string; score: number }>()
+    await ranking.prepare(`
+      INSERT OR IGNORE INTO ghost_hunter_weekly_settlements
+        (period_key, champion_player_id, champion_score, reward_coins, reward_applied)
+      VALUES (?, ?, ?, 1000, ?)
+    `).bind(period.period_key, champion?.player_id ?? null, Math.max(0, Number(champion?.score) || 0), champion ? 0 : 1).run()
   }
 }
 

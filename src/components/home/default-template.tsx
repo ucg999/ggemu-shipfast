@@ -22,6 +22,8 @@ import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game
 import { RedBlueArenaCard } from '#/components/red-blue-arena-card'
 import { preloadProModeAssets, scheduleInitialProModePreload } from '#/lib/pro-asset-preload'
 import { useMemberSession } from '#/lib/member-client'
+import { markWantedFeaturedGame } from '#/components/wanted-playtime-tracker'
+import { getHomeHeroGameName } from '#/lib/game-display-name'
 
 export function DefaultHomeTemplate(
   props: HomeTemplateProps & { onCoinsEarned?: (amount: number) => void },
@@ -40,6 +42,10 @@ export function DefaultHomeTemplate(
   const visibleMostPlayedGames = useMemo(() => mostPlayedGames.filter(game => !isHiddenHomeGame(game)), [mostPlayedGames])
   const visibleLatestGames = useMemo(() => latestGames.filter(game => !isHiddenHomeGame(game)), [latestGames])
   const visibleHomeGames = useMemo(() => props.games.filter(game => !isHiddenHomeGame(game)), [props.games])
+  const desktopHeroGamePool = useMemo(
+    () => dedupeVideoGames([...visibleHomeGames, ...visibleLatestGames, ...visibleMostPlayedGames]),
+    [visibleHomeGames, visibleLatestGames, visibleMostPlayedGames],
+  )
   const [showMobileRecent, setShowMobileRecent] = useState(false)
   const [rankingRows, setRankingRows] = useState<{ weekly: PublicGame[]; rising: PublicGame[] }>({ weekly: [], rising: [] })
   const loadRanking = useServerFn(searchGames)
@@ -105,15 +111,21 @@ export function DefaultHomeTemplate(
   }, [])
 
   useEffect(() => {
+    const refreshDesktopHeroGames = () => {
+      if (desktopHeroGamePool.length > 0) {
+        setRandomVideoGames(selectHourlyDesktopHeroGames(desktopHeroGamePool, visibleMostPlayedGames, lang))
+      }
+    }
+    refreshDesktopHeroGames()
+    const hourlyRefreshTimer = window.setInterval(refreshDesktopHeroGames, 60_000)
     if (visibleMostPlayedGames.length > 0) {
-      const dailyGames = selectDailyVideoGames(visibleMostPlayedGames, 6)
-      setRandomVideoGames(selectRefreshVideoForMiddle(dailyGames, visibleMostPlayedGames, lang))
       setMobileVideoGames(selectDailyVideoGames(
         visibleMostPlayedGames.filter(game => Boolean(game.game_video?.trim())),
         4,
       ))
     }
-  }, [lang, visibleMostPlayedGames])
+    return () => window.clearInterval(hourlyRefreshTimer)
+  }, [desktopHeroGamePool, lang, visibleMostPlayedGames])
 
   useEffect(() => {
     if (visibleMostPlayedGames.length > 0) setDailyBestGames(selectDailyBestGames(visibleMostPlayedGames, 7))
@@ -287,26 +299,64 @@ export function DefaultHomeTemplate(
               {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
             </p>
             <div className="desktop-daily-video-grid">
-              {randomVideoGames.slice(0, 3).map((game) => {
+              {randomVideoGames.slice(0, 3).map((game, index) => {
                 const gameId = game.url_slug || game._id || ''
+                const displayName = getHomeHeroGameName(game, lang)
+                const wantedTimeMultiplier = index === 1 ? getHourlyDesktopWantedMultiplier(gameId, lang) : 10
                 return (
-                  <Link
-                    className="desktop-daily-video-card group relative isolate"
-                    {...gameCardPreviewHandlers}
-                    key={gameId}
-                    params={{ gameId, locale: lang }}
-                    search={{}}
-                    to="/$locale/games/$gameId"
-                  >
-                    <img
-                      alt={game.name || ''}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                      decoding="async"
-                      fetchPriority="high"
-                      src={game.game_cover}
-                    />
-                    <GameCardPreviewVideo src={game.game_video} />
-                  </Link>
+                  <div className="min-w-0" key={gameId}>
+                    <Link
+                      className="desktop-daily-video-card group relative isolate"
+                      {...gameCardPreviewHandlers}
+                      onClick={() => markWantedFeaturedGame(gameId, wantedTimeMultiplier)}
+                      params={{ gameId, locale: lang }}
+                      search={{}}
+                      to="/$locale/games/$gameId"
+                    >
+                      {index === 1 && game.game_video?.trim() ? (
+                        <video
+                          autoPlay
+                          className="h-full w-full object-cover"
+                          loop
+                          muted
+                          playsInline
+                          poster={game.game_cover}
+                          preload="metadata"
+                          src={game.game_video}
+                        />
+                      ) : (
+                        <>
+                          <img
+                            alt={game.name || ''}
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                            decoding="async"
+                            fetchPriority="high"
+                            src={game.game_cover}
+                          />
+                          <GameCardPreviewVideo src={game.game_video} />
+                        </>
+                      )}
+                      <span className="absolute bottom-2 right-2 z-20 rounded-full border-2 border-amber-300 bg-black/90 px-3 py-1.5 text-xs font-black tracking-wide text-amber-300 shadow-[0_2px_12px_rgba(0,0,0,.7)] sm:text-sm">
+                        {lang === 'en' ? `Game time ×${wantedTimeMultiplier}` : lang === 'zh-TW' ? `遊戲時間 ×${wantedTimeMultiplier}` : `游戏时间 ×${wantedTimeMultiplier}`}
+                      </span>
+                    </Link>
+                    <div className="flex min-w-0 flex-col items-center gap-1 px-1 pt-3 text-center">
+                      <strong className="w-full truncate text-sm font-semibold text-black" title={displayName}>{displayName}</strong>
+                      <span className="text-xs text-black/55">{getPlatformLabel(game.platform, lang)}</span>
+                      {index === 1 ? (
+                        <Link
+                          className="mt-5 inline-flex items-center gap-3 rounded-full bg-black px-6 py-3 text-base font-normal text-white transition hover:bg-black/80 [&_.live-watch-eye]:h-[23px] [&_.live-watch-eye]:w-[34px] [&_.live-watch-pupil]:!bg-black"
+                          params={{ locale: lang }}
+                          to="/$locale/live"
+                        >
+                          <span aria-hidden="true" className="live-watch-eye border-white bg-white text-black">
+                            <span className="live-watch-pupil" />
+                          </span>
+                          <span>{lang === 'en' ? 'See what others are playing right now?' : lang === 'zh-TW' ? '看看此時別人在玩什麼遊戲？' : lang === 'ja' ? '今、みんなは何を遊んでいる？' : '看此时别人在玩什么游戏？'}</span>
+                        </Link>
+                      ) : null}
+                    </div>
+                  </div>
                 )
               })}
             </div>
@@ -399,7 +449,20 @@ export function DefaultHomeTemplate(
           mobile
           onRandomGame={showOneRandomGame}
           streakDays={streakDays}
+          wantedTimeMultiplier={100}
         />
+        <div className="flex justify-center px-4 pb-5">
+          <Link
+            className="inline-flex max-w-full items-center justify-center gap-2 rounded-full bg-black px-4 py-2.5 text-sm font-normal text-white transition active:scale-[.98] [&_.live-watch-eye]:h-[18px] [&_.live-watch-eye]:w-[27px] [&_.live-watch-pupil]:!bg-black"
+            params={{ locale: lang }}
+            to="/$locale/live"
+          >
+            <span aria-hidden="true" className="live-watch-eye shrink-0 border-white bg-white text-black">
+              <span className="live-watch-pupil" />
+            </span>
+            <span className="truncate">{lang === 'en' ? 'See what others are playing?' : lang === 'zh-TW' ? '看看此時別人在玩什麼？' : lang === 'ja' ? 'みんなは今、何を遊んでいる？' : '看此时别人在玩什么游戏？'}</span>
+          </Link>
+        </div>
         <HomeLatestGamesRow games={visibleLatestGames} lang={lang} />
         <HomeLatestGamesRow games={rankingRows.weekly} lang={lang} title={t.weeklyPopularGames} pinnedCoin />
         <HomeLatestGamesRow games={rankingRows.rising} lang={lang} title={t.fastestGrowingGames} pinnedArena />
@@ -751,39 +814,39 @@ function dedupeVideoGames(games: Array<PublicGame>) {
   })
 }
 
-function selectRefreshVideoForMiddle(
-  dailyGames: Array<PublicGame>,
+function selectHourlyDesktopHeroGames(
   allGames: Array<PublicGame>,
+  videoGames: Array<PublicGame>,
   locale: string,
 ) {
-  if (dailyGames.length < 3 || typeof window === 'undefined') return dailyGames
+  const uniqueGames = dedupeVideoGames(allGames)
+  if (uniqueGames.length < 3) return uniqueGames
 
-  const fixedIds = new Set([getGameId(dailyGames[0]), getGameId(dailyGames[2])])
-  const storageKey = `game-adventure-refresh-video-middle:${locale}`
-  let previousId = ''
-  try {
-    previousId = window.sessionStorage.getItem(storageKey) ?? ''
-  } catch {
-    // A random middle card still works when browser storage is unavailable.
-  }
-  const candidates = dedupeVideoGames(allGames).filter((game) => {
-    const id = getGameId(game)
-    return Boolean(id) && !fixedIds.has(id) && id !== previousId
-  })
-  const fallbackCandidates = dedupeVideoGames(allGames).filter((game) => {
-    const id = getGameId(game)
-    return Boolean(id) && !fixedIds.has(id)
-  })
-  const pool = candidates.length > 0 ? candidates : fallbackCandidates
-  if (pool.length === 0) return dailyGames
+  const now = new Date()
+  const dayKey = getLocalDateKey(now)
+  const hourKey = `${dayKey}:${String(now.getHours()).padStart(2, '0')}`
+  const sideGames = [...uniqueGames].sort((left, right) => (
+    dailyGameScore(`${dayKey}:desktop-side:${locale}:${getGameId(left)}`) -
+    dailyGameScore(`${dayKey}:desktop-side:${locale}:${getGameId(right)}`)
+  ))
+  const leftGame = sideGames[0]
+  const rightGame = sideGames.find(game => getGameId(game) !== getGameId(leftGame)) ?? sideGames[1]
+  const sideIds = new Set([getGameId(leftGame), getGameId(rightGame)])
+  const hourlyVideos = dedupeVideoGames(videoGames)
+    .filter(game => Boolean(game.game_video?.trim()) && !sideIds.has(getGameId(game)))
+    .sort((left, right) => (
+      dailyGameScore(`${hourKey}:desktop-middle:${locale}:${getGameId(left)}`) -
+      dailyGameScore(`${hourKey}:desktop-middle:${locale}:${getGameId(right)}`)
+    ))
+  const middleGame = hourlyVideos[0] ?? sideGames.find(game => Boolean(game.game_video?.trim()) && !sideIds.has(getGameId(game)))
+  return middleGame ? [leftGame, middleGame, rightGame] : [leftGame, rightGame]
+}
 
-  const middleGame = pool[Math.floor(Math.random() * pool.length)]
-  try {
-    window.sessionStorage.setItem(storageKey, getGameId(middleGame))
-  } catch {
-    // Ignore storage restrictions; the selected card remains valid for this load.
-  }
-  return [dailyGames[0], middleGame, ...dailyGames.slice(2)]
+function getHourlyDesktopWantedMultiplier(gameId: string, locale: string) {
+  const multipliers = [20, 50, 100, 150, 200] as const
+  const now = new Date()
+  const hourKey = `${getLocalDateKey(now)}:${String(now.getHours()).padStart(2, '0')}`
+  return multipliers[dailyGameScore(`${hourKey}:desktop-middle-multiplier:${locale}:${gameId}`) % multipliers.length]
 }
 
 function readWeeklyVideoCardHistory(): WeeklyVideoCardHistory | undefined {

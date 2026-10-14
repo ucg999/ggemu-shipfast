@@ -16,6 +16,7 @@ import { CardScrollRow } from './card-scroll-row'
 import { CoinFruitCard } from '#/components/coin-fruit-card'
 import { RedBlueArenaCard } from '#/components/red-blue-arena-card'
 import { useMemberSession } from '#/lib/member-client'
+import { markWantedFeaturedGame } from '#/components/wanted-playtime-tracker'
 
 export const HOME_BLOG_POST_LIMIT = 4
 
@@ -74,6 +75,7 @@ export function HomeMostPlayedGamesSection({
   isRandomGameLoading = false,
   onRandomGame,
   streakDays = 0,
+  wantedTimeMultiplier,
 }: {
   challengeCompleted?: boolean
   challengeReward?: number
@@ -83,6 +85,7 @@ export function HomeMostPlayedGamesSection({
   isRandomGameLoading?: boolean
   onRandomGame: () => void | Promise<void>
   streakDays?: number
+  wantedTimeMultiplier?: number
 }) {
   const items = games.slice(0, mobile ? 4 : 6)
   const [activeMobileVideo, setActiveMobileVideo] = useState(0)
@@ -137,7 +140,10 @@ export function HomeMostPlayedGamesSection({
               <Link
                 className="group min-w-0"
                 key={gameId}
-                onClick={() => setDailyGameCoinMultiplier(gameId, multiplier)}
+                onClick={() => {
+                  setDailyGameCoinMultiplier(gameId, multiplier)
+                  if (wantedTimeMultiplier) markWantedFeaturedGame(gameId, wantedTimeMultiplier)
+                }}
                 params={{ gameId, locale: lang }}
                 search={{}}
                 to="/$locale/games/$gameId"
@@ -163,6 +169,11 @@ export function HomeMostPlayedGamesSection({
                   {game.platform ? (
                     <span className="absolute bottom-2 right-2 rounded bg-black/70 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
                       {getPlatformLabel(game.platform, lang)}
+                    </span>
+                  ) : null}
+                  {wantedTimeMultiplier && !mobile ? (
+                    <span className="absolute right-2 top-2 rounded-full border border-amber-300 bg-black/90 px-2 py-1 text-[10px] font-black text-amber-300 shadow-lg">
+                      {lang === 'en' ? 'Game time' : lang === 'zh-TW' ? '遊戲時間' : '游戏时间'} ×{wantedTimeMultiplier}
                     </span>
                   ) : null}
                 </figure>

@@ -326,12 +326,11 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
   }
 
   function openCartridge(cartridgeId: string) {
-    if (window.matchMedia('(min-width: 1024px)').matches) setPreviewing(cartridgeId)
-    else handleCartridge(cartridgeId)
+    setPreviewing(cartridgeId)
   }
 
   function playOrCollect(cartridgeId: string) {
-    if (owned.includes(cartridgeId) && window.matchMedia('(min-width: 1024px)').matches) setPlaying(cartridgeId)
+    if (owned.includes(cartridgeId) && window.matchMedia('(min-width: 1024px) and (pointer: fine)').matches) setPlaying(cartridgeId)
     else handleCartridge(cartridgeId)
   }
 
@@ -470,7 +469,15 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
           </div>
           {previewing ? (() => {
             const cartridge = FC_CARTRIDGES.find(item => item.id === previewing)
-            return cartridge ? <CartridgeControlsDialog actionLabel={owned.includes(cartridge.id) ? copy.play : copy.buyLabel} cover={cartridge.cover} details={`${cartridge.number} · ${cartridge.genre} · ${cartridge.releaseDate} · ${cartridge.publisher}`} guide={cartridge.id === 'prison-break-nine-characters' ? PRISON_BREAK_GUIDE : undefined} onAction={() => { setPreviewing(null); if (owned.includes(cartridge.id)) setPlaying(cartridge.id); else handleCartridge(cartridge.id) }} onClose={() => setPreviewing(null)} title={cartridge.title} /> : null
+            return cartridge ? <CartridgeControlsDialog actionHint={lang === 'en' ? 'No loading · Dedicated emulator' : lang === 'zh-TW' ? '無需載入，專用模擬器' : '无需加载，专用模拟器'} actionLabel={owned.includes(cartridge.id) ? copy.play : copy.buyLabel} cover={cartridge.cover} details={`${cartridge.number} · ${cartridge.genre} · ${cartridge.releaseDate} · ${cartridge.publisher}`} guide={cartridge.id === 'prison-break-nine-characters' ? PRISON_BREAK_GUIDE : undefined} onAction={() => {
+              setPreviewing(null)
+              if (!owned.includes(cartridge.id)) {
+                handleCartridge(cartridge.id)
+                return
+              }
+              if (window.matchMedia('(min-width: 1024px) and (pointer: fine)').matches) setPlaying(cartridge.id)
+              else window.location.assign(`/fc?cartridge=${encodeURIComponent(cartridge.id)}`)
+            }} onClose={() => setPreviewing(null)} onTrial={cartridge.id === 'mahjong' ? () => { window.location.assign(`/${lang}/games/mahjong-nes-1983/play?autoplay=%221%22&inline=%221%22`) } : undefined} title={cartridge.title} trialHint={cartridge.id === 'mahjong' ? (lang === 'en' ? 'Loading required' : lang === 'zh-TW' ? '需要載入' : '需要加载') : undefined} trialLabel={lang === 'en' ? 'Try now' : lang === 'zh-TW' ? '立即試玩' : '立即试玩'} /> : null
           })() : null}
           {playing ? <CartridgePlayerDialog onClose={() => setPlaying(null)} src={`/fc-player/index.html?cartridge=${encodeURIComponent(playing)}`} title={FC_CARTRIDGES.find(item => item.id === playing)?.title ?? 'FC游戏机'} /> : null}
           {rankingsOpen ? <div className="fixed inset-0 z-[240] flex items-center justify-center bg-black/35 px-4" role="dialog" aria-modal="true" aria-labelledby="fc-rankings-title" onClick={() => setRankingsOpen(false)}>

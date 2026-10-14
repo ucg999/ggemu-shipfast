@@ -1,5 +1,5 @@
 export const GAME_SESSION_COIN_CAP = 100
-export const PRO_GAME_SESSION_COIN_CAP = 500
+export const PRO_GAME_SESSION_COIN_CAP = 200
 
 export function resolveGameSessionMultiplier(multiplier: number, isProGame: boolean) {
   const safeMultiplier = Math.max(1, Math.floor(Number(multiplier) || 1))

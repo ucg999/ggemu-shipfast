@@ -1,3 +1,7 @@
+import { BONUS_RANK_NAMES, type BonusRankEvent } from '#/lib/coin-bonus-ranking'
+import { BONUS_NAMES, chooseBonusKind, makeBonusPlan, bonusPayout } from '#/lib/coin-bonus'
+import type { BonusKind, BonusPlan } from '#/lib/coin-bonus'
+import { playBonusSound, prepareBonusAudio, disposeBonusAudio } from '#/lib/coin-bonus-audio'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
@@ -6,9 +10,8 @@ import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-reward
 import { CoinMachineWelcome } from '#/components/coin-machine-welcome'
 import { CoinChallengeCommunity, type CoinChallengeRoomPlayer, type RankableCoinWin } from '#/components/coin-challenge-community'
 import { SiteLayout } from '#/components/site-layout'
-import { MemberRequiredNotice } from '#/components/member-required-notice'
 import type { Locale } from '#/lib/ggemu'
-import { addCoinBalance, getCoinRank, readCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
+import { addCoinBalance as persistedAddCoinBalance, getCoinRank, readCoinBalance as persistedReadCoinBalance, spendCoinBalance as persistedSpendCoinBalance } from '#/lib/coin-wallet'
 import { createSpinAudioClock } from '#/lib/spin-audio-clock'
 import { normalizeLocale } from '#/lib/i18n'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
@@ -50,6 +53,7 @@ const LANDING_GROUPS = [
 ] as const
 
 const TRACK_LIGHTS = createTrackLights()
+const DEMO_TRACK_LIGHTS = TRACK_LIGHTS.map((light, index) => index === 23 ? { ...light, option: 3 } : light)
 const LEFT_COMPARE_LIGHTS = TRACK_LIGHTS
   .map((light, index) => ({ light, index }))
   .filter(({ light }) => Math.abs(light.x - 21.7) < 0.1)
@@ -72,6 +76,7 @@ type CoinChallengeExitState = {
 
 type CoinChallengeSearch = {
   embed?: '1'
+  demo?: '1'
 }
 
 type SharedCoinRound = {
@@ -86,6 +91,7 @@ type SharedCoinRound = {
 
 export const Route = createFileRoute('/$locale/coin-challenge')({
   validateSearch: (search: Record<string, unknown>): CoinChallengeSearch => ({
+    demo: import.meta.env.DEV && (search.demo === '1' || search.demo === 1) ? '1' : undefined,
     embed: search.embed === '1' || search.embed === 1 ? ('1' as const) : undefined,
   }),
   loader: () => getSeoOrigin(),
@@ -177,7 +183,22 @@ function ModeBackground({ active, src }: { active: boolean; src: string }) {
 
 function CoinChallengePage() {
   const { locale } = Route.useParams()
-  const { embed } = Route.useSearch()
+  const { embed, demo } = Route.useSearch()
+  const localDemo = import.meta.env.DEV && demo === '1'
+  const trackLights = DEMO_TRACK_LIGHTS
+  const demoMachine = useRef<CoinChallengeState>({ ...createEmptyChallengeState(), credits: 1000 })
+  const demoExit = useRef<CoinChallengeExitState>({ collectibleWin: 0, gameMode: 'normal' })
+  const demoLedger = useRef<CoinChallengeRtpLedger>({ paid: 0, wagered: 0 })
+  const readCoinBalance = () => localDemo ? 1000 : persistedReadCoinBalance()
+  const spendCoinBalance = (amount: number) => localDemo || persistedSpendCoinBalance(amount)
+  const addCoinBalance = (amount: number) => { if (!localDemo) persistedAddCoinBalance(amount) }
+  const readCoinChallengeState = () => localDemo ? demoMachine.current : persistedReadCoinChallengeState()
+  const saveCoinChallengeState = (value: CoinChallengeState) => { if (localDemo) demoMachine.current = value; else persistedSaveCoinChallengeState(value) }
+  const readCoinChallengeExitState = () => localDemo ? demoExit.current : persistedReadCoinChallengeExitState()
+  const saveCoinChallengeExitState = (value: CoinChallengeExitState) => { if (localDemo) demoExit.current = value; else persistedSaveCoinChallengeExitState(value) }
+  const readRtpLedger = () => localDemo ? demoLedger.current : persistedReadRtpLedger()
+  const saveRtpLedger = (value: CoinChallengeRtpLedger) => { if (localDemo) demoLedger.current = value; else persistedSaveRtpLedger(value) }
+
   const lang = normalizeLocale(locale)
   const title = getCoinChallengeTitle(lang)
   const copy = getCoinChallengeCopy(lang)
@@ -187,7 +208,7 @@ function CoinChallengePage() {
   )
   const [activeLight, setActiveLight] = useState(0)
   const [gameMode, setGameMode] = useState<'normal' | 'gold' | 'ghost'>('normal')
-  const { checked: memberChecked, member } = useRequiredMemberAccess(embed !== '1')
+  const { member } = useRequiredMemberAccess(false)
   const [joinedRoom, setJoinedRoom] = useState(false)
   const [roomPlayers, setRoomPlayers] = useState<Array<CoinChallengeRoomPlayer>>([])
   const [sharedJackpot, setSharedJackpot] = useState(0)
@@ -206,11 +227,19 @@ function CoinChallengePage() {
   const sharedRandomRef = useRef<() => number>(Math.random)
   const handleStartRef = useRef<(skipSharedWaiting?: boolean, forcedTarget?: number) => boolean>(() => false)
   const [modeRounds, setModeRounds] = useState(0)
+  const bonusHits = useRef({ lucky: 0, gold: 0, ghost: 0, bomb: 0 })
+  const [sessionHits, setSessionHits] = useState({ lucky: 0, gold: 0, ghost: 0, bomb: 0 })
+  const [bonusEvents, setBonusEvents] = useState<BonusRankEvent[]>([])
+  const [bonusMessage, setBonusMessage] = useState('')
+  const [testBonus, setTestBonus] = useState<BonusKind>('free')
+  const forcedBonus = useRef<BonusKind | null>(null)
+
   const [luckyLitLights, setLuckyLitLights] = useState<Array<number>>([])
   const [winningLight, setWinningLight] = useState<number | null>(null)
   const [specialCellEffect, setSpecialCellEffect] = useState<'lucky' | 'penalty' | 'jackpot' | null>(null)
   const [shouldResetAllBets, setShouldResetAllBets] = useState(false)
   const [isSpinning, setIsSpinning] = useState(false)
+  const [autoSpinActive, setAutoSpinActive] = useState(false)
   const [roundWin, setRoundWin] = useState(0)
   const [collectibleWin, setCollectibleWin] = useState(0)
   const [rankableWins, setRankableWins] = useState<Array<RankableCoinWin>>([])
@@ -232,6 +261,12 @@ function CoinChallengePage() {
   const creditHoldIntervalRef = useRef<number | null>(null)
   const betHoldTimeoutRef = useRef<number | null>(null)
   const betHoldIntervalRef = useRef<number | null>(null)
+  const autoSpinHoldTimeoutRef = useRef<number | null>(null)
+  const autoSpinIntervalRef = useRef<number | null>(null)
+  const autoSpinHeldRef = useRef(false)
+  const autoSpinActiveRef = useRef(false)
+  const cancelledAutoPointerRef = useRef<number | null>(null)
+  const suppressStartClickRef = useRef(false)
   const shouldResetAllBetsRef = useRef(shouldResetAllBets)
   const rankCreditUnitRef = useRef(20)
   const autoRankRefillEnabledRef = useRef(true)
@@ -304,7 +339,7 @@ function CoinChallengePage() {
       : storedRemaining
     if (storedRefund > 0) addCoinBalance(storedRefund)
     let emptyMachine = createEmptyChallengeState()
-    const rankCreditUnit = getRankCreditUnit(readCoinBalance())
+    const rankCreditUnit = localDemo ? 1000 : getRankCreditUnit(readCoinBalance())
     rankCreditUnitRef.current = rankCreditUnit
     if (spendCoinBalance(rankCreditUnit)) {
       emptyMachine = { ...emptyMachine, credits: rankCreditUnit }
@@ -450,7 +485,8 @@ function CoinChallengePage() {
       stopCreditHold()
       stopBetHold()
       if (audioContextRef.current) {
-        void audioContextRef.current.close()
+        disposeBonusAudio(audioContextRef.current)
+        if (audioContextRef.current.state !== 'closed') void audioContextRef.current.close()
         audioContextRef.current = null
       }
       coinDropAudioRef.current?.pause()
@@ -743,6 +779,7 @@ function CoinChallengePage() {
       if (AudioContextClass) {
         const context = audioContextRef.current ?? new AudioContextClass()
         audioContextRef.current = context
+        prepareBonusAudio(context)
         if (context.state === 'suspended') void context.resume().catch(() => {})
       }
       if (sharedStartTimerRef.current !== null) {
@@ -1213,8 +1250,8 @@ function CoinChallengePage() {
           roundBets,
           joinedRoom ? sharedRandomRef.current : Math.random,
         )
-    const outcome = TRACK_LIGHTS[target]
-    const trackLength = TRACK_LIGHTS.length
+    const outcome = trackLights[target]
+    const trackLength = trackLights.length
     const distance = (target - activeLight + trackLength) % trackLength
     const totalSteps = trackLength * (3 + Math.floor(Math.random() * 2)) + distance
     const spinWeights = Array.from({ length: Math.max(1, totalSteps - 1) }, (_, index) => {
@@ -1295,6 +1332,22 @@ function CoinChallengePage() {
           }
           return
         }
+        if ([BAR_50_LIGHT_INDEX, LUCKY_LIGHT_INDEX, BAR_25_LIGHT_INDEX, PENALTY_LIGHT_INDEX].includes(target)) {
+          const mode = target === BAR_50_LIGHT_INDEX ? 'gold' : target === LUCKY_LIGHT_INDEX ? 'lucky' : target === BAR_25_LIGHT_INDEX ? 'ghost' : 'bomb'
+          bonusHits.current[mode] += 1
+          setSessionHits({ ...bonusHits.current })
+        }
+        if (target === BAR_50_LIGHT_INDEX || target === LUCKY_LIGHT_INDEX) {
+          const mode = target === BAR_50_LIGHT_INDEX ? 'gold' : 'lucky'
+          const kind = forcedBonus.current ?? chooseBonusKind(mode, bonusHits.current[mode])
+          forcedBonus.current = null
+          const plan = makeBonusPlan(kind)
+          setBonusMessage(`${plan.title} · ${mode === 'gold' ? '黄金' : '幸运'}累计 ${bonusHits.current[mode]} 次`)
+          setSpecialCellEffect('lucky')
+          if (mode === 'gold') setGameMode('gold')
+          runBonusPlan(plan)
+          return
+        }
         if (target === BAR_50_LIGHT_INDEX || target === BAR_25_LIGHT_INDEX) {
           setGameMode(target === BAR_50_LIGHT_INDEX ? 'gold' : 'ghost')
           setModeRounds(0)
@@ -1356,7 +1409,7 @@ function CoinChallengePage() {
     ) => {
       void option
       void multiplier
-      const adjustedPayout = gameMode === 'gold' ? payout * 2 : payout
+      const adjustedPayout = payout
       const sharedAward = pendingSharedAwardRef.current
       if (joinedRoom && sharedAward?.token === handledSharedRoundRef.current) {
         if (sharedAward.amount > 0) animateSharedAward(sharedAward.memberId, sharedAward.amount)
@@ -1412,12 +1465,66 @@ function CoinChallengePage() {
       }
     }
 
+    const runBonusPlan = (plan: BonusPlan) => {
+      let stage = 0
+      let previous = target
+      const landed: number[] = []
+      const finishBonus = () => {
+        const payout = bonusPayout(plan, roundBets)
+        // The running-light ranking counts a result only when the player
+        // actually wagered on a winning target and earned points.
+        if (payout > 0 && plan.kind in BONUS_RANK_NAMES) {
+          setBonusEvents(events => [...events, {
+            id: crypto.randomUUID(),
+            kind: plan.kind as BonusRankEvent['kind'],
+          }])
+        }
+        setLuckyLitLights(plan.targets)
+        setBonusMessage(`${plan.title} · 获得 ${payout} 分`)
+        setGameMode('normal')
+        setModeRounds(0)
+        finishRound(payout, 0, 1, plan.targets[plan.targets.length - 1], true)
+        safelyRunAudio(() => playBonusSound(audioContextRef.current, plan.kind, stage, true))
+      }
+      const runStage = () => {
+        const targets = plan.simultaneous ? plan.targets : [plan.targets[stage]]
+        const started = performance.now()
+        const duration = plan.allStars ? 2400 : 1800
+        const tick = () => {
+          const progress = Math.min(1, (performance.now() - started) / duration)
+          if (progress >= 1) {
+            landed.push(...targets)
+            setLuckyLitLights([...landed])
+            setActiveLight(targets[targets.length - 1])
+            safelyRunAudio(() => playBonusSound(audioContextRef.current, plan.kind, stage))
+            previous = targets[targets.length - 1]
+            stage += 1
+            if (plan.simultaneous || stage >= plan.targets.length) {
+              spinTimerRef.current = window.setTimeout(finishBonus, 240)
+            } else {
+              spinTimerRef.current = window.setTimeout(runStage, 350)
+            }
+            return
+          }
+          const eased = 1 - (1 - progress) ** 2
+          setLuckyLitLights([...landed, ...targets.map((end, index) => {
+            const start = (previous + index * 5) % trackLength
+            const steps = trackLength * 2 + (end - start + trackLength) % trackLength
+            return (start + Math.floor(steps * eased)) % trackLength
+          })])
+          spinTimerRef.current = window.setTimeout(tick, 24)
+        }
+        tick()
+      }
+      runStage()
+    }
+
     const runLuckyRounds = (
       startIndex: number,
       remaining: number,
       accumulatedPayout: number,
     ) => {
-      const candidates = TRACK_LIGHTS
+      const candidates = trackLights
         .map((light, index) => ({ ...light, index }))
         .filter((light) => light.option !== null)
       const selected = candidates[Math.floor((joinedRoom ? sharedRandomRef.current() : Math.random()) * candidates.length)]
@@ -1471,7 +1578,7 @@ function CoinChallengePage() {
       remaining: number,
       accumulatedPenalty: number,
     ) => {
-      const candidates = TRACK_LIGHTS
+      const candidates = trackLights
         .map((light, index) => ({ ...light, index }))
         .filter((light) => light.option !== null)
       const selected = candidates[Math.floor((joinedRoom ? sharedRandomRef.current() : Math.random()) * candidates.length)]
@@ -1559,6 +1666,67 @@ function CoinChallengePage() {
 
   handleStartRef.current = handleStart
 
+  function cancelPendingAutoSpinHold() {
+    autoSpinHeldRef.current = false
+    if (autoSpinHoldTimeoutRef.current !== null) {
+      window.clearTimeout(autoSpinHoldTimeoutRef.current)
+      autoSpinHoldTimeoutRef.current = null
+    }
+  }
+
+  function stopAutoSpin() {
+    cancelPendingAutoSpinHold()
+    autoSpinActiveRef.current = false
+    setAutoSpinActive(false)
+    if (autoSpinIntervalRef.current !== null) {
+      window.clearInterval(autoSpinIntervalRef.current)
+      autoSpinIntervalRef.current = null
+    }
+  }
+
+  function beginAutoSpinHold(event: React.PointerEvent<HTMLButtonElement>) {
+    if (cancelledAutoPointerRef.current === event.pointerId) {
+      cancelledAutoPointerRef.current = null
+      return
+    }
+    if (event.button !== 0 || event.currentTarget.disabled) return
+    autoSpinHeldRef.current = true
+    suppressStartClickRef.current = false
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+    autoSpinHoldTimeoutRef.current = window.setTimeout(() => {
+      if (!autoSpinHeldRef.current) return
+      suppressStartClickRef.current = true
+      autoSpinActiveRef.current = true
+      setAutoSpinActive(true)
+      handleStartRef.current()
+      autoSpinIntervalRef.current = window.setInterval(() => {
+        if (autoSpinActiveRef.current) handleStartRef.current()
+      }, 180)
+    }, 480)
+  }
+
+  useEffect(() => {
+    const cancelFromClick = (event: PointerEvent) => {
+      if (!autoSpinActiveRef.current) return
+      cancelledAutoPointerRef.current = event.pointerId
+      suppressStartClickRef.current = true
+      stopAutoSpin()
+    }
+    const releasePendingHold = () => cancelPendingAutoSpinHold()
+    const stopWhenHidden = () => { if (document.hidden) stopAutoSpin() }
+    window.addEventListener('pointerdown', cancelFromClick, true)
+    window.addEventListener('pointerup', releasePendingHold)
+    window.addEventListener('pointercancel', releasePendingHold)
+    document.addEventListener('visibilitychange', stopWhenHidden)
+    return () => {
+      stopAutoSpin()
+      window.removeEventListener('pointerdown', cancelFromClick, true)
+      window.removeEventListener('pointerup', releasePendingHold)
+      window.removeEventListener('pointercancel', releasePendingHold)
+      document.removeEventListener('visibilitychange', stopWhenHidden)
+    }
+  }, [])
+
   const game = (
     <div className="fixed inset-0 z-[80] bg-black sm:static sm:z-auto sm:flex sm:h-[calc(100dvh-80px)] sm:items-center sm:justify-center sm:bg-base-100 sm:p-3 sm:transition-[padding] sm:duration-300" style={communityOpen ? { paddingRight: 'min(360px, 35vw)' } : undefined}>
     <section
@@ -1581,13 +1749,26 @@ function CoinChallengePage() {
         <i className="ri-arrow-left-line" />
       </Link> : null}
       <div className="absolute right-3 top-3 z-20 rounded-xl bg-black/70 p-1 backdrop-blur">
-        <HomeCoinBag
+        {localDemo ? <span>免费试玩</span> : <HomeCoinBag
           balance={globalCoins.balance}
           lang={lang}
           onOpen={globalCoins.showBalance}
-        />
+        />}
       </div>
-      <CoinChallengeCommunity onOpenChange={setCommunityOpen} recentWins={rankableWins} />
+      {localDemo && <div className="absolute left-2 bottom-1 z-30 max-w-[95%] rounded-lg bg-black/90 p-2 text-xs text-yellow-200">
+
+        <div role="status">{bonusMessage || '幸运 / 黄金新玩法测试'}</div>
+        <select aria-label="奖励测试类型" disabled={isSpinning} value={testBonus} onChange={event => setTestBonus(event.target.value as BonusKind)} className="mt-1 bg-black text-white">
+          {Object.entries(BONUS_NAMES).map(([kind, name]) => <option key={kind} value={kind}>{name}</option>)}
+        </select>
+        <button type="button" disabled={isSpinning || compareMode || isWithdrawing} className="ml-2 rounded bg-amber-500 px-2 py-1 text-black disabled:opacity-40" onClick={() => {
+          const isGold = ['random-lights', 'big-three', 'big-four', 'all-stars'].includes(testBonus)
+          forcedBonus.current = testBonus
+          if (!handleStart(true, isGold ? BAR_50_LIGHT_INDEX : LUCKY_LIGHT_INDEX)) forcedBonus.current = null
+        }}>测试奖励</button>
+        <div className="text-[10px] text-white/60">测试按钮可直接预览；正常命中仍按次数解锁</div>
+      </div>}
+      <CoinChallengeCommunity demo={localDemo} sessionHits={sessionHits} bonusEvents={bonusEvents} onOpenChange={setCommunityOpen} recentWins={rankableWins} />
       {sharedWinnerSeat !== null ? (
         <>
           <style>{`@keyframes sharedPrizeFly{0%{transform:translate(0,0) scale(.7);opacity:0}15%{opacity:1}100%{transform:translate(58vw,-38vh) scale(.25);opacity:0}}`}</style>
@@ -1615,13 +1796,13 @@ function CoinChallengePage() {
           alt={title}
           className="pointer-events-none absolute inset-0 h-full w-full object-contain"
           draggable={false}
-          src="/coin-challenge-classic-bg.jpg?v=20260902"
+          src="/coin-challenge-classic-bg.webp?v=20261012"
         />
         {(['gold', 'ghost'] as const).map((mode) => (
           <ModeBackground
             key={mode}
             active={gameMode === mode}
-            src={`/coin-challenge-${mode}.jpg`}
+            src={`/coin-challenge-${mode}.webp?v=20261012`}
           />
         ))}
         {[BAR_50_LIGHT_INDEX, BAR_25_LIGHT_INDEX].includes(winningLight ?? -1) ? (
@@ -1731,7 +1912,7 @@ function CoinChallengePage() {
           type="button"
         />
 
-        {TRACK_LIGHTS.map((light, index) => (
+        {trackLights.map((light, index) => (
           <span
             aria-hidden="true"
             className={`pointer-events-none absolute z-[3] block aspect-square w-[2.7%] -translate-x-1/2 -translate-y-1/2 rounded-[18%] transition-[background-color,box-shadow,transform] duration-75 [left:var(--track-x)] max-sm:[left:calc(var(--track-x)_+_var(--mobile-track-shift))] sm:[left:calc(var(--track-x)_+_var(--desktop-track-shift))] ${
@@ -1799,11 +1980,20 @@ function CoinChallengePage() {
         <button
           aria-label={copy.start}
           className="absolute left-[34.5%] top-[88.1%] z-10 h-[8.2%] w-[31%] cursor-pointer rounded-[28%] bg-transparent text-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 disabled:cursor-not-allowed disabled:grayscale"
-          disabled={(joinedRoom && roomPlayers.find(player => player.memberId === member?.id)?.seat !== 1) || isSpinning || compareMode || Boolean(poolTransferDisplay) || Boolean(creditTransferDisplay)}
-          onClick={() => handleStart()}
+          disabled={(joinedRoom && roomPlayers.find(player => player.memberId === member?.id)?.seat !== 1) || (isSpinning && !autoSpinActive) || compareMode || Boolean(poolTransferDisplay) || Boolean(creditTransferDisplay)}
+          onClick={() => {
+            if (suppressStartClickRef.current) {
+              suppressStartClickRef.current = false
+              return
+            }
+            handleStart()
+          }}
+          onPointerDown={beginAutoSpinHold}
+          onPointerLeave={() => { if (!autoSpinActiveRef.current) cancelPendingAutoSpinHold() }}
           type="button"
         >
-          <span className="sr-only">{isSpinning ? copy.running : copy.start}</span>
+          <span className="sr-only">{autoSpinActive ? '自动转动中' : isSpinning ? copy.running : `${copy.start}，长按自动转`}</span>
+          {autoSpinActive ? <span className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse rounded-full border border-yellow-200/80 bg-amber-300 px-4 py-1 text-base font-black tracking-[0.2em] text-red-950 shadow-[0_0_20px_rgba(253,224,71,1)] sm:text-lg">自动</span> : null}
         </button>
 
         </div>
@@ -1811,8 +2001,6 @@ function CoinChallengePage() {
     </section>
     </div>
   )
-
-  if (embed !== '1' && (!memberChecked || !member)) return <MemberRequiredNotice checked={memberChecked} locale={lang} />
 
   return embed === '1'
     ? <main className="min-h-dvh bg-black">{game}</main>
@@ -1844,7 +2032,7 @@ type CoinChallengeRtpLedger = {
   wagered: number
 }
 
-function readRtpLedger(): CoinChallengeRtpLedger {
+function persistedReadRtpLedger(): CoinChallengeRtpLedger {
   try {
     const stored = window.localStorage.getItem(COIN_CHALLENGE_RTP_STORAGE_KEY)
     const parsed = stored ? JSON.parse(stored) as Partial<CoinChallengeRtpLedger> : null
@@ -1857,7 +2045,7 @@ function readRtpLedger(): CoinChallengeRtpLedger {
   }
 }
 
-function saveRtpLedger(ledger: CoinChallengeRtpLedger) {
+function persistedSaveRtpLedger(ledger: CoinChallengeRtpLedger) {
   try {
     window.localStorage.setItem(COIN_CHALLENGE_RTP_STORAGE_KEY, JSON.stringify(ledger))
   } catch {
@@ -1865,7 +2053,7 @@ function saveRtpLedger(ledger: CoinChallengeRtpLedger) {
   }
 }
 
-function readCoinChallengeState(): CoinChallengeState {
+function persistedReadCoinChallengeState(): CoinChallengeState {
   try {
     const stored = window.localStorage.getItem(COIN_CHALLENGE_STORAGE_KEY)
     const parsed = stored ? (JSON.parse(stored) as Partial<CoinChallengeState>) : null
@@ -1889,9 +2077,9 @@ function readCoinChallengeState(): CoinChallengeState {
   }
 }
 
-function saveCoinChallengeState(state: CoinChallengeState) {
+function persistedSaveCoinChallengeState(state: CoinChallengeState) {
   try {
-    const exitState = readCoinChallengeExitState()
+    const exitState = persistedReadCoinChallengeExitState()
     window.localStorage.setItem(
       COIN_CHALLENGE_STORAGE_KEY,
       JSON.stringify({ ...state, ...exitState }),
@@ -1901,7 +2089,7 @@ function saveCoinChallengeState(state: CoinChallengeState) {
   }
 }
 
-function readCoinChallengeExitState(): CoinChallengeExitState {
+function persistedReadCoinChallengeExitState(): CoinChallengeExitState {
   try {
     const stored = window.localStorage.getItem(COIN_CHALLENGE_STORAGE_KEY)
     const parsed = stored ? JSON.parse(stored) as Partial<CoinChallengeExitState> : null
@@ -1920,9 +2108,9 @@ function readCoinChallengeExitState(): CoinChallengeExitState {
   }
 }
 
-function saveCoinChallengeExitState(exitState: CoinChallengeExitState) {
+function persistedSaveCoinChallengeExitState(exitState: CoinChallengeExitState) {
   try {
-    const machine = readCoinChallengeState()
+    const machine = persistedReadCoinChallengeState()
     window.localStorage.setItem(
       COIN_CHALLENGE_STORAGE_KEY,
       JSON.stringify({ ...machine, ...exitState }),
@@ -2242,3 +2430,7 @@ function getBackLabel(locale: Locale) {
   if (locale === 'ja') return 'ホームに戻る'
   return '返回首页'
 }
+
+
+
+

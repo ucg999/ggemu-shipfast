@@ -12,7 +12,7 @@ import { CoinRankBadge, HomeCoinBag, useGlobalCoinBalance } from '#/components/h
 import { addCoinBalance, prepareRandomGameCoinMultiplier } from '#/lib/coin-wallet'
 import { confirmResourceDownload, unlockPaidResource } from '#/lib/paid-resource'
 import { MemberAccountButton } from '#/components/member-account'
-import { useMemberSession } from '#/lib/member-client'
+import { getMemberSession, useMemberSession } from '#/lib/member-client'
 
 const SITE_VISIT_COIN_SESSION_KEY = 'game-adventure-site-visit-coin-awarded'
 const DESKTOP_SIDEBAR_STATE_KEY = 'retro-games-desktop-sidebar-state'
@@ -63,6 +63,11 @@ export function SiteLayout({
   const [randomPopupGame, setRandomPopupGame] = useState<PublicGame | null>(null)
   const [randomPopupMultiplier, setRandomPopupMultiplier] = useState(2)
   const [isRandomGameLoading, setIsRandomGameLoading] = useState(false)
+  const [isShareOpen, setIsShareOpen] = useState(false)
+  const [isShareRewardLoading, setIsShareRewardLoading] = useState(false)
+  const [shareRewardMessage, setShareRewardMessage] = useState('')
+  const [shareReadyToConfirm, setShareReadyToConfirm] = useState(false)
+  const [shareTarget, setShareTarget] = useState('')
   const loadRandomGame = useServerFn(getRandomPlayableGame)
   const loadGameDetail = useServerFn(getGameDetail)
 
@@ -79,6 +84,75 @@ export function SiteLayout({
       setRandomPopupGame(game)
     } finally {
       setIsRandomGameLoading(false)
+    }
+  }
+
+  async function claimShareReward() {
+    if (isShareRewardLoading || !shareReadyToConfirm) return
+    setIsShareRewardLoading(true)
+    setShareRewardMessage('')
+    try {
+      const response = await fetch('/api/home-share-reward', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      const result = await response.json() as { awarded?: number; error?: string; target?: 'browser' | 'member' }
+      if (!response.ok) throw new Error(result.error || '领取失败')
+      const awarded = Math.max(0, Math.floor(result.awarded || 0))
+      if (result.target === 'browser' && awarded > 0) addCoinBalance(awarded)
+      if (result.target === 'member') await getMemberSession().catch(() => null)
+      setShareRewardMessage(awarded > 0
+        ? (locale === 'en' ? `Received ${awarded} coins` : `已领取 ${awarded} 游戏币`)
+        : (locale === 'en' ? 'Coin balance has reached its limit' : '金币已经达到上限'))
+    } catch (error) {
+      setShareRewardMessage(error instanceof Error ? error.message : '领取失败，请稍后重试')
+    } finally {
+      setIsShareRewardLoading(false)
+    }
+  }
+
+  async function shareToTarget(target: string) {
+    setShareRewardMessage('')
+    setShareReadyToConfirm(false)
+    setShareTarget(target)
+    const shareData = {
+      title: locale === 'en' ? 'UCG999 Retro Game Hall' : 'UCG999 怀旧游戏厅',
+      text: locale === 'en' ? 'Play classic games online with me.' : '和我一起在线玩经典怀旧游戏。',
+      url: 'https://ucg999.com',
+    }
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData)
+        setShareReadyToConfirm(true)
+        setShareRewardMessage(locale === 'en' ? `Shared to ${target}. Please confirm below.` : `已完成“${target}”分享，请在下方确认发送。`)
+        return
+      }
+      await navigator.clipboard.writeText(shareData.url)
+      setShareReadyToConfirm(true)
+      setShareRewardMessage(locale === 'en' ? 'Link copied. Send it, then confirm below.' : '链接已复制，请发送给好友后在下方确认。')
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setShareTarget('')
+        setShareRewardMessage(locale === 'en' ? 'Sharing was cancelled. No reward was claimed.' : '已取消分享，本次不会计算奖励。')
+        return
+      }
+      setShareTarget('')
+      setShareRewardMessage(locale === 'en' ? 'Sharing is unavailable. Please try again.' : '暂时无法调用分享，请稍后重试。')
+    }
+  }
+
+  async function copyShareUrl() {
+    setShareRewardMessage('')
+    setShareTarget('复制网址')
+    setShareReadyToConfirm(false)
+    try {
+      await navigator.clipboard.writeText('https://ucg999.com')
+      setShareReadyToConfirm(true)
+      setShareRewardMessage(locale === 'en' ? 'Link copied. Send it, then confirm below.' : '网址已复制，请发送后在下方确认。')
+    } catch {
+      setShareTarget('')
+      setShareRewardMessage(locale === 'en' ? 'Could not copy the link.' : '网址复制失败，请长按网址手动复制。')
     }
   }
 
@@ -362,7 +436,7 @@ export function SiteLayout({
             <DesktopUnifiedHeaderNavigation homePage={isHomePage} locale={locale} />
           )}
 
-          <div className="navbar-end ml-auto w-auto flex-none flex-nowrap gap-1 sm:gap-2">
+          <div className="navbar-end ml-auto w-auto flex-none flex-nowrap gap-1 lg:gap-1.5">
             {onOpenSearch ? (
               <button
                 aria-label={t.searchGames}
@@ -375,7 +449,7 @@ export function SiteLayout({
               </button>
             ) : null}
             {isHomePage ? (
-              <div className="hidden h-9 w-[190px] shrink-0 items-center overflow-hidden rounded-full border border-rose-200 bg-rose-50 text-black shadow-sm lg:flex">
+              <div className="hidden h-9 w-[165px] shrink-0 items-center overflow-hidden rounded-full border border-rose-200 bg-rose-50 text-black shadow-sm lg:flex 2xl:w-[190px]">
                 <Link
                   aria-label={t.searchGames}
                   className="flex h-full min-w-0 flex-1 items-center gap-1.5 pl-3 text-xs text-gray-600 transition hover:bg-white"
@@ -407,18 +481,23 @@ export function SiteLayout({
                 <i className="ri-search-line text-xl" />
               </Link>
             )}
-            <Link
-              aria-label={t.watchOthers}
-              className={`desktop-watch-button btn h-6 min-h-6 shrink-0 gap-0.5 rounded-full border border-rose-200 bg-rose-100 px-1.5 text-[10px] font-semibold text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 lg:h-9 lg:min-h-9 lg:gap-2 lg:px-4 lg:text-sm max-lg:[&_.live-watch-eye]:scale-75 ${isHomePage ? '' : 'hidden lg:flex'}`}
-              params={{ locale }}
-              to="/$locale/live"
-            >
-              <span aria-hidden="true" className="live-watch-eye">
-                <span className="live-watch-pupil" />
-              </span>
-              <span>{t.watchOthers}</span>
-            </Link>
-
+            {isHomePage ? (
+              <button
+                aria-label={locale === 'en' ? 'Share website' : '分享网站'}
+                className="btn btn-circle h-6 min-h-6 w-6 min-w-6 shrink-0 rounded-full border border-rose-200 bg-rose-100 p-0 text-[10px] font-normal text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 lg:h-9 lg:min-h-9 lg:w-9 lg:min-w-9"
+                onClick={() => {
+                  setShareRewardMessage('')
+                  setShareReadyToConfirm(false)
+                  setShareTarget('')
+                  setIsShareOpen(true)
+                }}
+                title={locale === 'en' ? 'Share and receive 100 coins' : '分享可领取100游戏币'}
+                type="button"
+              >
+                <i className="ri-share-forward-line text-sm lg:text-base" />
+                <span className="sr-only">{locale === 'en' ? 'Share' : '分享'}</span>
+              </button>
+            ) : null}
             {headerActions}
 
             {isHomePage && canSwitchTheme ? (
@@ -467,14 +546,14 @@ export function SiteLayout({
               ref={localeMenuRef}
             >
               <summary
-                className="btn h-6 min-h-6 lg:h-9 lg:min-h-9 gap-0.5 lg:gap-2 rounded-full border border-rose-200 bg-rose-100 px-1 text-[10px] lg:text-sm text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 lg:px-3"
+                className="btn btn-circle h-6 min-h-6 w-6 min-w-6 rounded-full border border-rose-200 bg-rose-100 p-0 text-[10px] text-black shadow-sm hover:border-rose-300 hover:bg-rose-200 lg:h-9 lg:min-h-9 lg:w-9 lg:min-w-9 lg:text-sm"
                 onClick={(event) => {
                   event.preventDefault()
                   setIsLocaleMenuOpen((isOpen) => !isOpen)
                 }}
               >
                 <i className="ri-global-line" />
-                {locale === 'en' ? '英' : '中'}
+                <span className="sr-only">{locale === 'en' ? 'English' : '中文'}</span>
               </summary>
               <ul className="menu dropdown-content z-50 mt-3 w-36 rounded-box border border-base-300 bg-base-100 p-2 text-black shadow-xl">
                 <li>
@@ -490,18 +569,19 @@ export function SiteLayout({
               </ul>
             </details>
             <button
-              className="hidden h-9 shrink-0 items-center gap-1 rounded-full border border-black/35 px-3 text-sm font-semibold text-black transition hover:border-black hover:bg-black/5 disabled:cursor-default disabled:opacity-55 lg:flex"
+              className="hidden h-9 shrink-0 items-center gap-1 rounded-full border border-black/35 px-2.5 text-sm font-semibold text-black transition hover:border-black hover:bg-black/5 disabled:cursor-default disabled:opacity-55 lg:flex"
               disabled={dailyCheckIn.completed}
               onClick={handleDailyCheckIn}
               title={dailyCheckIn.completed ? (locale === 'zh-TW' ? '今日已簽到' : '今日已签到') : `+${getNextCheckInMultiplier(dailyCheckIn) * 10}`}
               type="button"
             >
-              <span>{dailyCheckIn.completed
+              <i className="ri-calendar-check-line" aria-hidden="true" />
+              <span className="hidden 2xl:inline">{dailyCheckIn.completed
                 ? locale === 'zh-TW' ? '已簽到' : locale === 'en' ? 'Checked in' : locale === 'ja' ? 'チェック済み' : '已签到'
                 : locale === 'zh-TW' ? '簽到' : locale === 'en' ? 'Check in' : locale === 'ja' ? 'チェックイン' : '签到'}</span>
               <strong>×{dailyCheckIn.completed ? Math.max(1, dailyCheckIn.streak) : getNextCheckInMultiplier(dailyCheckIn)}</strong>
             </button>
-            <div className="ml-2 hidden shrink-0 items-center gap-0 [&_.coin-rank-badge]:-mr-2 lg:flex">
+            <div className="ml-0.5 hidden shrink-0 items-center gap-0 border-l border-black/15 pl-2 [&_.coin-rank-badge]:-mr-2 lg:flex">
               <MemberAccountButton locale={locale} />
               {memberSession ? <CoinRankBadge balance={memberSession.coinBalance} lang={locale} /> : null}
               <HomeCoinBag
@@ -513,6 +593,90 @@ export function SiteLayout({
           </div>
         </div>
       </header>
+
+      {isShareOpen ? (
+        <div className="fixed inset-0 z-[160] grid place-items-center bg-black/45 p-3" role="dialog" aria-modal="true" aria-label={locale === 'en' ? 'Share website' : '分享网站'}>
+          <div className="relative w-full max-w-[540px] rounded-3xl bg-white p-4 text-center text-black shadow-2xl sm:p-5">
+            <button
+              aria-label={locale === 'en' ? 'Close' : '关闭'}
+              className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-black/65 text-lg text-white hover:bg-black"
+              onClick={() => setIsShareOpen(false)}
+              type="button"
+            >
+              <i className="ri-close-line" />
+            </button>
+            <h2 className="mb-1 text-xl font-semibold">{locale === 'en' ? 'Share UCG999' : '分享 UCG999'}</h2>
+            <p className="mb-3 text-sm text-gray-600">{locale === 'en' ? 'Share once and receive 100 coins. One reward per account or IP each day.' : '分享后可领取100游戏币，同一账号或IP每天限领一次。'}</p>
+            <div className="mx-auto aspect-square w-full max-w-[430px] overflow-hidden rounded-2xl bg-gray-50">
+              <iframe
+                allow="autoplay"
+                className="h-full w-full border-0"
+                frameBorder="0"
+                height="500"
+                src="https://qacman.com/?embed=1&autoplay=0&gh=4&q=ucg999.com"
+                style={{ border: 0 }}
+                title={locale === 'en' ? 'UCG999 share QR code' : 'UCG999分享二维码'}
+                width="500"
+              />
+            </div>
+            <div className="mx-auto mt-2 w-full max-w-[430px] rounded-xl bg-gray-100 px-3 py-2 text-left text-xs leading-relaxed text-gray-600">
+              <strong className="mr-1 text-gray-800">{locale === 'en' ? 'How to play:' : '操作说明：'}</strong>
+              {locale === 'en'
+                ? 'Use the arrow keys on a computer. On phones, swipe inside the game area to move. The QR code can still be scanned directly for sharing.'
+                : '电脑使用方向键移动；手机在游戏区域内滑动控制方向。二维码仍可直接扫描分享。'}
+            </div>
+            <div className="mt-4 border-t border-gray-200 pt-3">
+              <p className="mb-2 text-sm font-medium text-gray-700">{locale === 'en' ? 'Share to a platform or friend' : '分享到平台或好友'}</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {[
+                  ['好友', 'ri-user-shared-line'],
+                  ['微信', 'ri-wechat-line'],
+                  ['QQ', 'ri-qq-line'],
+                  ['小红书', 'ri-book-open-line'],
+                  ['抖音', 'ri-music-2-line'],
+                  ['B站', 'ri-bilibili-line'],
+                  ['快手', 'ri-video-line'],
+                  ['头条', 'ri-newspaper-line'],
+                ].map(([target, icon]) => (
+                  <button
+                    className={`flex h-9 items-center gap-1 rounded-full border px-3 text-sm transition ${shareTarget === target && shareReadyToConfirm ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-500'}`}
+                    key={target}
+                    onClick={() => void shareToTarget(target)}
+                    type="button"
+                  >
+                    <i className={icon} />
+                    <span>{target}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="mx-auto mt-3 flex h-10 w-full max-w-[430px] items-center overflow-hidden rounded-xl border border-gray-300 bg-gray-50 text-left">
+                <span className="min-w-0 flex-1 truncate px-3 text-sm text-gray-700">https://ucg999.com</span>
+                <button
+                  className="h-full shrink-0 border-l border-gray-300 bg-white px-4 text-sm font-medium text-gray-800 transition hover:bg-gray-100"
+                  onClick={() => void copyShareUrl()}
+                  type="button"
+                >
+                  <i className="ri-file-copy-line mr-1" />
+                  {locale === 'en' ? 'Copy' : '复制网址'}
+                </button>
+              </div>
+            </div>
+            <button
+              className="btn mt-4 min-h-10 rounded-full border-0 bg-yellow-400 px-7 text-black hover:bg-yellow-300 disabled:opacity-60"
+              disabled={isShareRewardLoading || !shareReadyToConfirm}
+              onClick={() => void claimShareReward()}
+              type="button"
+            >
+              {isShareRewardLoading
+                ? (locale === 'en' ? 'Claiming…' : '领取中…')
+                : shareReadyToConfirm
+                  ? (locale === 'en' ? 'Confirm sent · Claim 100 coins' : '确认已发送，领取100游戏币')
+                  : (locale === 'en' ? 'Share first to unlock reward' : '请先选择平台完成分享')}
+            </button>
+            {shareRewardMessage ? <p className="mt-2 text-sm font-medium text-amber-700" role="status">{shareRewardMessage}</p> : null}
+          </div>
+        </div>
+      ) : null}
 
       {isMobileSidebarOpen && !hideHeaderNav ? (
         <button

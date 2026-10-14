@@ -24,10 +24,30 @@ const securityHeaders = {
   'X-Frame-Options': 'SAMEORIGIN',
 } as const
 
+type EdgeCacheStorage = CacheStorage & { default?: Cache }
+
+function isCacheableGamePage(request: Request) {
+  if (request.method !== 'GET' || !request.headers.get('accept')?.includes('text/html')) return false
+  const pathname = new URL(request.url).pathname
+  return /^\/(?:zh-CN|en)\/games\/[^/]+(?:\/play)?\/?$/.test(pathname)
+}
+
 const responsePolicy = createMiddleware().server(async ({ next, request }) => {
   const acceptsHtml = request.headers.get('accept')?.includes('text/html') ?? false
+  const cacheableGamePage = isCacheableGamePage(request)
+  const edgeCache = (globalThis.caches as EdgeCacheStorage | undefined)?.default
+  if (cacheableGamePage && edgeCache) {
+    try {
+      const cached = await edgeCache.match(request)
+      if (cached) return cached
+    } catch {
+      // A cache outage must never prevent the game page from rendering.
+    }
+  }
   const cacheControl = request.method === 'GET' && acceptsHtml
-    ? 'public, max-age=0, s-maxage=300, stale-while-revalidate=600'
+    ? cacheableGamePage
+      ? 'public, max-age=60, s-maxage=1800, stale-while-revalidate=86400'
+      : 'public, max-age=0, s-maxage=300, stale-while-revalidate=600'
     : undefined
 
   setResponseHeaders(new Headers({
@@ -35,7 +55,15 @@ const responsePolicy = createMiddleware().server(async ({ next, request }) => {
     ...(cacheControl ? { 'Cache-Control': cacheControl } : {}),
   }))
 
-  return next()
+  const response = await next()
+  if (cacheableGamePage && edgeCache && response instanceof Response && response.ok && !response.headers.has('Set-Cookie')) {
+    try {
+      await edgeCache.put(request, response.clone())
+    } catch {
+      // Serve the freshly rendered page even when an edge cache write fails.
+    }
+  }
+  return response
 })
 
 export const startInstance = createStart(() => ({

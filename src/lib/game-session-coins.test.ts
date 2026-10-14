@@ -8,10 +8,10 @@ test('PRO games settle with a double session multiplier', () => {
   assert.equal(resolveGameSessionMultiplier(5, true), 10)
 })
 
-test('PRO sessions can award up to 500 coins without changing the normal cap', () => {
+test('PRO sessions can award up to 200 coins without changing the normal cap', () => {
   assert.equal(calculateGameCoinAward(30_000_000, 2, 0, 0).additional, 100)
-  assert.equal(calculateGameCoinAward(30_000_000, 2, 0, 0, PRO_GAME_SESSION_COIN_CAP).additional, 500)
-  assert.equal(calculateGameCoinAward(30_000_000, 2, 500, 500, PRO_GAME_SESSION_COIN_CAP).additional, 0)
+  assert.equal(calculateGameCoinAward(30_000_000, 2, 0, 0, PRO_GAME_SESSION_COIN_CAP).additional, 200)
+  assert.equal(calculateGameCoinAward(30_000_000, 2, 200, 200, PRO_GAME_SESSION_COIN_CAP).additional, 0)
 })
 
 test('exit keeps the existing five-minute reward threshold', () => {

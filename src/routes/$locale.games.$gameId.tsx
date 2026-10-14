@@ -17,6 +17,7 @@ import {
 import { SiteLayout } from '#/components/site-layout'
 import { GameFavoriteButton } from '#/components/game-favorite-button'
 import { saveRecentPlayedGame } from '#/components/home/recent-played-games'
+import { getHomeHeroGameName } from '#/lib/game-display-name'
 import { getGameDetailReturnUrl } from '#/lib/game-detail-return'
 import {
   applyChineseGameGuide,
@@ -63,6 +64,9 @@ function getRankGameCopy(locale: Locale, rank: 'bronze' | 'silver' | 'gold' | 'p
 }
 
 export const Route = createFileRoute('/$locale/games/$gameId')({
+  headers: () => ({
+    'Cache-Control': 'public, max-age=60, s-maxage=1800, stale-while-revalidate=86400',
+  }),
   beforeLoad: ({ location, params }) => {
     if (location.pathname.endsWith('/play') || !location.searchStr) {
       return
@@ -81,11 +85,15 @@ export const Route = createFileRoute('/$locale/games/$gameId')({
     })
     const currentId = getGameRouteId(detail.game) || params.gameId
     const chineseGuide = locale === 'zh-CN' ? getChineseGameGuide(detail.game) : undefined
+    const localizedGame = applyChineseGameGuide(detail.game, chineseGuide)
 
     return {
       ...detail,
       chineseGuide,
-      game: applyChineseGameGuide(detail.game, chineseGuide),
+      game: {
+        ...localizedGame,
+        name: getHomeHeroGameName(localizedGame, locale),
+      },
       relatedGamesPromise: SHOW_EXTENDED_GAME_DETAILS
         ? getRelatedGamePageData({
             data: {
@@ -426,8 +434,13 @@ function LocalizedGameDetailPage() {
                       </span>
                     ) : null}
                   </Link>
-                  <div className="mt-3 text-sm text-base-content/60">
-                    {t.plays}：<span className="font-semibold text-base-content">{game.plays_count ?? 0}</span>
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-base-content/60">
+                    <span>
+                      {t.plays}：<span className="font-semibold text-base-content">{game.plays_count ?? 0}</span>
+                    </span>
+                    <span>
+                      {t.views}：<span className="font-semibold text-base-content">{game.views_count ?? 0}</span>
+                    </span>
                   </div>
                 </div>
                 <PreGameTips />

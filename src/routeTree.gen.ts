@@ -49,6 +49,7 @@ import { Route as ApiCoinRankingsRouteImport } from './routes/api.coin-rankings'
 import { Route as ApiFcCartridgesRouteImport } from './routes/api.fc-cartridges'
 import { Route as ApiFcSaveRouteImport } from './routes/api.fc-save'
 import { Route as ApiGbCartridgesRouteImport } from './routes/api.gb-cartridges'
+import { Route as ApiHomeShareRewardRouteImport } from './routes/api.home-share-reward'
 import { Route as ApiLocaleSuggestionRouteImport } from './routes/api/locale-suggestion'
 import { Route as ApiMemberRouteImport } from './routes/api.member'
 import { Route as ApiPspLikesRouteImport } from './routes/api.psp-likes'
@@ -270,6 +271,11 @@ const ApiGbCartridgesRoute = ApiGbCartridgesRouteImport.update({
   path: '/api/gb-cartridges',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHomeShareRewardRoute = ApiHomeShareRewardRouteImport.update({
+  id: '/api/home-share-reward',
+  path: '/api/home-share-reward',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiLocaleSuggestionRoute = ApiLocaleSuggestionRouteImport.update({
   id: '/api/locale-suggestion',
   path: '/api/locale-suggestion',
@@ -410,6 +416,7 @@ export interface FileRoutesByFullPath {
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
   '/api/fc-save': typeof ApiFcSaveRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
+  '/api/home-share-reward': typeof ApiHomeShareRewardRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
@@ -470,6 +477,7 @@ export interface FileRoutesByTo {
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
   '/api/fc-save': typeof ApiFcSaveRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
+  '/api/home-share-reward': typeof ApiHomeShareRewardRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
@@ -532,6 +540,7 @@ export interface FileRoutesById {
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
   '/api/fc-save': typeof ApiFcSaveRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
+  '/api/home-share-reward': typeof ApiHomeShareRewardRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
@@ -595,6 +604,7 @@ export interface FileRouteTypes {
     | '/api/fc-cartridges'
     | '/api/fc-save'
     | '/api/gb-cartridges'
+    | '/api/home-share-reward'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
@@ -655,6 +665,7 @@ export interface FileRouteTypes {
     | '/api/fc-cartridges'
     | '/api/fc-save'
     | '/api/gb-cartridges'
+    | '/api/home-share-reward'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
@@ -716,6 +727,7 @@ export interface FileRouteTypes {
     | '/api/fc-cartridges'
     | '/api/fc-save'
     | '/api/gb-cartridges'
+    | '/api/home-share-reward'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
@@ -758,6 +770,7 @@ export interface RootRouteChildren {
   ApiFcCartridgesRoute: typeof ApiFcCartridgesRoute
   ApiFcSaveRoute: typeof ApiFcSaveRoute
   ApiGbCartridgesRoute: typeof ApiGbCartridgesRoute
+  ApiHomeShareRewardRoute: typeof ApiHomeShareRewardRoute
   ApiLocaleSuggestionRoute: typeof ApiLocaleSuggestionRoute
   ApiMemberRoute: typeof ApiMemberRoute
   ApiPspLikesRoute: typeof ApiPspLikesRoute
@@ -1050,6 +1063,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiGbCartridgesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/home-share-reward': {
+      id: '/api/home-share-reward'
+      path: '/api/home-share-reward'
+      fullPath: '/api/home-share-reward'
+      preLoaderRoute: typeof ApiHomeShareRewardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/locale-suggestion': {
       id: '/api/locale-suggestion'
       path: '/api/locale-suggestion'
@@ -1308,6 +1328,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiFcCartridgesRoute: ApiFcCartridgesRoute,
   ApiFcSaveRoute: ApiFcSaveRoute,
   ApiGbCartridgesRoute: ApiGbCartridgesRoute,
+  ApiHomeShareRewardRoute: ApiHomeShareRewardRoute,
   ApiLocaleSuggestionRoute: ApiLocaleSuggestionRoute,
   ApiMemberRoute: ApiMemberRoute,
   ApiPspLikesRoute: ApiPspLikesRoute,

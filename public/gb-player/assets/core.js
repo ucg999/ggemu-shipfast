@@ -9,6 +9,7 @@ var emulator = null;
 var ready = false;
 var lastTick = 0;
 var accumulated = 0;
+var speedMultiplier = 1;
 var offscreen = document.createElement('canvas');
 offscreen.width = WIDTH;
 offscreen.height = HEIGHT;
@@ -225,9 +226,14 @@ parsed.push({ address: parseInt(rawMatch[1], 16), value: parseInt(rawMatch[2], 1
 return;
 }
 var normalized = code.replace(/[^0-9A-F]/g, '');
-var match = /^01([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})$/.exec(normalized);
+var match = /^([09])([1-7])([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})$/.exec(normalized);
 if (match) {
-parsed.push({ address: parseInt(match[3] + match[2], 16), value: parseInt(match[1], 16), code: rawCode });
+parsed.push({
+address: parseInt(match[5] + match[4], 16),
+value: parseInt(match[3], 16),
+bank: match[1] === '9' ? parseInt(match[2], 16) : 0,
+code: rawCode
+});
 }
 });
 return parsed.slice(0, 32);
@@ -237,7 +243,14 @@ function applyCheats() {
 if (!emulator || !activeCheats.length) return;
 for (var index = 0; index < activeCheats.length; index++) {
 var cheat = activeCheats[index];
-try { emulator.memoryWrite(cheat.address, cheat.value); } catch (error) {}
+try {
+if (cheat.bank && cheat.address >= 0xD000 && cheat.address <= 0xDFFF && emulator.GBCMemory) {
+var bankOffset = ((cheat.bank - 1) << 12) + (cheat.address - 0xD000);
+emulator.GBCMemory[bankOffset] = cheat.value;
+} else {
+emulator.memoryWrite(cheat.address, cheat.value);
+}
+} catch (error) {}
 }
 }
 
@@ -271,16 +284,17 @@ tick: function () {
 if (!ready || !emulator || document.hidden) return;
 var now = window.performance && performance.now ? performance.now() : Date.now();
 if (!lastTick) lastTick = now;
-accumulated += Math.min(now - lastTick, 50);
+accumulated += Math.min(now - lastTick, 50) * speedMultiplier;
 lastTick = now;
 var steps = 0;
-while (accumulated >= FRAME_MS && steps < 7) {
+while (accumulated >= FRAME_MS && steps < 7 * speedMultiplier) {
 emulator.run();
 applyCheats();
 accumulated -= FRAME_MS;
 steps++;
 }
 },
+setSpeed: function (value) { speedMultiplier = value === 4 ? 4 : value === 2 ? 2 : 1; },
 setButton: function (id, pressed) {
 if (!emulator || KEY_INDEX[id] === undefined) return;
 emulator.JoyPadEvent(KEY_INDEX[id], pressed);
@@ -308,6 +322,9 @@ if (!emulator) return;
 if (audioServer) audioServer.resetBuffer();
 if (paused) emulator.stopEmulator |= 2;
 else { resumeCore(); if (audioServer) audioServer.resume(); }
+},
+setMuted: function (value) {
+if (audioServer) { audioServer.changeVolume(value ? 0 : 1); audioServer.resetBuffer(); }
 },
 reset: function () {
 if (!currentRomBase64) return;

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { SiteLayout } from '#/components/site-layout'
@@ -42,6 +42,9 @@ function pickFish(): Fish {
 }
 
 export const Route = createFileRoute('/$locale/lakeside-fishing')({
+  beforeLoad: ({ params }) => {
+    throw redirect({ to: '/$locale/original-games', params: { locale: normalizeLocale(params.locale) } })
+  },
   head: () => ({ meta: [{ title: '湖畔钓鱼｜原创游戏｜怀旧游戏厅' }] }),
   component: LakesideFishingPage,
 })

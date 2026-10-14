@@ -28,7 +28,15 @@ export const Route = createFileRoute('/api/member')({
     handlers: {
       GET: async ({ request }) => {
         const member = await getMemberFromRequest(request)
-        const usedToday = member ? await getTodayTransferred(member.id) : 0
+        let usedToday = 0
+        if (member) {
+          try {
+            usedToday = await getTodayTransferred(member.id)
+          } catch (error) {
+            const hostname = new URL(request.url).hostname
+            if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '[::1]') throw error
+          }
+        }
         return Response.json({ member, remainingToday: Math.max(0, 999 - usedToday) })
       },
       POST: async ({ request }) => {

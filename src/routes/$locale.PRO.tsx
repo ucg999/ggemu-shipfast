@@ -32,8 +32,8 @@ import { rememberGameDetailReturnPath } from '#/lib/game-detail-return'
 const themeGamesCache = createThemeGameCache<Array<PublicGame>>()
 const themeFirstPagesCache = createThemeGameCache<Array<GameSearchResult>>()
 const DAILY_CHALLENGE_STORAGE_KEY = 'game-adventure-daily-challenge'
-const PLATFORM_COIN_DROP_CHANCE = 0.3
-const PLATFORM_COIN_DROP_COOLDOWN_MS = 3_000
+const PLATFORM_COIN_DROP_CHANCE = 0.12
+const PLATFORM_COIN_DROP_COOLDOWN_MS = 15_000
 const PLATFORM_COIN_DAILY_JACKPOT_KEY = 'ucg999-pro-platform-coin-jackpot'
 let fallbackDailyPlatformCoinJackpot: DailyPlatformCoinJackpot | null = null
 

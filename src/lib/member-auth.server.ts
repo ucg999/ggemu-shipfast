@@ -151,15 +151,16 @@ export async function createSession(memberId: string, request: Request) {
 }
 
 export async function getMemberFromRequest(request: Request) {
-  const token = readCookie(request.headers.get('cookie'), new URL(request.url).protocol === 'https:' ? SESSION_COOKIE : 'ucg999_member')
-  if (!token) return null
+  const requestUrl = new URL(request.url)
+  const token = readCookie(request.headers.get('cookie'), requestUrl.protocol === 'https:' ? SESSION_COOKIE : 'ucg999_member')
+  if (!token) return getLocalDevelopmentOwner(requestUrl)
   const tokenHash = await sha256(token)
   const row = await memberDb().prepare(`
     SELECT m.id, m.username, m.display_name, m.coin_balance, m.player_number
     FROM member_sessions s JOIN members m ON m.id = s.member_id
     WHERE s.id = ? AND s.expires_at > CURRENT_TIMESTAMP
   `).bind(tokenHash).first<Pick<MemberRow, 'id' | 'username' | 'display_name' | 'coin_balance' | 'player_number'>>()
-  if (!row) return null
+  if (!row) return getLocalDevelopmentOwner(requestUrl)
   // Session reads must remain available even if this non-essential activity
   // timestamp cannot be written. Throttling also avoids a database write on
   // every route change, focus event and account-panel refresh.
@@ -172,6 +173,27 @@ export async function getMemberFromRequest(request: Request) {
     console.warn('Unable to refresh member session activity', error instanceof Error ? error.message : error)
   }
   return toMemberView(row)
+}
+
+async function getLocalDevelopmentOwner(url: URL) {
+  if (url.hostname !== 'localhost' && url.hostname !== '127.0.0.1' && url.hostname !== '[::1]') return null
+  try {
+    const owner = await memberDb().prepare(`
+      SELECT id, username, display_name, coin_balance, player_number
+      FROM members WHERE player_number = 1 LIMIT 1
+    `).first<Pick<MemberRow, 'id' | 'username' | 'display_name' | 'coin_balance' | 'player_number'>>()
+    if (owner) return toMemberView(owner)
+  } catch (error) {
+    console.warn('Local member database is unavailable; using the owner test profile')
+  }
+  return {
+    id: 'local-owner-00001',
+    username: 'game-adventure',
+    displayName: '游戏历险记',
+    coinBalance: 99_999,
+    playerNumber: 1,
+    needsNickname: false,
+  }
 }
 
 export async function deleteSession(request: Request) {

@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 
 import { MemberAccountButton } from '#/components/member-account'
 import { spendCoinBalance } from '#/lib/coin-wallet'
-import { requestMemberLogin } from '#/lib/member-client'
+import { getMemberSession, requestMemberLogin } from '#/lib/member-client'
 
 const FC_CARTRIDGE_IDS = new Set([
   'donkey-kong', 'donkey-kong-jr', 'popeye', 'gomoku-narabe', 'mahjong', 'mario-bros',
@@ -30,7 +30,7 @@ export const Route = createFileRoute('/fc')({
 function FcPlayerPage() {
   const { cartridge } = Route.useSearch()
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
+    const handleMessage = async (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
       if (event.data?.type === 'fc-member-login-request') {
         requestMemberLogin()
@@ -39,6 +39,7 @@ function FcPlayerPage() {
       if (event.data?.type === 'fc-spend-coins-request') {
         const requestId = typeof event.data.requestId === 'string' ? event.data.requestId : ''
         const amount = Math.max(0, Math.min(100, Math.floor(Number(event.data.amount) || 0)))
+        await getMemberSession().catch(() => null)
         const success = Boolean(requestId && amount > 0 && spendCoinBalance(amount))
         ;(event.source as Window | null)?.postMessage(
           { type: 'fc-spend-coins-result', requestId, success },

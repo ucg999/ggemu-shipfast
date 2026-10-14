@@ -30,13 +30,8 @@ function CoinRankingsPage() {
         .catch(() => {})
     }
     refresh()
-    const timer = window.setInterval(refresh, 5_000)
-    const onVisible = () => { if (document.visibilityState === 'visible') refresh() }
-    document.addEventListener('visibilitychange', onVisible)
     return () => {
       active = false
-      window.clearInterval(timer)
-      document.removeEventListener('visibilitychange', onVisible)
     }
   }, [])
 

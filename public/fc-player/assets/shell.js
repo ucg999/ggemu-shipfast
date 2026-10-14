@@ -4,6 +4,39 @@ const core = window.GGEMU_CORE;
 const CONFIG = window.GGEMU_CONFIG || {};
 const mainCanvas = document.getElementById('main-canvas');
 const mainCtx = mainCanvas.getContext('2d');
+let soundEnabled = true;
+let showAbButton = true;
+let rapidFireEnabled = false;
+let videoFilterEnabled = true;
+const FC_VIDEO_FILTER = 'ggemu-crt';
+mainCanvas.dataset.videoFilter = FC_VIDEO_FILTER;
+const crtScanlineTile = document.createElement('canvas');
+crtScanlineTile.width = 8;
+crtScanlineTile.height = 4;
+const crtScanlineCtx = crtScanlineTile.getContext('2d');
+crtScanlineCtx.clearRect(0, 0, 8, 4);
+crtScanlineCtx.fillStyle = 'rgba(0, 0, 0, 0.13)';
+crtScanlineCtx.fillRect(0, 3, 7, 1);
+const crtScanlinePattern = mainCtx.createPattern(crtScanlineTile, 'repeat');
+function drawGgemuCrt(x, y, width, height) {
+if (!videoFilterEnabled || !crtScanlinePattern) return;
+mainCtx.save();
+mainCtx.beginPath();
+mainCtx.rect(x, y, width, height);
+mainCtx.clip();
+mainCtx.globalCompositeOperation = 'source-over';
+mainCtx.fillStyle = crtScanlinePattern;
+mainCtx.fillRect(x, y, width, height);
+const vignette = mainCtx.createRadialGradient(
+x + width / 2, y + height / 2, Math.min(width, height) * 0.3,
+x + width / 2, y + height / 2, Math.max(width, height) * 0.72
+);
+vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+vignette.addColorStop(1, 'rgba(0, 0, 0, 0.16)');
+mainCtx.fillStyle = vignette;
+mainCtx.fillRect(x, y, width, height);
+mainCtx.restore();
+}
 let rumbleTimer = 0;
 let rumblePhase = false;
 function vibrate(duration) {
@@ -203,32 +236,11 @@ mainCtx.strokeStyle = 'rgba(215, 215, 220, 0.72)';
 mainCtx.lineWidth = 2;
 mainCtx.stroke();
 mainCtx.imageSmoothingEnabled = false;
-mainCtx.filter = 'contrast(1.12) saturate(0.88) brightness(0.97)';
+mainCtx.filter = 'contrast(1.08) saturate(1.08) brightness(0.98)';
 mainCtx.drawImage(src, hitboxes.game.x, hitboxes.game.y, hitboxes.game.w, hitboxes.game.h);
 mainCtx.filter = 'none';
 mainCtx.imageSmoothingEnabled = true;
-mainCtx.save();
-mainCtx.beginPath();
-mainCtx.rect(hitboxes.game.x, hitboxes.game.y, hitboxes.game.w, hitboxes.game.h);
-mainCtx.clip();
-mainCtx.fillStyle = 'rgba(8, 16, 20, 0.12)';
-const scanlineStep = Math.max(3, Math.round(hitboxes.game.h / 120));
-for (let y = hitboxes.game.y + 1; y < hitboxes.game.y + hitboxes.game.h; y += scanlineStep) {
-mainCtx.fillRect(hitboxes.game.x, y, hitboxes.game.w, 1);
-}
-const glow = mainCtx.createRadialGradient(
-hitboxes.game.x + hitboxes.game.w / 2,
-hitboxes.game.y + hitboxes.game.h / 2,
-hitboxes.game.w * 0.2,
-hitboxes.game.x + hitboxes.game.w / 2,
-hitboxes.game.y + hitboxes.game.h / 2,
-hitboxes.game.w * 0.72
-);
-glow.addColorStop(0, 'rgba(255,255,255,0)');
-glow.addColorStop(1, 'rgba(0,8,12,0.16)');
-mainCtx.fillStyle = glow;
-mainCtx.fillRect(hitboxes.game.x, hitboxes.game.y, hitboxes.game.w, hitboxes.game.h);
-mainCtx.restore();
+drawGgemuCrt(hitboxes.game.x, hitboxes.game.y, hitboxes.game.w, hitboxes.game.h);
 }
 mainCtx.fillStyle = 'rgba(95, 95, 102, 0.12)';
 if (hitboxes.controls) {
@@ -321,7 +333,7 @@ mainCtx.textBaseline = 'middle';
 mainCtx.fillText(text, hb.x + hb.w / 2, hb.y + hb.h + 15);
 };
 CAPSULES.forEach(btn => drawCapsule(hitboxes[btn.id], uiState[btn.id], btn.label));
-if (hitboxes.ab) {
+if (showAbButton && hitboxes.ab) {
 const combo = hitboxes.ab;
 mainCtx.fillStyle = uiState.ab ? 'rgba(96, 96, 103, 0.58)' : 'rgba(178, 178, 184, 0.72)';
 drawRoundRect(mainCtx, combo.x, combo.y, combo.w, combo.h, combo.h / 2);
@@ -385,7 +397,7 @@ if (nearest) hits.push(nearest);
 CAPSULES.forEach(btn => {
 if (pointInRect(x, y, hitboxes[btn.id])) hits.push(btn.id);
 });
-if (pointInRect(x, y, hitboxes.ab)) hits.push('ab');
+if (showAbButton && pointInRect(x, y, hitboxes.ab)) hits.push('ab');
 return hits;
 }
 function activateAudio() {
@@ -394,6 +406,16 @@ try { core.activateAudio(); } catch (e) { console.error(e); }
 }
 }
 function bindControls() {
+let rapidPhase = true;
+window.setInterval(() => {
+if (!rapidFireEnabled) return;
+rapidPhase = !rapidPhase;
+['a', 'b'].forEach(button => {
+if (uiState[button]) {
+try { core.setButton(button, rapidPhase); } catch (error) { console.error(error); }
+}
+});
+}, 85);
 const updateTouches = (touches, haptic) => {
 const newActive = new Set();
 for (let i = 0; i < touches.length; i++) {
@@ -543,7 +565,7 @@ clearTimeout(toastTimeout);
 toastTimeout = setTimeout(() => { el.classList.remove('show'); }, 2000);
 }
 window.GGEMU_TOAST = showToast;
-document.getElementById('btn-share').addEventListener('click', async () => {
+async function sharePage() {
 let shareUrl = window.location.href;
 try {
 if (window.parent && window.parent !== window && window.parent.location.origin === window.location.origin) {
@@ -569,13 +591,34 @@ showToast('页面链接已复制');
 } catch (error) {
 showToast('请复制浏览器地址分享');
 }
-});
+}
 document.getElementById('btn-save').addEventListener('click', async () => {
 try { await core.saveState(); } catch (e) { showToast('存档失败'); console.error(e); }
 });
 document.getElementById('btn-load').addEventListener('click', async () => {
 try { await core.loadState(); } catch (e) { showToast('读档失败'); console.error(e); }
 });
+const utilityMenu = document.createElement('section');
+utilityMenu.id = 'utility-menu';
+utilityMenu.setAttribute('aria-hidden', 'true');
+utilityMenu.style.cssText = 'position:fixed;inset:0;z-index:120;display:none;place-items:center;background:rgba(20,20,24,.48);padding:20px';
+utilityMenu.innerHTML = '<div style="width:min(82vw,280px);padding:18px;border:1px solid rgba(255,255,255,.7);border-radius:20px;background:#e8e8ea;box-shadow:0 20px 60px rgba(0,0,0,.38)"><strong style="display:block;margin-bottom:14px;text-align:center;color:#35353a;font-size:18px">游戏菜单</strong><button id="menu-load" type="button" style="width:100%;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">读档</button><button id="menu-sound" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">声音（开）</button><button id="menu-ab" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">AB按键（开）</button><button id="menu-rapid" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">长按连击（关）</button><button id="menu-share" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">分享</button><button id="menu-close" type="button" style="width:100%;margin-top:12px;padding:9px;border:0;background:transparent;color:#696970;font-size:13px">关闭菜单</button></div>';
+document.body.appendChild(utilityMenu);
+const filterMenuButton = document.createElement('button');
+filterMenuButton.id = 'menu-filter';
+filterMenuButton.type = 'button';
+filterMenuButton.textContent = '滤镜（开）';
+filterMenuButton.style.cssText = 'width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700';
+utilityMenu.querySelector('#menu-share').before(filterMenuButton);
+function setUtilityMenu(open) { utilityMenu.style.display = open ? 'grid' : 'none'; utilityMenu.setAttribute('aria-hidden', open ? 'false' : 'true'); core.setPaused(open); }
+document.getElementById('btn-share').addEventListener('click', () => setUtilityMenu(true));
+utilityMenu.querySelector('#menu-close').addEventListener('click', () => setUtilityMenu(false));
+utilityMenu.querySelector('#menu-load').addEventListener('click', async () => { try { await core.loadState(); setUtilityMenu(false); } catch (e) { showToast('读档失败'); console.error(e); } });
+utilityMenu.querySelector('#menu-sound').addEventListener('click', event => { soundEnabled = !soundEnabled; if (core.setMuted) core.setMuted(!soundEnabled); event.currentTarget.textContent = `声音（${soundEnabled ? '开' : '关'}）`; });
+utilityMenu.querySelector('#menu-ab').addEventListener('click', event => { showAbButton = !showAbButton; event.currentTarget.textContent = `AB按键（${showAbButton ? '开' : '关'}）`; renderUI(); });
+utilityMenu.querySelector('#menu-rapid').addEventListener('click', event => { rapidFireEnabled = !rapidFireEnabled; if (!rapidFireEnabled) ['a', 'b'].forEach(button => { try { core.setButton(button, uiState[button]); } catch (error) {} }); event.currentTarget.textContent = `长按连击（${rapidFireEnabled ? '开' : '关'}）`; });
+filterMenuButton.addEventListener('click', () => { videoFilterEnabled = !videoFilterEnabled; filterMenuButton.textContent = `滤镜（${videoFilterEnabled ? '开' : '关'}）`; renderUI(); });
+utilityMenu.querySelector('#menu-share').addEventListener('click', async () => { await sharePage(); setUtilityMenu(false); });
 let currentGameId = 'super-mario-bros-world';
 const isLocalDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const cheatButton = document.createElement('button');
@@ -587,16 +630,21 @@ toolbar.insertBefore(cheatButton, document.getElementById('btn-shot'));
 const cheatPanel = document.createElement('section');
 cheatPanel.id = 'cheat-panel';
 cheatPanel.setAttribute('aria-hidden', 'true');
-cheatPanel.innerHTML = '<div class="cheat-dialog"><header><div><small>CHEATS</small><h2>金手指</h2></div><button id="btn-close-cheats" type="button" aria-label="关闭">×</button></header><div id="mario-built-in-cheats" hidden><div class="built-in-cheat" data-cheat-id="invincible"><div><strong>无敌金身</strong><small>🪙 1</small></div><button type="button" aria-pressed="false">开启</button></div><div class="built-in-cheat" data-cheat-id="grow"><div><strong>变大</strong><small>🪙 1</small></div><button type="button" aria-pressed="false">开启</button></div><div class="built-in-cheat" data-cheat-id="lives"><div><strong>生命无限</strong><small>🪙 1</small></div><button type="button" aria-pressed="false">开启</button></div></div><div id="custom-cheat-editor"><p>支持 Game Genie、GameShark，以及地址:数值、地址-数值、地址=数值等格式，每行一个。</p><textarea id="cheat-codes" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 SXIOPO、079F:40 或 079F-40"></textarea><div class="cheat-actions"><button id="btn-clear-cheats" type="button">清除</button><button id="btn-apply-cheats" type="button">启用</button></div></div></div>';
+cheatPanel.innerHTML = '<div class="cheat-dialog"><header><div><small>CHEATS</small><h2>金手指</h2></div><button id="btn-close-cheats" type="button" aria-label="关闭">×</button></header><div class="built-in-cheat" id="speed-cheat"><div><strong>加速 X2</strong><small><img alt="金币" src="/images/coin-rewards/floating-gold-coin.webp">1</small></div><button type="button" aria-pressed="false">开启</button></div><div id="mario-built-in-cheats" hidden><div class="built-in-cheat" data-cheat-id="invincible"><div><strong>无敌金身</strong><small><img alt="金币" src="/images/coin-rewards/floating-gold-coin.webp">1</small></div><button type="button" aria-pressed="false">开启</button></div><div class="built-in-cheat" data-cheat-id="grow"><div><strong>变大</strong><small><img alt="金币" src="/images/coin-rewards/floating-gold-coin.webp">1</small></div><button type="button" aria-pressed="false">开启</button></div><div class="built-in-cheat" data-cheat-id="lives"><div><strong>生命无限</strong><small><img alt="金币" src="/images/coin-rewards/floating-gold-coin.webp">1</small></div><button type="button" aria-pressed="false">开启</button></div></div><p id="cheat-pending" hidden>待添加</p><div id="custom-cheat-editor" hidden><p>支持 Game Genie、GameShark，以及地址:数值、地址-数值、地址=数值等格式，每行一个。</p><textarea id="cheat-codes" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 SXIOPO、079F:40 或 079F-40"></textarea><div class="cheat-actions"><button id="btn-clear-cheats" type="button">清除</button><button id="btn-apply-cheats" type="button">启用</button></div></div></div>';
 document.body.appendChild(cheatPanel);
 const cheatInput = document.getElementById('cheat-codes');
-document.getElementById('custom-cheat-editor').hidden = !isLocalDevelopment;
+const customCheatEditor = document.getElementById('custom-cheat-editor');
+const cheatPending = document.getElementById('cheat-pending');
+let canEnterCustomCheats = false;
 const marioBuiltInCheats = document.getElementById('mario-built-in-cheats');
 const builtInCheats = {
 invincible: { name: '无敌金身', codes: ['079F:40'], enabled: false },
 grow: { name: '变大', codes: ['0754:00', '0756:01'], enabled: false },
 lives: { name: '生命无限', codes: ['075A:09'], enabled: false }
 };
+let speedMode = 1;
+let selectedSpeed = 2;
+let speedChangePending = false;
 function cheatStorageKey() { return 'ucg999-fc-cheats:' + currentGameId; }
 function getCombinedCheatCodes(codes) {
 const customCodes = String(codes || '').trim();
@@ -611,7 +659,9 @@ return core.setCheatCodes ? core.setCheatCodes(getCombinedCheatCodes(codes)) : 0
 function renderBuiltInCheat() {
 const visible = currentGameId === 'super-mario-bros-world';
 marioBuiltInCheats.hidden = !visible;
-cheatButton.hidden = !isLocalDevelopment && !visible;
+cheatButton.hidden = false;
+customCheatEditor.hidden = !canEnterCustomCheats;
+cheatPending.hidden = visible || canEnterCustomCheats;
 if (!visible) Object.values(builtInCheats).forEach(cheat => { cheat.enabled = false; });
 marioBuiltInCheats.querySelectorAll('[data-cheat-id]').forEach(row => {
 const cheat = builtInCheats[row.dataset.cheatId];
@@ -645,11 +695,42 @@ window.dispatchEvent(new CustomEvent('game-adventure-coin-balance-change', { det
 return Promise.resolve(true);
 } catch (error) { return Promise.resolve(false); }
 }
+const speedCheat = document.getElementById('speed-cheat');
+speedCheat.style.cursor = 'pointer';
+speedCheat.setAttribute('role', 'button');
+speedCheat.setAttribute('tabindex', '0');
+function renderSpeedCheat() {
+const price = selectedSpeed === 4 ? 2 : 1;
+speedCheat.querySelector('strong').textContent = '加速 X' + selectedSpeed;
+speedCheat.querySelector('small').innerHTML = '<img alt="金币" src="/images/coin-rewards/floating-gold-coin.webp">' + price;
+speedCheat.setAttribute('aria-pressed', speedMode > 1 ? 'true' : 'false');
+speedCheat.querySelector('button').textContent = speedMode === selectedSpeed ? '关闭' : '开启';
+}
+function selectSpeedCheat() { selectedSpeed = selectedSpeed === 2 ? 4 : 2; renderSpeedCheat(); }
+async function applySpeedCheat() {
+if (speedChangePending) return;
+speedChangePending = true;
+if (speedMode === selectedSpeed) {
+speedMode = 1;
+} else {
+const price = selectedSpeed === 4 ? 2 : 1;
+if (!(await spendCoins(price))) { speedChangePending = false; showToast('金币不足，无法开启加速'); return; }
+speedMode = selectedSpeed;
+}
+if (core.setSpeed) core.setSpeed(speedMode);
+renderSpeedCheat();
+showToast(speedMode === 1 ? '已恢复正常速度' : '已开启 X' + speedMode + ' 加速');
+speedChangePending = false;
+}
+speedCheat.addEventListener('click', event => { if (!event.target.closest('button')) selectSpeedCheat(); });
+speedCheat.querySelector('button').addEventListener('click', event => { event.stopPropagation(); void applySpeedCheat(); });
+speedCheat.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && event.target === speedCheat) { event.preventDefault(); selectSpeedCheat(); } });
+renderSpeedCheat();
 function applyStoredCheats(gameId) {
 currentGameId = gameId;
 if (gameId !== 'super-mario-bros-world') Object.values(builtInCheats).forEach(cheat => { cheat.enabled = false; });
 let stored = '';
-if (isLocalDevelopment) {
+if (canEnterCustomCheats) {
 try { stored = localStorage.getItem(cheatStorageKey()) || ''; } catch (error) {}
 }
 applyCurrentCheats(stored);
@@ -660,7 +741,7 @@ function setCheatPanel(open) {
 cheatPanel.classList.toggle('is-open', open);
 cheatPanel.setAttribute('aria-hidden', open ? 'false' : 'true');
 document.body.classList.toggle('cheat-open', open);
-if (open) { cheatInput.value = applyStoredCheats(currentGameId); core.setPaused(true); if (isLocalDevelopment) window.setTimeout(() => cheatInput.focus({ preventScroll: true }), 50); }
+if (open) { cheatInput.value = applyStoredCheats(currentGameId); core.setPaused(true); if (canEnterCustomCheats) window.setTimeout(() => cheatInput.focus({ preventScroll: true }), 50); }
 else { cheatInput.blur(); core.setPaused(false); window.setTimeout(resize, 320); }
 }
 cheatButton.addEventListener('click', () => setCheatPanel(true));
@@ -688,6 +769,7 @@ renderBuiltInCheat();
 showToast('已花费 1 个金币，' + cheat.name + '已开启');
 });
 document.getElementById('btn-clear-cheats').addEventListener('click', () => {
+if (!canEnterCustomCheats) return;
 cheatInput.value = '';
 Object.values(builtInCheats).forEach(cheat => { cheat.enabled = false; });
 try { localStorage.removeItem(cheatStorageKey()); } catch (error) {}
@@ -696,12 +778,18 @@ renderBuiltInCheat();
 showToast('已关闭金手指');
 });
 document.getElementById('btn-apply-cheats').addEventListener('click', () => {
+if (!canEnterCustomCheats) return;
 const codes = cheatInput.value.trim();
 const count = applyCurrentCheats(codes);
 try { if (codes) localStorage.setItem(cheatStorageKey(), codes); else localStorage.removeItem(cheatStorageKey()); } catch (error) {}
 showToast(count ? '已启用 ' + count + ' 条金手指' : '没有识别到有效代码');
 if (count) setCheatPanel(false);
 });
+fetch('/api/member', { credentials: 'same-origin', cache: 'no-store' }).then(response => response.ok ? response.json() : null).then(data => {
+canEnterCustomCheats = Boolean(data && data.member && Number(data.member.playerNumber) === 1);
+applyStoredCheats(currentGameId);
+renderBuiltInCheat();
+}).catch(() => renderBuiltInCheat());
 const cartridgeButton = document.getElementById('btn-shot');
 const cartridgeScreen = document.getElementById('cartridge-screen');
 const closeCartridgeButton = document.getElementById('btn-close-cartridges');
@@ -782,8 +870,9 @@ cartridgeScreen.style.height = Math.round(game.h * scaleY) + 'px';
 }
 function renderCartridgeSelection() {
 cartridgeList.style.transform = 'translateX(' + (-cartridgeIndex * 100) + '%)';
-previousCartridgeButton.disabled = cartridgeIndex === 0;
-nextCartridgeButton.disabled = visibleCartridgeCards.length < 2 || cartridgeIndex === visibleCartridgeCards.length - 1;
+previousCartridgeButton.disabled = visibleCartridgeCards.length < 2;
+previousCartridgeButton.disabled = visibleCartridgeCards.length < 2;
+nextCartridgeButton.disabled = visibleCartridgeCards.length < 2;
 Array.from(cartridgeDots.children).forEach((dot, index) => dot.classList.toggle('is-active', index === cartridgeIndex));
 }
 function rebuildCartridgeDots() {
@@ -831,11 +920,13 @@ cartridgeLoading = false;
 });
 });
 previousCartridgeButton.addEventListener('click', () => {
-cartridgeIndex = Math.max(0, cartridgeIndex - 1);
+if (visibleCartridgeCards.length < 2) return;
+cartridgeIndex = (cartridgeIndex - 1 + visibleCartridgeCards.length) % visibleCartridgeCards.length;
 renderCartridgeSelection();
 });
 nextCartridgeButton.addEventListener('click', () => {
-cartridgeIndex = Math.min(visibleCartridgeCards.length - 1, cartridgeIndex + 1);
+if (visibleCartridgeCards.length < 2) return;
+cartridgeIndex = (cartridgeIndex + 1) % visibleCartridgeCards.length;
 renderCartridgeSelection();
 });
 cartridgeList.addEventListener('touchstart', event => {
@@ -844,7 +935,8 @@ cartridgeTouchStartX = event.touches[0].clientX;
 cartridgeList.addEventListener('touchend', event => {
 const distance = event.changedTouches[0].clientX - cartridgeTouchStartX;
 if (Math.abs(distance) < 36) return;
-cartridgeIndex = Math.max(0, Math.min(visibleCartridgeCards.length - 1, cartridgeIndex + (distance < 0 ? 1 : -1)));
+if (visibleCartridgeCards.length < 2) return;
+cartridgeIndex = (cartridgeIndex + (distance < 0 ? 1 : -1) + visibleCartridgeCards.length) % visibleCartridgeCards.length;
 renderCartridgeSelection();
 }, { passive: true });
 cartridgeSearchButton.addEventListener('click', () => {

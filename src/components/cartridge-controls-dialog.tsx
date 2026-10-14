@@ -4,7 +4,11 @@ type CartridgeControlsDialogProps = {
   details: string
   onAction: () => void
   onClose: () => void
+  onTrial?: () => void
   title: string
+  actionHint?: string
+  trialHint?: string
+  trialLabel?: string
   guide?: {
     title: string
     introduction: readonly string[]
@@ -19,8 +23,8 @@ const controls = [
   ['A', 'K'], ['B', 'J'], ['SELECT', 'SHIFT'], ['START', 'ENTER'],
 ] as const
 
-export function CartridgeControlsDialog({ actionLabel, cover, details, guide, onAction, onClose, title }: CartridgeControlsDialogProps) {
-  return <div className="fixed inset-0 z-[250] hidden place-items-center bg-black/45 px-6 lg:grid" role="dialog" aria-modal="true" aria-label={title} onClick={onClose}>
+export function CartridgeControlsDialog({ actionHint, actionLabel, cover, details, guide, onAction, onClose, onTrial, title, trialHint, trialLabel }: CartridgeControlsDialogProps) {
+  return <div className="fixed inset-0 z-[250] grid place-items-center bg-black/45 px-4 sm:px-6" role="dialog" aria-modal="true" aria-label={title} onClick={onClose}>
     <section className={`max-h-[92vh] w-full overflow-y-auto rounded-2xl bg-[#f0f0ed] text-base-content shadow-2xl ${guide ? 'max-w-5xl' : 'max-w-3xl'}`} onClick={event => event.stopPropagation()}>
       <header className="flex items-start justify-between gap-4 border-b border-black/10 px-6 py-4">
         <div><h2 className="text-2xl font-semibold">{title}</h2><p className="mt-1 text-sm text-base-content/55">{details}</p></div>
@@ -51,7 +55,10 @@ export function CartridgeControlsDialog({ actionLabel, cover, details, guide, on
           <div className="grid grid-cols-2 gap-2">
             {controls.map(([label, key]) => <div className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm shadow-sm" key={label}><span>{label}</span><kbd className="min-w-12 rounded-md bg-neutral px-2 py-1 text-center text-xs font-semibold text-white">{key}</kbd></div>)}
           </div>
-          <button className="btn btn-warning mt-5 w-full" type="button" onClick={onAction}>{actionLabel}</button>
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            {onTrial ? <div className="flex flex-col items-center gap-1"><button className="btn btn-info w-full" type="button" onClick={onTrial}>{trialLabel ?? '试玩'}</button>{trialHint ? <small className="text-xs text-base-content/55">{trialHint}</small> : null}</div> : null}
+            <div className={`flex flex-col items-center gap-1 ${onTrial ? '' : 'sm:col-span-2'}`}><button className="btn btn-warning w-full" type="button" onClick={onAction}>{actionLabel}</button>{actionHint ? <small className="text-xs text-base-content/55">{actionHint}</small> : null}</div>
+          </div>
         </div>
       </div>
     </section>
@@ -65,7 +72,7 @@ type CartridgePlayerDialogProps = {
 }
 
 export function CartridgePlayerDialog({ onClose, src, title }: CartridgePlayerDialogProps) {
-  return <div className="fixed inset-0 z-[260] hidden place-items-center bg-black/70 p-4 lg:grid" role="dialog" aria-modal="true" aria-label={title} onClick={onClose}>
+  return <div className="fixed inset-0 z-[260] hidden place-items-center bg-black/70 p-4 lg:grid" role="dialog" aria-modal="true" aria-label={title}>
     <section className="relative h-[min(92vh,900px)] w-[min(96vw,520px)] overflow-hidden rounded-2xl bg-[#dedede] shadow-2xl" onClick={event => event.stopPropagation()}>
       <button aria-label="关闭游戏机" className="btn btn-neutral btn-sm btn-circle absolute right-3 top-3 z-20 opacity-60 hover:opacity-100" type="button" onClick={onClose}>×</button>
       <iframe

@@ -11,7 +11,7 @@ import {
 } from '#/lib/coin-wallet'
 
 const COIN_INTERVAL_MS = 60_000
-const MAX_FLOATING_COINS = 3
+const MAX_FLOATING_COINS = 2
 
 type CoinPosition = {
   id: number
