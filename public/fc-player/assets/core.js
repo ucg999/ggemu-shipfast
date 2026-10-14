@@ -396,8 +396,9 @@ window.GGEMU_TOAST(cloudSaved ? '存档成功，已同步玩家账号！' : '本
 window.GGEMU_TOAST('存档失败：' + e.message);
 }
 },
-loadState: async function () {
+loadState: async function (options) {
 if (!nes) return;
+if (!options || options.userInitiated !== true) return false;
 try {
 let state = null;
 let cloudLoaded = false;

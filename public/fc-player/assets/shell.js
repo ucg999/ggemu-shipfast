@@ -596,7 +596,7 @@ document.getElementById('btn-save').addEventListener('click', async () => {
 try { await core.saveState(); } catch (e) { showToast('存档失败'); console.error(e); }
 });
 document.getElementById('btn-load').addEventListener('click', async () => {
-try { await core.loadState(); } catch (e) { showToast('读档失败'); console.error(e); }
+try { await core.loadState({ userInitiated: true }); } catch (e) { showToast('读档失败'); console.error(e); }
 });
 const utilityMenu = document.createElement('section');
 utilityMenu.id = 'utility-menu';
@@ -613,7 +613,7 @@ utilityMenu.querySelector('#menu-share').before(filterMenuButton);
 function setUtilityMenu(open) { utilityMenu.style.display = open ? 'grid' : 'none'; utilityMenu.setAttribute('aria-hidden', open ? 'false' : 'true'); core.setPaused(open); }
 document.getElementById('btn-share').addEventListener('click', () => setUtilityMenu(true));
 utilityMenu.querySelector('#menu-close').addEventListener('click', () => setUtilityMenu(false));
-utilityMenu.querySelector('#menu-load').addEventListener('click', async () => { try { await core.loadState(); setUtilityMenu(false); } catch (e) { showToast('读档失败'); console.error(e); } });
+utilityMenu.querySelector('#menu-load').addEventListener('click', async () => { try { await core.loadState({ userInitiated: true }); setUtilityMenu(false); } catch (e) { showToast('读档失败'); console.error(e); } });
 utilityMenu.querySelector('#menu-sound').addEventListener('click', event => { soundEnabled = !soundEnabled; if (core.setMuted) core.setMuted(!soundEnabled); event.currentTarget.textContent = `声音（${soundEnabled ? '开' : '关'}）`; });
 utilityMenu.querySelector('#menu-ab').addEventListener('click', event => { showAbButton = !showAbButton; event.currentTarget.textContent = `AB按键（${showAbButton ? '开' : '关'}）`; renderUI(); });
 utilityMenu.querySelector('#menu-rapid').addEventListener('click', event => { rapidFireEnabled = !rapidFireEnabled; if (!rapidFireEnabled) ['a', 'b'].forEach(button => { try { core.setButton(button, uiState[button]); } catch (error) {} }); event.currentTarget.textContent = `长按连击（${rapidFireEnabled ? '开' : '关'}）`; });

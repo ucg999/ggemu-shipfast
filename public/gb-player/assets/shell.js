@@ -506,7 +506,7 @@ document.getElementById('btn-save').addEventListener('click', () => {
 try { core.saveState(); } catch (e) { showToast('存档失败'); console.error(e); }
 });
 document.getElementById('btn-load').addEventListener('click', () => {
-try { core.loadState(); } catch (e) { showToast('读档失败'); console.error(e); }
+try { core.loadState({ userInitiated: true }); } catch (e) { showToast('读档失败'); console.error(e); }
 });
 const utilityMenu = document.createElement('section');
 utilityMenu.id = 'utility-menu';
@@ -928,7 +928,7 @@ catch (error) { showToast('请复制浏览器地址分享'); }
 }
 document.getElementById('btn-record').addEventListener('click', () => setUtilityMenu(true));
 utilityMenu.querySelector('#menu-close').addEventListener('click', () => setUtilityMenu(false));
-utilityMenu.querySelector('#menu-load').addEventListener('click', () => { try { core.loadState(); setUtilityMenu(false); } catch (e) { showToast('读档失败'); console.error(e); } });
+utilityMenu.querySelector('#menu-load').addEventListener('click', () => { try { core.loadState({ userInitiated: true }); setUtilityMenu(false); } catch (e) { showToast('读档失败'); console.error(e); } });
 utilityMenu.querySelector('#menu-sound').addEventListener('click', function (event) { soundEnabled = !soundEnabled; if (core.setMuted) core.setMuted(!soundEnabled); event.currentTarget.textContent = '声音（' + (soundEnabled ? '开' : '关') + '）'; });
 utilityMenu.querySelector('#menu-ab').addEventListener('click', function (event) { showAbButton = !showAbButton; event.currentTarget.textContent = 'AB按键（' + (showAbButton ? '开' : '关') + '）'; renderUI(); });
 utilityMenu.querySelector('#menu-rapid').addEventListener('click', function (event) { rapidFireEnabled = !rapidFireEnabled; if (!rapidFireEnabled) ['a', 'b'].forEach(function (button) { try { core.setButton(button, uiState[button]); } catch (error) {} }); event.currentTarget.textContent = '长按连击（' + (rapidFireEnabled ? '开' : '关') + '）'; });

@@ -352,7 +352,8 @@ window.GGEMU_TOAST('存档失败');
 if (window.console && console.error) console.error(error);
 }
 },
-loadState: async function () {
+loadState: async function (options) {
+if (!options || options.userInitiated !== true) return false;
 try {
 var state = null;
 var cloudLoaded = false;
