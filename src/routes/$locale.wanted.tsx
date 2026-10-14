@@ -110,13 +110,13 @@ function WantedPage() {
             </div>
           })}
         </section>
-        <div className="mx-auto mt-1 flex max-w-3xl flex-wrap items-center justify-center gap-x-5 gap-y-1 px-4 text-center text-xs font-semibold text-[#35231d]/75 sm:text-sm">
+        <div className="wanted-chaser-ranks mx-auto mt-1 flex max-w-3xl flex-wrap items-center justify-center gap-x-5 gap-y-1 px-4 text-center text-xs font-semibold text-[#35231d]/75 sm:text-sm">
           {[4, 5, 6].map(rank => {
             const leader = data?.leaders.find(item => item.rank === rank)
             return <span key={rank}>第{rank}名：{leader ? `${leader.displayName} · ${leader.minutes.toLocaleString()}分钟` : '等待挑战'}</span>
           })}
         </div>
-        <p className="mx-auto mt-1 px-4 text-center text-sm font-semibold sm:text-base">上周冠军获得者：<span className="text-[#9a281d]">{data?.lastWeekChampion || '暂无记录'}</span></p>
+        <p className="wanted-last-champion mx-auto mt-1 px-4 text-center text-sm font-semibold sm:text-base">上周冠军获得者：<span className="text-[#9a281d]">{data?.lastWeekChampion || '暂无记录'}</span></p>
       </div>
     </main>
     {data?.pendingRewards.length || claimedCoins || expiredRewardCoins ? <div className="fixed inset-0 z-[250] grid place-items-center bg-black/55 p-4">

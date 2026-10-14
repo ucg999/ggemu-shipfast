@@ -769,6 +769,10 @@ html:not([data-member-logged-in='true']) .coin-rank-badge {
 .wanted-poster-copy span{display:block;margin-top:4.8%;font-size:clamp(.62rem,1.68vw,1.78rem);font-weight:800;letter-spacing:.11em}
 .wanted-poster-copy small{display:block;margin-top:2%;font-family:ui-sans-serif,system-ui,sans-serif;font-size:clamp(.42rem,.72vw,.78rem);font-weight:800;letter-spacing:.04em}
 .wanted-slot-1,.wanted-slot-2,.wanted-slot-3{left:2.5%}
+@media(min-width:641px){
+  .wanted-chaser-ranks{position:fixed;z-index:8;right:0;bottom:30px;left:0;margin:0 auto!important}
+  .wanted-last-champion{position:fixed;z-index:8;right:0;bottom:7px;left:0;margin:0 auto!important}
+}
 @media(max-width:640px){
   .wanted-page-main{height:auto;min-height:calc(100dvh - 61px);overflow:visible;padding-bottom:1.5rem}
   .wanted-poster-board{display:flex;aspect-ratio:auto;width:100%;flex-direction:column;align-items:center;gap:.85rem;overflow:visible;padding:.9rem 0 .25rem;transform:none}

@@ -2,7 +2,7 @@ import { weightedPlayMinutes } from '#/lib/wanted-activity'
 import { createFileRoute } from '@tanstack/react-router'
 
 import { getMemberFromRequest, jsonError, leaderboardDb, memberDb } from '#/lib/member-auth.server'
-import { getCoinRank } from '#/lib/coin-wallet'
+import { combineCoinMultipliers, getCoinRank } from '#/lib/coin-wallet'
 
 type WantedRow = {
   participant_key: string
@@ -52,7 +52,7 @@ export const Route = createFileRoute('/api/wanted')({
       }, { headers: { 'Cache-Control': 'private, no-store' } })
     },
     POST: async ({ request }) => {
-      const body = await request.json() as { action?: unknown; sessionType?: unknown; featuredMultiplier?: unknown; guestKey?: unknown; guestName?: unknown; minutes?: unknown; activeMinutes?: unknown; submissionKey?: unknown }
+      const body = await request.json() as { action?: unknown; sessionType?: unknown; featuredMultiplier?: unknown; checkInMultiplier?: unknown; guestKey?: unknown; guestName?: unknown; minutes?: unknown; activeMinutes?: unknown; submissionKey?: unknown }
       const member = await getMemberFromRequest(request)
       const guestKey = normalizeGuestKey(body.guestKey)
       const participantKey = member ? `member:${member.id}` : guestKey
@@ -68,15 +68,21 @@ export const Route = createFileRoute('/api/wanted')({
           ? 'online'
           : body.sessionType === 'pro'
             ? 'pro'
+            : body.sessionType === 'handheld'
+              ? 'handheld'
             : body.sessionType === 'featured'
               ? 'featured'
               : 'game'
         const minutes = Math.min(sessionType === 'featured' ? 30 : 720, Math.max(0, Math.floor(Number(body.minutes) || 0)))
         if (minutes < 1) return jsonError('本局未完成有效计时')
-        const rankMultiplier = sessionType !== 'online' && sessionType !== 'featured' && member ? getCoinRank(member.coinBalance).multiplier : 1
+        const eligibleForMemberMultiplier = sessionType !== 'online' && sessionType !== 'featured'
+        const rankMultiplier = eligibleForMemberMultiplier && member ? getCoinRank(member.coinBalance).multiplier : 1
+        const requestedCheckInMultiplier = Math.floor(Number(body.checkInMultiplier) || 1)
+        const checkInMultiplier = eligibleForMemberMultiplier && member ? Math.max(1, Math.min(365, requestedCheckInMultiplier)) : 1
         const requestedFeaturedMultiplier = Number(body.featuredMultiplier)
         const featuredMultiplier = [10, 20, 50, 100, 150, 200].includes(requestedFeaturedMultiplier) ? requestedFeaturedMultiplier : 10
-        const multiplier = sessionType === 'featured' ? featuredMultiplier : rankMultiplier * (sessionType === 'pro' ? 2 : 1)
+        const memberMultiplier = eligibleForMemberMultiplier && member ? combineCoinMultipliers(rankMultiplier, checkInMultiplier) : 1
+        const multiplier = sessionType === 'featured' ? featuredMultiplier : memberMultiplier * (sessionType === 'pro' ? 2 : 1)
         const periodKey = getWantedWeekKey(Date.now())
         const db = leaderboardDb()
         const accepted = await db.prepare(`INSERT OR IGNORE INTO wanted_playtime_submissions (submission_key, participant_key, period_key) VALUES (?, ?, ?)`)

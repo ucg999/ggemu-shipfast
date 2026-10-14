@@ -1,15 +1,57 @@
 import { WantedActivityClock } from '#/lib/wanted-activity'
+import { getDailyCheckInMultiplier } from '#/lib/coin-wallet'
 import { useRouterState } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 
 const GUEST_KEY_STORAGE = 'ucg999-wanted-guest-key'
 const FEATURED_GAME_STORAGE = 'ucg999-wanted-featured-game'
+const PENDING_SUBMISSIONS_STORAGE = 'ucg999-wanted-pending-submissions'
 let activeFeaturedGame: { path: string; multiplier: number } | null = null
+
+function readPendingSubmissions() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(PENDING_SUBMISSIONS_STORAGE) || '[]')
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string').slice(-24) : []
+  } catch {
+    return []
+  }
+}
+
+function writePendingSubmissions(items: string[]) {
+  try {
+    if (items.length) window.localStorage.setItem(PENDING_SUBMISSIONS_STORAGE, JSON.stringify(items.slice(-24)))
+    else window.localStorage.removeItem(PENDING_SUBMISSIONS_STORAGE)
+  } catch {
+    // A live request is still attempted when storage is unavailable.
+  }
+}
+
+function queuePendingSubmission(payload: string) {
+  const items = readPendingSubmissions()
+  if (!items.includes(payload)) writePendingSubmissions([...items, payload])
+}
+
+function removePendingSubmission(payload: string) {
+  writePendingSubmissions(readPendingSubmissions().filter(item => item !== payload))
+}
+
+async function flushPendingSubmissions() {
+  const items = readPendingSubmissions()
+  for (const payload of items) {
+    try {
+      const response = await fetch('/api/wanted', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true })
+      if (response.ok) removePendingSubmission(payload)
+    } catch {
+      break
+    }
+  }
+}
 
 export function WantedPlaytimeTracker() {
   const pathname = useRouterState({ select: state => state.location.pathname })
   const hash = useRouterState({ select: state => state.location.hash })
   const playing = isPlayableRoute(pathname)
+  const handheld = isHandheldRoute(pathname)
   const proMode = isProRoute(pathname, hash)
   const featuredMultiplier = getFeaturedGameMultiplier(pathname)
   const featuredGame = featuredMultiplier !== null
@@ -35,6 +77,7 @@ export function WantedPlaytimeTracker() {
     const activity = new WantedActivityClock()
     const guestKey = getWantedGuestKey()
     const guestName = `游客${guestKey.slice(-5).toUpperCase()}`
+    void flushPendingSubmissions()
 
     const tick = () => {
       const now = Date.now()
@@ -57,9 +100,10 @@ export function WantedPlaytimeTracker() {
       submittingRef.current = true
       submittedMinutesRef.current = totalMinutes
       submissionIndexRef.current += 1
-      const sessionType = featuredGame ? 'featured' : proMode ? 'pro' : playing ? 'game' : 'online'
+      const sessionType = featuredGame ? 'featured' : proMode ? 'pro' : handheld ? 'handheld' : playing ? 'game' : 'online'
       const activeMinutes = Math.max(0, activity.activeMinutes(totalMinutes) - activity.activeMinutes(previousSubmittedMinutes))
-      const payload = JSON.stringify({ action: 'session', sessionType, featuredMultiplier, guestKey, guestName, minutes, activeMinutes, submissionKey: `wanted:${sessionType}:${sessionRef.current}:${submissionIndexRef.current}` })
+      const payload = JSON.stringify({ action: 'session', sessionType, featuredMultiplier, checkInMultiplier: getDailyCheckInMultiplier(), guestKey, guestName, minutes, activeMinutes, submissionKey: `wanted:${sessionType}:${sessionRef.current}:${submissionIndexRef.current}` })
+      queuePendingSubmission(payload)
       if (final && navigator.sendBeacon('/api/wanted', new Blob([payload], { type: 'application/json' }))) {
         submittingRef.current = false
         return
@@ -67,13 +111,9 @@ export function WantedPlaytimeTracker() {
       void fetch('/api/wanted', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true })
         .then(response => {
           if (!response.ok) throw new Error(`wanted_session_failed:${response.status}`)
+          removePendingSubmission(payload)
         })
-        .catch(() => {
-          // Restore the unsubmitted range so the next five-minute checkpoint or
-          // page exit can retry it without losing the player's game time.
-          submittedMinutesRef.current = Math.min(submittedMinutesRef.current, previousSubmittedMinutes)
-          if (final) finalizedRef.current = false
-        })
+        .catch(() => { if (final) finalizedRef.current = false })
         .finally(() => {
           submittingRef.current = false
           if (pendingFinalRef.current) {
@@ -106,11 +146,17 @@ export function WantedPlaytimeTracker() {
       })
     }
     attach(document)
+    let retryTicks = 0
     const timer = window.setInterval(() => {
       tick()
       attach(document)
       registerFocusedGameFrame()
       submitSession(false)
+      retryTicks += 1
+      if (retryTicks >= 30) {
+        retryTicks = 0
+        void flushPendingSubmissions()
+      }
     }, 1_000)
     window.addEventListener('blur', registerFocusedGameFrame)
     const submitFinalSession = () => submitSession(true)
@@ -122,7 +168,7 @@ export function WantedPlaytimeTracker() {
       documents.forEach(doc => events.forEach(name => doc.removeEventListener(name, registerInteraction, true)))
       submitSession(true)
     }
-  }, [pathname, featuredGame, featuredMultiplier, playing, proMode])
+  }, [pathname, featuredGame, featuredMultiplier, handheld, playing, proMode])
 
   return null
 }
@@ -150,6 +196,10 @@ export function markWantedFeaturedGame(gameId: string, multiplier: number) {
 function isPlayableRoute(pathname: string) {
   return /\/games\/[^/]+\/play(?:\/|$)/.test(pathname)
     || /\/(coin-challenge|lucky-grand-slam|ghost-hunter|red-blue-arena)(?:\/|$)/.test(pathname)
+}
+
+function isHandheldRoute(pathname: string) {
+  return pathname === '/fc' || pathname === '/gb' || pathname.startsWith('/fc-player/') || pathname.startsWith('/gb-player/')
 }
 
 function isProRoute(pathname: string, hash: string) {
