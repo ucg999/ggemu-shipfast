@@ -8,10 +8,10 @@ test('PRO games settle with a double session multiplier', () => {
   assert.equal(resolveGameSessionMultiplier(5, true), 10)
 })
 
-test('PRO sessions can award up to 200 coins without changing the normal cap', () => {
-  assert.equal(calculateGameCoinAward(30_000_000, 2, 0, 0).additional, 100)
-  assert.equal(calculateGameCoinAward(30_000_000, 2, 0, 0, PRO_GAME_SESSION_COIN_CAP).additional, 200)
-  assert.equal(calculateGameCoinAward(30_000_000, 2, 200, 200, PRO_GAME_SESSION_COIN_CAP).additional, 0)
+test('PRO sessions can award up to 100 coins without changing the normal cap', () => {
+  assert.equal(calculateGameCoinAward(30_000_000, 2, 0, 0).additional, 50)
+  assert.equal(calculateGameCoinAward(30_000_000, 2, 0, 0, PRO_GAME_SESSION_COIN_CAP).additional, 100)
+  assert.equal(calculateGameCoinAward(30_000_000, 2, 100, 100, PRO_GAME_SESSION_COIN_CAP).additional, 0)
 })
 
 test('exit keeps the existing five-minute reward threshold', () => {
@@ -24,7 +24,7 @@ test('exit and repeated settlement do not re-award periodic rewards', () => {
   assert.equal(calculateGameCoinAward(600_000, 1, first.earned, 10).additional, 0)
 })
 test('normal and multiplier sessions respect reward caps', () => {
-  assert.equal(calculateGameCoinAward(9_000_000, 1, 95, 95).additional, 5)
-  assert.equal(calculateGameCoinAward(9_000_000, 2, 95, 95).additional, 5)
-  assert.equal(calculateGameCoinAward(9_000_000, 2, 100, 100).additional, 0)
+  assert.equal(calculateGameCoinAward(9_000_000, 1, 45, 45).additional, 5)
+  assert.equal(calculateGameCoinAward(9_000_000, 2, 45, 45).additional, 5)
+  assert.equal(calculateGameCoinAward(9_000_000, 2, 50, 50).additional, 0)
 })

@@ -10,7 +10,7 @@ import {
 import { useRecentPlayedGames } from './recent-played-games'
 import type { HomeTemplateProps } from './types'
 import type { PublicGame } from '#/lib/ggemu'
-import { getGameDetail, getRandomPlayableGame, searchGames } from '#/lib/ggemu'
+import { getGameDetail, getRandomPlayableGame, searchGames, searchLiveRooms } from '#/lib/ggemu'
 import { getI18n } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
 import { getOriginalGamesTitle } from '#/lib/original-games'
@@ -81,6 +81,9 @@ export function DefaultHomeTemplate(
   const [dailyBestGames, setDailyBestGames] = useState(() =>
     visibleMostPlayedGames.slice(0, 7),
   )
+  const [featuredPopularGame, setFeaturedPopularGame] = useState<PublicGame | null>(() =>
+    [...visibleHomeGames, ...visibleMostPlayedGames, ...visibleLatestGames].find(isKof97PlusGame) ?? null,
+  )
   const [homeMahjongGames, setHomeMahjongGames] = useState<PublicGame[]>(() =>
     readHomeCards<PublicGame[]>(`${lang}:home-mahjong`) ?? [],
   )
@@ -92,8 +95,18 @@ export function DefaultHomeTemplate(
   const [streakDays, setStreakDays] = useState(0)
   const loadRandomGame = useServerFn(getRandomPlayableGame)
   const loadGameDetail = useServerFn(getGameDetail)
+  const loadLiveRooms = useServerFn(searchLiveRooms)
+  const [liveRoomCount, setLiveRoomCount] = useState<number | null>(null)
   const recentPlayedGames = useRecentPlayedGames()
   const member = useMemberSession()
+
+  useEffect(() => {
+    let cancelled = false
+    void loadLiveRooms({ data: { limit: 1, page: 1 } })
+      .then(result => { if (!cancelled) setLiveRoomCount(Math.max(0, result.pagination.total)) })
+      .catch(() => { /* Keep the homepage usable when live data is temporarily unavailable. */ })
+    return () => { cancelled = true }
+  }, [loadLiveRooms])
 
   useEffect(() => {
     const cancelPreload = scheduleInitialProModePreload()
@@ -130,6 +143,29 @@ export function DefaultHomeTemplate(
   useEffect(() => {
     if (visibleMostPlayedGames.length > 0) setDailyBestGames(selectDailyBestGames(visibleMostPlayedGames, 7))
   }, [visibleMostPlayedGames])
+
+  useEffect(() => {
+    const localMatch = [...visibleHomeGames, ...visibleMostPlayedGames, ...visibleLatestGames].find(isKof97PlusGame)
+    if (localMatch) {
+      setFeaturedPopularGame(localMatch)
+      return
+    }
+
+    let cancelled = false
+    void loadRanking({
+      data: { locale: lang, query: "The King of the Fighters '97 Plus", sort: 'popular', page: 1, limit: 10 },
+    }).then((result) => {
+      if (!cancelled) setFeaturedPopularGame(result.games.find(isKof97PlusGame) ?? null)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [lang, loadRanking, visibleHomeGames, visibleLatestGames, visibleMostPlayedGames])
+
+  const popularFeatureGames = useMemo(() => {
+    const games = featuredPopularGame
+      ? [featuredPopularGame, ...visibleHomeGames.filter(game => getGameId(game) !== getGameId(featuredPopularGame))]
+      : visibleHomeGames
+    return games.slice(0, 3)
+  }, [featuredPopularGame, visibleHomeGames])
 
   useEffect(() => {
     let cancelled = false
@@ -353,6 +389,7 @@ export function DefaultHomeTemplate(
                             <span className="live-watch-pupil" />
                           </span>
                           <span>{lang === 'en' ? 'See what others are playing right now?' : lang === 'zh-TW' ? '看看此時別人在玩什麼遊戲？' : lang === 'ja' ? '今、みんなは何を遊んでいる？' : '看此时别人在玩什么游戏？'}</span>
+                          <b className="min-w-6 rounded-full bg-white/20 px-2 py-0.5 text-center text-sm font-semibold" aria-label={lang === 'en' ? `${liveRoomCount ?? 0} live rooms` : `当前${liveRoomCount ?? 0}个直播`}>{liveRoomCount ?? '—'}</b>
                         </Link>
                       ) : null}
                     </div>
@@ -360,6 +397,28 @@ export function DefaultHomeTemplate(
                 )
               })}
             </div>
+            <section className="desktop-home-popular-section">
+              <p className="desktop-home-tagline">{getI18n(lang).layout.siteSlogan}</p>
+              <h2 className="desktop-home-best-title">{lang === 'zh-TW' ? '熱門遊戲' : lang === 'en' ? 'Popular Games' : lang === 'ja' ? '人気ゲーム' : '热门游戏'}</h2>
+              <p className="desktop-home-game-caption">
+                {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
+              </p>
+              <div className="desktop-daily-video-grid">
+                {popularFeatureGames.map((game) => {
+                  const gameId = getGameId(game)
+                  const displayName = getHomeHeroGameName(game, lang)
+                  return (
+                    <div className="min-w-0" key={`popular-${gameId}`}>
+                      <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
+                        <img alt={displayName} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} />
+                        <GameCardPreviewVideo src={game.game_video} />
+                      </Link>
+                      <strong className="block w-full truncate px-1 pt-3 text-center text-sm font-semibold text-black" title={displayName}>{displayName}</strong>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
             <section className="desktop-home-best-section">
               <p className="desktop-home-tagline">{getI18n(lang).layout.siteSlogan}</p>
               <DesktopBestTitle lang={lang} />
@@ -389,24 +448,6 @@ export function DefaultHomeTemplate(
                     const gameId = getGameId(game)
                     return (
                       <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} key={`latest-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
-                        <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} />
-                        <GameCardPreviewVideo src={game.game_video} />
-                      </Link>
-                    )
-                  })}
-                </div>
-              </section>
-              <section className="desktop-home-popular-section">
-                <p className="desktop-home-tagline">{getI18n(lang).layout.siteSlogan}</p>
-                <h2 className="desktop-home-best-title">{getI18n(lang).layout.mostPopularGames}</h2>
-                <p className="desktop-home-game-caption">
-                  {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
-                </p>
-                <div className="desktop-home-best-grid desktop-home-best-grid-eight">
-                  {visibleHomeGames.slice(0, 8).map((game) => {
-                    const gameId = getGameId(game)
-                    return (
-                      <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} key={`popular-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
                         <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} />
                         <GameCardPreviewVideo src={game.game_video} />
                       </Link>
@@ -461,6 +502,7 @@ export function DefaultHomeTemplate(
               <span className="live-watch-pupil" />
             </span>
             <span className="truncate">{lang === 'en' ? 'See what others are playing?' : lang === 'zh-TW' ? '看看此時別人在玩什麼？' : lang === 'ja' ? 'みんなは今、何を遊んでいる？' : '看此时别人在玩什么游戏？'}</span>
+            <b className="min-w-5 shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-center text-xs font-semibold" aria-label={lang === 'en' ? `${liveRoomCount ?? 0} live rooms` : `当前${liveRoomCount ?? 0}个直播`}>{liveRoomCount ?? '—'}</b>
           </Link>
         </div>
         <HomeLatestGamesRow games={visibleLatestGames} lang={lang} />
@@ -885,6 +927,14 @@ function dailyGameScore(value: string) {
 
 function getGameId(game: PublicGame) {
   return game.url_slug?.trim() || game._id?.trim() || ''
+}
+
+function isKof97PlusGame(game: PublicGame) {
+  const gameId = getGameId(game).toLowerCase()
+  const name = (game.name || '').replace(/[\s·・_-]+/g, '').toLowerCase()
+  return gameId === 'the-king-of-fighters-97-plus-arcade-1997'
+    || name.includes('拳皇97大蛇版')
+    || name.includes("thekingofthefighters'97plus")
 }
 
 function getMobileModeLabels(lang: HomeTemplateProps['lang']) {

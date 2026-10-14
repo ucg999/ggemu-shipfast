@@ -178,7 +178,7 @@ export function CoinChallengeCommunity({
             </> : null}
             <p className="mt-4 text-center text-xs text-white/45">{channel === 'ghost-hunter' ? '自动记录登录玩家的最高连续过关数' : channel === 'red-blue-arena' ? '自动累计登录玩家在当前模式的胜利次数' : '总榜累计每次奖池退币数，并永久显示前三名；普通币池退币不计入'}</p>
             {channel === 'coin-challenge' ? <>
-              <div className="mt-2 rounded-lg border border-amber-300/30 bg-amber-400/10 px-1.5 py-1 text-center text-[10px] leading-4 text-amber-200">周榜冠军奖 <strong className="text-xs font-bold text-yellow-300">5,000</strong> 金币</div>
+              <div className="mt-2 rounded-lg border border-amber-300/30 bg-amber-400/10 px-1.5 py-1 text-center text-[10px] leading-4 text-amber-200">周榜冠军奖 <strong className="text-xs font-bold text-yellow-300">2,000</strong> 金币</div>
               <WeeklyCoinRanking title="本周退币榜" entries={weeklyLeaderboard} tone="bounty" />
               <p className="mt-3 text-center text-[11px] leading-5 text-white/45">按本周单次奖池退币最高纪录排名，不累计；北京时间每周一 03:00 结算。</p>
               <p className="mt-3 text-center text-xs font-semibold text-amber-200">上周冠军获得者：{lastWeekChampion || '暂无记录'}</p>

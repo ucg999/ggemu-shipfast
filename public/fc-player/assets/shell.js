@@ -593,6 +593,7 @@ showToast('请复制浏览器地址分享');
 }
 }
 document.getElementById('btn-save').addEventListener('click', async () => {
+if (!window.confirm('确认保存当前进度吗？这将覆盖当前游戏的原有存档。')) return;
 try { await core.saveState(); } catch (e) { showToast('存档失败'); console.error(e); }
 });
 document.getElementById('btn-load').addEventListener('click', async () => {

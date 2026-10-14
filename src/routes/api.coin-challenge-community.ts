@@ -135,7 +135,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
           : null
         const pendingCoinRewards = channel === 'coin-challenge' && member
           ? await leaderboardDb().prepare(`
-              SELECT period_key, reward_coins FROM coin_challenge_weekly_settlements
+              SELECT period_key, 2000 AS reward_coins FROM coin_challenge_weekly_settlements
               WHERE champion_player_id = ? AND reward_coins > 0 AND reward_applied = 0
                 AND datetime('now') < datetime(period_key, '+7 days', '+19 hours')
               ORDER BY period_key ASC
@@ -225,7 +225,7 @@ export const Route = createFileRoute('/api/coin-challenge-community')({
             await settleCoinChallengeWeeks()
             const ranking = leaderboardDb()
             const awards = await ranking.prepare(`
-              SELECT period_key, reward_coins FROM coin_challenge_weekly_settlements
+              SELECT period_key, 2000 AS reward_coins FROM coin_challenge_weekly_settlements
               WHERE champion_player_id = ? AND reward_coins > 0 AND reward_applied = 0
                 AND datetime('now') < datetime(period_key, '+7 days', '+19 hours')
               ORDER BY period_key ASC
@@ -521,7 +521,7 @@ async function expireCommunityRewards(memberId: string, channel: string) {
   const ranking = leaderboardDb()
   if (channel === 'coin-challenge') {
     const expired = await ranking.prepare(`
-      SELECT period_key, reward_coins FROM coin_challenge_weekly_settlements
+      SELECT period_key, 2000 AS reward_coins FROM coin_challenge_weekly_settlements
       WHERE champion_player_id = ? AND reward_coins > 0 AND reward_applied = 0
         AND datetime('now') >= datetime(period_key, '+7 days', '+19 hours')
     `).bind(memberId).all<{ period_key: string; reward_coins: number }>()
@@ -614,7 +614,7 @@ async function settleCoinChallengeWeeks() {
     await ranking.prepare(`
       INSERT OR IGNORE INTO coin_challenge_weekly_settlements
         (period_key, champion_player_id, cashout_coins, reward_coins, reward_applied)
-      VALUES (?, ?, ?, 5000, ?)
+      VALUES (?, ?, ?, 2000, ?)
     `).bind(period.period_key, champion?.player_id ?? null, Math.max(0, Number(champion?.cashout_coins) || 0), champion ? 0 : 1).run()
   }
 }

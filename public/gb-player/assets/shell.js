@@ -502,8 +502,9 @@ clearTimeout(toastTimeout);
 toastTimeout = setTimeout(() => { el.classList.remove('show'); }, 2000);
 }
 window.GGEMU_TOAST = showToast;
-document.getElementById('btn-save').addEventListener('click', () => {
-try { core.saveState(); } catch (e) { showToast('存档失败'); console.error(e); }
+document.getElementById('btn-save').addEventListener('click', async () => {
+if (!window.confirm('确认保存当前进度吗？这将覆盖当前游戏的原有存档。')) return;
+try { await core.saveState(); } catch (e) { showToast('存档失败'); console.error(e); }
 });
 document.getElementById('btn-load').addEventListener('click', () => {
 try { core.loadState({ userInitiated: true }); } catch (e) { showToast('读档失败'); console.error(e); }
