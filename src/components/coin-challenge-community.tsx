@@ -51,6 +51,7 @@ export function CoinChallengeCommunity({
   const [bountyLeaderboard, setBountyLeaderboard] = useState<Array<WeeklyCoinEntry>>([])
   const [arrestLeaderboard, setArrestLeaderboard] = useState<Array<WeeklyCoinEntry>>([])
   const [weeklyLeaderboard, setWeeklyLeaderboard] = useState<Array<WeeklyCoinEntry>>([])
+  const [bombWeeklyLeaderboard, setBombWeeklyLeaderboard] = useState<Array<WeeklyCoinEntry>>([])
   const [lastWeekChampion, setLastWeekChampion] = useState<string | null>(null)
   const [pendingRewards, setPendingRewards] = useState<Array<PendingReward>>([])
   const [expiredRewardCoins, setExpiredRewardCoins] = useState(0)
@@ -64,11 +65,12 @@ export function CoinChallengeCommunity({
     const modeQuery = leaderboardMode ? `&mode=${encodeURIComponent(leaderboardMode)}` : ''
     const response = await fetch(`/api/coin-challenge-community?channel=${encodeURIComponent(channel)}${modeQuery}`, { credentials: 'same-origin', cache: 'no-store' })
     if (!response.ok) return
-    const next = await response.json() as { singleCashoutLeaderboard?: WeeklyCoinEntry[]; bonusChampions?: BonusChampion[]; leaderboard?: Array<LeaderboardEntry>; weeklyLeaderboard?: Array<WeeklyCoinEntry>; bountyLeaderboard?: Array<WeeklyCoinEntry>; arrestLeaderboard?: Array<WeeklyCoinEntry>; lastWeekChampion?: string | null; pendingRewards?: Array<PendingReward>; expiredRewards?: Array<PendingReward> }
+    const next = await response.json() as { singleCashoutLeaderboard?: WeeklyCoinEntry[]; bonusChampions?: BonusChampion[]; leaderboard?: Array<LeaderboardEntry>; weeklyLeaderboard?: Array<WeeklyCoinEntry>; bombWeeklyLeaderboard?: Array<WeeklyCoinEntry>; bountyLeaderboard?: Array<WeeklyCoinEntry>; arrestLeaderboard?: Array<WeeklyCoinEntry>; lastWeekChampion?: string | null; pendingRewards?: Array<PendingReward>; expiredRewards?: Array<PendingReward> }
     setLeaderboard((next.leaderboard ?? []).slice(0, channel === 'coin-challenge' ? 3 : 10))
     setSingleCashouts(next.singleCashoutLeaderboard ?? [])
     setBonusChampions(next.bonusChampions ?? [])
     setWeeklyLeaderboard(next.weeklyLeaderboard ?? [])
+    setBombWeeklyLeaderboard(next.bombWeeklyLeaderboard ?? [])
     setBountyLeaderboard(next.bountyLeaderboard ?? [])
     setArrestLeaderboard(next.arrestLeaderboard ?? [])
     setLastWeekChampion(next.lastWeekChampion ?? null)
@@ -153,13 +155,13 @@ export function CoinChallengeCommunity({
         </button>
       </div>
       {isOpen ? (
-        <aside className={channel === 'coin-challenge' ? 'fixed inset-x-2 bottom-3 top-3 z-[190] mx-auto flex w-[calc(100%-16px)] max-w-[760px] flex-col overflow-hidden rounded-3xl border border-white/15 bg-[#111]/95 text-white shadow-2xl backdrop-blur' : standalone ? 'fixed bottom-3 right-2 top-3 z-[190] flex w-[min(92vw,380px)] flex-col overflow-hidden rounded-3xl border border-white/15 bg-[#111]/95 text-white shadow-2xl backdrop-blur sm:bottom-5 sm:right-3 sm:top-5 sm:w-[clamp(300px,28vw,380px)]' : 'fixed inset-x-3 bottom-3 top-3 z-[190] mx-auto flex max-w-md flex-col overflow-hidden rounded-3xl border border-white/15 bg-[#111]/95 text-white shadow-2xl backdrop-blur sm:absolute sm:bottom-0 sm:left-[calc(100%+12px)] sm:right-auto sm:top-0 sm:w-[clamp(260px,24vw,340px)]'}>
-          <header className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
+        <aside className={channel === 'coin-challenge' ? 'fixed inset-x-2 bottom-3 top-3 z-[190] mx-auto flex w-[calc(100%-16px)] max-w-[760px] flex-col overflow-hidden rounded-3xl border border-white/15 bg-[#111]/95 text-white shadow-2xl backdrop-blur xl:pointer-events-none xl:absolute xl:inset-0 xl:max-w-none xl:overflow-visible xl:border-0 xl:bg-transparent xl:shadow-none xl:backdrop-blur-none' : standalone ? 'fixed bottom-3 right-2 top-3 z-[190] flex w-[min(92vw,380px)] flex-col overflow-hidden rounded-3xl border border-white/15 bg-[#111]/95 text-white shadow-2xl backdrop-blur sm:bottom-5 sm:right-3 sm:top-5 sm:w-[clamp(300px,28vw,380px)]' : 'fixed inset-x-3 bottom-3 top-3 z-[190] mx-auto flex max-w-md flex-col overflow-hidden rounded-3xl border border-white/15 bg-[#111]/95 text-white shadow-2xl backdrop-blur sm:absolute sm:bottom-0 sm:left-[calc(100%+12px)] sm:right-auto sm:top-0 sm:w-[clamp(260px,24vw,340px)]'}>
+          <header className="flex items-center gap-2 border-b border-white/10 px-4 py-3 xl:pointer-events-auto xl:absolute xl:left-[calc(100%+12px)] xl:top-0 xl:w-[min(300px,calc((100vw-808px)/2))] xl:rounded-2xl xl:border xl:border-white/15 xl:bg-[#111]/95">
             <div className="min-w-0 flex-1"><strong>{channel === 'red-blue-arena' ? '红蓝竞技场排行榜' : channel === 'ghost-hunter' ? '幽灵捕手排行榜' : '金币娱乐游戏排行榜'}</strong></div>
             <button aria-label="关闭排行榜" className="grid h-8 w-8 place-items-center rounded-full hover:bg-white/10" onClick={closeLeaderboard} type="button">✕</button>
           </header>
-          <div className={channel === 'coin-challenge' ? "grid min-h-0 flex-1 grid-cols-2 gap-2 p-2 sm:gap-4 sm:p-3" : "min-h-0 flex-1 overflow-y-auto p-3"}>
-            <div className="min-w-0 overflow-y-auto">
+          <div className={channel === 'coin-challenge' ? "grid min-h-0 flex-1 grid-cols-1 gap-2 overflow-y-auto p-2 md:grid-cols-2 md:gap-4 md:overflow-hidden md:p-3 xl:contents" : "min-h-0 flex-1 overflow-y-auto p-3"}>
+            <div className="min-w-0 overflow-y-auto xl:pointer-events-auto xl:absolute xl:bottom-0 xl:right-[calc(100%+12px)] xl:top-0 xl:w-[min(300px,calc((100vw-808px)/2))] xl:rounded-3xl xl:border xl:border-white/15 xl:bg-[#111]/95 xl:p-3 xl:shadow-2xl">
             {leaderboardTitle ? <p className="mb-2 text-center text-xs font-bold text-amber-300">{leaderboardTitle}</p> : null}
             {channel === 'coin-challenge' || channel === 'ghost-hunter' ? <h3 className="mb-2 text-center text-xs font-black text-amber-300">总榜</h3> : null}
             <div className="space-y-1">
@@ -178,10 +180,13 @@ export function CoinChallengeCommunity({
             </> : null}
             <p className="mt-4 text-center text-xs text-white/45">{channel === 'ghost-hunter' ? '自动记录登录玩家的最高连续过关数' : channel === 'red-blue-arena' ? '自动累计登录玩家在当前模式的胜利次数' : '总榜累计每次奖池退币数，并永久显示前三名；普通币池退币不计入'}</p>
             {channel === 'coin-challenge' ? <>
-              <div className="mt-2 rounded-lg border border-amber-300/30 bg-amber-400/10 px-1.5 py-1 text-center text-[10px] leading-4 text-amber-200">周榜冠军奖 <strong className="text-xs font-bold text-yellow-300">2,000</strong> 金币</div>
               <WeeklyCoinRanking title="本周退币榜" entries={weeklyLeaderboard} tone="bounty" />
+              <div className="mt-2 rounded-lg border border-amber-300/30 bg-amber-400/10 px-1.5 py-1 text-center text-[10px] leading-4 text-amber-200">冠军奖励 <strong className="text-xs font-bold text-yellow-300">2,000</strong> 金币</div>
               <p className="mt-3 text-center text-[11px] leading-5 text-white/45">按本周单次奖池退币最高纪录排名，不累计；北京时间每周一 03:00 结算。</p>
               <p className="mt-3 text-center text-xs font-semibold text-amber-200">上周冠军获得者：{lastWeekChampion || '暂无记录'}</p>
+              <WeeklyCoinRanking title="炸弹奖" entries={bombWeeklyLeaderboard} tone="arrest" unit="次" />
+              <div className="mt-2 rounded-lg border border-red-300/30 bg-red-400/10 px-1.5 py-1 text-center text-[10px] leading-4 text-red-100">冠军奖励 <strong className="text-xs font-bold text-yellow-300">1,000</strong> 金币</div>
+              <p className="mt-3 text-center text-[11px] leading-5 text-white/45">炸弹格与幽灵格命中次数合计排名；北京时间每周一 03:00 结算，仅登录玩家参与。</p>
             </> : null}
             {channel === 'red-blue-arena' ? <>
               <WeeklyCoinRanking title="悬赏令 · 本周赢得金币" entries={bountyLeaderboard} tone="bounty" />
@@ -190,7 +195,7 @@ export function CoinChallengeCommunity({
               <p className="mt-3 text-center text-xs font-semibold text-amber-200">上周冠军获得者：{lastWeekChampion || '暂无记录'}</p>
             </> : null}
             </div>
-            {channel === 'coin-challenge' ? <section className="min-w-0 overflow-y-auto border-l border-white/10 pl-2 sm:pl-3">
+            {channel === 'coin-challenge' ? <section className="min-w-0 border-t border-white/10 pt-2 md:overflow-y-auto md:border-l md:border-t-0 md:pl-3 md:pt-0 xl:pointer-events-auto xl:absolute xl:bottom-0 xl:left-[calc(100%+12px)] xl:top-[56px] xl:w-[min(300px,calc((100vw-808px)/2))] xl:rounded-3xl xl:border xl:border-white/15 xl:bg-[#111]/95 xl:p-3 xl:shadow-2xl">
               <h3 className="mb-2 mt-4 text-center text-sm font-black text-amber-300">跑灯达人榜</h3>
               {Object.entries(BONUS_RANK_NAMES).map(([kind, name]) => {
                 const champion = bonusChampions.find(item => item.kind === kind)
@@ -217,7 +222,7 @@ export function CoinChallengeCommunity({
   )
 }
 
-function WeeklyCoinRanking({ title, entries, tone, unit = 'coin' }: { title: string; entries: WeeklyCoinEntry[]; tone: 'bounty' | 'arrest'; unit?: 'coin' | '关' }) {
+function WeeklyCoinRanking({ title, entries, tone, unit = 'coin' }: { title: string; entries: WeeklyCoinEntry[]; tone: 'bounty' | 'arrest'; unit?: 'coin' | '关' | '次' }) {
   return <section className="mt-4 border-t border-white/10 pt-3">
     <h3 className={`mb-2 text-center text-xs font-black ${tone === 'bounty' ? 'text-yellow-300' : 'text-red-300'}`}>{title}</h3>
     <div className="space-y-1.5">

@@ -50,6 +50,7 @@ import { Route as ApiFcCartridgesRouteImport } from './routes/api.fc-cartridges'
 import { Route as ApiFcSaveRouteImport } from './routes/api.fc-save'
 import { Route as ApiGbCartridgesRouteImport } from './routes/api.gb-cartridges'
 import { Route as ApiHomeShareRewardRouteImport } from './routes/api.home-share-reward'
+import { Route as ApiLibraryCollectionsRouteImport } from './routes/api.library-collections'
 import { Route as ApiLocaleSuggestionRouteImport } from './routes/api/locale-suggestion'
 import { Route as ApiMemberRouteImport } from './routes/api.member'
 import { Route as ApiPspLikesRouteImport } from './routes/api.psp-likes'
@@ -276,6 +277,11 @@ const ApiHomeShareRewardRoute = ApiHomeShareRewardRouteImport.update({
   path: '/api/home-share-reward',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiLibraryCollectionsRoute = ApiLibraryCollectionsRouteImport.update({
+  id: '/api/library-collections',
+  path: '/api/library-collections',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiLocaleSuggestionRoute = ApiLocaleSuggestionRouteImport.update({
   id: '/api/locale-suggestion',
   path: '/api/locale-suggestion',
@@ -417,6 +423,7 @@ export interface FileRoutesByFullPath {
   '/api/fc-save': typeof ApiFcSaveRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/home-share-reward': typeof ApiHomeShareRewardRoute
+  '/api/library-collections': typeof ApiLibraryCollectionsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
@@ -478,6 +485,7 @@ export interface FileRoutesByTo {
   '/api/fc-save': typeof ApiFcSaveRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/home-share-reward': typeof ApiHomeShareRewardRoute
+  '/api/library-collections': typeof ApiLibraryCollectionsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
@@ -541,6 +549,7 @@ export interface FileRoutesById {
   '/api/fc-save': typeof ApiFcSaveRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/home-share-reward': typeof ApiHomeShareRewardRoute
+  '/api/library-collections': typeof ApiLibraryCollectionsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
@@ -605,6 +614,7 @@ export interface FileRouteTypes {
     | '/api/fc-save'
     | '/api/gb-cartridges'
     | '/api/home-share-reward'
+    | '/api/library-collections'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
@@ -666,6 +676,7 @@ export interface FileRouteTypes {
     | '/api/fc-save'
     | '/api/gb-cartridges'
     | '/api/home-share-reward'
+    | '/api/library-collections'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
@@ -728,6 +739,7 @@ export interface FileRouteTypes {
     | '/api/fc-save'
     | '/api/gb-cartridges'
     | '/api/home-share-reward'
+    | '/api/library-collections'
     | '/api/locale-suggestion'
     | '/api/member'
     | '/api/psp-likes'
@@ -771,6 +783,7 @@ export interface RootRouteChildren {
   ApiFcSaveRoute: typeof ApiFcSaveRoute
   ApiGbCartridgesRoute: typeof ApiGbCartridgesRoute
   ApiHomeShareRewardRoute: typeof ApiHomeShareRewardRoute
+  ApiLibraryCollectionsRoute: typeof ApiLibraryCollectionsRoute
   ApiLocaleSuggestionRoute: typeof ApiLocaleSuggestionRoute
   ApiMemberRoute: typeof ApiMemberRoute
   ApiPspLikesRoute: typeof ApiPspLikesRoute
@@ -1070,6 +1083,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHomeShareRewardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/library-collections': {
+      id: '/api/library-collections'
+      path: '/api/library-collections'
+      fullPath: '/api/library-collections'
+      preLoaderRoute: typeof ApiLibraryCollectionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/locale-suggestion': {
       id: '/api/locale-suggestion'
       path: '/api/locale-suggestion'
@@ -1329,6 +1349,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiFcSaveRoute: ApiFcSaveRoute,
   ApiGbCartridgesRoute: ApiGbCartridgesRoute,
   ApiHomeShareRewardRoute: ApiHomeShareRewardRoute,
+  ApiLibraryCollectionsRoute: ApiLibraryCollectionsRoute,
   ApiLocaleSuggestionRoute: ApiLocaleSuggestionRoute,
   ApiMemberRoute: ApiMemberRoute,
   ApiPspLikesRoute: ApiPspLikesRoute,

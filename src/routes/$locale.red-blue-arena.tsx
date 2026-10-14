@@ -24,10 +24,10 @@ type ElementKind = 'fire' | 'water' | 'electric' | 'poison'
 type AmmoKind = ElementKind | 'normal'
 type PotionKind = ElementKind | 'normal-ammo' | 'speed-boost' | 'damage-boost'
 type ArenaMode = 'duel' | 'three' | 'four' | 'team' | 'team3' | 'billiards'
-type Fighter = { id: number; side: ArenaSide; team: ArenaSide; active: boolean; reinforcementCalled: boolean; x: number; y: number; vx: number; vy: number; radius: number; health: number; respawnTimer: number; angle: number; cooldown: number; weapon: WeaponKind | null; weaponCount: number; weaponTimer: number; rangedFired: boolean; laserCharging: boolean; elementAmmo: AmmoKind[]; bowRapidFire: boolean; shield: boolean; shieldBumps: number; shieldArrowHits: number; armor: boolean; speedBoost: number; damageBoost: number; slowTimer: number; slowStacks: number; stun: number; clashLaunchTimer: number; hammerBouncesRemaining: number; knockoutTimer: number; knockoutBrokeWall: boolean; burnTimer: number; burnDamage: number; burnSpread: boolean; poisonTimer: number; poisonTicks: number }
+type Fighter = { id: number; side: ArenaSide; team: ArenaSide; active: boolean; reinforcementCalled: boolean; x: number; y: number; vx: number; vy: number; radius: number; health: number; respawnTimer: number; angle: number; cooldown: number; weapon: WeaponKind | null; weaponCount: number; weaponTimer: number; rangedFired: boolean; laserCharging: boolean; elementAmmo: AmmoKind[]; bowRapidFire: boolean; swordBottleCount: number; swordDashCharges: number; swordDashTimer: number; swordDashTargetId: number | null; swordLockTimer: number; shield: boolean; shieldBumps: number; shieldArrowHits: number; armor: boolean; speedBoost: number; damageBoost: number; slowTimer: number; slowStacks: number; stun: number; clashLaunchTimer: number; hammerBouncesRemaining: number; knockoutTimer: number; knockoutBrokeWall: boolean; burnTimer: number; burnDamage: number; burnSpread: boolean; poisonTimer: number; poisonTicks: number }
 type Pickup = { id: number; x: number; y: number; kind: WeaponKind | 'shield' | 'armor' | 'pillar'; life: number; pocketReward?: boolean }
 type Food = { id: number; x: number; y: number; life: number; pocketReward?: boolean }
-type Projectile = { id: number; owner: number; ownerTeam: ArenaSide; kind: 'arrow' | 'magic'; element: ElementKind | null; x: number; y: number; vx: number; vy: number; life: number; damage: number; bounced: boolean }
+type Projectile = { id: number; owner: number; ownerTeam: ArenaSide; kind: 'arrow' | 'magic'; element: ElementKind | null; x: number; y: number; vx: number; vy: number; life: number; damage: number; bounced: boolean; spinTimer: number; spinAngle: number; launchVx: number; launchVy: number; attachedOrbs: number }
 type LaserSegment = { x1: number; y1: number; x2: number; y2: number }
 type Laser = { id: number; segments: LaserSegment[]; life: number; color: string; width: number }
 type Potion = { id: number; x: number; y: number; kind: PotionKind; life: number; pocketReward?: boolean }
@@ -84,11 +84,11 @@ const AMMO_COLORS: Record<AmmoKind, string> = { ...ELEMENT_COLORS, normal: '#fff
 const POTION_COLORS: Record<PotionKind, string> = { ...ELEMENT_COLORS, 'normal-ammo': '#ffffff', 'speed-boost': '#ffc400', 'damage-boost': '#e51032' }
 const WEAPON_HELP = [
   ['💥', '近战对拼：计算红药与双持攻击力；持盾必胜并反击；同伤对拼2秒后随机决胜'],
-  ['🗡️', '小刀：1伤害，持有时速度×2，可双持或搭配盾'], ['⚔️', '剑：2伤害，可双持或搭配盾'],
+  ['🗡️', '小刀：1伤害，持有时速度×2；紫瓶会升级为带持续毒伤的毒小刀'], ['⚔️', '剑：2伤害；药瓶至少3层且敌人近身时，消耗全部层数来回闪身斩击'],
   ['🪓', '斧头：3伤害'], ['☠️', '死神刀：4总伤害，旋转群攻并由范围内敌人平分，持有时速度减半'],
   ['🔨', '晕锤：与任何近战武器均为50%胜率；获胜保留眩晕与10%出圈秒杀，失败不会被击退'],
   ['⚔️', '剑可停下挥动，击碎靠近的箭'],
-  ['🏹', '弓：快速射箭；累计5发后停在原地完成连射；被近战碰到会碎裂受伤并击退'], ['🔮', '法杖：累计5发释放穿柱激光；被近战碰到会碎裂受伤并击退'],
+  ['🏹', '弓：快速射箭；靠近其它武器拾取时会沿直线闪身后撤一个身位；被近战碰到会碎裂'], ['🔮', '法杖：累计5发释放穿柱激光；被近战碰到会碎裂受伤并击退'],
   ['🛡️', '盾：直接持在手上；近战对拼必胜反击；单手剑/刀可搭配，双持或双手武器会弃盾'],
   ['🪞', '铠甲：挡1次近战；白箭无伤且不碎甲；属性箭碎甲受伤；魔法球双倍伤害'],
 ] as const
@@ -108,7 +108,7 @@ function contestantName(mode: ArenaMode, side: ArenaSide) {
 }
 
 function makeFighter(id: number, side: ArenaSide, x: number, y: number, vx: number, vy: number, team: ArenaSide = side, active = true): Fighter {
-  return { id, side, team, active, reinforcementCalled: false, x, y, vx, vy, radius: .047, health: ARENA_MAX_HEALTH, respawnTimer: 0, angle: Math.atan2(vy, vx), cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, rangedFired: false, laserCharging: false, elementAmmo: [], bowRapidFire: false, shield: false, shieldBumps: 0, shieldArrowHits: 0, armor: false, speedBoost: 0, damageBoost: 0, slowTimer: 0, slowStacks: 0, stun: 0, clashLaunchTimer: 0, hammerBouncesRemaining: 0, knockoutTimer: 0, knockoutBrokeWall: false, burnTimer: 0, burnDamage: 0, burnSpread: false, poisonTimer: 0, poisonTicks: 0 }
+  return { id, side, team, active, reinforcementCalled: false, x, y, vx, vy, radius: .047, health: ARENA_MAX_HEALTH, respawnTimer: 0, angle: Math.atan2(vy, vx), cooldown: 0, weapon: null, weaponCount: 0, weaponTimer: 0, rangedFired: false, laserCharging: false, elementAmmo: [], bowRapidFire: false, swordBottleCount: 0, swordDashCharges: 0, swordDashTimer: 0, swordDashTargetId: null, swordLockTimer: 0, shield: false, shieldBumps: 0, shieldArrowHits: 0, armor: false, speedBoost: 0, damageBoost: 0, slowTimer: 0, slowStacks: 0, stun: 0, clashLaunchTimer: 0, hammerBouncesRemaining: 0, knockoutTimer: 0, knockoutBrokeWall: false, burnTimer: 0, burnDamage: 0, burnSpread: false, poisonTimer: 0, poisonTicks: 0 }
 }
 
 function createNineBallRack(): BilliardBall[] {
@@ -416,6 +416,80 @@ function equipWeapon(fighter: Fighter, weapon: WeaponKind) {
   fighter.weaponTimer = fighter.laserCharging ? 1 : weapon === 'bow' ? .35 : weapon === 'staff' ? .85 : 0
 }
 
+function queueSwordBottleStrikes(fighter: Fighter) {
+  if (fighter.weapon !== 'sword' || fighter.elementAmmo.length === 0) return
+  fighter.swordBottleCount += fighter.elementAmmo.length
+  fighter.elementAmmo = []
+}
+
+function armSwordBottleStrikesWhenClose(round: RoundState, fighter: Fighter) {
+  if (fighter.weapon !== 'sword' || fighter.swordDashCharges > 0 || fighter.swordBottleCount < 3) return
+  const closeEnemy = round.fighters.filter(candidate => candidate.active && candidate.health > 0 && candidate.team !== fighter.team && Math.hypot(candidate.x - fighter.x, candidate.y - fighter.y) <= .18)
+    .sort((left, right) => Math.hypot(left.x - fighter.x, left.y - fighter.y) - Math.hypot(right.x - fighter.x, right.y - fighter.y))[0]
+  if (!closeEnemy) return
+  fighter.swordDashCharges = fighter.swordBottleCount
+  fighter.swordBottleCount = 0
+  fighter.swordDashTimer = 0
+  fighter.swordDashTargetId = closeEnemy.id
+}
+
+function clampFighterToArena(round: RoundState, fighter: Fighter) {
+  if (round.mode === 'billiards') {
+    fighter.x = Math.max(TABLE_LEFT + fighter.radius, Math.min(TABLE_RIGHT - fighter.radius, fighter.x))
+    fighter.y = Math.max(TABLE_TOP + fighter.radius, Math.min(TABLE_BOTTOM - fighter.radius, fighter.y))
+    return
+  }
+  const dx = fighter.x - .5; const dy = fighter.y - .5; const distance = Math.hypot(dx, dy)
+  const limit = .455 - fighter.radius
+  if (distance > limit) { fighter.x = .5 + dx / distance * limit; fighter.y = .5 + dy / distance * limit }
+}
+
+function bowPickupBackstep(round: RoundState, fighter: Fighter, pickup: Pickup) {
+  const nearbyWeapons = round.pickups
+    .filter(item => item.id !== pickup.id && !['shield', 'armor', 'pillar'].includes(item.kind) && Math.hypot(item.x - fighter.x, item.y - fighter.y) <= .18)
+    .map(item => ({ x: item.x, y: item.y }))
+  const nearbyFighters = round.fighters
+    .filter(item => item.id !== fighter.id && item.active && item.health > 0 && item.weapon && Math.hypot(item.x - fighter.x, item.y - fighter.y) <= .18)
+    .map(item => ({ x: item.x, y: item.y }))
+  const threat = [...nearbyWeapons, ...nearbyFighters].sort((left, right) => Math.hypot(left.x - fighter.x, left.y - fighter.y) - Math.hypot(right.x - fighter.x, right.y - fighter.y))[0]
+  if (!threat) return
+  const oldX = fighter.x; const oldY = fighter.y
+  let dx = fighter.x - threat.x; let dy = fighter.y - threat.y; let distance = Math.hypot(dx, dy)
+  if (distance < .001) { dx = -fighter.vx; dy = -fighter.vy; distance = Math.hypot(dx, dy) || 1 }
+  const retreatDistance = fighter.radius * 2.15
+  const retreatSpeed = retreatDistance / .32
+  fighter.vx = dx / distance * retreatSpeed
+  fighter.vy = dy / distance * retreatSpeed
+  fighter.clashLaunchTimer = Math.max(fighter.clashLaunchTimer, .32)
+  fighter.angle = Math.atan2(-dy, -dx)
+  round.lasers.push({ id: Date.now() + Math.random(), segments: [{ x1: oldX, y1: oldY, x2: oldX + dx / distance * retreatDistance, y2: oldY + dy / distance * retreatDistance }], life: .32, color: '#d8f3ff', width: .24 })
+}
+
+function performSwordBottleStrike(round: RoundState, fighter: Fighter, audio?: ArenaAudio | null) {
+  const target = round.fighters.find(candidate => candidate.id === fighter.swordDashTargetId && candidate.active && candidate.health > 0 && candidate.team !== fighter.team)
+    ?? round.fighters.filter(candidate => candidate.active && candidate.health > 0 && candidate.team !== fighter.team)
+      .sort((left, right) => Math.hypot(left.x - fighter.x, left.y - fighter.y) - Math.hypot(right.x - fighter.x, right.y - fighter.y))[0]
+  if (!target) { fighter.swordDashCharges = 0; fighter.swordDashTargetId = null; return }
+  fighter.swordDashTargetId = target.id
+  const oldX = fighter.x; const oldY = fighter.y
+  const dx = target.x - oldX; const dy = target.y - oldY; const distance = Math.hypot(dx, dy) || 1
+  fighter.x = target.x + dx / distance * (fighter.radius + target.radius + .025)
+  fighter.y = target.y + dy / distance * (fighter.radius + target.radius + .025)
+  clampFighterToArena(round, fighter)
+  fighter.angle = Math.atan2(target.y - fighter.y, target.x - fighter.x)
+  const defense = resolveMeleeDefense(round, target, 1)
+  target.health = Math.max(0, target.health - defense.damage)
+  target.vx = 0; target.vy = 0; target.swordLockTimer = Math.max(target.swordLockTimer, .46)
+  fighter.health = Math.max(0, fighter.health - defense.reflected)
+  round.lasers.push({ id: Date.now() + Math.random(), segments: [{ x1: oldX, y1: oldY, x2: fighter.x, y2: fighter.y }], life: .42, color: '#ffe86a', width: .42 })
+  round.reaperSpins.push({ owner: fighter.id, life: .36, startAngle: fighter.angle - Math.PI * .6, kind: 'sword' })
+  burst(round, target.x, target.y, defense.damage > 0 ? '#ffe86a' : '#8fe7ff', 22)
+  fighter.swordDashCharges -= 1
+  if (fighter.swordDashCharges <= 0) fighter.swordDashTargetId = null
+  fighter.swordDashTimer = .42
+  audio?.play('weapon')
+}
+
 function consumeWeapon(fighter: Fighter) {
   removeWeaponSpeedEffect(fighter)
   fighter.weapon = null
@@ -423,6 +497,9 @@ function consumeWeapon(fighter: Fighter) {
   fighter.weaponTimer = 0
   fighter.rangedFired = false
   fighter.laserCharging = false
+  fighter.swordDashCharges = 0
+  fighter.swordDashTimer = 0
+  fighter.swordDashTargetId = null
 }
 
 function applyWeaponSpeedEffect(fighter: Fighter) {
@@ -478,6 +555,15 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     fighter.cooldown = Math.max(0, fighter.cooldown - dt)
     fighter.clashLaunchTimer = Math.max(0, fighter.clashLaunchTimer - dt)
     fighter.weaponTimer = Math.max(0, fighter.weaponTimer - dt)
+    fighter.swordDashTimer = Math.max(0, fighter.swordDashTimer - dt)
+    fighter.swordLockTimer = Math.max(0, fighter.swordLockTimer - dt)
+    if (fighter.swordLockTimer > 0) { fighter.vx = 0; fighter.vy = 0; continue }
+    armSwordBottleStrikesWhenClose(round, fighter)
+    if (fighter.weapon === 'sword' && fighter.swordDashCharges > 0) {
+      fighter.vx = 0; fighter.vy = 0
+      if (fighter.swordDashTimer <= 0) performSwordBottleStrike(round, fighter, audio)
+      continue
+    }
     if (fighter.weapon === 'staff' && fighter.elementAmmo.length >= 5 && !fighter.laserCharging) {
       fighter.laserCharging = true
       fighter.weaponTimer = Math.max(fighter.weaponTimer, 1)
@@ -519,7 +605,7 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
         const projectileKind: Projectile['kind'] = fighter.weapon === 'staff' ? 'magic' : 'arrow'; const speed = projectileKind === 'magic' ? .82 : .95
         const queuedAmmo = fighter.rangedFired ? fighter.elementAmmo.shift() ?? null : null
         const projectileElement = queuedAmmo && queuedAmmo !== 'normal' ? queuedAmmo : null
-        round.projectiles.push({ id: Date.now() + Math.random(), owner: fighter.id, ownerTeam: fighter.team, kind: projectileKind, element: projectileElement, x: fighter.x, y: fighter.y, vx: dx / distance * speed, vy: dy / distance * speed, life: 8, damage: arenaWeaponDamage(fighter.weapon) * (fighter.damageBoost > 0 ? 2 : 1), bounced: false })
+        round.projectiles.push({ id: Date.now() + Math.random(), owner: fighter.id, ownerTeam: fighter.team, kind: projectileKind, element: projectileElement, x: fighter.x, y: fighter.y, vx: dx / distance * speed, vy: dy / distance * speed, life: 8, damage: arenaWeaponDamage(fighter.weapon) * (fighter.damageBoost > 0 ? 2 : 1), bounced: false, spinTimer: 0, spinAngle: Math.atan2(dy, dx), launchVx: 0, launchVy: 0, attachedOrbs: 0 })
         if (round.projectiles.length > 24) round.projectiles.splice(0, round.projectiles.length - 24)
         fighter.rangedFired = true
         fighter.weaponTimer = fighter.elementAmmo.length > 0 ? fighter.weapon === 'bow' ? fighter.bowRapidFire ? .2 : .28 : .9 : 0
@@ -644,6 +730,8 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       const blueDamage = blueDefense.damage + redDefense.reflected
       if (redDamage || blueDamage || incomingRed || incomingBlue) {
         a.health = Math.max(0, a.health - redDamage); b.health = Math.max(0, b.health - blueDamage)
+        applyPoisonBladeHit(round, b, a, redDefense.damage)
+        applyPoisonBladeHit(round, a, b, blueDefense.damage)
         if (redDamage > 0) { a.vx *= .82; a.vy *= .82 }
         if (blueDamage > 0) { b.vx *= .82; b.vy *= .82 }
         if (redDamage > 0 && b.weapon === 'hammer') applyHammerHit(round, b, a)
@@ -700,6 +788,8 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
     const resolvedLeftDamage = leftDefense.damage + rightDefense.reflected
     const resolvedRightDamage = rightDefense.damage + leftDefense.reflected
     left.health = Math.max(0, left.health - resolvedLeftDamage); right.health = Math.max(0, right.health - resolvedRightDamage)
+    applyPoisonBladeHit(round, right, left, leftDefense.damage)
+    applyPoisonBladeHit(round, left, right, rightDefense.damage)
     if (resolvedLeftDamage && right.weapon === 'hammer') applyHammerHit(round, right, left)
     if (resolvedRightDamage && left.weapon === 'hammer') applyHammerHit(round, left, right)
     if (resolvedLeftDamage) { left.vx *= .82; left.vy *= .82; burst(round, left.x, left.y, SIDE_COPY[left.side].color, 16) }
@@ -727,7 +817,11 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
         const position = randomGroundItemPosition(round, .2)
         round.pillars.push({ id: Date.now() + Math.random(), ...position, radius: round.mode === 'billiards' ? .024 : .038, hits: 3, charged: true })
       }
-      else equipWeapon(fighter, pickup.kind)
+      else {
+        equipWeapon(fighter, pickup.kind)
+        if (pickup.kind === 'bow') bowPickupBackstep(round, fighter, pickup)
+        if (pickup.kind === 'sword') queueSwordBottleStrikes(fighter)
+      }
       collected.add(pickup.id); burst(round, pickup.x, pickup.y, pickup.kind === 'shield' ? '#8fe7ff' : pickup.kind === 'armor' ? '#ffb82e' : pickup.kind === 'pillar' ? '#d7e0e5' : '#fde047', 14); break
     }
   }
@@ -758,7 +852,9 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   for (const potion of round.potions) {
     potion.life -= dt
     for (const fighter of round.fighters) if (fighter.active && fighter.health > 0 && Math.hypot(fighter.x - potion.x, fighter.y - potion.y) < .075) {
-      if (potion.kind === 'speed-boost') {
+      if (fighter.weapon === 'sword') {
+        fighter.swordBottleCount += 1
+      } else if (potion.kind === 'speed-boost') {
         if (fighter.speedBoost <= 0) { fighter.vx *= 2; fighter.vy *= 2 }
         fighter.speedBoost = 3
       } else if (potion.kind === 'damage-boost') fighter.damageBoost = 3
@@ -781,6 +877,17 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
   for (const arrow of round.projectiles) {
     arrow.life -= dt
     if (arrow.life <= 0) { spentProjectiles.add(arrow.id); continue }
+    if (arrow.kind === 'arrow' && arrow.spinTimer > 0) {
+      arrow.spinTimer = Math.max(0, arrow.spinTimer - dt)
+      arrow.spinAngle += dt * TWO_PI * 3
+      if (arrow.spinTimer === 0) {
+        arrow.vx = arrow.launchVx; arrow.vy = arrow.launchVy
+        arrow.launchVx = 0; arrow.launchVy = 0
+        burst(round, arrow.x, arrow.y, arrow.element ? ELEMENT_COLORS[arrow.element] : '#ffffff', 16)
+        audio?.play('weapon')
+      }
+      continue
+    }
     arrow.x += arrow.vx * dt; arrow.y += arrow.vy * dt
     const cx = arrow.x - .5; const cy = arrow.y - .5; const edge = Math.hypot(cx, cy)
     if (round.mode === 'billiards') {
@@ -857,16 +964,19 @@ function updateRound(round: RoundState, dt: number, audio?: ArenaAudio | null) {
       const targetArrow = arrow.kind === 'arrow' ? arrow : other
       const magic = arrow.kind === 'magic' ? arrow : other
       spentProjectiles.add(magic.id)
-      targetArrow.damage += magic.damage
+      targetArrow.damage += 2
       targetArrow.element = magic.element
       const angle = Math.atan2(targetArrow.vy, targetArrow.vx) + (Math.random() - .5) * Math.PI * .8
       const speed = Math.max(ARENA_BASE_SPEED * 1.8, Math.hypot(targetArrow.vx, targetArrow.vy) * 1.45)
-      targetArrow.vx = Math.cos(angle) * speed; targetArrow.vy = Math.sin(angle) * speed
+      targetArrow.launchVx = Math.cos(angle) * speed; targetArrow.launchVy = Math.sin(angle) * speed
+      targetArrow.vx = 0; targetArrow.vy = 0; targetArrow.spinTimer = 1; targetArrow.spinAngle = angle; targetArrow.attachedOrbs = 2
+      targetArrow.life = Math.max(targetArrow.life, 1.25)
       burst(round, targetArrow.x, targetArrow.y, magic.element ? ELEMENT_COLORS[magic.element] : '#ffffff', 20)
       audio?.play('weapon')
       if (spentProjectiles.has(arrow.id)) break
     }
     if (spentProjectiles.has(arrow.id)) continue
+    if (arrow.spinTimer > 0) continue
     const targets = (arrow.bounced ? round.fighters : round.fighters.filter(fighter => fighter.team !== arrow.ownerTeam)).filter(fighter => fighter.active && fighter.health > 0)
     for (const target of targets) {
       if (Math.hypot(arrow.x - target.x, arrow.y - target.y) < target.radius + (arrow.kind === 'magic' ? .026 : .018)) {
@@ -1076,7 +1186,7 @@ function respawnBilliardsFighter(fighter: Fighter) {
   const dx = .5 - fighter.x; const dy = .5 - fighter.y; const distance = Math.hypot(dx, dy) || 1
   fighter.vx = dx / distance * ARENA_BASE_SPEED * 2.65; fighter.vy = dy / distance * ARENA_BASE_SPEED * 2.65
   fighter.angle = Math.atan2(fighter.vy, fighter.vx); fighter.cooldown = .6; fighter.stun = 0
-  fighter.weapon = null; fighter.weaponCount = 0; fighter.weaponTimer = 0; fighter.rangedFired = false; fighter.laserCharging = false; fighter.elementAmmo = []; fighter.bowRapidFire = false
+  fighter.weapon = null; fighter.weaponCount = 0; fighter.weaponTimer = 0; fighter.rangedFired = false; fighter.laserCharging = false; fighter.elementAmmo = []; fighter.bowRapidFire = false; fighter.swordBottleCount = 0; fighter.swordDashCharges = 0; fighter.swordDashTimer = 0; fighter.swordDashTargetId = null; fighter.swordLockTimer = 0
   fighter.shield = false; fighter.shieldBumps = 0; fighter.shieldArrowHits = 0; fighter.armor = false
   fighter.speedBoost = 0; fighter.damageBoost = 0; fighter.slowTimer = 0; fighter.slowStacks = 0
   fighter.burnTimer = 0; fighter.burnDamage = 0; fighter.burnSpread = false; fighter.poisonTimer = 0; fighter.poisonTicks = 0
@@ -1162,6 +1272,7 @@ function handleArmedCollision(round: RoundState, first: Fighter, second: Fighter
     const damage = meleePower(melee)
     const defense = resolveMeleeDefense(round, ranged, damage)
     ranged.health = Math.max(0, ranged.health - defense.damage); melee.health = Math.max(0, melee.health - defense.reflected)
+    applyPoisonBladeHit(round, melee, ranged, defense.damage)
     const dx = ranged.x - melee.x; const dy = ranged.y - melee.y; const distance = Math.hypot(dx, dy) || 1; const nx = dx / distance; const ny = dy / distance
     ranged.x += nx * .045; ranged.y += ny * .045
     ranged.vx = nx * 2.2; ranged.vy = ny * 2.2; ranged.clashLaunchTimer = .8
@@ -1203,6 +1314,7 @@ function updateWeaponClashes(round: RoundState, dt: number, audio?: ArenaAudio |
     const dx = loser.x - winner.x; const dy = loser.y - winner.y; const distance = Math.hypot(dx, dy) || 1; const nx = dx / distance; const ny = dy / distance
     const defense = resolveMeleeDefense(round, loser, clash.damage)
     loser.health = Math.max(0, loser.health - defense.damage); winner.health = Math.max(0, winner.health - defense.reflected)
+    applyPoisonBladeHit(round, winner, loser, defense.damage)
     loser.x += nx * .045; loser.y += ny * .045
     const winnerStoredVx = winner.id === clash.firstId ? clash.firstVx : clash.secondVx; const winnerStoredVy = winner.id === clash.firstId ? clash.firstVy : clash.secondVy
     const winnerStoredSpeed = Math.hypot(winnerStoredVx, winnerStoredVy) || 1
@@ -1232,6 +1344,14 @@ function isMeleeWeapon(weapon: WeaponKind | null): weapon is Exclude<WeaponKind,
 function meleePower(fighter: Fighter) {
   if (!isMeleeWeapon(fighter.weapon) || fighter.stun > 0) return 0
   return arenaWeaponDamage(fighter.weapon) * Math.max(1, fighter.weaponCount) * (fighter.damageBoost > 0 ? 2 : 1)
+}
+
+function applyPoisonBladeHit(round: RoundState, attacker: Fighter, target: Fighter, damage: number) {
+  if (damage <= 0 || attacker.weapon !== 'blade') return
+  const poisonIndex = attacker.elementAmmo.indexOf('poison')
+  if (poisonIndex < 0) return
+  attacker.elementAmmo.splice(poisonIndex, 1)
+  applyElementEffect(round, 'poison', target)
 }
 
 function meleeCollisionDamage(first: Fighter, second: Fighter) {
@@ -1576,11 +1696,17 @@ function drawRound(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rou
   for (const potion of round.potions) drawPixelPotion(ctx, potion, s, billiardsItemScale)
   for (const pillar of round.pillars) drawPixelPillar(ctx, pillar, s)
   for (const arrow of round.projectiles) {
-    ctx.save(); ctx.translate(arrow.x * s, arrow.y * s); ctx.rotate(Math.atan2(arrow.vy, arrow.vx))
+    ctx.save(); ctx.translate(arrow.x * s, arrow.y * s); ctx.rotate(arrow.spinTimer > 0 ? arrow.spinAngle : Math.atan2(arrow.vy, arrow.vx))
     if (arrow.kind === 'magic') {
       const color = arrow.element ? ELEMENT_COLORS[arrow.element] : '#ffffff'; const radius = Math.max(3, s * .012); ctx.shadowColor = color; ctx.shadowBlur = radius * 1.4; ctx.fillStyle = color; ctx.beginPath(); ctx.arc(0, 0, radius, 0, TWO_PI); ctx.fill(); ctx.shadowBlur = 0
     } else {
       ctx.strokeStyle = arrow.element ? ELEMENT_COLORS[arrow.element] : '#fff'; ctx.lineWidth = Math.max(2, s * .005); ctx.beginPath(); ctx.moveTo(-s * .025, 0); ctx.lineTo(s * .025, 0); ctx.stroke(); ctx.beginPath(); ctx.moveTo(s * .025, 0); ctx.lineTo(s * .012, -s * .01); ctx.moveTo(s * .025, 0); ctx.lineTo(s * .012, s * .01); ctx.stroke()
+      if (arrow.attachedOrbs >= 2) {
+        const orbColor = arrow.element ? ELEMENT_COLORS[arrow.element] : '#ffffff'
+        ctx.fillStyle = orbColor; ctx.shadowColor = orbColor; ctx.shadowBlur = Math.max(3, s * .009)
+        for (const offset of [-.012, .012]) { ctx.beginPath(); ctx.arc(0, offset * s, Math.max(2.5, s * .008), 0, TWO_PI); ctx.fill() }
+        ctx.shadowBlur = 0
+      }
     }
     ctx.restore()
   }
@@ -1765,11 +1891,13 @@ function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter, s: number, showW
   ctx.fillStyle = color; ctx.fillRect(Math.round(x - r * .35 + eyeShift), Math.round(y - r * .14), eyeSize, eyeSize); ctx.fillRect(Math.round(x + r * .18 + eyeShift), Math.round(y - r * .14), eyeSize, eyeSize)
   if (f.speedBoost > 0 || f.damageBoost > 0) { ctx.strokeStyle = f.damageBoost > 0 ? '#ff354d' : '#ffd32f'; ctx.lineWidth = Math.max(2, r * .1); ctx.globalAlpha = .65 + Math.sin(performance.now() / 100) * .25; ctx.beginPath(); ctx.arc(x, y, r * 1.18, 0, TWO_PI); ctx.stroke(); ctx.globalAlpha = 1 }
   if (f.elementAmmo.length > 0) { const nextElement = f.elementAmmo[0]; ctx.strokeStyle = AMMO_COLORS[nextElement]; ctx.shadowColor = AMMO_COLORS[nextElement]; ctx.shadowBlur = r * .28; ctx.lineWidth = Math.max(2, r * .09); ctx.beginPath(); ctx.arc(x, y, r * 1.16, 0, TWO_PI); ctx.stroke(); ctx.shadowBlur = 0; if (f.elementAmmo.length > 1) { ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.max(8, Math.round(r * .55))}px monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(`×${f.elementAmmo.length}`, x, y - r * 1.55) } }
+  if (f.weapon === 'sword' && f.swordBottleCount > 0) { ctx.fillStyle = f.swordBottleCount >= 3 ? '#ffe86a' : '#ffffff'; ctx.font = `bold ${Math.max(8, Math.round(r * .55))}px monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(`瓶×${f.swordBottleCount}`, x, y - r * 1.55) }
   if (f.slowTimer > 0) { ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = Math.max(2, r * .08); ctx.beginPath(); ctx.arc(x, y, r * 1.24, 0, TWO_PI); ctx.stroke() }
   if (f.stun > 0) { ctx.strokeStyle = '#ffe54d'; ctx.shadowColor = '#ffd400'; ctx.shadowBlur = r * .2; ctx.lineWidth = Math.max(2, r * .09); ctx.beginPath(); for (let i = 0; i <= 14; i++) { const angle = i / 14 * TWO_PI; const radius = r * (i % 2 ? 1.12 : 1.25); const px = x + Math.cos(angle) * radius; const py = y + Math.sin(angle) * radius; if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py) } ctx.closePath(); ctx.stroke(); ctx.shadowBlur = 0 }
   if (f.burnTimer > 0) drawFireRing(ctx, x, y, r, 2, 1.12)
   if (f.poisonTicks !== 0) { ctx.strokeStyle = '#a855f7'; ctx.setLineDash([r * .16, r * .22]); ctx.lineWidth = Math.max(2, r * .1); ctx.beginPath(); ctx.arc(x, y, r * 1.22, 0, TWO_PI); ctx.stroke(); ctx.setLineDash([]) }
   if (f.armor) { ctx.strokeStyle = '#ffb82e'; ctx.lineWidth = Math.max(2, r * .12); ctx.setLineDash([r * .35, r * .18]); ctx.beginPath(); ctx.arc(x, y, r * 1.3, 0, TWO_PI); ctx.stroke(); ctx.setLineDash([]) }
+  if (f.weapon === 'blade' && f.elementAmmo.includes('poison')) { ctx.shadowColor = '#a855f7'; ctx.shadowBlur = r * .85 }
   if (showWeapon && f.weapon && f.weaponCount > 1 && (f.weapon === 'sword' || f.weapon === 'blade')) {
     const forward = r * 1.28; const side = r * .88; const cos = Math.cos(f.angle); const sin = Math.sin(f.angle)
     drawPixelWeapon(ctx, f.weapon, x + cos * forward - sin * side, y + sin * forward + cos * side, f.angle + .14, r * 1.5)

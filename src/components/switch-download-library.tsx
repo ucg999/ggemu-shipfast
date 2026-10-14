@@ -8,6 +8,7 @@ import { SWITCH_LIBRARY_GAMES } from '#/lib/switch-library'
 import { PSP_LIBRARY_GAMES } from '#/lib/psp-library'
 import updates from '#/lib/library-updates.json'
 import { requestMemberLogin, useMemberSession } from '#/lib/member-client'
+import { collectionApiUrl } from '#/lib/library-collection-client'
 
 export function SwitchDownloadLibrary({ lang }: { lang: Locale }) {
   return <DownloadLibrary lang={lang} platform="switch" />
@@ -29,7 +30,16 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [draftQuery, setDraftQuery] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [collectionRankings, setCollectionRankings] = useState<{ rank: number; gameId: string; count: number }[]>([])
+  const [rankingsOpen, setRankingsOpen] = useState(false)
   const searchFormRef = useRef<HTMLFormElement>(null)
+
+  useEffect(() => {
+    void fetch(collectionApiUrl(`/api/library-collections?platform=${platform}`), { credentials: 'same-origin' })
+      .then(response => response.ok ? response.json() : Promise.reject())
+      .then((result: { rankings?: { rank: number; gameId: string; count: number }[] }) => setCollectionRankings(Array.isArray(result.rankings) ? result.rankings.slice(0, 5) : []))
+      .catch(() => {})
+  }, [platform])
 
   useEffect(() => {
     if (!isSearchOpen) return
@@ -114,6 +124,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
             <div className="flex items-baseline gap-2">
               <h1 className="text-3xl font-bold text-base-content">{copy.title}</h1>
               <span className="text-xs font-normal text-base-content/55">{copy.gameCount(library.length)}</span>
+              <button className="ml-1 whitespace-nowrap text-xs font-semibold text-amber-600 underline underline-offset-2" type="button" onClick={() => setRankingsOpen(true)}>{lang === 'en' ? 'Collection Rankings' : '收藏排行榜'}</button>
               {(lang === 'zh-CN' || lang === 'zh-TW' || lang === 'en') ? (
                 <a
                   className="ml-2 whitespace-nowrap text-sm font-medium text-error hover:underline"
@@ -232,6 +243,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
           </nav> : null}
         </div>
       </main>
+      {rankingsOpen ? <div className="fixed inset-0 z-[260] grid place-items-center bg-black/35 px-4" role="dialog" aria-modal="true" onClick={() => setRankingsOpen(false)}><section className="w-full max-w-md rounded-2xl bg-white p-5 text-black shadow-2xl" onClick={event => event.stopPropagation()}><div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">{platformName}{lang === 'en' ? ' Top 5 Collections' : ' 收藏排行榜'}</h2><button className="btn btn-ghost btn-sm btn-circle text-xl" type="button" onClick={() => setRankingsOpen(false)}>×</button></div><ol className="space-y-2">{collectionRankings.length ? collectionRankings.map(item => { const game = library.find(entry => entry.id === item.gameId); return <li className="flex items-center gap-3 rounded-xl bg-base-200 px-3 py-2" key={item.gameId}><b className="w-6 text-center text-amber-600">{item.rank}</b><span className="min-w-0 flex-1 truncate">{game?.title ?? item.gameId}</span><span className="text-sm text-black/55">{item.count}{lang === 'en' ? '' : '人'}</span></li> }) : <li className="py-5 text-center text-black/45">{lang === 'en' ? 'No collection data yet' : '暂无收藏记录'}</li>}</ol></section></div> : null}
     </SiteLayout>
   )
 }

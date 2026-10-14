@@ -215,7 +215,6 @@ function CoinChallengePage() {
   const [sharedCompetitionRound, setSharedCompetitionRound] = useState(0)
   const [sharedWinnerSeat, setSharedWinnerSeat] = useState<number | null>(null)
   const [sharedAwardRemaining, setSharedAwardRemaining] = useState(0)
-  const [communityOpen, setCommunityOpen] = useState(false)
   const joinedRoomRef = useRef(false)
   const handledSharedRoundRef = useRef<string | null>(null)
   const launchedSharedRoundRef = useRef<string | null>(null)
@@ -1336,13 +1335,16 @@ function CoinChallengePage() {
           const mode = target === BAR_50_LIGHT_INDEX ? 'gold' : target === LUCKY_LIGHT_INDEX ? 'lucky' : target === BAR_25_LIGHT_INDEX ? 'ghost' : 'bomb'
           bonusHits.current[mode] += 1
           setSessionHits({ ...bonusHits.current })
+          if (mode === 'bomb' || mode === 'ghost') {
+            setBonusEvents(events => [...events, { id: crypto.randomUUID(), kind: mode }])
+          }
         }
         if (target === BAR_50_LIGHT_INDEX || target === LUCKY_LIGHT_INDEX) {
           const mode = target === BAR_50_LIGHT_INDEX ? 'gold' : 'lucky'
           const kind = forcedBonus.current ?? chooseBonusKind(mode, bonusHits.current[mode])
           forcedBonus.current = null
           const plan = makeBonusPlan(kind)
-          setBonusMessage(`${plan.title} · ${mode === 'gold' ? '黄金' : '幸运'}累计 ${bonusHits.current[mode]} 次`)
+          setBonusMessage(`${plan.title} · ${mode === 'gold' ? '黄金' : '幸运'}随机触发`)
           setSpecialCellEffect('lucky')
           if (mode === 'gold') setGameMode('gold')
           runBonusPlan(plan)
@@ -1728,7 +1730,7 @@ function CoinChallengePage() {
   }, [])
 
   const game = (
-    <div className="fixed inset-0 z-[80] bg-black sm:static sm:z-auto sm:flex sm:h-[calc(100dvh-80px)] sm:items-center sm:justify-center sm:bg-base-100 sm:p-3 sm:transition-[padding] sm:duration-300" style={communityOpen ? { paddingRight: 'min(360px, 35vw)' } : undefined}>
+    <div className="fixed inset-0 z-[80] bg-black sm:static sm:z-auto sm:flex sm:h-[calc(100dvh-80px)] sm:items-center sm:justify-center sm:bg-base-100 sm:p-3">
     <section
       className="relative min-h-screen touch-manipulation overflow-hidden bg-black text-white sm:min-h-0 sm:w-full sm:max-w-[760px] sm:overflow-visible sm:rounded-2xl sm:border sm:border-white/20 sm:shadow-2xl"
       onDoubleClick={(event) => event.preventDefault()}
@@ -1768,7 +1770,7 @@ function CoinChallengePage() {
         }}>测试奖励</button>
         <div className="text-[10px] text-white/60">测试按钮可直接预览；正常命中仍按次数解锁</div>
       </div>}
-      <CoinChallengeCommunity demo={localDemo} sessionHits={sessionHits} bonusEvents={bonusEvents} onOpenChange={setCommunityOpen} recentWins={rankableWins} />
+      <CoinChallengeCommunity demo={localDemo} sessionHits={sessionHits} bonusEvents={bonusEvents} recentWins={rankableWins} />
       {sharedWinnerSeat !== null ? (
         <>
           <style>{`@keyframes sharedPrizeFly{0%{transform:translate(0,0) scale(.7);opacity:0}15%{opacity:1}100%{transform:translate(58vw,-38vh) scale(.25);opacity:0}}`}</style>

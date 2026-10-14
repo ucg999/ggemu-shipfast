@@ -18,11 +18,12 @@ function sample<T>(items: readonly T[], count: number, random: () => number): T[
   while (result.length < count && pool.length) result.push(pool.splice(Math.min(pool.length-1,Math.floor(random()*pool.length)),1)[0])
   return result
 }
-export function chooseBonusKind(mode: 'lucky' | 'gold', hits: number, random = Math.random): BonusKind {
-  const weighted: [BonusKind,number][] = mode === 'lucky' ? [['free',55],['small-three',30],['small-four',15]] : [['random-lights',75]]
-  if (hits>=3) weighted.push([mode==='lucky'?'fruit-double':'big-three',12])
-  if (hits>=5) weighted.push([mode==='lucky'?'all-bar':'big-four',5])
-  if (hits>=8) weighted.push([mode==='lucky'?'five':'all-stars',2])
+export function chooseBonusKind(mode: 'lucky' | 'gold', _hits: number, random = Math.random): BonusKind {
+  // Every reward is available from the first trigger. Larger rewards simply
+  // receive progressively smaller weights instead of being unlocked by hits.
+  const weighted: [BonusKind,number][] = mode === 'lucky'
+    ? [['free',55],['small-three',30],['small-four',15],['fruit-double',12],['all-bar',5],['five',2]]
+    : [['random-lights',75],['big-three',12],['big-four',5],['all-stars',2]]
   let roll=random()*weighted.reduce((sum,item)=>sum+item[1],0)
   for (const [kind,weight] of weighted) { roll-=weight; if (roll<0) return kind }
   return weighted[weighted.length-1][0]

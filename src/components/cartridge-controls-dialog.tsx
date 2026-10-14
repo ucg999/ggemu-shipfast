@@ -1,6 +1,7 @@
 type CartridgeControlsDialogProps = {
   actionLabel: string
   cover: string
+  collectionLabel?: string
   details: string
   onAction: () => void
   onClose: () => void
@@ -23,7 +24,7 @@ const controls = [
   ['A', 'K'], ['B', 'J'], ['SELECT', 'SHIFT'], ['START', 'ENTER'],
 ] as const
 
-export function CartridgeControlsDialog({ actionHint, actionLabel, cover, details, guide, onAction, onClose, onTrial, title, trialHint, trialLabel }: CartridgeControlsDialogProps) {
+export function CartridgeControlsDialog({ actionHint, actionLabel, collectionLabel, cover, details, guide, onAction, onClose, onTrial, title, trialHint, trialLabel }: CartridgeControlsDialogProps) {
   return <div className="fixed inset-0 z-[250] grid place-items-center bg-black/45 px-4 sm:px-6" role="dialog" aria-modal="true" aria-label={title} onClick={onClose}>
     <section className={`max-h-[92vh] w-full overflow-y-auto rounded-2xl bg-[#f0f0ed] text-base-content shadow-2xl ${guide ? 'max-w-5xl' : 'max-w-3xl'}`} onClick={event => event.stopPropagation()}>
       <header className="flex items-start justify-between gap-4 border-b border-black/10 px-6 py-4">
@@ -57,7 +58,7 @@ export function CartridgeControlsDialog({ actionHint, actionLabel, cover, detail
           </div>
           <div className="mt-5 grid gap-2 sm:grid-cols-2">
             {onTrial ? <div className="flex flex-col items-center gap-1"><button className="btn btn-info w-full" type="button" onClick={onTrial}>{trialLabel ?? '试玩'}</button>{trialHint ? <small className="text-xs text-base-content/55">{trialHint}</small> : null}</div> : null}
-            <div className={`flex flex-col items-center gap-1 ${onTrial ? '' : 'sm:col-span-2'}`}><button className="btn btn-warning w-full" type="button" onClick={onAction}>{actionLabel}</button>{actionHint ? <small className="text-xs text-base-content/55">{actionHint}</small> : null}</div>
+            <div className={`flex flex-col items-center gap-1 ${onTrial ? '' : 'sm:col-span-2'}`}><button className="btn btn-warning w-full" type="button" onClick={onAction}>{actionLabel}</button>{actionHint ? <small className="text-xs text-base-content/55">{actionHint}</small> : null}{collectionLabel ? <small className="text-xs text-base-content/55">{collectionLabel}</small> : null}</div>
           </div>
         </div>
       </div>

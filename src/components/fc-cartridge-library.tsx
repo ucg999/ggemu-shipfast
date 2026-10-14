@@ -3,12 +3,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Locale } from '#/lib/ggemu'
 import { SiteLayout } from '#/components/site-layout'
 import { CartridgeControlsDialog, CartridgePlayerDialog } from '#/components/cartridge-controls-dialog'
-import { readMemberCoinBalance, spendMemberCoinBalance } from '#/lib/coin-wallet'
+import { readSpendableCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
 import { useMemberSession } from '#/lib/member-client'
+import { collectionApiUrl, getGuestCollectorId } from '#/lib/library-collection-client'
 
 const OWNED_CARTRIDGES_KEY = 'ucg999-fc-owned-cartridges'
 const OWNED_CARTRIDGES_MIGRATION_KEY = 'ucg999-fc-owned-cartridges-migrated'
-const CARTRIDGE_PRICE = 50
+const CARTRIDGE_PRICE = 5
 
 function isLocalDevelopment() {
   return typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname)
@@ -208,23 +209,25 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
   const [selectedInitial, setSelectedInitial] = useState('')
   const [modifiedOnly, setModifiedOnly] = useState(false)
   const [rankings, setRankings] = useState<FcRankings>({ cartridges: [], collectors: [] })
+  const [collectionCounts, setCollectionCounts] = useState<Record<string, number>>({})
   const [rankingsOpen, setRankingsOpen] = useState(false)
   const [previewing, setPreviewing] = useState<string | null>(null)
   const [playing, setPlaying] = useState<string | null>(null)
   const searchRef = useRef<HTMLFormElement>(null)
 
-  function applyRankings(result: { rankings?: Partial<FcRankings> }) {
+  function applyRankings(result: { rankings?: Partial<FcRankings>; collectionCounts?: Record<string, number> }) {
     setRankings({
       cartridges: Array.isArray(result.rankings?.cartridges) ? result.rankings.cartridges.slice(0, 5) : [],
       collectors: Array.isArray(result.rankings?.collectors) ? result.rankings.collectors.slice(0, 5) : [],
     })
+    setCollectionCounts(result.collectionCounts ?? {})
   }
 
   async function refreshRankings() {
     try {
       const response = await fetch('/api/fc-cartridges', { credentials: 'same-origin', cache: 'no-store' })
       if (!response.ok) return
-      applyRankings(await response.json() as { rankings?: Partial<FcRankings> })
+      applyRankings(await response.json() as { rankings?: Partial<FcRankings>; collectionCounts?: Record<string, number> })
     } catch {}
   }
 
@@ -237,9 +240,16 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
     if (!member) {
       try {
         const stored = JSON.parse(window.localStorage.getItem(OWNED_CARTRIDGES_KEY) || '[]')
-        setOwned(Array.isArray(stored) ? stored.filter((value): value is string => typeof value === 'string').slice(0, 2) : [])
+        setOwned(Array.isArray(stored) ? stored.filter((value): value is string => typeof value === 'string') : [])
       } catch { setOwned([]) }
-      void refreshRankings()
+      void fetch(collectionApiUrl('/api/fc-cartridges'), { credentials: 'same-origin', cache: 'no-store' })
+        .then(response => response.ok ? response.json() : Promise.reject())
+        .then((result: { owned?: string[]; rankings?: Partial<FcRankings>; collectionCounts?: Record<string, number> }) => {
+          const next = Array.isArray(result.owned) ? result.owned : []
+          setOwned(next)
+          window.localStorage.setItem(OWNED_CARTRIDGES_KEY, JSON.stringify(next))
+          applyRankings(result)
+        }).catch(() => { void refreshRankings() })
       return
     }
     let cancelled = false
@@ -265,7 +275,7 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
         }
         const response = await fetch('/api/fc-cartridges', { credentials: 'same-origin', cache: 'no-store' })
         if (!response.ok) throw new Error('collection_load_failed')
-        const result = await response.json() as { owned?: string[]; rankings?: Partial<FcRankings> }
+        const result = await response.json() as { owned?: string[]; rankings?: Partial<FcRankings>; collectionCounts?: Record<string, number> }
         const next = Array.isArray(result.owned) ? result.owned : []
         if (cancelled) return
         setOwned(next)
@@ -317,11 +327,6 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
       window.location.assign(`/fc?cartridge=${encodeURIComponent(cartridgeId)}`)
       return
     }
-    if (!member) {
-      setNotice(lang === 'en' ? 'Sign in to collect cartridges with member coins.' : '请先登录玩家账号，收藏只可使用会员金币')
-      window.setTimeout(() => setNotice(''), 2800)
-      return
-    }
     setPendingPurchase(cartridgeId)
   }
 
@@ -338,30 +343,21 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
     const cartridgeId = pendingPurchase
     if (!cartridgeId) return
     setPendingPurchase(null)
-    if (!member) {
-      setNotice(lang === 'en' ? 'Sign in to use member coins.' : '请先登录玩家账号')
-      return
-    }
-    if (readMemberCoinBalance() < CARTRIDGE_PRICE || !spendMemberCoinBalance(CARTRIDGE_PRICE)) {
+    if (readSpendableCoinBalance() < CARTRIDGE_PRICE || !spendCoinBalance(CARTRIDGE_PRICE)) {
       setNotice(copy.insufficient)
       return
     }
     const previous = owned
     try {
       let next = [...new Set([...owned, cartridgeId])]
-      if (member) {
-        const response = await fetch('/api/fc-cartridges', {
-          method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cartridgeId }),
-        })
-        if (!response.ok) throw new Error('collection_save_failed')
-        const result = await response.json() as { owned?: string[] }
-        next = Array.isArray(result.owned) ? result.owned : next
-        window.localStorage.setItem(`${OWNED_CARTRIDGES_KEY}:${member.id}`, JSON.stringify(next))
-      } else {
-        window.localStorage.setItem(OWNED_CARTRIDGES_KEY, JSON.stringify(next.slice(0, 2)))
-        next = next.slice(0, 2)
-      }
+      const response = await fetch('/api/fc-cartridges', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cartridgeId, guestId: getGuestCollectorId() }),
+      })
+      if (!response.ok) throw new Error('collection_save_failed')
+      const result = await response.json() as { owned?: string[] }
+      next = Array.isArray(result.owned) ? result.owned : next
+      window.localStorage.setItem(member ? `${OWNED_CARTRIDGES_KEY}:${member.id}` : OWNED_CARTRIDGES_KEY, JSON.stringify(next))
       setOwned(next)
       setNotice(copy.purchased)
       void refreshRankings()
@@ -469,7 +465,7 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
           </div>
           {previewing ? (() => {
             const cartridge = FC_CARTRIDGES.find(item => item.id === previewing)
-            return cartridge ? <CartridgeControlsDialog actionHint={lang === 'en' ? 'No loading · Dedicated emulator' : lang === 'zh-TW' ? '無需載入，專用模擬器' : '无需加载，专用模拟器'} actionLabel={owned.includes(cartridge.id) ? copy.play : copy.buyLabel} cover={cartridge.cover} details={`${cartridge.number} · ${cartridge.genre} · ${cartridge.releaseDate} · ${cartridge.publisher}`} guide={cartridge.id === 'prison-break-nine-characters' ? PRISON_BREAK_GUIDE : undefined} onAction={() => {
+            return cartridge ? <CartridgeControlsDialog actionHint={lang === 'en' ? 'No loading · Dedicated emulator' : lang === 'zh-TW' ? '無需載入，專用模擬器' : '无需加载，专用模拟器'} actionLabel={owned.includes(cartridge.id) ? copy.play : copy.buyLabel} collectionLabel={lang === 'en' ? `${collectionCounts[cartridge.id] ?? 0} collectors` : `${collectionCounts[cartridge.id] ?? 0}人已收藏`} cover={cartridge.cover} details={`${cartridge.number} · ${cartridge.genre} · ${cartridge.releaseDate} · ${cartridge.publisher}`} guide={cartridge.id === 'prison-break-nine-characters' ? PRISON_BREAK_GUIDE : undefined} onAction={() => {
               setPreviewing(null)
               if (!owned.includes(cartridge.id)) {
                 handleCartridge(cartridge.id)
@@ -507,9 +503,9 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
 }
 
 function getCopy(lang: Locale) {
-  if (lang === 'en') return { title: 'FC Cartridge Collection', chinese: 'Chinese', gameName: 'Game name', random: 'Random', genre: 'Game genre', publisher: 'Publisher', releaseDate: 'Release date', updatedAt: 'Last updated', modified: 'Modified', allLetters: 'All', rankings: 'FC rankings', popularRanking: 'Most collected cartridges', collectorRanking: 'Top collectors', noRankings: 'No ranking data yet', peopleCount: (count: number) => `${count} players`, cartridgeCount: (count: number) => `${count} cartridges`, search: 'Search', searchPlaceholder: 'Game name or keyword', confirm: 'Confirm', confirmTitle: 'Collect cartridge?', confirmMessage: (title: string, price: number) => `Spend ${price} coins to collect ${title}?`, cancel: 'Cancel', confirmCollect: 'Collect', open: 'Play ', buy: 'Collect ', buyLabel: 'Collect', play: 'Collected · Play', loginRequired: 'Sign in before collecting cartridges', insufficient: 'Not enough coins. 50 coins required.', purchased: 'Cartridge added to FC Collection', failed: 'Collection could not be saved', count: (count: number) => `${count} cartridges available`, collectionHint: 'collected cartridges can be switched and played directly in the mobile FC Collection', ownedCount: (count: number) => `${count} collected` }
+  if (lang === 'en') return { title: 'FC Cartridge Collection', chinese: 'Chinese', gameName: 'Game name', random: 'Random', genre: 'Game genre', publisher: 'Publisher', releaseDate: 'Release date', updatedAt: 'Last updated', modified: 'Modified', allLetters: 'All', rankings: 'FC rankings', popularRanking: 'Most collected cartridges', collectorRanking: 'Top collectors', noRankings: 'No ranking data yet', peopleCount: (count: number) => `${count} players`, cartridgeCount: (count: number) => `${count} cartridges`, search: 'Search', searchPlaceholder: 'Game name or keyword', confirm: 'Confirm', confirmTitle: 'Collect cartridge?', confirmMessage: (title: string, price: number) => `Spend ${price} coins to collect ${title}?`, cancel: 'Cancel', confirmCollect: 'Collect', open: 'Play ', buy: 'Collect ', buyLabel: 'Collect', play: 'Collected · Play', loginRequired: '', insufficient: `Not enough coins. ${CARTRIDGE_PRICE} coins required.`, purchased: 'Cartridge added to FC Collection', failed: 'Collection could not be saved', count: (count: number) => `${count} cartridges available`, collectionHint: 'collected cartridges can be switched and played directly in the mobile FC Collection', ownedCount: (count: number) => `${count} collected` }
   if (lang === 'zh-TW') return { title: 'FC卡帶收藏', chinese: '中文', gameName: '遊戲名稱', random: '隨機', genre: '遊戲類型', publisher: '遊戲廠商', releaseDate: '發行日期', updatedAt: '更新時間', modified: '改版', allLetters: '全部', rankings: 'FC排行榜', popularRanking: '最多人收藏的卡帶', collectorRanking: '收藏卡帶最多的玩家', noRankings: '暫無排行資料', peopleCount: (count: number) => `${count}人收藏`, cartridgeCount: (count: number) => `${count}款`, search: '搜尋', searchPlaceholder: '遊戲名稱或關鍵詞', confirm: '確認', confirmTitle: '確認收藏卡帶？', confirmMessage: (title: string, price: number) => `將花費 ${price} 個金幣收藏《${title}》，是否繼續？`, cancel: '取消', confirmCollect: '確認收藏', open: '遊玩', buy: '收藏', buyLabel: '收藏', play: '已收藏 · 遊玩', loginRequired: '請先登入玩家帳號再收藏卡帶', insufficient: '金幣不足，需要50個金幣', purchased: '收藏成功，卡帶已加入FC遊戲機', failed: '卡帶收藏記錄保存失敗', count: (count: number) => `目前共有 ${count} 款卡帶`, collectionHint: '收藏後可直接在手機FC遊戲機換卡帶遊玩', ownedCount: (count: number) => `已收藏 ${count} 款` }
   if (lang === 'ja') return { title: 'FCカセットコレクション', chinese: '中国語', gameName: 'ゲーム名', random: 'ランダム', genre: 'ジャンル', publisher: 'メーカー', releaseDate: '発売日', updatedAt: '更新日時', modified: '改造版', allLetters: 'すべて', rankings: 'FCランキング', popularRanking: '人気カセット', collectorRanking: 'トップコレクター', noRankings: 'ランキングデータはまだありません', peopleCount: (count: number) => `${count}人`, cartridgeCount: (count: number) => `${count}本`, search: '検索', searchPlaceholder: 'ゲーム名またはキーワード', confirm: '確認', confirmTitle: 'カセットをコレクションしますか？', confirmMessage: (title: string, price: number) => `${price}コインで「${title}」をコレクションしますか？`, cancel: 'キャンセル', confirmCollect: 'コレクション', open: 'プレイ：', buy: 'コレクション：', buyLabel: 'コレクション', play: '収集済み・プレイ', loginRequired: 'カセットのコレクションにはログインが必要です', insufficient: 'コインが不足しています（50枚必要）', purchased: 'FCコレクションに追加しました', failed: 'コレクション情報を保存できませんでした', count: (count: number) => `${count}本のカセット`, collectionHint: 'コレクション後はスマホのFCコレクションで交換して遊べます', ownedCount: (count: number) => `${count}本収集済み` }
-  return { title: 'FC卡带收藏', chinese: '中文', gameName: '游戏名称', random: '随机', genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', updatedAt: '更新时间', modified: '改版', allLetters: '全部', rankings: 'FC排行榜', popularRanking: '最多人收藏的卡带', collectorRanking: '收藏卡带最多的玩家', noRankings: '暂无排行数据', peopleCount: (count: number) => `${count}人收藏`, cartridgeCount: (count: number) => `${count}款`, search: '搜索', searchPlaceholder: '游戏名称或关键词', confirm: '确认', confirmTitle: '确认收藏卡带？', confirmMessage: (title: string, price: number) => `将花费 ${price} 个金币收藏《${title}》，是否继续？`, cancel: '取消', confirmCollect: '确认收藏', open: '游玩', buy: '收藏', buyLabel: '收藏', play: '已收藏 · 游玩', loginRequired: '请先登录玩家账号再收藏卡带', insufficient: '金币不足，需要50个金币', purchased: '收藏成功，卡带已加入FC游戏机', failed: '卡带收藏记录保存失败', count: (count: number) => `目前共有 ${count} 款卡带`, collectionHint: '收藏可直接在手机FC游戏机换卡带游玩', ownedCount: (count: number) => `已收藏 ${count} 款` }
+  return { title: 'FC卡带收藏', chinese: '中文', gameName: '游戏名称', random: '随机', genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', updatedAt: '更新时间', modified: '改版', allLetters: '全部', rankings: 'FC排行榜', popularRanking: '最多人收藏的卡带', collectorRanking: '收藏卡带最多的玩家', noRankings: '暂无排行数据', peopleCount: (count: number) => `${count}人收藏`, cartridgeCount: (count: number) => `${count}款`, search: '搜索', searchPlaceholder: '游戏名称或关键词', confirm: '确认', confirmTitle: '确认收藏卡带？', confirmMessage: (title: string, price: number) => `将花费 ${price} 个金币收藏《${title}》，是否继续？`, cancel: '取消', confirmCollect: '确认收藏', open: '游玩', buy: '收藏', buyLabel: '收藏', play: '已收藏 · 游玩', loginRequired: '', insufficient: `金币不足，需要${CARTRIDGE_PRICE}个金币`, purchased: '收藏成功，卡带已加入FC游戏机', failed: '卡带收藏记录保存失败', count: (count: number) => `目前共有 ${count} 款卡带`, collectionHint: '收藏可直接在手机FC游戏机换卡带游玩', ownedCount: (count: number) => `已收藏 ${count} 款` }
 }
 

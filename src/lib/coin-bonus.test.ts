@@ -2,16 +2,13 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { chooseBonusKind, makeBonusPlan, bonusPayout, BONUS_CELLS } from './coin-bonus.ts'
 
-test('lucky and gold gates unlock at 3, 5 and 8 hits', () => {
-  for (const mode of ['lucky','gold'] as const) {
-    const locked = mode==='lucky'?['fruit-double','all-bar','five']:['big-three','big-four','all-stars']
-    for (const [gate,index] of [[3,0],[5,1],[8,2]]) {
-      const before = Array.from({length:1000},(_,i)=>chooseBonusKind(mode,gate-1,()=>i/1000))
-      const after = Array.from({length:1000},(_,i)=>chooseBonusKind(mode,gate,()=>i/1000))
-      assert.equal(before.includes(locked[index] as never),false)
-      assert.equal(after.includes(locked[index] as never),true)
-    }
-  }
+test('all lucky and gold rewards are available immediately with rarer rewards weighted lower', () => {
+  const lucky = Array.from({length:10_000},(_,i)=>chooseBonusKind('lucky',0,()=>i/10_000))
+  const gold = Array.from({length:10_000},(_,i)=>chooseBonusKind('gold',0,()=>i/10_000))
+  for (const kind of ['free','small-three','small-four','fruit-double','all-bar','five'] as const) assert.equal(lucky.includes(kind),true)
+  for (const kind of ['random-lights','big-three','big-four','all-stars'] as const) assert.equal(gold.includes(kind),true)
+  assert.ok(lucky.filter(kind=>kind==='free').length > lucky.filter(kind=>kind==='five').length)
+  assert.ok(gold.filter(kind=>kind==='random-lights').length > gold.filter(kind=>kind==='all-stars').length)
 })
 test('named jackpots stop on the specified distinct cells', () => {
   assert.deepEqual(makeBonusPlan('small-three').targets,[11,17,23])

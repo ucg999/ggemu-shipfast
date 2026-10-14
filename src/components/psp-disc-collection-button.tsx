@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 
-import { readMemberCoinBalance, spendMemberCoinBalance } from '#/lib/coin-wallet'
+import { readSpendableCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
 import type { Locale } from '#/lib/ggemu'
 import { useMemberSession } from '#/lib/member-client'
+import { collectionApiUrl, getGuestCollectorId } from '#/lib/library-collection-client'
 
-const PRICE = 100
+const PRICE = 5
 const STORAGE_KEY = 'ucg999-game-disc-collection'
 
 export function PspDiscCollectionButton({ downloadUrl, gameId, locale, platform }: { downloadUrl?: string; gameId: string; locale: Locale; platform: 'psp' | 'switch' }) {
@@ -13,6 +14,7 @@ export function PspDiscCollectionButton({ downloadUrl, gameId, locale, platform 
   const [collected, setCollected] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [notice, setNotice] = useState('')
+  const [collectionCount, setCollectionCount] = useState(0)
   const key = member ? `${STORAGE_KEY}:${platform}:${member.id}` : `${STORAGE_KEY}:${platform}`
 
   useEffect(() => {
@@ -20,16 +22,17 @@ export function PspDiscCollectionButton({ downloadUrl, gameId, locale, platform 
       const stored = JSON.parse(window.localStorage.getItem(key) || '[]')
       setCollected(Array.isArray(stored) && stored.includes(gameId))
     } catch { setCollected(false) }
-  }, [gameId, key])
+    void fetch(collectionApiUrl(`/api/library-collections?platform=${platform}&gameId=${encodeURIComponent(gameId)}`), { credentials: 'same-origin', cache: 'no-store' })
+      .then(response => response.ok ? response.json() : Promise.reject())
+      .then((result: { collected?: boolean; count?: number }) => {
+        setCollected(Boolean(result.collected))
+        setCollectionCount(Math.max(0, Number(result.count) || 0))
+      }).catch(() => {})
+  }, [gameId, key, platform])
 
-  function collect() {
+  async function collect() {
     setConfirming(false)
-    if (!member) {
-      setNotice(locale === 'en' ? 'Sign in to collect with member coins.' : locale === 'zh-TW' ? '請先登入玩家帳號，收藏只可使用會員金幣' : locale === 'ja' ? '会員コインを使うにはログインしてください' : '请先登录玩家账号，收藏只可使用会员金币')
-      window.setTimeout(() => setNotice(''), 2400)
-      return
-    }
-    if (readMemberCoinBalance() < PRICE || !spendMemberCoinBalance(PRICE)) {
+    if (readSpendableCoinBalance() < PRICE || !spendCoinBalance(PRICE)) {
       setNotice(copy.insufficient)
       window.setTimeout(() => setNotice(''), 2400)
       return
@@ -38,7 +41,14 @@ export function PspDiscCollectionButton({ downloadUrl, gameId, locale, platform 
       const stored = JSON.parse(window.localStorage.getItem(key) || '[]')
       const next = [...new Set([...(Array.isArray(stored) ? stored.filter(value => typeof value === 'string') : []), gameId])]
       window.localStorage.setItem(key, JSON.stringify(next))
+      const response = await fetch('/api/library-collections', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform, gameId, guestId: getGuestCollectorId() }),
+      })
+      if (!response.ok) throw new Error('collection_save_failed')
+      const result = await response.json() as { count?: number }
       setCollected(true)
+      setCollectionCount(Math.max(0, Number(result.count) || 0))
       setNotice(copy.success)
       window.setTimeout(() => setNotice(''), 2400)
     } catch {
@@ -48,6 +58,7 @@ export function PspDiscCollectionButton({ downloadUrl, gameId, locale, platform 
   }
 
   return <>
+    <p className="mb-2 text-center text-xs text-base-content/55">{locale === 'en' ? `${collectionCount} collectors` : `已有 ${collectionCount} 人收藏`}</p>
     {collected && downloadUrl
       ? <a className="btn btn-warning w-full" href={downloadUrl} target="_blank" rel="noopener noreferrer">{copy.open}</a>
       : <button className="btn btn-warning w-full" disabled={!downloadUrl} type="button" onClick={() => setConfirming(true)}>{downloadUrl ? copy.collect : copy.preparing}</button>}

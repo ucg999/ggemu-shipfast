@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { SiteLayout } from '#/components/site-layout'
 import { CartridgeControlsDialog, CartridgePlayerDialog } from '#/components/cartridge-controls-dialog'
-import { readMemberCoinBalance, spendMemberCoinBalance } from '#/lib/coin-wallet'
+import { readSpendableCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
 import type { Locale } from '#/lib/ggemu'
 import { useMemberSession } from '#/lib/member-client'
+import { collectionApiUrl, getGuestCollectorId } from '#/lib/library-collection-client'
 
-const PRICE = 50
+const PRICE = 5
 const LOCAL_KEY = 'ucg999-gb-owned-cartridges'
 function isLocalDevelopment() {
   return typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -39,6 +40,7 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
   const [confirming, setConfirming] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
   const [rankings, setRankings] = useState<GbRankings>({ cartridges: [], collectors: [] })
+  const [collectionCounts, setCollectionCounts] = useState<Record<string, number>>({})
   const [rankingsOpen, setRankingsOpen] = useState(false)
   const [previewing, setPreviewing] = useState<string | null>(null)
   const [playing, setPlaying] = useState<string | null>(null)
@@ -78,11 +80,12 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
     return () => document.removeEventListener('mousedown', close)
   }, [searchOpen])
 
-  function applyRankings(data: { rankings?: Partial<GbRankings> }) {
+  function applyRankings(data: { rankings?: Partial<GbRankings>; collectionCounts?: Record<string, number> }) {
     setRankings({
       cartridges: Array.isArray(data.rankings?.cartridges) ? data.rankings.cartridges.slice(0, 5) : [],
       collectors: Array.isArray(data.rankings?.collectors) ? data.rankings.collectors.slice(0, 5) : [],
     })
+    setCollectionCounts(data.collectionCounts ?? {})
   }
 
   useEffect(() => {
@@ -93,7 +96,12 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
     }
     if (!member) {
       try { setOwned(visibleOwned(JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'))) } catch { setOwned([]) }
-      void fetch('/api/gb-cartridges', { credentials: 'same-origin', cache: 'no-store' }).then(response => response.ok ? response.json() : Promise.reject()).then(applyRankings).catch(() => {})
+      void fetch(collectionApiUrl('/api/gb-cartridges'), { credentials: 'same-origin', cache: 'no-store' }).then(response => response.ok ? response.json() : Promise.reject()).then((data: { owned?: string[]; rankings?: Partial<GbRankings> }) => {
+        const next = visibleOwned(Array.isArray(data.owned) ? data.owned : [])
+        setOwned(next)
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(next))
+        applyRankings(data)
+      }).catch(() => {})
       return
     }
     let cancelled = false
@@ -106,10 +114,7 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
 
   function selectCartridge(cartridgeId: string) {
     if (isLocalDevelopment() || owned.includes(cartridgeId)) window.location.assign(`/gb?cartridge=${encodeURIComponent(cartridgeId)}`)
-    else if (!member) {
-      setNotice(lang === 'en' ? 'Sign in to collect with member coins.' : '请先登录玩家账号，收藏只可使用会员金币')
-      window.setTimeout(() => setNotice(''), 2600)
-    } else setConfirming(cartridgeId)
+    else setConfirming(cartridgeId)
   }
 
   function openCartridge(cartridgeId: string) {
@@ -125,17 +130,17 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
     const cartridgeId = confirming
     if (!cartridgeId) return
     setConfirming(null)
-    if (!member) { setNotice(lang === 'en' ? 'Sign in to use member coins.' : '请先登录玩家账号'); return }
-    if (readMemberCoinBalance() < PRICE || !spendMemberCoinBalance(PRICE)) { setNotice(copy.insufficient); return }
+    if (readSpendableCoinBalance() < PRICE || !spendCoinBalance(PRICE)) { setNotice(copy.insufficient); return }
     try {
       const next = [...new Set([...owned, cartridgeId])]
-      if (member) {
-        const response = await fetch('/api/gb-cartridges', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cartridgeId }) })
-        if (!response.ok) throw new Error('save_failed')
-        localStorage.setItem(`${LOCAL_KEY}:${member.id}`, JSON.stringify(next))
-      } else localStorage.setItem(LOCAL_KEY, JSON.stringify(next))
-      setOwned(next)
+      const response = await fetch('/api/gb-cartridges', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cartridgeId, guestId: getGuestCollectorId() }) })
+      if (!response.ok) throw new Error('save_failed')
+      const result = await response.json() as { owned?: string[] }
+      const saved = visibleOwned(Array.isArray(result.owned) ? result.owned : next)
+      localStorage.setItem(member ? `${LOCAL_KEY}:${member.id}` : LOCAL_KEY, JSON.stringify(saved))
+      setOwned(saved)
       setNotice(copy.success)
+      void fetch('/api/gb-cartridges', { credentials: 'same-origin', cache: 'no-store' }).then(value => value.ok ? value.json() : Promise.reject()).then(applyRankings).catch(() => {})
     } catch {
       setNotice(copy.failed)
     }
@@ -180,14 +185,14 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
                 <img alt={`${cartridge.title} GB卡带`} className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.025]" decoding="async" loading="lazy" src={cartridge.cover} />
               </div>
             </button>
-            <div className="psp-library-info bg-base-100 p-1.5 sm:p-2"><h2 className="truncate text-center text-sm font-semibold text-base-content sm:text-base" title={cartridge.title}>{cartridge.title}</h2><div className="mt-1 flex min-w-0 items-center gap-1.5 text-[10px] text-base-content/60 sm:text-xs"><span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-center">{cartridge.number} · {cartridge.releaseDate} · {cartridge.publisher}</span><button aria-label={`${owned.includes(cartridge.id) ? copy.play : copy.collect} ${cartridge.title}`} className={`ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-sm transition sm:h-7 sm:w-7 ${owned.includes(cartridge.id) ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-amber-300 text-black hover:bg-amber-200'}`} title={owned.includes(cartridge.id) ? copy.play : `50 ${copy.collect}`} type="button" onClick={() => playOrCollect(cartridge.id)}>{owned.includes(cartridge.id) ? <i className="ri-play-fill" /> : <img alt="" className="h-4 w-4 object-contain sm:h-[18px] sm:w-[18px]" src="/images/coin-rewards/pixel-reward-coin.webp" />}</button></div></div>
+            <div className="psp-library-info bg-base-100 p-1.5 sm:p-2"><h2 className="truncate text-center text-sm font-semibold text-base-content sm:text-base" title={cartridge.title}>{cartridge.title}</h2><div className="mt-1 flex min-w-0 items-center gap-1.5 text-[10px] text-base-content/60 sm:text-xs"><span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-center">{cartridge.number} · {cartridge.releaseDate} · {cartridge.publisher}</span><button aria-label={`${owned.includes(cartridge.id) ? copy.play : copy.collect} ${cartridge.title}`} className={`ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-sm transition sm:h-7 sm:w-7 ${owned.includes(cartridge.id) ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-amber-300 text-black hover:bg-amber-200'}`} title={owned.includes(cartridge.id) ? copy.play : `${PRICE} ${copy.collect}`} type="button" onClick={() => playOrCollect(cartridge.id)}>{owned.includes(cartridge.id) ? <i className="ri-play-fill" /> : <img alt="" className="h-4 w-4 object-contain sm:h-[18px] sm:w-[18px]" src="/images/coin-rewards/pixel-reward-coin.webp" />}</button></div></div>
             <div className="pointer-events-none absolute inset-x-1 bottom-1 z-30 hidden rounded-lg bg-black/90 px-3 py-2 text-left text-xs leading-relaxed text-white shadow-xl group-hover:block"><strong className="block text-sm font-semibold">{cartridge.title}</strong><span className="block">{cartridge.number} · {cartridge.genre}</span><span className="block">{cartridge.releaseDate} · {cartridge.publisher}</span></div>
           </article>)}
         </div>
       </div>
       {previewing ? (() => {
         const cartridge = CARTRIDGES.find(item => item.id === previewing)
-        return cartridge ? <CartridgeControlsDialog actionHint={lang === 'en' ? 'No loading · Dedicated emulator' : lang === 'zh-TW' ? '無需載入，專用模擬器' : '无需加载，专用模拟器'} actionLabel={owned.includes(cartridge.id) ? copy.play : copy.collect} cover={cartridge.cover} details={`${cartridge.number} · ${cartridge.genre} · ${cartridge.releaseDate} · ${cartridge.publisher}`} onAction={() => {
+        return cartridge ? <CartridgeControlsDialog actionHint={lang === 'en' ? 'No loading · Dedicated emulator' : lang === 'zh-TW' ? '無需載入，專用模擬器' : '无需加载，专用模拟器'} actionLabel={owned.includes(cartridge.id) ? copy.play : copy.collect} collectionLabel={lang === 'en' ? `${collectionCounts[cartridge.id] ?? 0} collectors` : `${collectionCounts[cartridge.id] ?? 0}人已收藏`} cover={cartridge.cover} details={`${cartridge.number} · ${cartridge.genre} · ${cartridge.releaseDate} · ${cartridge.publisher}`} onAction={() => {
           setPreviewing(null)
           if (!owned.includes(cartridge.id)) {
             selectCartridge(cartridge.id)
@@ -206,8 +211,8 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
 }
 
 function getCopy(lang: Locale) {
-  if (lang === 'en') return { title: 'GB Cartridge Collection', count: (n: number) => `${n} cartridges available`, hint: 'collected cartridges can be played in the mobile GB console', owned: (n: number) => `${n} collected`, gameName: 'Game name', random: 'Random', genre: 'Genre', publisher: 'Publisher', releaseDate: 'Release date', updatedAt: 'Last updated', search: 'Search', searchPlaceholder: 'Game name or keyword', collect: 'Collect', play: 'Collected · Play', rankings: 'GB rankings', popularRanking: 'Most collected cartridges', collectorRanking: 'Top collectors', noRankings: 'No ranking data yet', peopleCount: (n: number) => `${n} players`, cartridgeCount: (n: number) => `${n} cartridges`, confirmTitle: 'Collect cartridge?', confirmMessage: (title: string) => `Spend 50 coins to collect ${title}?`, cancel: 'Cancel', confirm: 'Collect', insufficient: 'Not enough coins. 50 coins required.', success: 'Added to your GB cartridge collection', failed: 'Collection could not be saved' }
+  if (lang === 'en') return { title: 'GB Cartridge Collection', count: (n: number) => `${n} cartridges available`, hint: 'collected cartridges can be played in the mobile GB console', owned: (n: number) => `${n} collected`, gameName: 'Game name', random: 'Random', genre: 'Genre', publisher: 'Publisher', releaseDate: 'Release date', updatedAt: 'Last updated', search: 'Search', searchPlaceholder: 'Game name or keyword', collect: 'Collect', play: 'Collected · Play', rankings: 'GB rankings', popularRanking: 'Most collected cartridges', collectorRanking: 'Top collectors', noRankings: 'No ranking data yet', peopleCount: (n: number) => `${n} players`, cartridgeCount: (n: number) => `${n} cartridges`, confirmTitle: 'Collect cartridge?', confirmMessage: (title: string) => `Spend ${PRICE} coins to collect ${title}?`, cancel: 'Cancel', confirm: 'Collect', insufficient: `Not enough coins. ${PRICE} coins required.`, success: 'Added to your GB cartridge collection', failed: 'Collection could not be saved' }
   if (lang === 'zh-TW') return { title: 'GB卡帶收藏', count: (n: number) => `目前共有 ${n} 款卡帶`, hint: '收藏後可直接在手機GB遊戲機換卡帶遊玩', owned: (n: number) => `已收藏 ${n} 款`, gameName: '遊戲名稱', random: '隨機', genre: '遊戲類型', publisher: '遊戲廠商', releaseDate: '發行日期', updatedAt: '更新時間', search: '搜尋', searchPlaceholder: '遊戲名稱或關鍵詞', collect: '收藏', play: '已收藏 · 遊玩', rankings: 'GB排行榜', popularRanking: '最多人收藏的卡帶', collectorRanking: '收藏卡帶最多的玩家', noRankings: '暫無排行資料', peopleCount: (n: number) => `${n}人收藏`, cartridgeCount: (n: number) => `${n}款`, confirmTitle: '確認收藏卡帶？', confirmMessage: (title: string) => `將花費50個金幣收藏《${title}》，是否繼續？`, cancel: '取消', confirm: '確認收藏', insufficient: '金幣不足，需要50個金幣', success: '收藏成功，卡帶已加入GB遊戲機', failed: '卡帶收藏記錄保存失敗' }
-  return { title: 'GB卡带收藏', count: (n: number) => `目前共有 ${n} 款卡带`, hint: '收藏后可直接在手机GB游戏机换卡带游玩', owned: (n: number) => `已收藏 ${n} 款`, gameName: '游戏名称', random: '随机', genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', updatedAt: '更新时间', search: '搜索', searchPlaceholder: '游戏名称或关键词', collect: '收藏', play: '已收藏 · 游玩', rankings: 'GB排行榜', popularRanking: '最多人收藏的卡带', collectorRanking: '收藏卡带最多的玩家', noRankings: '暂无排行数据', peopleCount: (n: number) => `${n}人收藏`, cartridgeCount: (n: number) => `${n}款`, confirmTitle: '确认收藏卡带？', confirmMessage: (title: string) => `将花费50个金币收藏《${title}》，是否继续？`, cancel: '取消', confirm: '确认收藏', insufficient: '金币不足，需要50个金币', success: '收藏成功，卡带已加入GB游戏机', failed: '卡带收藏记录保存失败' }
+  return { title: 'GB卡带收藏', count: (n: number) => `目前共有 ${n} 款卡带`, hint: '收藏后可直接在手机GB游戏机换卡带游玩', owned: (n: number) => `已收藏 ${n} 款`, gameName: '游戏名称', random: '随机', genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', updatedAt: '更新时间', search: '搜索', searchPlaceholder: '游戏名称或关键词', collect: '收藏', play: '已收藏 · 游玩', rankings: 'GB排行榜', popularRanking: '最多人收藏的卡带', collectorRanking: '收藏卡带最多的玩家', noRankings: '暂无排行数据', peopleCount: (n: number) => `${n}人收藏`, cartridgeCount: (n: number) => `${n}款`, confirmTitle: '确认收藏卡带？', confirmMessage: (title: string) => `将花费${PRICE}个金币收藏《${title}》，是否继续？`, cancel: '取消', confirm: '确认收藏', insufficient: `金币不足，需要${PRICE}个金币`, success: '收藏成功，卡带已加入GB游戏机', failed: '卡带收藏记录保存失败' }
 }
 
