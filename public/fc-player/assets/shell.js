@@ -11,12 +11,14 @@ let videoFilterEnabled = true;
 const FC_VIDEO_FILTER = 'ggemu-crt';
 mainCanvas.dataset.videoFilter = FC_VIDEO_FILTER;
 const crtScanlineTile = document.createElement('canvas');
-crtScanlineTile.width = 8;
-crtScanlineTile.height = 4;
+crtScanlineTile.width = 2;
+crtScanlineTile.height = 2;
 const crtScanlineCtx = crtScanlineTile.getContext('2d');
-crtScanlineCtx.clearRect(0, 0, 8, 4);
-crtScanlineCtx.fillStyle = 'rgba(0, 0, 0, 0.13)';
-crtScanlineCtx.fillRect(0, 3, 7, 1);
+crtScanlineCtx.clearRect(0, 0, 2, 2);
+crtScanlineCtx.fillStyle = 'rgba(255, 255, 255, 0.015)';
+crtScanlineCtx.fillRect(0, 0, 2, 1);
+crtScanlineCtx.fillStyle = 'rgba(14, 18, 20, 0.075)';
+crtScanlineCtx.fillRect(0, 1, 2, 1);
 const crtScanlinePattern = mainCtx.createPattern(crtScanlineTile, 'repeat');
 function drawGgemuCrt(x, y, width, height) {
 if (!videoFilterEnabled || !crtScanlinePattern) return;
@@ -32,7 +34,7 @@ x + width / 2, y + height / 2, Math.min(width, height) * 0.3,
 x + width / 2, y + height / 2, Math.max(width, height) * 0.72
 );
 vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
-vignette.addColorStop(1, 'rgba(0, 0, 0, 0.16)');
+vignette.addColorStop(1, 'rgba(8, 12, 14, 0.08)');
 mainCtx.fillStyle = vignette;
 mainCtx.fillRect(x, y, width, height);
 mainCtx.restore();
@@ -236,7 +238,7 @@ mainCtx.strokeStyle = 'rgba(215, 215, 220, 0.72)';
 mainCtx.lineWidth = 2;
 mainCtx.stroke();
 mainCtx.imageSmoothingEnabled = false;
-mainCtx.filter = 'contrast(1.08) saturate(1.08) brightness(0.98)';
+mainCtx.filter = 'contrast(1.04) saturate(1.06) brightness(1.01)';
 mainCtx.drawImage(src, hitboxes.game.x, hitboxes.game.y, hitboxes.game.w, hitboxes.game.h);
 mainCtx.filter = 'none';
 mainCtx.imageSmoothingEnabled = true;
