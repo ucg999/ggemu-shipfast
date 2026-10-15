@@ -55,7 +55,7 @@ function FcPlayerPage() {
     <>
       <iframe
         allow="autoplay"
-        src={`/fc-player/index.html${cartridge ? `?cartridge=${encodeURIComponent(cartridge)}` : ''}`}
+        src={`/fc-player/index.html?v=20261015-1${cartridge ? `&cartridge=${encodeURIComponent(cartridge)}` : ''}`}
         title="超级马里奥兄弟 FC游戏机"
         style={{
           position: 'fixed',
