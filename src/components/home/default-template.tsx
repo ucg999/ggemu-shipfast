@@ -87,6 +87,10 @@ export function DefaultHomeTemplate(
   const [homeMahjongGames, setHomeMahjongGames] = useState<PublicGame[]>(() =>
     readHomeCards<PublicGame[]>(`${lang}:home-mahjong`) ?? [],
   )
+  const desktopHeroGames = useMemo(
+    () => placeDailyMahjongGameFirst(randomVideoGames, homeMahjongGames, lang),
+    [homeMahjongGames, lang, randomVideoGames],
+  )
   const [randomPopupGame, setRandomPopupGame] = useState<PublicGame | null>(null)
   const [randomPopupMultiplier, setRandomPopupMultiplier] = useState(2)
   const [isRandomGameLoading, setIsRandomGameLoading] = useState(false)
@@ -335,7 +339,7 @@ export function DefaultHomeTemplate(
               {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
             </p>
             <div className="desktop-daily-video-grid">
-              {randomVideoGames.slice(0, 3).map((game, index) => {
+              {desktopHeroGames.slice(0, 3).map((game, index) => {
                 const gameId = game.url_slug || game._id || ''
                 const displayName = getHomeHeroGameName(game, lang)
                 const wantedTimeMultiplier = index === 1 ? getHourlyDesktopWantedMultiplier(gameId, lang) : 10
@@ -618,6 +622,13 @@ const HOME_MAHJONG_GAMES = [
   { query: '双龙抢珠', aliases: ['双龙抢珠', '雙龍搶珠'] },
   { query: '天降神兵', aliases: ['天降神兵'] },
   { query: '龙虎榜', aliases: ['龙虎榜2', '龙虎榜', '龍虎榜'] },
+  { query: '天开眼', aliases: ['天开眼', '天開眼'] },
+  { query: '超级斗地主两副牌', aliases: ['超级斗地主两副牌', '超級鬥地主兩副牌'] },
+  { query: '超级斗地主', aliases: ['超级斗地主', '超級鬥地主'] },
+  { query: '全民斗地主', aliases: ['全民斗地主', '全民鬥地主'] },
+  { query: 'Mahjong G-Taste', aliases: ['Mahjong G-Taste', '御姐麻将', '御姐麻將'] },
+  { query: 'VS Mahjong Otome Ryouran', aliases: ['VS Mahjong Otome Ryouran', '乙女缭乱', '乙女繚亂'] },
+  { query: 'Governor of Poker', aliases: ['Governor of Poker', '州长扑克', '州長撲克'] },
 ] as const
 
 function normalizeHomeGameName(value: string | undefined) {
@@ -882,6 +893,27 @@ function selectHourlyDesktopHeroGames(
     ))
   const middleGame = hourlyVideos[0] ?? sideGames.find(game => Boolean(game.game_video?.trim()) && !sideIds.has(getGameId(game)))
   return middleGame ? [leftGame, middleGame, rightGame] : [leftGame, rightGame]
+}
+
+function placeDailyMahjongGameFirst(
+  heroGames: Array<PublicGame>,
+  mahjongGames: Array<PublicGame>,
+  locale: string,
+) {
+  const candidates = dedupeVideoGames(mahjongGames).filter(game => getGameId(game))
+  if (candidates.length === 0) return heroGames
+
+  const dayKey = getLocalDateKey(new Date())
+  const dailyMahjongGame = [...candidates].sort((left, right) => (
+    dailyGameScore(`${dayKey}:desktop-mahjong-hero:${locale}:${getGameId(left)}`) -
+    dailyGameScore(`${dayKey}:desktop-mahjong-hero:${locale}:${getGameId(right)}`)
+  ))[0]
+  const dailyGameId = getGameId(dailyMahjongGame)
+
+  return [
+    dailyMahjongGame,
+    ...heroGames.filter(game => getGameId(game) !== dailyGameId),
+  ].slice(0, 3)
 }
 
 function getHourlyDesktopWantedMultiplier(gameId: string, locale: string) {

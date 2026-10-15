@@ -16,6 +16,15 @@ import {
 } from '#/components/game-card-preview'
 import { SiteLayout } from '#/components/site-layout'
 import { GameFavoriteButton } from '#/components/game-favorite-button'
+import { Kof97PlusIntroduction } from '#/components/kof97-plus-introduction'
+import { Kof97Introduction } from '#/components/kof97-introduction'
+import { ViceCityIntroduction } from '#/components/vice-city-introduction'
+import { ContraNesIntroduction } from '#/components/contra-nes-introduction'
+import { SuperGrandSlam2Introduction } from '#/components/super-grand-slam-2-introduction'
+import { ElectronicBoardIntroduction } from '#/components/electronic-board-introduction'
+import { TianKaiYanIntroduction } from '#/components/tian-kai-yan-introduction'
+import { CelebrityMahjongIntroduction } from '#/components/celebrity-mahjong-introduction'
+import { LuckyFullHouseIntroduction } from '#/components/lucky-full-house-introduction'
 import { saveRecentPlayedGame } from '#/components/home/recent-played-games'
 import { getHomeHeroGameName } from '#/lib/game-display-name'
 import { getGameDetailReturnUrl } from '#/lib/game-detail-return'
@@ -331,13 +340,25 @@ function LocalizedGameDetailPage() {
   const normalizedGameName = game.name?.replaceAll(/\s+/g, '') ?? ''
   const isLuckyFullHouse = normalizedGameName.includes('幸运满贯') || normalizedGameName.includes('幸運滿貫')
   const isSuperGrandSlam2 = normalizedGameName.includes('超级大满贯2') || normalizedGameName.includes('超級大滿貫2')
+  const isElectronicBoard = normalizedGameName.includes('电子基盘') || normalizedGameName.includes('電子基盤')
+  const isTianKaiYan = normalizedGameName.includes('天开眼') || normalizedGameName.includes('天開眼')
+  const isCelebrityMahjong = normalizedGameName.includes('明星三缺一')
   const isKof97Plus = normalizedGameName.includes('拳皇97大蛇版') || normalizedGameName.toLowerCase().includes("thekingofthefighters'97plus")
+  const isKof97 = gameId === 'the-king-of-fighters-97-arcade-1997'
+  const isViceCity = gameId === 'vice-city-html5-2002' || normalizedGameName.toLowerCase().includes('vicecity')
+  const isContraNes = gameId === 'contra-nes-1988'
   const gameDetailTip = isLuckyFullHouse
     ? '提升胡牌率：进入游戏，按键盘 0 进入系统，按 D，再按 1 连输密码，再按 D，然后按 N 把机率调到最高，按 1 保存再退出就可以了。'
     : isSuperGrandSlam2
       ? '提升胡牌率：进入游戏，按键盘 0 进入系统，按 E，再按 1 连输密码，再按 C，然后按 N 把机率调到最高，按 0 保存再退出就可以了。'
+      : isContraNes
+        ? '在线玩 1988 年北美 NES 版《魂斗罗》。它的英文标题画面带有 Nintendo of America 授权字样，可与日版 Famicom 区分。本页整理原版 NES 操作、30 条命输入、双人选择方式和实用关卡攻略。'
+      : isKof97
+        ? '《拳皇97》是 SNK 于 1997 年推出的三人组队街机格斗游戏，也是大蛇篇的最终章。本页运行街机版，并保留 ADVANCED 与 EXTRA 两套模式；Game Rerun 已确认桌面浏览器能进入游戏演示画面并显示完整的玩家 1 键位。'
+      : isViceCity
+        ? '本页提供 2002 年《Grand Theft Auto: Vice City》的罪恶都市网页版入口。桌面端实测已完成首次资源下载，并从浏览器启动器进入英文主菜单；启动器中可见 Play Game、Save Manager、Mod Manager 和 FPS 限制设置。'
       : isKof97Plus
-        ? '可以选择全部隐藏人物和大蛇，无限能量，对战更刺激。'
+        ? '《拳皇97风云再起》对应 kof97pls，是未知作者基于 SNK 1997 年原作制作的非官方 Neo Geo MVS 改版。它保留三人组队和 ADVANCED／EXTRA，同时把暴走八神、暴走莉安娜与觉醒新面孔队三人直接放进选人表，ADVANCED 每场以 3 格 POW 开局。本页说明它与原版、重出江湖 Plus 2003 的边界，并整理网页键位与实用打法。'
         : ''
 
   useEffect(() => {
@@ -454,6 +475,31 @@ function LocalizedGameDetailPage() {
                 </>
               ) : null}
               <div className="mt-auto flex flex-col items-start gap-3">
+                {isLuckyFullHouse ? (
+                  <p className="max-w-2xl text-xs leading-relaxed text-base-content/65 sm:text-sm">
+                    一款由 IGS 开发的经典台湾街机麻将游戏，采用传统 13 张麻将玩法，并带有特殊的下注和赢分倍数机制。
+                  </p>
+                ) : null}
+                {isSuperGrandSlam2 ? (
+                  <p className="max-w-2xl text-xs leading-relaxed text-base-content/65 sm:text-sm">
+                    一款经典街机麻将游戏，采用传统玩法机制，并强化了视觉效果与竞技计分系统。
+                  </p>
+                ) : null}
+                {isElectronicBoard ? (
+                  <p className="max-w-2xl text-xs leading-relaxed text-base-content/65 sm:text-sm">
+                    一款开创性的日本街机麻将游戏，普及了一对一麻将机台格式，采用经典立直麻将规则和特殊的换牌机制。
+                  </p>
+                ) : null}
+                {isTianKaiYan ? (
+                  <p className="max-w-2xl text-xs leading-relaxed text-base-content/65 sm:text-sm">
+                    一款数字麻将赌场游戏，具有独特的“开眼”机制，可以揭示牌或电脑对手手牌的隐藏信息。
+                  </p>
+                ) : null}
+                {isCelebrityMahjong ? (
+                  <p className="max-w-2xl text-xs leading-relaxed text-base-content/65 sm:text-sm">
+                    由 IGS 开发的一款非常受欢迎的台湾 16 张麻将游戏，以其幽默的漫画形象和知名台湾及中国名人的真实配音而闻名。
+                  </p>
+                ) : null}
                 {gameDetailTip ? (
                   <p className="max-w-2xl text-xs leading-relaxed text-base-content/65 sm:text-sm">
                     {gameDetailTip}
@@ -479,6 +525,15 @@ function LocalizedGameDetailPage() {
             languages={languages}
             labels={t}
           />
+          {isKof97Plus ? <Kof97PlusIntroduction /> : null}
+          {isKof97 ? <Kof97Introduction /> : null}
+          {isViceCity ? <ViceCityIntroduction /> : null}
+          {isContraNes ? <ContraNesIntroduction /> : null}
+          {isSuperGrandSlam2 ? <SuperGrandSlam2Introduction /> : null}
+          {isElectronicBoard ? <ElectronicBoardIntroduction /> : null}
+          {isTianKaiYan ? <TianKaiYanIntroduction /> : null}
+          {isCelebrityMahjong ? <CelebrityMahjongIntroduction /> : null}
+          {isLuckyFullHouse ? <LuckyFullHouseIntroduction /> : null}
           {SHOW_EXTENDED_GAME_DETAILS ? (
             <section className="grid gap-6">
               {chineseGuide ? <ChineseGameGuideSection guide={chineseGuide} /> : null}

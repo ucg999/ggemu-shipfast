@@ -12,8 +12,8 @@ export function getHomeHeroGameName(game: PublicGame, locale: string) {
 export const HOME_HERO_CHINESE_NAMES: Readonly<Record<string, string>> = {
   'pow-prisoners-of-war-arcade-1988': '战俘',
   'zatchbell-electric-arena-gba-2005': '金色的卡修：电击竞技场',
-  'vice-city-html5-2002': '侠盗猎车手：罪恶都市',
-  'the-king-of-fighters-97-arcade-1997': '拳皇97',
+  'vice-city-html5-2002': 'GTA：罪恶都市网页版',
+  'the-king-of-fighters-97-arcade-1997': "拳皇97（The King of Fighters '97）",
   'contra-nes-1988': '魂斗罗',
   'murdoku-html5-2026': '死亡数独',
   'angry-birds-html5-2009': '愤怒的小鸟',
