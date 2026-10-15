@@ -175,6 +175,54 @@ export async function getMemberFromRequest(request: Request) {
   return toMemberView(row)
 }
 
+export async function settleMaturedMemberDeposits(memberId: string) {
+  const today = getShanghaiDateKey()
+  const pending = await memberDb().prepare(`
+    SELECT transfer_date, browser_to_member AS amount
+    FROM member_daily_transfers t
+    WHERE t.member_id = ? AND t.transfer_date < ?
+      AND EXISTS (
+        SELECT 1 FROM member_coin_transactions p
+        WHERE p.member_id = t.member_id
+          AND p.idempotency_key = 'browser_coin_deposit_pending:' || t.transfer_date
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM member_coin_transactions c
+        WHERE c.member_id = t.member_id
+          AND c.idempotency_key = 'browser_coin_deposit_settlement:' || t.transfer_date
+      )
+    ORDER BY transfer_date ASC
+  `).bind(memberId, today).all<{ transfer_date: string; amount: number }>()
+  const amount = pending.results.reduce((sum, row) => sum + Math.max(0, Number(row.amount) || 0), 0)
+  if (amount < 1) return 0
+
+  const account = await memberDb().prepare('SELECT coin_balance FROM members WHERE id = ?').bind(memberId).first<{ coin_balance: number }>()
+  if (!account) return 0
+  const credited = Math.min(amount, Math.max(0, 99_999 - Number(account.coin_balance || 0)))
+  const nextBalance = Math.min(99_999, Number(account.coin_balance || 0) + credited)
+  let remainingCredit = credited
+  const settlements = pending.results.map(row => {
+    const rowAmount = Math.max(0, Number(row.amount) || 0)
+    const applied = Math.min(rowAmount, remainingCredit)
+    remainingCredit -= applied
+    return { ...row, applied }
+  })
+  await memberDb().batch([
+    memberDb().prepare(`
+      UPDATE members SET coin_balance = CASE
+        WHEN coin_balance + ? > 99999 THEN 99999
+        ELSE coin_balance + ?
+      END, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(credited, credited, memberId),
+    ...settlements.map(row => memberDb().prepare(`
+      INSERT OR IGNORE INTO member_coin_transactions (member_id, amount, balance_after, reason, idempotency_key)
+      VALUES (?, ?, ?, 'browser_coin_deposit_settlement', ?)
+    `).bind(memberId, row.applied, nextBalance, `browser_coin_deposit_settlement:${row.transfer_date}`)),
+  ])
+  return credited
+}
+
 async function getLocalDevelopmentOwner(url: URL) {
   if (url.hostname !== 'localhost' && url.hostname !== '127.0.0.1' && url.hostname !== '[::1]') return null
   try {
@@ -224,6 +272,15 @@ function randomHex(bytes: number) {
   const value = new Uint8Array(bytes)
   crypto.getRandomValues(value)
   return bytesToHex(value)
+}
+
+function getShanghaiDateKey() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
 }
 
 export async function sha256(value: string) {

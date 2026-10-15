@@ -195,6 +195,18 @@ patched += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + step, 
 }
 return patched;
 }
+function prepareCustomMapperRom(binary) {
+const bytes = new Uint8Array(binary.length);
+for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i) & 0xff;
+bytes[6] &= 0x0f;
+bytes[7] &= 0x0f;
+let patched = '';
+const step = 8192;
+for (let i = 0; i < bytes.length; i += step) {
+patched += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + step, bytes.length)));
+}
+return patched;
+}
 function installMapper15(initializeBanks) {
 const mapper = nes.mmap;
 const originalWrite = mapper.write.bind(mapper);
@@ -243,6 +255,64 @@ mapper.load8kRomBank(2, 0xc000);
 mapper.load8kRomBank(3, 0xe000);
 nes.cpu.requestIrq(nes.cpu.IRQ_RESET);
 }
+function installMapper85(initializeBanks) {
+const mapper = nes.mmap;
+const originalWrite = mapper.write.bind(mapper);
+const state = mapper.__mapper85 || {
+irqLatch: 0,
+irqCounter: 0,
+irqEnabled: false,
+irqEnableAfterAck: false
+};
+mapper.__mapper85 = state;
+mapper.write = function (address, value) {
+if (address < 0x8000) {
+originalWrite(address, value);
+return;
+}
+// NES 2.0 submapper 2 (VRC7a) decodes A4 and ignores A3/A5 for
+// banking registers. Normalizing the address is important for hacks that
+// write through mirrored register addresses.
+const register = (address & 0xf000) | (address & 0x0010);
+if (register === 0x8000) mapper.load8kRomBank(value & 0x3f, 0x8000);
+else if (register === 0x8010) mapper.load8kRomBank(value & 0x3f, 0xa000);
+else if (register === 0x9000) mapper.load8kRomBank(value & 0x3f, 0xc000);
+else if (register === 0xa000) mapper.load1kVromBank(value, 0x0000);
+else if (register === 0xa010) mapper.load1kVromBank(value, 0x0400);
+else if (register === 0xb000) mapper.load1kVromBank(value, 0x0800);
+else if (register === 0xb010) mapper.load1kVromBank(value, 0x0c00);
+else if (register === 0xc000) mapper.load1kVromBank(value, 0x1000);
+else if (register === 0xc010) mapper.load1kVromBank(value, 0x1400);
+else if (register === 0xd000) mapper.load1kVromBank(value, 0x1800);
+else if (register === 0xd010) mapper.load1kVromBank(value, 0x1c00);
+else if (register === 0xe000) {
+const modes = [nes.rom.VERTICAL_MIRRORING, nes.rom.HORIZONTAL_MIRRORING, nes.rom.SINGLESCREEN_MIRRORING, nes.rom.SINGLESCREEN_MIRRORING2];
+nes.ppu.setMirroring(modes[value & 0x03]);
+} else if (register === 0xe010) state.irqLatch = value & 0xff;
+else if (register === 0xf000) {
+state.irqEnableAfterAck = !!(value & 0x01);
+state.irqEnabled = !!(value & 0x02);
+if (state.irqEnabled) state.irqCounter = state.irqLatch;
+} else if (register === 0xf010) state.irqEnabled = state.irqEnableAfterAck;
+// The VRC7 expansion audio registers are intentionally ignored. The game
+// keeps its standard NES audio while banking and gameplay remain compatible.
+};
+mapper.clockIrqCounter = function () {
+if (!state.irqEnabled) return;
+if (state.irqCounter === 0xff) {
+state.irqCounter = state.irqLatch;
+nes.cpu.requestIrq(nes.cpu.IRQ_NORMAL);
+} else state.irqCounter = (state.irqCounter + 1) & 0xff;
+};
+if (!initializeBanks) return;
+const lastBank = Math.max(0, nes.rom.romCount * 2 - 1);
+mapper.load8kRomBank(0, 0x8000);
+mapper.load8kRomBank(1, 0xa000);
+mapper.load8kRomBank(2, 0xc000);
+mapper.load8kRomBank(lastBank, 0xe000);
+for (let bank = 0; bank < 8; bank++) mapper.load1kVromBank(bank, bank * 0x400);
+nes.cpu.requestIrq(nes.cpu.IRQ_RESET);
+}
 const BUTTONS = {
 a: 'BUTTON_A', b: 'BUTTON_B', select: 'BUTTON_SELECT', start: 'BUTTON_START',
 up: 'BUTTON_UP', down: 'BUTTON_DOWN', left: 'BUTTON_LEFT', right: 'BUTTON_RIGHT'
@@ -283,12 +353,13 @@ for (let offset = 0; offset < bytes.length; offset += chunkSize) {
 binary += String.fromCharCode.apply(null, bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length)));
 }
 const mapper = ((binary.charCodeAt(6) >> 4) | (binary.charCodeAt(7) & 0xf0));
-if (mapper !== 0 && mapper !== 4 && mapper !== 5 && mapper !== 15) throw new Error('暂不支持Mapper ' + mapper);
+if (mapper !== 0 && mapper !== 4 && mapper !== 5 && mapper !== 15 && mapper !== 85) throw new Error('暂不支持Mapper ' + mapper);
 initAudio();
 nes = new window.jsnes.NES({ onFrame: onFrame, onAudioSample: onAudioSample, sampleRate: audioCtx ? audioCtx.sampleRate : 48000 });
-nes.loadROM(mapper === 15 ? prepareMapper15Rom(binary) : binary);
+nes.loadROM(mapper === 15 ? prepareMapper15Rom(binary) : mapper === 85 ? prepareCustomMapperRom(binary) : binary);
 activeMapper = mapper;
 if (mapper === 15) installMapper15(true);
+if (mapper === 85) installMapper85(true);
 } catch (e) {
 nes = previousNes;
 ready = previousReady;
@@ -433,6 +504,7 @@ nes.fromJSON(state);
 // fromJSON rebuilds jsnes' stock mapper. Reattach Mapper 15 without
 // replacing the restored PRG banks, otherwise this cartridge may crash later.
 if (activeMapper === 15) installMapper15(false);
+if (activeMapper === 85) installMapper85(false);
 if (cloudLoaded) {
 try { await writeState(state); } catch (error) {}
 }

@@ -5,7 +5,7 @@ import type { Locale } from '#/lib/ggemu'
 import { useMemberSession } from '#/lib/member-client'
 import { collectionApiUrl, getGuestCollectorId } from '#/lib/library-collection-client'
 
-const PRICE = 5
+const PRICE = 10
 const STORAGE_KEY = 'ucg999-game-disc-collection'
 
 export function PspDiscCollectionButton({ downloadUrl, gameId, locale, platform }: { downloadUrl?: string; gameId: string; locale: Locale; platform: 'psp' | 'switch' }) {

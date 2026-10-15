@@ -13,6 +13,7 @@ import {
   memberDb,
   passwordNeedsRehash,
   releaseInactiveMembers,
+  settleMaturedMemberDeposits,
   sha256,
   toMemberView,
   validateCredentials,
@@ -27,10 +28,13 @@ export const Route = createFileRoute('/api/member')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const member = await getMemberFromRequest(request)
+        let member = await getMemberFromRequest(request)
         let usedToday = 0
         if (member) {
           try {
+            if (member.id !== 'local-owner-00001' && await settleMaturedMemberDeposits(member.id)) {
+              member = await getMemberFromRequest(request)
+            }
             usedToday = await getTodayTransferred(member.id)
           } catch (error) {
             const hostname = new URL(request.url).hostname
@@ -153,21 +157,36 @@ export const Route = createFileRoute('/api/member')({
           }
           const usedToday = await getTodayTransferred(member.id)
           if (usedToday + amount > 999) return jsonError(`今天最多还能转入 ${Math.max(0, 999 - usedToday)} 个金币`)
-          if (member.coinBalance + amount > 99_999) return jsonError('玩家金币已达到 99,999 个上限')
+          const pending = await memberDb().prepare(`
+            SELECT COALESCE(SUM(t.browser_to_member), 0) AS amount
+            FROM member_daily_transfers t
+            WHERE t.member_id = ?
+              AND EXISTS (
+                SELECT 1 FROM member_coin_transactions p
+                WHERE p.member_id = t.member_id
+                  AND p.idempotency_key = 'browser_coin_deposit_pending:' || t.transfer_date
+              )
+              AND NOT EXISTS (
+                SELECT 1 FROM member_coin_transactions c
+                WHERE c.member_id = t.member_id
+                  AND c.idempotency_key = 'browser_coin_deposit_settlement:' || t.transfer_date
+              )
+          `).bind(member.id).first<{ amount: number }>()
+          if (member.coinBalance + Math.max(0, Number(pending?.amount) || 0) + amount > 99_999) return jsonError('玩家金币与待到账金币合计已达到 99,999 个上限')
           try {
             await memberDb().batch([
               memberDb().prepare(`
                 INSERT INTO member_daily_transfers (member_id, transfer_date, browser_to_member)
-                VALUES (?, date('now'), ?)
+                VALUES (?, ?, ?)
                 ON CONFLICT(member_id, transfer_date) DO UPDATE SET
                   browser_to_member = member_daily_transfers.browser_to_member + excluded.browser_to_member,
                   updated_at = CURRENT_TIMESTAMP
-              `).bind(member.id, amount),
-              memberDb().prepare('UPDATE members SET coin_balance = coin_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(amount, member.id),
+              `).bind(member.id, getShanghaiDateKey(), amount),
               memberDb().prepare(`
-                INSERT INTO member_coin_transactions (member_id, amount, balance_after, reason, idempotency_key)
-                SELECT id, ?, coin_balance, 'browser_coin_deposit', ? FROM members WHERE id = ?
-              `).bind(amount, idempotencyKey, member.id),
+                INSERT OR IGNORE INTO member_coin_transactions
+                  (member_id, amount, balance_after, reason, idempotency_key)
+                VALUES (?, 0, ?, 'browser_coin_deposit_pending', ?)
+              `).bind(member.id, member.coinBalance, `browser_coin_deposit_pending:${getShanghaiDateKey()}`),
             ])
           } catch (error) {
             const message = error instanceof Error ? error.message : ''
@@ -178,7 +197,7 @@ export const Route = createFileRoute('/api/member')({
           if (!updated) return jsonError('玩家账号不存在', 404)
           const totalToday = usedToday + amount
           return Response.json(
-            { member: toMemberView(updated), transferred: amount, remainingToday: Math.max(0, 999 - totalToday) },
+            { member: toMemberView(updated), transferred: amount, pending: amount, availableTomorrow: true, remainingToday: Math.max(0, 999 - totalToday) },
             { headers: { 'Cache-Control': 'private, no-store' } },
           )
         } catch (error) {
@@ -262,9 +281,18 @@ async function getTodayTransferred(memberId: string) {
   const row = await memberDb().prepare(`
     SELECT browser_to_member AS total
     FROM member_daily_transfers
-    WHERE member_id = ? AND transfer_date = date('now')
-  `).bind(memberId).first<{ total: number }>()
+    WHERE member_id = ? AND transfer_date = ?
+  `).bind(memberId, getShanghaiDateKey()).first<{ total: number }>()
   return Math.max(0, Math.floor(Number(row?.total) || 0))
+}
+
+function getShanghaiDateKey() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
 }
 
 async function allocatePlayerNumber() {

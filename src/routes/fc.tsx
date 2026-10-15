@@ -8,7 +8,7 @@ import { getMemberSession, requestMemberLogin } from '#/lib/member-client'
 const FC_CARTRIDGE_IDS = new Set([
   'donkey-kong', 'donkey-kong-jr', 'popeye', 'gomoku-narabe', 'mahjong', 'mario-bros',
   'popeye-english', 'baseball', 'donkey-kong-jr-math', 'urban-champion', 'happy-cat', 'karateka-street-fighter',
-  'baoxiao-sanguo', 'prison-break-nine-characters',
+  'baoxiao-sanguo', 'prison-break-nine-characters', 'contra-underwater-eight-levels', 'green-beret-captain-america',
 ])
 
 export const Route = createFileRoute('/fc')({

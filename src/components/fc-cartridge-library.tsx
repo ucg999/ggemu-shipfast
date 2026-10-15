@@ -9,7 +9,7 @@ import { collectionApiUrl, getGuestCollectorId } from '#/lib/library-collection-
 
 const OWNED_CARTRIDGES_KEY = 'ucg999-fc-owned-cartridges'
 const OWNED_CARTRIDGES_MIGRATION_KEY = 'ucg999-fc-owned-cartridges-migrated'
-const CARTRIDGE_PRICE = 5
+const CARTRIDGE_PRICE = 10
 
 function isLocalDevelopment() {
   return typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname)
@@ -75,6 +75,141 @@ const PRISON_BREAK_GUIDE = {
     },
   ],
   credit: '白河愁',
+} as const
+
+const GREEN_BERET_CAPTAIN_AMERICA_GUIDE = {
+  title: '这个改版，有什么不同？',
+  introduction: [
+    '在《绿色兵团》的基础上扩展了六语言界面、盾牌反击、全新近战动作、四栏武器、战犬支援、双人合作和全新像素动画片头。',
+  ],
+  highlights: [
+    ['六种语言', '日语、英语、繁体中文、粤语、简体中文和韩语。支持对应语言的标题、菜单与剧情文字；粤语为文字界面。'],
+    ['盾牌反击', '挡下子弹和激光，并以双倍速度反弹；举盾还可弹回从上方袭来的跳跃敌兵。'],
+    ['全新近战', '横向翻滚、斜上旋转、空中飞踢与二段跳，让移动和进攻更灵活。'],
+    ['四栏武器系统', '狗／小刀、火箭筒、手雷、手枪自由切换，当前武器以亮白色数字显示。'],
+    ['战犬支援', '召唤普通狗扑击敌人，还有机会召出无敌金狗，冲破地雷阵。'],
+    ['双人合作', '两位玩家各自管理弹药与召唤次数，可以配合举盾、翻滚和放狗。'],
+    ['全新像素动画片头', '蓝衣兵盾反激光、红衣兵翻滚突击、双犬出击，以及女情报员与鹰的支援演出，配有音乐和音效。女情报员与鹰仅在片头登场。'],
+  ],
+  sections: [
+    {
+      title: '游戏设置',
+      items: [
+        ['可调项目', '初始生命 1～15（默认 12）、接关次数 0～9 或无限（默认无限），以及起始关卡 1～6。'],
+        ['操作方法', '上下选择项目，左右调整，按 A 试听音乐或音效；按 START 确认，或选中“开始游戏”后按 A。'],
+      ],
+    },
+    {
+      title: '基本操作',
+      items: [
+        ['方向键', '移动、转向、蹲下；在梯子处上下攀爬。'],
+        ['A', '跳跃；空中松开后再次按 A，可以二段跳。'],
+        ['B', '小刀攻击。'],
+        ['按住上／左上／右上', '举起头顶盾，移动和普通跳跃中也可使用。'],
+        ['SELECT', '切换当前武器。'],
+        ['A+B', '使用当前武器；狗栏位时召唤战犬。'],
+        ['左→右+B', '向右翻滚突击。'],
+        ['右→左+B', '向左翻滚突击。'],
+        ['下→上+B', '斜上旋转攻击。'],
+        ['空中下／斜下+B', '飞踢。'],
+        ['平台上按住下，再按 A', '从可下穿的平台落下。'],
+        ['START', '开始／暂停。'],
+        ['指令说明', '“→”表示依次输入，“+”表示组合按键。特殊武器使用 A+B，单按 B 始终是普通近战攻击。'],
+      ],
+    },
+    {
+      title: '盾牌与出招技巧',
+      items: [
+        ['盾牌', '只能防住盾面方向的攻击，并非全身无敌。可反弹子弹、激光和从上方袭来的跳跃敌兵；反弹弹丸命中敌人后消失。'],
+        ['动作限制', '翻滚、飞踢及放狗指挥期间不能同时举盾。'],
+        ['翻滚方向', '接受斜方向输入，以最后有效的左右输入为准。例如“左下→右上+B”会向右斜上旋转；“下→上→右+B”同样向右斜上旋转。'],
+        ['招式优先级', '下上指令优先于横向翻滚；空中斜下+B 优先触发飞踢。'],
+        ['地雷与跳跃敌兵', '旋转可以穿过地雷而不触发爆炸；趴下出刀也能命中攻击范围内的跳跃敌兵。'],
+      ],
+    },
+    {
+      title: '武器与战犬',
+      items: [
+        ['武器切换', '按 SELECT 循环切换：狗（小刀模式）→火箭筒→手雷→手枪。'],
+        ['初始库存', '每位玩家开始时有 3 次放狗、5 发火箭筒、10 枚手雷和 30 发手枪弹药。拾取武器可补充库存，普通武器剩余弹药在死亡、接关后保留。'],
+        ['召唤方法', '选中狗栏位按 A+B，主角挥手指挥，战犬从画面左侧向右冲出，发现敌人后扑击。地面指挥动作也具有小刀威力。'],
+        ['召唤限制', '每条生命有 3 次召唤，过关后补满；全场同时只能有一只我方狗，它离场前不能再次召唤。'],
+        ['普通狗', '蓝色系外观，与敌犬区分。被子弹击中会死亡；踩中地雷会引爆地雷，并被炸死。'],
+        ['金狗', '每次召唤有 1/8 概率出现。不会被敌方子弹或地雷杀死，可引爆地雷后继续前进。'],
+        ['折返', '普通狗首次有 1/4 概率折返，金狗为 1/2；每成功折返一次，下次概率减半。出场、完成扑击及折返时会叫一声。'],
+      ],
+    },
+    {
+      title: '地道与最终决战',
+      items: [
+        ['地下通道', '用手雷炸开隐藏入口，走到梯子处按住下，即可进入地下通道，再寻找出口返回地表。'],
+        ['最终核弹', '除了火箭筒、手雷和手枪，也能用小刀、飞踢和旋转命中弱点。战犬不能直接秒杀核弹；近战命中的爆点不会产生火箭筒式范围伤害。摧毁目标后，完成最后的逃离。'],
+      ],
+    },
+  ],
+} as const
+
+const CONTRA_UNDERWATER_GUIDE = {
+  title: '这个改版，有什么不同？',
+  introduction: [
+    '《魂斗罗：水下八关》加入六名能力各异的角色、双武器切换、更多动作、双人合作、全新演出与水下篇 Boss 强化，并提供丰富的开局设置。',
+  ],
+  highlights: [
+    ['六名角色', '比尔、兰斯可以二段跳；RD008、RC011 能短暂悬停；狼人可以高跳；希娜落地前最多进行三次八方向突进，不能连续朝同一方向，并带踩踏伤害。'],
+    ['双武器切换', '随身携带两把枪，按 SELECT 切换。交叉前进的双火球、强化散弹与加粗激光，带来不同打法。'],
+    ['更多动作', '加入飞踢、踩踏和滑铲，跳跃高低也能控制。特殊动作主要用于横版关卡。'],
+    ['双人合作', '两名玩家并肩闯关；同时碰到同一道具时，两人都能获得效果。'],
+    ['全新演出', '加入六人立绘、组队开场、队伍合照与角色通讯。'],
+    ['原曲重混', '水下八关及基地头目战重新编曲，保留熟悉旋律并加入新的伴奏变化；经典八关音乐保持不变。'],
+    ['自由设置', '可选择起始关卡、生命、接关次数、初始武器与无敌模式，并支持六种语言。'],
+  ],
+  sections: [
+    {
+      title: '基本操作',
+      items: [
+        ['方向键', '移动／瞄准。'],
+        ['A', '跳跃。'],
+        ['B', '射击。'],
+        ['SELECT', '切换随身携带的两把武器。'],
+        ['START', '暂停。'],
+      ],
+    },
+    {
+      title: '横版关卡特殊动作',
+      items: [
+        ['控制跳跃', '按住 A 的时间决定跳跃高低。'],
+        ['滑铲', '站在地面依次输入“下→前→A”。'],
+        ['踩踏／飞踢', '除希娜外，空中按下+A 踩踏，按斜下+A 飞踢。'],
+        ['希娜突进', '空中再次按方向+A，可进行八方向突进；每次必须松开再按 A，落地前最多三次，不能连续同向，接近地面时不能发动。'],
+        ['取消突进', '不按 A，只按反方向，可以取消希娜的突进并下落。'],
+      ],
+    },
+    {
+      title: '武器与角色效果',
+      items: [
+        ['默认 R 效果', '比尔、兰斯使用 S，机械人使用 M，狼人使用 L，希娜使用 F 时，默认带有原本的 R 效果；R 道具仍可正常生效。'],
+        ['双武器', '两把枪都随身保留，通过 SELECT 随时切换，方便针对不同地形和敌人改变打法。'],
+      ],
+    },
+    {
+      title: '接关与重新选人',
+      items: [
+        ['默认接关', '默认提供 255 次接关。'],
+        ['全灭后', '按 START 先重新选择角色，再回到当前场景的死亡位置；按 SELECT 可以结束游戏。'],
+        ['过关后', '普通过关对话结束后，也可以重新选择角色。'],
+      ],
+    },
+    {
+      title: '水下篇 Boss 强化',
+      items: [
+        ['强化范围', 'Boss 强化只作用于水下篇。'],
+        ['第五关', '双雪山 Boss。'],
+        ['第六关', '三巨神兵。'],
+        ['第七关', '接力战与炮台。'],
+        ['最终关', '加入瞄准连射、激光扫射和地面冲击波。'],
+      ],
+    },
+  ],
 } as const
 
 type FcRankings = {
@@ -174,6 +309,28 @@ const FC_CARTRIDGES = [
     initial: 'T',
     edition: '改版',
   },
+  {
+    id: 'contra-underwater-eight-levels',
+    number: '1057号',
+    title: '魂斗罗：水下八关',
+    cover: '/fc-player/assets/cartridges/contra-underwater-eight-levels.min.webp',
+    genre: '射击',
+    releaseDate: '1988-02-09',
+    publisher: 'Konami',
+    initial: 'H',
+    edition: '改版',
+  },
+  {
+    id: 'green-beret-captain-america',
+    number: '1058号',
+    title: '绿色兵团：美国队长版',
+    cover: '/fc-player/assets/cartridges/green-beret-captain-america.min.webp',
+    genre: '动作',
+    releaseDate: '1987-04-10',
+    publisher: 'Konami',
+    initial: 'L',
+    edition: '改版',
+  },
 ] as const
 
 const FC_CARTRIDGE_UPDATED_AT: Record<string, string> = {
@@ -191,6 +348,8 @@ const FC_CARTRIDGE_UPDATED_AT: Record<string, string> = {
   'karateka-street-fighter': '2026-10-05T18:17:44+08:00',
   'baoxiao-sanguo': '2026-10-07T11:24:38+08:00',
   'prison-break-nine-characters': '2026-10-11T12:14:55+08:00',
+  'contra-underwater-eight-levels': '2026-10-15T16:00:28+08:00',
+  'green-beret-captain-america': '2026-10-15T16:00:48+08:00',
 }
 
 export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
@@ -465,7 +624,15 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
           </div>
           {previewing ? (() => {
             const cartridge = FC_CARTRIDGES.find(item => item.id === previewing)
-            return cartridge ? <CartridgeControlsDialog actionHint={lang === 'en' ? 'No loading · Dedicated emulator' : lang === 'zh-TW' ? '無需載入，專用模擬器' : '无需加载，专用模拟器'} actionLabel={owned.includes(cartridge.id) ? copy.play : copy.buyLabel} collectionLabel={lang === 'en' ? `${collectionCounts[cartridge.id] ?? 0} collectors` : `${collectionCounts[cartridge.id] ?? 0}人已收藏`} cover={cartridge.cover} details={`${cartridge.number} · ${cartridge.genre} · ${cartridge.releaseDate} · ${cartridge.publisher}`} guide={cartridge.id === 'prison-break-nine-characters' ? PRISON_BREAK_GUIDE : undefined} onAction={() => {
+            if (!cartridge) return null
+            const guide = cartridge.id === 'prison-break-nine-characters'
+              ? PRISON_BREAK_GUIDE
+              : cartridge.id === 'contra-underwater-eight-levels'
+                ? CONTRA_UNDERWATER_GUIDE
+              : cartridge.id === 'green-beret-captain-america'
+                ? GREEN_BERET_CAPTAIN_AMERICA_GUIDE
+                : undefined
+            return <CartridgeControlsDialog actionHint={lang === 'en' ? 'No loading · Dedicated emulator' : lang === 'zh-TW' ? '無需載入，專用模擬器' : '无需加载，专用模拟器'} actionLabel={owned.includes(cartridge.id) ? copy.play : copy.buyLabel} collectionLabel={lang === 'en' ? `${collectionCounts[cartridge.id] ?? 0} collectors` : `${collectionCounts[cartridge.id] ?? 0}人已收藏`} cover={cartridge.cover} details={`${cartridge.number} · ${cartridge.genre} · ${cartridge.releaseDate} · ${cartridge.publisher}`} guide={guide} onAction={() => {
               setPreviewing(null)
               if (!owned.includes(cartridge.id)) {
                 handleCartridge(cartridge.id)
@@ -473,7 +640,7 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
               }
               if (window.matchMedia('(min-width: 1024px) and (pointer: fine)').matches) setPlaying(cartridge.id)
               else window.location.assign(`/fc?cartridge=${encodeURIComponent(cartridge.id)}`)
-            }} onClose={() => setPreviewing(null)} onTrial={cartridge.id === 'mahjong' ? () => { window.location.assign(`/${lang}/games/mahjong-nes-1983/play?autoplay=%221%22&inline=%221%22`) } : undefined} title={cartridge.title} trialHint={cartridge.id === 'mahjong' ? (lang === 'en' ? 'Loading required' : lang === 'zh-TW' ? '需要載入' : '需要加载') : undefined} trialLabel={lang === 'en' ? 'Try now' : lang === 'zh-TW' ? '立即試玩' : '立即试玩'} /> : null
+            }} onClose={() => setPreviewing(null)} onTrial={cartridge.id === 'mahjong' ? () => { window.location.assign(`/${lang}/games/mahjong-nes-1983/play?autoplay=%221%22&inline=%221%22`) } : undefined} title={cartridge.title} trialHint={cartridge.id === 'mahjong' ? (lang === 'en' ? 'Loading required' : lang === 'zh-TW' ? '需要載入' : '需要加载') : undefined} trialLabel={lang === 'en' ? 'Try now' : lang === 'zh-TW' ? '立即試玩' : '立即试玩'} />
           })() : null}
           {playing ? <CartridgePlayerDialog onClose={() => setPlaying(null)} src={`/fc-player/index.html?v=20261015-1&cartridge=${encodeURIComponent(playing)}`} title={FC_CARTRIDGES.find(item => item.id === playing)?.title ?? 'FC游戏机'} /> : null}
           {rankingsOpen ? <div className="fixed inset-0 z-[240] flex items-center justify-center bg-black/35 px-4" role="dialog" aria-modal="true" aria-labelledby="fc-rankings-title" onClick={() => setRankingsOpen(false)}>
@@ -504,8 +671,8 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
 
 function getCopy(lang: Locale) {
   if (lang === 'en') return { title: 'FC Cartridge Collection', chinese: 'Chinese', gameName: 'Game name', random: 'Random', genre: 'Game genre', publisher: 'Publisher', releaseDate: 'Release date', updatedAt: 'Last updated', modified: 'Modified', allLetters: 'All', rankings: 'FC rankings', popularRanking: 'Most collected cartridges', collectorRanking: 'Top collectors', noRankings: 'No ranking data yet', peopleCount: (count: number) => `${count} players`, cartridgeCount: (count: number) => `${count} cartridges`, search: 'Search', searchPlaceholder: 'Game name or keyword', confirm: 'Confirm', confirmTitle: 'Collect cartridge?', confirmMessage: (title: string, price: number) => `Spend ${price} coins to collect ${title}?`, cancel: 'Cancel', confirmCollect: 'Collect', open: 'Play ', buy: 'Collect ', buyLabel: 'Collect', play: 'Collected · Play', loginRequired: '', insufficient: `Not enough coins. ${CARTRIDGE_PRICE} coins required.`, purchased: 'Cartridge added to FC Collection', failed: 'Collection could not be saved', count: (count: number) => `${count} cartridges available`, collectionHint: 'collected cartridges can be switched and played directly in the mobile FC Collection', ownedCount: (count: number) => `${count} collected` }
-  if (lang === 'zh-TW') return { title: 'FC卡帶收藏', chinese: '中文', gameName: '遊戲名稱', random: '隨機', genre: '遊戲類型', publisher: '遊戲廠商', releaseDate: '發行日期', updatedAt: '更新時間', modified: '改版', allLetters: '全部', rankings: 'FC排行榜', popularRanking: '最多人收藏的卡帶', collectorRanking: '收藏卡帶最多的玩家', noRankings: '暫無排行資料', peopleCount: (count: number) => `${count}人收藏`, cartridgeCount: (count: number) => `${count}款`, search: '搜尋', searchPlaceholder: '遊戲名稱或關鍵詞', confirm: '確認', confirmTitle: '確認收藏卡帶？', confirmMessage: (title: string, price: number) => `將花費 ${price} 個金幣收藏《${title}》，是否繼續？`, cancel: '取消', confirmCollect: '確認收藏', open: '遊玩', buy: '收藏', buyLabel: '收藏', play: '已收藏 · 遊玩', loginRequired: '請先登入玩家帳號再收藏卡帶', insufficient: '金幣不足，需要50個金幣', purchased: '收藏成功，卡帶已加入FC遊戲機', failed: '卡帶收藏記錄保存失敗', count: (count: number) => `目前共有 ${count} 款卡帶`, collectionHint: '收藏後可直接在手機FC遊戲機換卡帶遊玩', ownedCount: (count: number) => `已收藏 ${count} 款` }
-  if (lang === 'ja') return { title: 'FCカセットコレクション', chinese: '中国語', gameName: 'ゲーム名', random: 'ランダム', genre: 'ジャンル', publisher: 'メーカー', releaseDate: '発売日', updatedAt: '更新日時', modified: '改造版', allLetters: 'すべて', rankings: 'FCランキング', popularRanking: '人気カセット', collectorRanking: 'トップコレクター', noRankings: 'ランキングデータはまだありません', peopleCount: (count: number) => `${count}人`, cartridgeCount: (count: number) => `${count}本`, search: '検索', searchPlaceholder: 'ゲーム名またはキーワード', confirm: '確認', confirmTitle: 'カセットをコレクションしますか？', confirmMessage: (title: string, price: number) => `${price}コインで「${title}」をコレクションしますか？`, cancel: 'キャンセル', confirmCollect: 'コレクション', open: 'プレイ：', buy: 'コレクション：', buyLabel: 'コレクション', play: '収集済み・プレイ', loginRequired: 'カセットのコレクションにはログインが必要です', insufficient: 'コインが不足しています（50枚必要）', purchased: 'FCコレクションに追加しました', failed: 'コレクション情報を保存できませんでした', count: (count: number) => `${count}本のカセット`, collectionHint: 'コレクション後はスマホのFCコレクションで交換して遊べます', ownedCount: (count: number) => `${count}本収集済み` }
+  if (lang === 'zh-TW') return { title: 'FC卡帶收藏', chinese: '中文', gameName: '遊戲名稱', random: '隨機', genre: '遊戲類型', publisher: '遊戲廠商', releaseDate: '發行日期', updatedAt: '更新時間', modified: '改版', allLetters: '全部', rankings: 'FC排行榜', popularRanking: '最多人收藏的卡帶', collectorRanking: '收藏卡帶最多的玩家', noRankings: '暫無排行資料', peopleCount: (count: number) => `${count}人收藏`, cartridgeCount: (count: number) => `${count}款`, search: '搜尋', searchPlaceholder: '遊戲名稱或關鍵詞', confirm: '確認', confirmTitle: '確認收藏卡帶？', confirmMessage: (title: string, price: number) => `將花費 ${price} 個金幣收藏《${title}》，是否繼續？`, cancel: '取消', confirmCollect: '確認收藏', open: '遊玩', buy: '收藏', buyLabel: '收藏', play: '已收藏 · 遊玩', loginRequired: '請先登入玩家帳號再收藏卡帶', insufficient: `金幣不足，需要${CARTRIDGE_PRICE}個金幣`, purchased: '收藏成功，卡帶已加入FC遊戲機', failed: '卡帶收藏記錄保存失敗', count: (count: number) => `目前共有 ${count} 款卡帶`, collectionHint: '收藏後可直接在手機FC遊戲機換卡帶遊玩', ownedCount: (count: number) => `已收藏 ${count} 款` }
+  if (lang === 'ja') return { title: 'FCカセットコレクション', chinese: '中国語', gameName: 'ゲーム名', random: 'ランダム', genre: 'ジャンル', publisher: 'メーカー', releaseDate: '発売日', updatedAt: '更新日時', modified: '改造版', allLetters: 'すべて', rankings: 'FCランキング', popularRanking: '人気カセット', collectorRanking: 'トップコレクター', noRankings: 'ランキングデータはまだありません', peopleCount: (count: number) => `${count}人`, cartridgeCount: (count: number) => `${count}本`, search: '検索', searchPlaceholder: 'ゲーム名またはキーワード', confirm: '確認', confirmTitle: 'カセットをコレクションしますか？', confirmMessage: (title: string, price: number) => `${price}コインで「${title}」をコレクションしますか？`, cancel: 'キャンセル', confirmCollect: 'コレクション', open: 'プレイ：', buy: 'コレクション：', buyLabel: 'コレクション', play: '収集済み・プレイ', loginRequired: 'カセットのコレクションにはログインが必要です', insufficient: `コインが不足しています（${CARTRIDGE_PRICE}枚必要）`, purchased: 'FCコレクションに追加しました', failed: 'コレクション情報を保存できませんでした', count: (count: number) => `${count}本のカセット`, collectionHint: 'コレクション後はスマホのFCコレクションで交換して遊べます', ownedCount: (count: number) => `${count}本収集済み` }
   return { title: 'FC卡带收藏', chinese: '中文', gameName: '游戏名称', random: '随机', genre: '游戏类型', publisher: '游戏厂商', releaseDate: '发行日期', updatedAt: '更新时间', modified: '改版', allLetters: '全部', rankings: 'FC排行榜', popularRanking: '最多人收藏的卡带', collectorRanking: '收藏卡带最多的玩家', noRankings: '暂无排行数据', peopleCount: (count: number) => `${count}人收藏`, cartridgeCount: (count: number) => `${count}款`, search: '搜索', searchPlaceholder: '游戏名称或关键词', confirm: '确认', confirmTitle: '确认收藏卡带？', confirmMessage: (title: string, price: number) => `将花费 ${price} 个金币收藏《${title}》，是否继续？`, cancel: '取消', confirmCollect: '确认收藏', open: '游玩', buy: '收藏', buyLabel: '收藏', play: '已收藏 · 游玩', loginRequired: '', insufficient: `金币不足，需要${CARTRIDGE_PRICE}个金币`, purchased: '收藏成功，卡带已加入FC游戏机', failed: '卡带收藏记录保存失败', count: (count: number) => `目前共有 ${count} 款卡带`, collectionHint: '收藏可直接在手机FC游戏机换卡带游玩', ownedCount: (count: number) => `已收藏 ${count} 款` }
 }
 

@@ -28,6 +28,7 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
   const [nickname, setNickname] = useState('')
   const [nicknameSetup, setNicknameSetup] = useState(false)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   const [transferAmount, setTransferAmount] = useState('')
   const [remainingToday, setRemainingToday] = useState(999)
@@ -138,11 +139,13 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
     if (amount > remainingToday) return setError(copy.dailyLimit.replace('{count}', String(remainingToday)))
     setBusy(true)
     setError('')
+    setNotice('')
     try {
       const result = await transferBrowserCoinsToMember(amount)
       if (!spendBrowserCoinBalance(result.transferred)) throw new Error(copy.browserInsufficient)
       setRemainingToday(result.remainingToday)
       setTransferAmount('')
+      setNotice(copy.availableTomorrow)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : copy.failed)
     } finally {
@@ -217,6 +220,7 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
                     <button className="h-11 shrink-0 rounded-xl bg-amber-400 px-4 font-semibold disabled:opacity-50" disabled={busy || remainingToday <= 0} type="submit">{copy.transfer}</button>
                   </div>
                   <p className="mt-2 text-xs text-black/50">{copy.remainingToday.replace('{count}', String(remainingToday))}</p>
+                  {notice ? <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">{notice}</p> : null}
                   {error ? <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
                 </form> : null}
                 {!member.needsNickname ? <div className="mt-4 overflow-hidden rounded-2xl border border-black/10">
@@ -283,7 +287,7 @@ function CoinEarningGuide({ locale }: { locale: Locale }) {
             <li><b>Share the website:</b> after completing and confirming a share, receive 100 coins once per account or IP each day.</li>
             <li><b>Page coins:</b> collect coins appearing on the home page or inner pages. These fixed/random pickups do not use multipliers.</li>
             <li><b>Member bonuses:</b> rank and check-in multipliers are added together for eligible game and viewing rewards. Guests always use 1×.</li>
-            <li><b>Saving coins:</b> browser coins and player coins are separate. After signing in, you can save up to 999 browser coins into your player account each day.</li>
+            <li><b>Saving coins:</b> browser coins and player coins are separate. After signing in, you can save up to 999 browser coins each day; saved coins become available the next day (Beijing time).</li>
           </ul>
           <div className="mt-3 rounded-xl border border-amber-300 bg-white/80 p-3">
             <strong className="flex items-center gap-1.5 text-sm text-amber-800"><i className="ri-trophy-line" />Weekly grand prizes</strong>
@@ -302,7 +306,7 @@ function CoinEarningGuide({ locale }: { locale: Locale }) {
             <li><b>分享网站：</b>完成分享并确认发送后获得100币，同一账号或IP每天限领一次。</li>
             <li><b>页面捡金币：</b>首页和内页会出现可收集金币；这类固定或随机金币不参与倍数。</li>
             <li><b>玩家倍数：</b>符合条件的游玩和观看奖励，会将段位倍数与连续签到倍数相加；游客固定为1倍。</li>
-            <li><b>保存金币：</b>浏览器金币与玩家金币相互独立；登录后每天最多可主动转入999个浏览器金币到玩家账号。</li>
+            <li><b>保存金币：</b>浏览器金币与玩家金币相互独立；登录后每天最多可主动存入999个，按北京时间次日统一更新为可用玩家金币。</li>
           </ul>
           <div className="mt-3 rounded-xl border border-amber-300 bg-white/80 p-3">
             <strong className="flex items-center gap-1.5 text-sm text-amber-800"><i className="ri-trophy-line" />各种周榜大奖</strong>
@@ -342,10 +346,10 @@ function PasswordInput({ className, onChange, ...props }: {
 
 function getMemberCopy(locale: Locale) {
   if (locale === 'en') return {
-    account: 'Member account', browserCoins: 'Browser coins', browserInsufficient: 'Not enough browser coins', changeNickname: 'Change nickname', changePassword: 'Change password', close: 'Close', create: 'Create account', currentPassword: 'Current password', dailyLimit: 'You can transfer {count} more coins today', description: 'Player accounts are only used to save coins and access some special games. Most games can be played without registering.', failed: 'Something went wrong', forgot: 'Forgot', invalidAmount: 'Enter a valid coin amount', invitationCode: 'Group invitation code', invitationHint: 'Join any QQ, WeChat, Xiaohongshu, or Douyin group and ask the group owner for a code.', login: 'Sign in', loginAccount: 'Login username', logout: 'Sign out', member: 'Member', memberCoins: 'Member coins', newPassword: 'New password', newRecoveryCode: 'New recovery code', nickname: 'Display nickname', nicknameHint: 'Shown publicly on leaderboards and may contain Chinese. After changing it, you can change it again in 30 days.', nicknameRequired: 'Nickname required', password: 'Password', recoveryCode: 'Recovery code', recoveryWarning: 'Save this code now. It is shown only once and is required if you forget your password.', register: 'Register', remainingToday: 'Daily transfer allowance remaining: {count}/999', resetPassword: 'Reset password', saveNickname: 'Save', security: 'Account security', separateHint: 'A leaderboard nickname will be generated automatically and can be changed later. Your browser coins stay on this device.', setNickname: 'Set your nickname', signedInAs: 'Signed in as', transfer: 'Save', transferAmount: 'Coin amount', username: 'Username', usernameHint: 'Use 6–20 letters, numbers, or underscores. This is your login name.', wait: 'Please wait…',
+    account: 'Member account', availableTomorrow: 'Saved successfully. These coins will become available tomorrow (Beijing time).', browserCoins: 'Browser coins', browserInsufficient: 'Not enough browser coins', changeNickname: 'Change nickname', changePassword: 'Change password', close: 'Close', create: 'Create account', currentPassword: 'Current password', dailyLimit: 'You can transfer {count} more coins today', description: 'Player accounts are only used to save coins and access some special games. Most games can be played without registering.', failed: 'Something went wrong', forgot: 'Forgot', invalidAmount: 'Enter a valid coin amount', invitationCode: 'Group invitation code', invitationHint: 'Join any QQ, WeChat, Xiaohongshu, or Douyin group and ask the group owner for a code.', login: 'Sign in', loginAccount: 'Login username', logout: 'Sign out', member: 'Member', memberCoins: 'Member coins', newPassword: 'New password', newRecoveryCode: 'New recovery code', nickname: 'Display nickname', nicknameHint: 'Shown publicly on leaderboards and may contain Chinese. After changing it, you can change it again in 30 days.', nicknameRequired: 'Nickname required', password: 'Password', recoveryCode: 'Recovery code', recoveryWarning: 'Save this code now. It is shown only once and is required if you forget your password.', register: 'Register', remainingToday: 'Daily transfer allowance remaining: {count}/999 · available tomorrow', resetPassword: 'Reset password', saveNickname: 'Save', security: 'Account security', separateHint: 'A leaderboard nickname will be generated automatically and can be changed later. Your browser coins stay on this device.', setNickname: 'Set your nickname', signedInAs: 'Signed in as', transfer: 'Save', transferAmount: 'Coin amount', username: 'Username', usernameHint: 'Use 6–20 letters, numbers, or underscores. This is your login name.', wait: 'Please wait…',
   }
   return {
-    account: '玩家账号', browserCoins: '浏览器金币', browserInsufficient: '浏览器金币不足', changeNickname: '修改昵称', changePassword: '修改密码', close: '关闭', create: '创建玩家账号', currentPassword: '当前密码', dailyLimit: '今天最多还能转入 {count} 个金币', description: '玩家账号只存放金币和玩一些特殊游戏，不用注册也可以玩大部分游戏。', failed: '操作失败，请稍后重试', forgot: '忘记密码', invalidAmount: '请输入正确的金币数量', invitationCode: '群邀请码', invitationHint: '加入任何群（Q群、微信、小红书、抖音）可向群主索取一个。', login: '登录', loginAccount: '登录账号', logout: '退出登录', member: '玩家', memberCoins: '玩家金币', newPassword: '新密码（至少8位）', newRecoveryCode: '生成恢复码', nickname: '展示昵称', nicknameHint: '昵称用于排行榜公开展示，支持中文；修改后需等待30天才能再次修改。', nicknameRequired: '请先设置昵称', password: '密码', recoveryCode: '账号恢复码', recoveryWarning: '请立即保存恢复码。它只显示一次，忘记密码时必须使用。', register: '注册', remainingToday: '今日还可转入 {count}/999 个', resetPassword: '重置密码', saveNickname: '保存', security: '账号安全', separateHint: '系统会自动生成排行榜昵称，注册后可自行修改；浏览器金币仍保留在当前设备。', setNickname: '设置昵称', signedInAs: '当前玩家', transfer: '转入玩家账号', transferAmount: '转入数量', username: '用户名', usernameHint: '只允许字母、数字和下划线，长度为6–20位；这是以后登录使用的账号。', wait: '请稍候…',
+    account: '玩家账号', availableTomorrow: '已存入待到账，按北京时间次日统一更新为可用玩家金币。', browserCoins: '浏览器金币', browserInsufficient: '浏览器金币不足', changeNickname: '修改昵称', changePassword: '修改密码', close: '关闭', create: '创建玩家账号', currentPassword: '当前密码', dailyLimit: '今天最多还能转入 {count} 个金币', description: '玩家账号只存放金币和玩一些特殊游戏，不用注册也可以玩大部分游戏。', failed: '操作失败，请稍后重试', forgot: '忘记密码', invalidAmount: '请输入正确的金币数量', invitationCode: '群邀请码', invitationHint: '加入任何群（Q群、微信、小红书、抖音）可向群主索取一个。', login: '登录', loginAccount: '登录账号', logout: '退出登录', member: '玩家', memberCoins: '玩家金币', newPassword: '新密码（至少8位）', newRecoveryCode: '生成恢复码', nickname: '展示昵称', nicknameHint: '昵称用于排行榜公开展示，支持中文；修改后需等待30天才能再次修改。', nicknameRequired: '请先设置昵称', password: '密码', recoveryCode: '账号恢复码', recoveryWarning: '请立即保存恢复码。它只显示一次，忘记密码时必须使用。', register: '注册', remainingToday: '今日还可转入 {count}/999 个 · 次日到账', resetPassword: '重置密码', saveNickname: '保存', security: '账号安全', separateHint: '系统会自动生成排行榜昵称，注册后可自行修改；浏览器金币仍保留在当前设备。', setNickname: '设置昵称', signedInAs: '当前玩家', transfer: '转入玩家账号', transferAmount: '转入数量', username: '用户名', usernameHint: '只允许字母、数字和下划线，长度为6–20位；这是以后登录使用的账号。', wait: '请稍候…',
   }
 }
 
