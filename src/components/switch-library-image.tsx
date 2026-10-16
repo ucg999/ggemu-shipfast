@@ -46,6 +46,7 @@ export function SwitchLibraryImage({ alt, className = '', eager = false, src, tr
         className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
         decoding="async"
         draggable={false}
+        fetchPriority={eager ? 'high' : 'auto'}
         loading={eager ? 'eager' : 'lazy'}
         onError={() => setFailed(true)}
         onLoad={() => setLoaded(true)}

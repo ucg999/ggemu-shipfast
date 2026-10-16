@@ -208,7 +208,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
           {searchQuery ? <button className="btn btn-ghost btn-sm mb-3" onClick={() => { setSearchQuery(''); setDraftQuery(''); setPage(1) }}>{copy.clear}: {searchQuery} ×</button> : null}
           {games.length === 0 ? <p className="py-12 text-center text-base-content/60">{copy.empty}</p> : null}
           <div className={`grid gap-3 sm:gap-4 ${platform === 'psp' ? 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-7' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'}`}>
-            {visibleGames.map((game) => {
+            {visibleGames.map((game, index) => {
               const pspCover = platform === 'psp' && 'boxCover' in game && typeof game.boxCover === 'string'
                 ? game.boxCover
                 : undefined
@@ -220,6 +220,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                   className={`${platform === 'psp' ? 'psp-library-cover aspect-[353/600] [&_img]:object-contain' : 'aspect-[616/353] transition group-hover:scale-[1.02]'} w-full`}
                   src={pspCover ?? game.cover}
                   alt={`${game.title}${platform === 'psp' ? ' 封面' : ''}`}
+                  eager={index < (platform === 'psp' ? 7 : 5)}
                   transparent={platform === 'psp'}
                 />
               </Link>

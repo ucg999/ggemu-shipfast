@@ -395,7 +395,9 @@ export function SiteLayout({
                 <img
                   alt={t.siteName}
                   className="h-full w-full object-contain"
-                  src="/logo.png"
+                  decoding="async"
+                  fetchPriority="high"
+                  src="/logo-small.webp"
                 />
               </span>
               <span className="hidden w-max shrink-0 text-left leading-tight sm:flex sm:flex-col sm:items-start sm:justify-center">
@@ -991,11 +993,13 @@ export function SiteLayout({
                             {homeT.wechat}
                           </summary>
                           <div className="px-2 pb-2 pt-1">
-                            <img
+                            {isFriendsMenuOpen ? <img
                               alt={homeT.wechatQrAlt}
                               className="w-full rounded-lg bg-white object-contain"
+                              decoding="async"
+                              loading="lazy"
                               src="/wechat-qr.png"
-                            />
+                            /> : null}
                           </div>
                         </details>
                       </li>
@@ -1006,11 +1010,13 @@ export function SiteLayout({
                             QQ
                           </summary>
                           <div className="px-2 pb-2 pt-1">
-                            <img
+                            {isFriendsMenuOpen ? <img
                               alt={homeT.qqQrAlt}
                               className="w-full rounded-lg object-contain"
+                              decoding="async"
+                              loading="lazy"
                               src="/qq-qr.jpg"
-                            />
+                            /> : null}
                           </div>
                         </details>
                       </li>
@@ -1202,6 +1208,7 @@ function getMahjongChargeTip(locale: Locale) {
 }
 
 export function SiteFooter({ locale }: { locale: Locale }) {
+  const [isFriendsMenuOpen, setIsFriendsMenuOpen] = useState(false)
   const t = getI18n(locale).layout
   const homeT = getI18n(locale).home
   const faq = getHomeFaqs(locale)
@@ -1245,18 +1252,18 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale, rankingId: 'latest' }} to="/$locale/rankings/$rankingId">{t.latestGames}</Link>
             <Link className="text-base font-medium text-base-content transition hover:opacity-55" params={{ locale, rankingId: 'popular' }} to="/$locale/rankings/$rankingId">{t.mostPopularGames}</Link>
             <Link className="text-base font-medium text-base-content transition hover:opacity-55 lg:hidden" params={{ locale }} to="/$locale/original-games">{getOriginalGamesTitle(locale)}</Link>
-            <details className="group relative hidden lg:block">
+            <details className="group relative hidden lg:block" onToggle={event => setIsFriendsMenuOpen(event.currentTarget.open)} open={isFriendsMenuOpen}>
               <summary className="cursor-pointer list-none text-base font-medium text-base-content transition hover:opacity-55">
                 {homeT.findFriends}
               </summary>
               <div className="absolute bottom-full left-0 z-30 mb-4 grid w-80 grid-cols-2 gap-4 rounded-2xl border border-base-content/10 bg-base-100 p-4 text-center shadow-2xl">
                 <div>
                   <p className="mb-2 font-medium text-base-content"><i className="ri-wechat-fill mr-1 text-[#07c160]" />{homeT.wechat}</p>
-                  <img alt={homeT.wechatQrAlt} className="aspect-square w-full rounded-lg bg-white object-contain" loading="lazy" src="/wechat-qr.png" />
+                  {isFriendsMenuOpen ? <img alt={homeT.wechatQrAlt} className="aspect-square w-full rounded-lg bg-white object-contain" decoding="async" loading="lazy" src="/wechat-qr.png" /> : null}
                 </div>
                 <div>
                   <p className="mb-2 font-medium text-base-content"><i className="ri-qq-fill mr-1" />QQ</p>
-                  <img alt={homeT.qqQrAlt} className="aspect-square w-full rounded-lg object-contain" loading="lazy" src="/qq-qr.jpg" />
+                  {isFriendsMenuOpen ? <img alt={homeT.qqQrAlt} className="aspect-square w-full rounded-lg object-contain" decoding="async" loading="lazy" src="/qq-qr.jpg" /> : null}
                 </div>
               </div>
             </details>

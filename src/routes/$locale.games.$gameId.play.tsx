@@ -132,13 +132,13 @@ function LocalizedPlayGamePage() {
         void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
         return
       }
-      if (readGuestMahjongTrialMs() < 10 * 60_000) {
+      if (readGuestMahjongTrialMs() < ARCADE_MAHJONG_FREE_TRIAL_MINUTES * 60_000) {
         setGuestMahjongTrial(true)
         setMemberAccessGranted(true)
         return
       }
       setMemberAccessGranted(false)
-      window.alert(lang === 'en' ? 'Today’s 10-minute guest trial has ended. Sign in to keep playing.' : '今天的游客试玩10分钟已用完，登录后可继续游玩。')
+      window.alert(lang === 'en' ? `Today’s ${ARCADE_MAHJONG_FREE_TRIAL_MINUTES}-minute guest trial has ended. Sign in to keep playing.` : `今天的游客试玩${ARCADE_MAHJONG_FREE_TRIAL_MINUTES}分钟已用完，登录后可继续游玩。`)
       requestMemberLogin()
       void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
     }).catch(() => {
@@ -149,7 +149,7 @@ function LocalizedPlayGamePage() {
         void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
         return
       }
-      if (readGuestMahjongTrialMs() < 10 * 60_000) {
+      if (readGuestMahjongTrialMs() < ARCADE_MAHJONG_FREE_TRIAL_MINUTES * 60_000) {
         setGuestMahjongTrial(true)
         setMemberAccessGranted(true)
       } else {
@@ -170,10 +170,10 @@ function LocalizedPlayGamePage() {
       const elapsed = document.visibilityState === 'visible' ? Math.min(2_000, now - lastTick) : 0
       lastTick = now
       if (elapsed <= 0 || finished) return
-      if (addGuestMahjongTrialMs(elapsed) < 10 * 60_000) return
+      if (addGuestMahjongTrialMs(elapsed) < ARCADE_MAHJONG_FREE_TRIAL_MINUTES * 60_000) return
       finished = true
       setMemberAccessGranted(false)
-      window.alert(lang === 'en' ? 'Today’s 10-minute guest trial has ended. Sign in to keep playing.' : '今天的游客试玩10分钟已用完，登录后可继续游玩。')
+      window.alert(lang === 'en' ? `Today’s ${ARCADE_MAHJONG_FREE_TRIAL_MINUTES}-minute guest trial has ended. Sign in to keep playing.` : `今天的游客试玩${ARCADE_MAHJONG_FREE_TRIAL_MINUTES}分钟已用完，登录后可继续游玩。`)
       requestMemberLogin()
       void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
     }

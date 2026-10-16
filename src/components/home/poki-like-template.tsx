@@ -301,7 +301,7 @@ function PokiControlTiles({
         <img
           alt={siteCopy.siteName}
           className="h-full max-h-[52px] w-full object-contain px-3 py-2"
-          src="/logo.png"
+          src="/logo-small.webp"
         />
       </Link>
 

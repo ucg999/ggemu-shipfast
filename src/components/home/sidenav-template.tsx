@@ -135,7 +135,7 @@ function HomeSidenav({
             <img
               alt={layoutCopy.siteName}
               className="h-full w-full object-contain"
-              src="/logo.png"
+              src="/logo-small.webp"
             />
           </span>
           <span className="min-w-0 leading-tight">

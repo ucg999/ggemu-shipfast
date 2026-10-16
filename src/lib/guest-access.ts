@@ -1,3 +1,5 @@
+import { ARCADE_MAHJONG_FREE_TRIAL_MINUTES } from './arcade-mahjong-games'
+
 const LIBRARY_DETAIL_KEY = 'ucg999-guest-library-detail'
 const MAHJONG_TRIAL_KEY = 'ucg999-guest-mahjong-trial'
 
@@ -30,7 +32,7 @@ export function readGuestMahjongTrialMs() {
 }
 
 export function addGuestMahjongTrialMs(milliseconds: number) {
-  const usedMs = Math.min(10 * 60_000, readGuestMahjongTrialMs() + Math.max(0, milliseconds))
+  const usedMs = Math.min(ARCADE_MAHJONG_FREE_TRIAL_MINUTES * 60_000, readGuestMahjongTrialMs() + Math.max(0, milliseconds))
   try {
     window.localStorage.setItem(MAHJONG_TRIAL_KEY, JSON.stringify({ date: todayKey(), usedMs }))
   } catch {}

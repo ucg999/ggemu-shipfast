@@ -179,10 +179,10 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
           </div>
         </header>
         <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-4 lg:grid-cols-8">
-          {visibleCartridges.map(cartridge => <article className="psp-library-card group relative" key={cartridge.id}>
+          {visibleCartridges.map((cartridge, index) => <article className="psp-library-card group relative" key={cartridge.id}>
             <button aria-label={`${owned.includes(cartridge.id) ? copy.play : copy.collect} ${cartridge.title}`} className="block w-full" type="button" onClick={() => openCartridge(cartridge.id)}>
               <div className="gb-cartridge-cover psp-library-cover aspect-[5/6] w-full overflow-visible rounded-lg bg-transparent">
-                <img alt={`${cartridge.title} GB卡带`} className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.025]" decoding="async" loading="lazy" src={cartridge.cover} />
+                <img alt={`${cartridge.title} GB卡带`} className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.025]" decoding="async" fetchPriority={index < 3 ? 'high' : 'auto'} loading={index < 8 ? 'eager' : 'lazy'} src={cartridge.cover} />
               </div>
             </button>
             <div className="psp-library-info bg-base-100 p-1.5 sm:p-2"><h2 className="truncate text-center text-sm font-semibold text-base-content sm:text-base" title={cartridge.title}>{cartridge.title}</h2><div className="mt-1 flex min-w-0 items-center gap-1.5 text-[10px] text-base-content/60 sm:text-xs"><span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-center">{cartridge.number} · {cartridge.releaseDate} · {cartridge.publisher}</span><button aria-label={`${owned.includes(cartridge.id) ? copy.play : copy.collect} ${cartridge.title}`} className={`ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-sm transition sm:h-7 sm:w-7 ${owned.includes(cartridge.id) ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-amber-300 text-black hover:bg-amber-200'}`} title={owned.includes(cartridge.id) ? copy.play : `${PRICE} ${copy.collect}`} type="button" onClick={() => playOrCollect(cartridge.id)}>{owned.includes(cartridge.id) ? <i className="ri-play-fill" /> : <img alt="" className="h-4 w-4 object-contain sm:h-[18px] sm:w-[18px]" src="/images/coin-rewards/pixel-reward-coin.webp" />}</button></div></div>

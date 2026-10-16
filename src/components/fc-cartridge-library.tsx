@@ -277,6 +277,34 @@ const FC_CARTRIDGES = [
     edition: '原版',
   },
   {
+    id: 'balloon-fight', number: '030号', title: '气球大战', cover: '/fc-player/assets/cartridges/balloon-fight.min.webp',
+    genre: '动作', releaseDate: '1985-01-22', publisher: '任天堂', initial: 'Q', edition: '原版',
+  },
+  {
+    id: 'ice-climber', number: '031号', title: '敲冰块', cover: '/fc-player/assets/cartridges/ice-climber.min.webp',
+    genre: '动作', releaseDate: '1985-01-30', publisher: '任天堂', initial: 'Q', edition: '原版',
+  },
+  {
+    id: 'galaga', number: '033号', title: '大蜜蜂', cover: '/fc-player/assets/cartridges/galaga.min.webp',
+    genre: '射击', releaseDate: '1985-02-15', publisher: 'NAMCO', initial: 'D', edition: '原版',
+  },
+  {
+    id: 'soccer', number: '037号', title: '足球', cover: '/fc-player/assets/cartridges/soccer.min.webp',
+    genre: '体育', releaseDate: '1985-04-09', publisher: '任天堂', initial: 'Z', edition: '原版',
+  },
+  {
+    id: 'championship-lode-runner', number: '039号', title: '冠军淘金者', cover: '/fc-player/assets/cartridges/championship-lode-runner.min.webp',
+    genre: '动作', releaseDate: '1985-04-17', publisher: 'Hudson Soft', initial: 'G', edition: '原版',
+  },
+  {
+    id: 'kung-fu', number: '040号', title: '功夫', cover: '/fc-player/assets/cartridges/kung-fu.min.webp',
+    genre: '动作', releaseDate: '1985-06-21', publisher: '任天堂', initial: 'G', edition: '原版',
+  },
+  {
+    id: 'wrecking-crew', number: '046号', title: '拆屋工', cover: '/fc-player/assets/cartridges/wrecking-crew.min.webp',
+    genre: '益智', releaseDate: '1985-06-18', publisher: '任天堂', initial: 'C', edition: '原版',
+  },
+  {
     id: 'karateka-street-fighter',
     number: '1054号',
     title: '空手道 街霸版',
@@ -345,6 +373,13 @@ const FC_CARTRIDGE_UPDATED_AT: Record<string, string> = {
   'donkey-kong-jr-math': '2026-10-05T18:17:36+08:00',
   'urban-champion': '2026-10-05T18:17:43+08:00',
   'happy-cat': '2026-10-05T18:17:43+08:00',
+  'balloon-fight': '2026-10-16T18:30:00+08:00',
+  'ice-climber': '2026-10-16T18:30:00+08:00',
+  galaga: '2026-10-16T18:30:00+08:00',
+  soccer: '2026-10-16T18:30:00+08:00',
+  'championship-lode-runner': '2026-10-16T18:30:00+08:00',
+  'kung-fu': '2026-10-16T18:30:00+08:00',
+  'wrecking-crew': '2026-10-16T18:30:00+08:00',
   'karateka-street-fighter': '2026-10-05T18:17:44+08:00',
   'baoxiao-sanguo': '2026-10-07T11:24:38+08:00',
   'prison-break-nine-characters': '2026-10-11T12:14:55+08:00',
@@ -581,8 +616,8 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
             </div> : null}
           </header>
 
-          <div className="grid grid-cols-3 gap-2.5 sm:gap-4 lg:grid-cols-6">
-            {cartridges.map((cartridge) => (
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-4 lg:grid-cols-7">
+            {cartridges.map((cartridge, index) => (
               <article className="psp-library-card group relative" key={cartridge.id}>
                 <button aria-label={`${owned.includes(cartridge.id) ? copy.open : copy.buy}${cartridge.title}`} className="block w-full" onClick={() => openCartridge(cartridge.id)} type="button">
                   <div className="fc-cartridge-cover psp-library-cover aspect-[3/2] w-full overflow-hidden rounded-lg bg-transparent">
@@ -590,7 +625,8 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
                       alt={`${cartridge.title} FC卡带`}
                       className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.025]"
                       decoding="async"
-                      loading="lazy"
+                      fetchPriority={index < 3 ? 'high' : 'auto'}
+                      loading={index < 7 ? 'eager' : 'lazy'}
                       src={cartridge.cover}
                     />
                   </div>
@@ -646,7 +682,7 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
             onClose={() => setPlaying(null)}
             src={playing === 'green-beret-captain-america'
               ? '/fc-1058/index.html?v=20261016-2&cartridge=green-beret-captain-america'
-              : `/fc-player/index.html?v=20261016-4&cartridge=${encodeURIComponent(playing)}`}
+              : `/fc-player/index.html?v=20261016-5&cartridge=${encodeURIComponent(playing)}`}
             title={FC_CARTRIDGES.find(item => item.id === playing)?.title ?? 'FC游戏机'}
           /> : null}
           {rankingsOpen ? <div className="fixed inset-0 z-[240] flex items-center justify-center bg-black/35 px-4" role="dialog" aria-modal="true" aria-labelledby="fc-rankings-title" onClick={() => setRankingsOpen(false)}>

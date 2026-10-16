@@ -4,6 +4,15 @@
 /images/*
   Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
 
+/logo-small.webp
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+
+/wechat-qr.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/qq-qr.jpg
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
 /fc-player/assets/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 

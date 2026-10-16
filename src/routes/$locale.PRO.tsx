@@ -702,7 +702,7 @@ function ThemeMode() {
         </section>}
         <footer className="kt-footer">
           <div className="kt-footer-brand">
-            <a href={`/${lang}#classic`} aria-label={layoutCopy.siteName}><img src="/logo.png" alt="" /><span className="kt-footer-title"><strong>{layoutCopy.siteName}</strong><small>{layoutCopy.siteSlogan}</small></span></a>
+            <a href={`/${lang}#classic`} aria-label={layoutCopy.siteName}><img src="/logo-small.webp" alt="" /><span className="kt-footer-title"><strong>{layoutCopy.siteName}</strong><small>{layoutCopy.siteSlogan}</small></span></a>
             <HomeCoinBag balance={coinRewards.balance} lang={lang} onOpen={() => {}} />
             <MemberAccountButton locale={lang} />
             {memberSession ? <CoinRankBadge balance={memberSession.coinBalance} compact lang={lang} /> : null}

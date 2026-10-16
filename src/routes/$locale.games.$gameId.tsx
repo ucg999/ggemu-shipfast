@@ -423,6 +423,8 @@ function LocalizedGameDetailPage() {
                 <img
                   alt={game.name ?? 'Game cover'}
                   className="h-full w-full object-cover"
+                  decoding="async"
+                  fetchPriority="high"
                   src={game.game_cover}
                 />
               ) : (
@@ -899,6 +901,8 @@ function GameShareActions({
             <img
               alt={labels.posterTitle}
               className="mt-4 w-full rounded-box border border-base-300 bg-base-200"
+              decoding="async"
+              loading="lazy"
               src={posterUrl}
             />
             <div className="modal-action">

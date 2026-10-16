@@ -1,0 +1,183 @@
+:root {
+  color-scheme: light;
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+  background: #d7d7d9;
+  touch-action: none;
+  user-select: none;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #d7d7d9;
+}
+
+button { font: inherit; -webkit-tap-highlight-color: transparent; }
+
+.machine {
+  width: min(100vw, 760px);
+  height: 100dvh;
+  min-height: 520px;
+  margin: 0 auto;
+  padding: max(6px, env(safe-area-inset-top)) 12px max(8px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-rows: 34px minmax(210px, 1fr) 224px 20px;
+  gap: 7px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #555;
+  font-size: 13px;
+}
+
+.text-button {
+  border: 0;
+  padding: 5px 8px;
+  color: #555;
+  background: transparent;
+}
+
+.screen-shell {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 7px solid #202124;
+  border-radius: 10px;
+  background: #000;
+  box-shadow: inset 0 0 0 1px #555, 0 5px 14px rgb(0 0 0 / 22%);
+}
+
+#screen {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  background: #000;
+}
+
+.loading, .start-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #eee;
+  background: #090909;
+  border: 0;
+  z-index: 3;
+}
+
+.start-overlay { display: none; font-size: 16px; cursor: pointer; }
+
+.controller {
+  position: relative;
+  display: grid;
+  grid-template-columns: 180px 1fr 190px;
+  align-items: center;
+  min-height: 0;
+}
+
+.dpad {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  margin-left: 5px;
+}
+
+.pad {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border: 1px solid #202124;
+  color: #aaa;
+  background: linear-gradient(#333, #171717);
+}
+
+.pad.up { left: 49px; top: 0; border-radius: 8px 8px 2px 2px; }
+.pad.left { left: 0; top: 49px; border-radius: 8px 2px 2px 8px; }
+.pad.center { left: 49px; top: 49px; border: 0; background: #1a1a1a; }
+.pad.right { left: 98px; top: 49px; border-radius: 2px 8px 8px 2px; }
+.pad.down { left: 49px; top: 98px; border-radius: 2px 2px 8px 8px; }
+
+.middle-buttons {
+  align-self: end;
+  padding-bottom: 22px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.pill {
+  width: 70px;
+  height: 30px;
+  border: 1px solid #999;
+  border-radius: 16px;
+  color: #555;
+  background: #ececef;
+  font-size: 10px;
+}
+
+.action-buttons {
+  position: relative;
+  width: 188px;
+  height: 170px;
+}
+
+.action {
+  position: absolute;
+  border: 2px solid #6e1322;
+  color: #ddd;
+  background: linear-gradient(145deg, #a52842, #6d1024);
+  box-shadow: 0 4px 0 #4d0c19, 0 6px 10px rgb(0 0 0 / 22%);
+}
+
+.action.a, .action.b { width: 66px; height: 66px; border-radius: 50%; bottom: 25px; font-size: 22px; }
+.action.b { left: 12px; }
+.action.a { right: 8px; bottom: 55px; }
+.action.ab {
+  top: 2px;
+  right: 17px;
+  width: 92px;
+  height: 38px;
+  border-radius: 20px;
+  color: #555;
+  border-color: #aaa;
+  background: #e7e7e9;
+  box-shadow: 0 3px 0 #aaa;
+  font-weight: 300;
+}
+
+button.pressed { transform: translateY(3px); filter: brightness(.78); box-shadow: none; }
+
+.hint { margin: 0; text-align: center; color: #666; font-size: 11px; line-height: 20px; }
+
+@media (max-width: 560px) {
+  .machine {
+    padding-left: 7px;
+    padding-right: 7px;
+    grid-template-rows: 30px minmax(190px, 1fr) 210px 18px;
+  }
+  .controller { grid-template-columns: 146px 1fr 146px; }
+  .dpad { transform: scale(.86); transform-origin: left center; }
+  .action-buttons { width: 146px; transform: scale(.9); transform-origin: right center; }
+  .middle-buttons { gap: 4px; padding-bottom: 16px; }
+  .pill { width: 55px; font-size: 9px; }
+  .hint { font-size: 9px; }
+}
+
+@media (max-height: 660px) {
+  .machine { grid-template-rows: 26px minmax(180px, 1fr) 174px 16px; gap: 3px; }
+  .controller { transform: scale(.82); transform-origin: center center; margin: -16px -7%; width: 114%; }
+  .hint { line-height: 16px; }
+}

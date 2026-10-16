@@ -9,6 +9,7 @@ const FC_CARTRIDGE_IDS = new Set([
   'donkey-kong', 'donkey-kong-jr', 'popeye', 'gomoku-narabe', 'mahjong', 'mario-bros',
   'popeye-english', 'baseball', 'donkey-kong-jr-math', 'urban-champion', 'happy-cat', 'karateka-street-fighter',
   'baoxiao-sanguo', 'prison-break-nine-characters', 'contra-underwater-eight-levels', 'green-beret-captain-america',
+  'balloon-fight', 'ice-climber', 'galaga', 'soccer', 'championship-lode-runner', 'kung-fu', 'wrecking-crew',
 ])
 
 export const Route = createFileRoute('/fc')({
@@ -74,7 +75,7 @@ function FcPlayerPage() {
         onLoad={() => iframeRef.current?.contentWindow?.postMessage({ type: 'fc-member-status', loggedIn: Boolean(member) }, window.location.origin)}
         src={cartridge === 'green-beret-captain-america'
           ? '/fc-1058/index.html?v=20261016-2&cartridge=green-beret-captain-america'
-          : `/fc-player/index.html?v=20261016-4${cartridge ? `&cartridge=${encodeURIComponent(cartridge)}` : ''}`}
+          : `/fc-player/index.html?v=20261016-5${cartridge ? `&cartridge=${encodeURIComponent(cartridge)}` : ''}`}
         title="超级马里奥兄弟 FC游戏机"
         style={{
           position: 'fixed',

@@ -24,6 +24,7 @@ import { preloadProModeAssets, scheduleInitialProModePreload } from '#/lib/pro-a
 import { useMemberSession } from '#/lib/member-client'
 import { markWantedFeaturedGame } from '#/components/wanted-playtime-tracker'
 import { getHomeHeroGameName } from '#/lib/game-display-name'
+import { isArcadeMahjongGame } from '#/lib/arcade-mahjong-games'
 
 export function DefaultHomeTemplate(
   props: HomeTemplateProps & { onCoinsEarned?: (amount: number) => void },
@@ -47,6 +48,7 @@ export function DefaultHomeTemplate(
     [visibleHomeGames, visibleLatestGames, visibleMostPlayedGames],
   )
   const [showMobileRecent, setShowMobileRecent] = useState(false)
+  const [mobileFriendsOpen, setMobileFriendsOpen] = useState(false)
   const [rankingRows, setRankingRows] = useState<{ weekly: PublicGame[]; rising: PublicGame[] }>({ weekly: [], rising: [] })
   const loadRanking = useServerFn(searchGames)
   const [rankingRetry, setRankingRetry] = useState(0)
@@ -73,7 +75,7 @@ export function DefaultHomeTemplate(
     return () => { cancelled = true }
   }, [lang, loadRanking, rankingRetry])
   const [randomVideoGames, setRandomVideoGames] = useState(() =>
-    visibleMostPlayedGames.slice(0, 6),
+    selectHourlyDesktopHeroGames(desktopHeroGamePool, visibleMostPlayedGames, lang),
   )
   const [mobileVideoGames, setMobileVideoGames] = useState(() =>
     visibleMostPlayedGames.filter(game => Boolean(game.game_video?.trim())).slice(0, 4),
@@ -88,8 +90,8 @@ export function DefaultHomeTemplate(
     readHomeCards<PublicGame[]>(`${lang}:home-mahjong`) ?? [],
   )
   const desktopHeroGames = useMemo(
-    () => placeDailyMahjongGameFirst(randomVideoGames, homeMahjongGames, lang),
-    [homeMahjongGames, lang, randomVideoGames],
+    () => placeDailyMahjongGameFirst(randomVideoGames, desktopHeroGamePool.filter(isArcadeMahjongGame), lang),
+    [desktopHeroGamePool, lang, randomVideoGames],
   )
   const [randomPopupGame, setRandomPopupGame] = useState<PublicGame | null>(null)
   const [randomPopupMultiplier, setRandomPopupMultiplier] = useState(2)
@@ -354,16 +356,7 @@ export function DefaultHomeTemplate(
                       to="/$locale/games/$gameId"
                     >
                       {index === 1 && game.game_video?.trim() ? (
-                        <video
-                          autoPlay
-                          className="h-full w-full object-cover"
-                          loop
-                          muted
-                          playsInline
-                          poster={game.game_cover}
-                          preload="metadata"
-                          src={game.game_video}
-                        />
+                        <DeferredHeroVideo cover={game.game_cover} src={game.game_video} />
                       ) : (
                         <>
                           <img
@@ -867,6 +860,50 @@ function dedupeVideoGames(games: Array<PublicGame>) {
   })
 }
 
+function DeferredHeroVideo({ cover, src }: { cover: string; src: string }) {
+  const [loadVideo, setLoadVideo] = useState(false)
+  const [videoReady, setVideoReady] = useState(false)
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLoadVideo(true), 700)
+    return () => window.clearTimeout(timer)
+  }, [src])
+
+  return <>
+    <img
+      alt=""
+      className="h-full w-full object-cover"
+      decoding="async"
+      fetchPriority="high"
+      src={cover}
+    />
+    {loadVideo ? <video
+      autoPlay
+      className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${videoReady ? 'opacity-100' : 'opacity-0'}`}
+      loop
+      muted
+      playsInline
+      poster={cover}
+      preload="metadata"
+      src={src}
+      onCanPlay={() => setVideoReady(true)}
+    /> : null}
+  </>
+}
+
+function getShanghaiDateTimeKey(date: Date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    day: '2-digit',
+    hour: '2-digit',
+    hourCycle: 'h23',
+    month: '2-digit',
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+  }).formatToParts(date)
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]))
+  return { dayKey: `${values.year}-${values.month}-${values.day}`, hourKey: `${values.year}-${values.month}-${values.day}:${values.hour}` }
+}
+
 function selectHourlyDesktopHeroGames(
   allGames: Array<PublicGame>,
   videoGames: Array<PublicGame>,
@@ -876,8 +913,7 @@ function selectHourlyDesktopHeroGames(
   if (uniqueGames.length < 3) return uniqueGames
 
   const now = new Date()
-  const dayKey = getLocalDateKey(now)
-  const hourKey = `${dayKey}:${String(now.getHours()).padStart(2, '0')}`
+  const { dayKey, hourKey } = getShanghaiDateTimeKey(now)
   const sideGames = [...uniqueGames].sort((left, right) => (
     dailyGameScore(`${dayKey}:desktop-side:${locale}:${getGameId(left)}`) -
     dailyGameScore(`${dayKey}:desktop-side:${locale}:${getGameId(right)}`)
@@ -903,7 +939,7 @@ function placeDailyMahjongGameFirst(
   const candidates = dedupeVideoGames(mahjongGames).filter(game => getGameId(game))
   if (candidates.length === 0) return heroGames
 
-  const dayKey = getLocalDateKey(new Date())
+  const { dayKey } = getShanghaiDateTimeKey(new Date())
   const dailyMahjongGame = [...candidates].sort((left, right) => (
     dailyGameScore(`${dayKey}:desktop-mahjong-hero:${locale}:${getGameId(left)}`) -
     dailyGameScore(`${dayKey}:desktop-mahjong-hero:${locale}:${getGameId(right)}`)
@@ -925,7 +961,7 @@ function placeDailyMahjongGameFirst(
 function getHourlyDesktopWantedMultiplier(gameId: string, locale: string) {
   const multipliers = [20, 50, 100, 150, 200] as const
   const now = new Date()
-  const hourKey = `${getLocalDateKey(now)}:${String(now.getHours()).padStart(2, '0')}`
+  const { hourKey } = getShanghaiDateTimeKey(now)
   return multipliers[dailyGameScore(`${hourKey}:desktop-middle-multiplier:${locale}:${gameId}`) % multipliers.length]
 }
 
@@ -1104,7 +1140,7 @@ export function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) 
           </ul>
         </details>
 
-        <details>
+        <details onToggle={event => setMobileFriendsOpen(event.currentTarget.open)} open={mobileFriendsOpen}>
           <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 rounded-xl px-3 py-2.5 font-medium hover:bg-base-200">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-base-200">
               <i className="ri-user-add-line" />
@@ -1118,22 +1154,26 @@ export function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) 
                 <i className="ri-wechat-fill mr-1 text-[#07c160]" />
                 {t.wechat}
               </summary>
-              <img
+              {mobileFriendsOpen ? <img
                 alt={t.wechatQrAlt}
                 className="mt-2 w-full rounded-lg bg-white object-contain"
+                decoding="async"
+                loading="lazy"
                 src="/wechat-qr.png"
-              />
+              /> : null}
             </details>
             <details className="rounded-xl bg-base-200 p-2">
               <summary className="cursor-pointer list-none text-center text-sm font-medium">
                 <i className="ri-qq-fill mr-1" />
                 QQ
               </summary>
-              <img
+              {mobileFriendsOpen ? <img
                 alt={t.qqQrAlt}
                 className="mt-2 w-full rounded-lg object-contain"
+                decoding="async"
+                loading="lazy"
                 src="/qq-qr.jpg"
-              />
+              /> : null}
             </details>
           </div>
         </details>
