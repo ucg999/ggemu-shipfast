@@ -1,9 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 import { MemberAccountButton } from '#/components/member-account'
 import { spendCoinBalance } from '#/lib/coin-wallet'
-import { getMemberSession, requestMemberLogin } from '#/lib/member-client'
+import { getMemberSession, requestMemberLogin, useMemberSession } from '#/lib/member-client'
 
 const FC_CARTRIDGE_IDS = new Set([
   'donkey-kong', 'donkey-kong-jr', 'popeye', 'gomoku-narabe', 'mahjong', 'mario-bros',
@@ -29,9 +29,24 @@ export const Route = createFileRoute('/fc')({
 
 function FcPlayerPage() {
   const { cartridge } = Route.useSearch()
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const member = useMemberSession()
+
+  useEffect(() => {
+    iframeRef.current?.contentWindow?.postMessage({ type: 'fc-member-status', loggedIn: Boolean(member) }, window.location.origin)
+  }, [member])
+
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
+      if (event.data?.type === 'fc-member-status-request') {
+        const { member: sessionMember } = await getMemberSession().catch(() => ({ member: null }))
+        ;(event.source as Window | null)?.postMessage(
+          { type: 'fc-member-status', loggedIn: Boolean(sessionMember) },
+          event.origin,
+        )
+        return
+      }
       if (event.data?.type === 'fc-member-login-request') {
         requestMemberLogin()
         return
@@ -54,8 +69,12 @@ function FcPlayerPage() {
   return (
     <>
       <iframe
+        ref={iframeRef}
         allow="autoplay"
-        src={`/fc-player/index.html?v=20261015-1${cartridge ? `&cartridge=${encodeURIComponent(cartridge)}` : ''}`}
+        onLoad={() => iframeRef.current?.contentWindow?.postMessage({ type: 'fc-member-status', loggedIn: Boolean(member) }, window.location.origin)}
+        src={cartridge === 'green-beret-captain-america'
+          ? '/fc-1058/index.html?v=20261016-2&cartridge=green-beret-captain-america'
+          : `/fc-player/index.html?v=20261016-4${cartridge ? `&cartridge=${encodeURIComponent(cartridge)}` : ''}`}
         title="超级马里奥兄弟 FC游戏机"
         style={{
           position: 'fixed',

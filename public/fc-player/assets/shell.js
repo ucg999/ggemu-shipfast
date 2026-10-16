@@ -5,9 +5,37 @@ const CONFIG = window.GGEMU_CONFIG || {};
 const mainCanvas = document.getElementById('main-canvas');
 const mainCtx = mainCanvas.getContext('2d');
 let soundEnabled = true;
-let showAbButton = true;
+let showAbButton = false;
 let rapidFireEnabled = false;
 let videoFilterEnabled = true;
+let memberFeatureUnlocked = false;
+function currentShareUnlockKey() { return 'ucg999-fc-feature-share:' + currentGameId; }
+function hasSharedCurrentGame() {
+try { return localStorage.getItem(currentShareUnlockKey()) === '1'; } catch (error) { return false; }
+}
+function isTrialGame() { return currentGameId === 'super-mario-bros-world'; }
+function canUseSaveFeatures() { return isTrialGame() || memberFeatureUnlocked || hasSharedCurrentGame(); }
+function requireSaveFeatureAccess() {
+if (canUseSaveFeatures()) return true;
+showToast('登录账号或分享当前游戏后可使用存读档');
+try { window.parent.postMessage({ type: 'fc-member-login-request' }, window.location.origin); } catch (error) {}
+return false;
+}
+function requireMemberFeatureAccess() {
+if (isTrialGame() || memberFeatureUnlocked) return true;
+showToast('请先登录玩家账号后使用');
+try { window.parent.postMessage({ type: 'fc-member-login-request' }, window.location.origin); } catch (error) {}
+return false;
+}
+function markCurrentGameShared() {
+try { localStorage.setItem(currentShareUnlockKey(), '1'); } catch (error) {}
+showToast('分享完成，当前游戏存读档已解锁');
+}
+window.addEventListener('message', function (event) {
+if (event.origin !== window.location.origin || event.data?.type !== 'fc-member-status') return;
+memberFeatureUnlocked = Boolean(event.data.loggedIn);
+});
+try { window.parent.postMessage({ type: 'fc-member-status-request' }, window.location.origin); } catch (error) {}
 const FC_VIDEO_FILTER = 'ggemu-crt';
 mainCanvas.dataset.videoFilter = FC_VIDEO_FILTER;
 const crtScanlineTile = document.createElement('canvas');
@@ -582,6 +610,7 @@ url: shareUrl
 if (navigator.share) {
 try {
 await navigator.share(shareData);
+markCurrentGameShared();
 return;
 } catch (error) {
 if (error && error.name === 'AbortError') return;
@@ -589,12 +618,13 @@ if (error && error.name === 'AbortError') return;
 }
 try {
 await navigator.clipboard.writeText(shareUrl);
-showToast('页面链接已复制');
+markCurrentGameShared();
 } catch (error) {
 showToast('请复制浏览器地址分享');
 }
 }
 document.getElementById('btn-save').addEventListener('click', async () => {
+if (!requireSaveFeatureAccess()) return;
 if (!window.confirm('确认保存当前进度吗？这将覆盖当前游戏的原有存档。')) return;
 try { await core.saveState(); } catch (e) { showToast('存档失败'); console.error(e); }
 });
@@ -605,7 +635,7 @@ const utilityMenu = document.createElement('section');
 utilityMenu.id = 'utility-menu';
 utilityMenu.setAttribute('aria-hidden', 'true');
 utilityMenu.style.cssText = 'position:fixed;inset:0;z-index:120;display:none;place-items:center;background:rgba(20,20,24,.48);padding:20px';
-utilityMenu.innerHTML = '<div style="width:min(82vw,280px);padding:18px;border:1px solid rgba(255,255,255,.7);border-radius:20px;background:#e8e8ea;box-shadow:0 20px 60px rgba(0,0,0,.38)"><strong style="display:block;margin-bottom:14px;text-align:center;color:#35353a;font-size:18px">游戏菜单</strong><button id="menu-load" type="button" style="width:100%;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">读档</button><button id="menu-sound" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">声音（开）</button><button id="menu-ab" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">AB按键（开）</button><button id="menu-rapid" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">长按连击（关）</button><button id="menu-share" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">分享</button><button id="menu-close" type="button" style="width:100%;margin-top:12px;padding:9px;border:0;background:transparent;color:#696970;font-size:13px">关闭菜单</button></div>';
+utilityMenu.innerHTML = '<div style="width:min(82vw,280px);padding:18px;border:1px solid rgba(255,255,255,.7);border-radius:20px;background:#e8e8ea;box-shadow:0 20px 60px rgba(0,0,0,.38)"><strong style="display:block;margin-bottom:14px;text-align:center;color:#35353a;font-size:18px">游戏菜单</strong><button id="menu-load" type="button" style="width:100%;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">读档</button><button id="menu-sound" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">声音（开）</button><button id="menu-ab" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">AB按键（关）</button><button id="menu-rapid" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">长按连击（关）</button><button id="menu-share" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">分享</button><button id="menu-close" type="button" style="width:100%;margin-top:12px;padding:9px;border:0;background:transparent;color:#696970;font-size:13px">关闭菜单</button></div>';
 document.body.appendChild(utilityMenu);
 const filterMenuButton = document.createElement('button');
 filterMenuButton.id = 'menu-filter';
@@ -616,11 +646,11 @@ utilityMenu.querySelector('#menu-share').before(filterMenuButton);
 function setUtilityMenu(open) { utilityMenu.style.display = open ? 'grid' : 'none'; utilityMenu.setAttribute('aria-hidden', open ? 'false' : 'true'); core.setPaused(open); }
 document.getElementById('btn-share').addEventListener('click', () => setUtilityMenu(true));
 utilityMenu.querySelector('#menu-close').addEventListener('click', () => setUtilityMenu(false));
-utilityMenu.querySelector('#menu-load').addEventListener('click', async () => { try { await core.loadState({ userInitiated: true }); setUtilityMenu(false); } catch (e) { showToast('读档失败'); console.error(e); } });
-utilityMenu.querySelector('#menu-sound').addEventListener('click', event => { soundEnabled = !soundEnabled; if (core.setMuted) core.setMuted(!soundEnabled); event.currentTarget.textContent = `声音（${soundEnabled ? '开' : '关'}）`; });
-utilityMenu.querySelector('#menu-ab').addEventListener('click', event => { showAbButton = !showAbButton; event.currentTarget.textContent = `AB按键（${showAbButton ? '开' : '关'}）`; renderUI(); });
-utilityMenu.querySelector('#menu-rapid').addEventListener('click', event => { rapidFireEnabled = !rapidFireEnabled; if (!rapidFireEnabled) ['a', 'b'].forEach(button => { try { core.setButton(button, uiState[button]); } catch (error) {} }); event.currentTarget.textContent = `长按连击（${rapidFireEnabled ? '开' : '关'}）`; });
-filterMenuButton.addEventListener('click', () => { videoFilterEnabled = !videoFilterEnabled; filterMenuButton.textContent = `滤镜（${videoFilterEnabled ? '开' : '关'}）`; renderUI(); });
+utilityMenu.querySelector('#menu-load').addEventListener('click', async () => { if (!requireSaveFeatureAccess()) return; try { await core.loadState({ userInitiated: true }); setUtilityMenu(false); } catch (e) { showToast('读档失败'); console.error(e); } });
+utilityMenu.querySelector('#menu-sound').addEventListener('click', event => { if (!requireMemberFeatureAccess()) return; soundEnabled = !soundEnabled; if (core.setMuted) core.setMuted(!soundEnabled); event.currentTarget.textContent = `声音（${soundEnabled ? '开' : '关'}）`; });
+utilityMenu.querySelector('#menu-ab').addEventListener('click', event => { if (!requireMemberFeatureAccess()) return; showAbButton = !showAbButton; event.currentTarget.textContent = `AB按键（${showAbButton ? '开' : '关'}）`; renderUI(); });
+utilityMenu.querySelector('#menu-rapid').addEventListener('click', event => { if (!requireMemberFeatureAccess()) return; rapidFireEnabled = !rapidFireEnabled; if (!rapidFireEnabled) ['a', 'b'].forEach(button => { try { core.setButton(button, uiState[button]); } catch (error) {} }); event.currentTarget.textContent = `长按连击（${rapidFireEnabled ? '开' : '关'}）`; });
+filterMenuButton.addEventListener('click', () => { if (!requireMemberFeatureAccess()) return; videoFilterEnabled = !videoFilterEnabled; filterMenuButton.textContent = `滤镜（${videoFilterEnabled ? '开' : '关'}）`; renderUI(); });
 utilityMenu.querySelector('#menu-share').addEventListener('click', async () => { await sharePage(); setUtilityMenu(false); });
 let currentGameId = 'super-mario-bros-world';
 const isLocalDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
@@ -747,7 +777,7 @@ document.body.classList.toggle('cheat-open', open);
 if (open) { cheatInput.value = applyStoredCheats(currentGameId); core.setPaused(true); if (canEnterCustomCheats) window.setTimeout(() => cheatInput.focus({ preventScroll: true }), 50); }
 else { cheatInput.blur(); core.setPaused(false); window.setTimeout(resize, 320); }
 }
-cheatButton.addEventListener('click', () => setCheatPanel(true));
+cheatButton.addEventListener('click', () => { if (requireMemberFeatureAccess()) setCheatPanel(true); });
 document.getElementById('btn-close-cheats').addEventListener('click', () => setCheatPanel(false));
 marioBuiltInCheats.addEventListener('click', async event => {
 const row = event.target.closest('[data-cheat-id]');
@@ -983,6 +1013,7 @@ window.parent.postMessage({ type: 'fc-member-login-request' }, window.location.o
 return false;
 }
 cartridgeButton.addEventListener('click', async () => {
+if (!requireMemberFeatureAccess()) return;
 if (await canOpenCartridgeScreen()) setCartridgeScreen(true);
 });
 closeCartridgeButton.addEventListener('click', () => setCartridgeScreen(false));

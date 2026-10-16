@@ -1,9 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 import { MemberAccountButton } from '#/components/member-account'
 import { spendCoinBalance } from '#/lib/coin-wallet'
-import { getMemberSession, requestMemberLogin } from '#/lib/member-client'
+import { getMemberSession, requestMemberLogin, useMemberSession } from '#/lib/member-client'
 
 export const Route = createFileRoute('/gb')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -23,9 +23,24 @@ export const Route = createFileRoute('/gb')({
 
 function GbPlayerPage() {
   const { cartridge } = Route.useSearch()
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const member = useMemberSession()
+
+  useEffect(() => {
+    iframeRef.current?.contentWindow?.postMessage({ type: 'gb-member-status', loggedIn: Boolean(member) }, window.location.origin)
+  }, [member])
+
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
+      if (event.data?.type === 'gb-member-status-request') {
+        const { member: sessionMember } = await getMemberSession().catch(() => ({ member: null }))
+        ;(event.source as Window | null)?.postMessage(
+          { type: 'gb-member-status', loggedIn: Boolean(sessionMember) },
+          event.origin,
+        )
+        return
+      }
       if (event.data?.type === 'gb-member-login-request') {
         requestMemberLogin()
         return
@@ -46,8 +61,10 @@ function GbPlayerPage() {
   }, [])
   return <>
     <iframe
+      ref={iframeRef}
       allow="autoplay"
-      src={`/gb-player/index.html${cartridge ? `?cartridge=${encodeURIComponent(cartridge)}` : ''}`}
+      onLoad={() => iframeRef.current?.contentWindow?.postMessage({ type: 'gb-member-status', loggedIn: Boolean(member) }, window.location.origin)}
+      src={`/gb-player/index.html?v=20261016-1${cartridge ? `&cartridge=${encodeURIComponent(cartridge)}` : ''}`}
       title="GB游戏机 热斗 格斗之王96"
       style={{
         position: 'fixed',

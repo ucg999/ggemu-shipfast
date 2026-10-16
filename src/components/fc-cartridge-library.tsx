@@ -642,7 +642,13 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
               else window.location.assign(`/fc?cartridge=${encodeURIComponent(cartridge.id)}`)
             }} onClose={() => setPreviewing(null)} onTrial={cartridge.id === 'mahjong' ? () => { window.location.assign(`/${lang}/games/mahjong-nes-1983/play?autoplay=%221%22&inline=%221%22`) } : undefined} title={cartridge.title} trialHint={cartridge.id === 'mahjong' ? (lang === 'en' ? 'Loading required' : lang === 'zh-TW' ? '需要載入' : '需要加载') : undefined} trialLabel={lang === 'en' ? 'Try now' : lang === 'zh-TW' ? '立即試玩' : '立即试玩'} />
           })() : null}
-          {playing ? <CartridgePlayerDialog onClose={() => setPlaying(null)} src={`/fc-player/index.html?v=20261015-1&cartridge=${encodeURIComponent(playing)}`} title={FC_CARTRIDGES.find(item => item.id === playing)?.title ?? 'FC游戏机'} /> : null}
+          {playing ? <CartridgePlayerDialog
+            onClose={() => setPlaying(null)}
+            src={playing === 'green-beret-captain-america'
+              ? '/fc-1058/index.html?v=20261016-2&cartridge=green-beret-captain-america'
+              : `/fc-player/index.html?v=20261016-4&cartridge=${encodeURIComponent(playing)}`}
+            title={FC_CARTRIDGES.find(item => item.id === playing)?.title ?? 'FC游戏机'}
+          /> : null}
           {rankingsOpen ? <div className="fixed inset-0 z-[240] flex items-center justify-center bg-black/35 px-4" role="dialog" aria-modal="true" aria-labelledby="fc-rankings-title" onClick={() => setRankingsOpen(false)}>
             <section className="w-full max-w-2xl rounded-2xl bg-[#f0f0ed] p-4 text-base-content shadow-2xl sm:p-6" onClick={event => event.stopPropagation()}>
               <div className="mb-4 flex items-center justify-between"><h2 className="text-xl font-semibold" id="fc-rankings-title">{copy.rankings}</h2><button aria-label={copy.cancel} className="btn btn-ghost btn-sm btn-circle text-xl" type="button" onClick={() => setRankingsOpen(false)}>×</button></div>

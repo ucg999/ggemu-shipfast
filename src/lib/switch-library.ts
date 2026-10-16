@@ -22,6 +22,26 @@ export type SwitchLibraryGame = {
 // Add future Switch downloads here to keep every card consistent.
 export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
   {
+    id: 'tales-of-eternia-remastered',
+    title: '永恒传说 高清重制',
+    foreignTitle: 'Tales of Eternia Remastered',
+    cover: '/switch-library/tales-of-eternia-remastered/cover.webp',
+    genre: '角色扮演、动作',
+    publisher: 'BANDAI NAMCO Entertainment',
+    releaseDate: '2026-10-16',
+    requiredSystem: '待确认',
+    language: '中文',
+    updatedAt: '2026-10-16T09:00:00+08:00',
+    downloadUrl: 'https://pan.baidu.com/s/1Zzuk9rMkgghr1lnPgD-4Bg?pwd=sj9k',
+    shareVersion: '本体+v2.0.0升补|NSP| · 提取码：sj9k',
+    description: `永远与羁绊的 RPG，《永恒传说》以 Remastered 之姿回归！
+
+伊菲利亚与塞雷斯迪亚是隔着天空对望的两个世界。主角里德和青梅竹马法拉在边境村落拉修安遇见了来自另一个世界的少女梅露蒂，并得知两个世界即将相撞的“大崩落”近在眼前。众人为借助大晶灵的力量阻止危机，展开横跨两个世界的壮阔旅程。
+
+游戏采用“主动型线性动作战斗系统（A-LMBS）”，可发动多种法术与招式连击，享受高速、爽快的 2D 战斗。Remastered 版本还加入目的地图标、关闭遇敌、自动战斗高速模式等便利功能，同时可切换画面和特效模式，重温原作氛围。`,
+    screenshots: Array.from({ length: 4 }, (_, index) => `/switch-library/tales-of-eternia-remastered/screenshot-${String(index + 1).padStart(2, '0')}.webp`),
+  },
+  {
     id: 'warriors-abyss',
     title: '无双深渊',
     popularity: 96,

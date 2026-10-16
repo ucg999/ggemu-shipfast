@@ -255,16 +255,87 @@ mapper.load8kRomBank(2, 0xc000);
 mapper.load8kRomBank(3, 0xe000);
 nes.cpu.requestIrq(nes.cpu.IRQ_RESET);
 }
-function installMapper85(initializeBanks) {
+function installMapper85(initializeBanks, restoredState) {
 const mapper = nes.mmap;
 const originalWrite = mapper.write.bind(mapper);
 const state = mapper.__mapper85 || {
 irqLatch: 0,
 irqCounter: 0,
 irqEnabled: false,
-irqEnableAfterAck: false
+irqEnableAfterAck: false,
+// 1058 uses 128 KiB of banked CHR RAM instead of CHR ROM. jsnes' stock
+// load1kVromBank() is a no-op when the ROM has no CHR payload, so keep the
+// cartridge RAM here and explicitly map its eight visible 1 KiB windows.
+chrRam: new Uint8Array(128 * 1024),
+// Real VRC7 hardware resets all eight CHR registers to page 0. The game
+// uploads its first character set before assigning the later windows.
+chrSlots: [0, 0, 0, 0, 0, 0, 0, 0]
 };
+if (restoredState) {
+state.irqLatch = restoredState.irqLatch & 0xff;
+state.irqCounter = restoredState.irqCounter & 0xff;
+state.irqEnabled = !!restoredState.irqEnabled;
+state.irqEnableAfterAck = !!restoredState.irqEnableAfterAck;
+if (Array.isArray(restoredState.chrRam) && restoredState.chrRam.length === 128 * 1024) state.chrRam = Uint8Array.from(restoredState.chrRam);
+if (Array.isArray(restoredState.chrSlots) && restoredState.chrSlots.length === 8) state.chrSlots = restoredState.chrSlots.slice();
+}
+if (!(state.chrRam instanceof Uint8Array) || state.chrRam.length !== 128 * 1024) {
+state.chrRam = new Uint8Array(128 * 1024);
+}
+if (!Array.isArray(state.chrSlots) || state.chrSlots.length !== 8) state.chrSlots = [0, 0, 0, 0, 0, 0, 0, 0];
 mapper.__mapper85 = state;
+function saveChrSlot(address) {
+const slot = (address >> 10) & 7;
+const bank = state.chrSlots[slot] & 0x7f;
+state.chrRam.set(nes.ppu.vramMem.subarray(slot * 0x400, slot * 0x400 + 0x400), bank * 0x400);
+}
+function rebuildChrSlot(slot) {
+const bank = state.chrSlots[slot] & 0x7f;
+const source = bank * 0x400;
+const tileBase = slot * 64;
+for (let tile = 0; tile < 64; tile++) {
+const tileOffset = source + tile * 16;
+const decoded = nes.ppu.ptTile[tileBase + tile];
+for (let row = 0; row < 8; row++) decoded.setScanline(row, state.chrRam[tileOffset + row], state.chrRam[tileOffset + row + 8]);
+}
+}
+function rebuildChrTile(slot, tile) {
+const bank = state.chrSlots[slot] & 0x7f;
+const source = bank * 0x400 + tile * 16;
+const decoded = nes.ppu.ptTile[slot * 64 + tile];
+for (let row = 0; row < 8; row++) decoded.setScanline(row, state.chrRam[source + row], state.chrRam[source + row + 8]);
+}
+function load1kChrBank(bank, address, preserveCurrent) {
+nes.ppu.triggerRendering();
+const slot = (address >> 10) & 7;
+// Writes are mirrored into chrRam immediately below. Avoid copying an older
+// duplicate window back over the shared bank when the same bank is visible in
+// more than one PPU slot (a pattern this hack uses for animated characters).
+state.chrSlots[slot] = bank & 0x7f;
+const source = state.chrSlots[slot] * 0x400;
+nes.ppu.vramMem.set(state.chrRam.subarray(source, source + 0x400), slot * 0x400);
+rebuildChrSlot(slot);
+}
+if (!nes.ppu.__mapper85ChrWrite) {
+const originalWriteMem = nes.ppu.writeMem.bind(nes.ppu);
+nes.ppu.writeMem = function (address, value) {
+originalWriteMem(address, value);
+if (address < 0x2000) {
+const sourceSlot = (address >> 10) & 7;
+const offset = address & 0x3ff;
+const bank = state.chrSlots[sourceSlot] & 0x7f;
+state.chrRam[bank * 0x400 + offset] = value & 0xff;
+// Keep every simultaneously mapped view of this bank coherent. Without this,
+// sprites can use stale tiles even though the background bank looks correct.
+for (let slot = 0; slot < 8; slot++) {
+if (slot === sourceSlot || (state.chrSlots[slot] & 0x7f) !== bank) continue;
+nes.ppu.vramMem[slot * 0x400 + offset] = value & 0xff;
+rebuildChrTile(slot, offset >> 4);
+}
+}
+};
+nes.ppu.__mapper85ChrWrite = true;
+}
 mapper.write = function (address, value) {
 if (address < 0x8000) {
 originalWrite(address, value);
@@ -277,14 +348,14 @@ const register = (address & 0xf000) | (address & 0x0010);
 if (register === 0x8000) mapper.load8kRomBank(value & 0x3f, 0x8000);
 else if (register === 0x8010) mapper.load8kRomBank(value & 0x3f, 0xa000);
 else if (register === 0x9000) mapper.load8kRomBank(value & 0x3f, 0xc000);
-else if (register === 0xa000) mapper.load1kVromBank(value, 0x0000);
-else if (register === 0xa010) mapper.load1kVromBank(value, 0x0400);
-else if (register === 0xb000) mapper.load1kVromBank(value, 0x0800);
-else if (register === 0xb010) mapper.load1kVromBank(value, 0x0c00);
-else if (register === 0xc000) mapper.load1kVromBank(value, 0x1000);
-else if (register === 0xc010) mapper.load1kVromBank(value, 0x1400);
-else if (register === 0xd000) mapper.load1kVromBank(value, 0x1800);
-else if (register === 0xd010) mapper.load1kVromBank(value, 0x1c00);
+else if (register === 0xa000) load1kChrBank(value, 0x0000);
+else if (register === 0xa010) load1kChrBank(value, 0x0400);
+else if (register === 0xb000) load1kChrBank(value, 0x0800);
+else if (register === 0xb010) load1kChrBank(value, 0x0c00);
+else if (register === 0xc000) load1kChrBank(value, 0x1000);
+else if (register === 0xc010) load1kChrBank(value, 0x1400);
+else if (register === 0xd000) load1kChrBank(value, 0x1800);
+else if (register === 0xd010) load1kChrBank(value, 0x1c00);
 else if (register === 0xe000) {
 const modes = [nes.rom.VERTICAL_MIRRORING, nes.rom.HORIZONTAL_MIRRORING, nes.rom.SINGLESCREEN_MIRRORING, nes.rom.SINGLESCREEN_MIRRORING2];
 nes.ppu.setMirroring(modes[value & 0x03]);
@@ -304,13 +375,29 @@ state.irqCounter = state.irqLatch;
 nes.cpu.requestIrq(nes.cpu.IRQ_NORMAL);
 } else state.irqCounter = (state.irqCounter + 1) & 0xff;
 };
+const originalToJSON = mapper.toJSON.bind(mapper);
+mapper.toJSON = function () {
+const json = originalToJSON();
+json.mapper85 = {
+irqLatch: state.irqLatch,
+irqCounter: state.irqCounter,
+irqEnabled: state.irqEnabled,
+irqEnableAfterAck: state.irqEnableAfterAck,
+chrSlots: state.chrSlots.slice(),
+chrRam: Array.from(state.chrRam)
+};
+return json;
+};
+if (restoredState) {
+for (let slot = 0; slot < 8; slot++) load1kChrBank(state.chrSlots[slot], slot * 0x400, false);
+}
 if (!initializeBanks) return;
 const lastBank = Math.max(0, nes.rom.romCount * 2 - 1);
 mapper.load8kRomBank(0, 0x8000);
 mapper.load8kRomBank(1, 0xa000);
 mapper.load8kRomBank(2, 0xc000);
 mapper.load8kRomBank(lastBank, 0xe000);
-for (let bank = 0; bank < 8; bank++) mapper.load1kVromBank(bank, bank * 0x400);
+for (let slot = 0; slot < 8; slot++) load1kChrBank(0, slot * 0x400, false);
 nes.cpu.requestIrq(nes.cpu.IRQ_RESET);
 }
 const BUTTONS = {
@@ -500,11 +587,12 @@ try { localStorage.removeItem(stateKey); } catch (error) {}
 }
 }
 if (!state) { window.GGEMU_TOAST('没有找到存档记录！'); return; }
+const mapper85State = activeMapper === 85 && state.mmap ? state.mmap.mapper85 : null;
 nes.fromJSON(state);
 // fromJSON rebuilds jsnes' stock mapper. Reattach Mapper 15 without
 // replacing the restored PRG banks, otherwise this cartridge may crash later.
 if (activeMapper === 15) installMapper15(false);
-if (activeMapper === 85) installMapper85(false);
+if (activeMapper === 85) installMapper85(false, mapper85State);
 if (cloudLoaded) {
 try { await writeState(state); } catch (error) {}
 }

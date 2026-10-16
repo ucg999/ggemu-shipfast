@@ -909,10 +909,16 @@ function placeDailyMahjongGameFirst(
     dailyGameScore(`${dayKey}:desktop-mahjong-hero:${locale}:${getGameId(right)}`)
   ))[0]
   const dailyGameId = getGameId(dailyMahjongGame)
+  const hourlyVideoGame = heroGames[1]
+  const hourlyVideoGameId = hourlyVideoGame ? getGameId(hourlyVideoGame) : ''
 
   return [
     dailyMahjongGame,
-    ...heroGames.filter(game => getGameId(game) !== dailyGameId),
+    ...(hourlyVideoGame && hourlyVideoGameId !== dailyGameId ? [hourlyVideoGame] : []),
+    ...heroGames.filter((game) => {
+      const gameId = getGameId(game)
+      return gameId !== dailyGameId && gameId !== hourlyVideoGameId
+    }),
   ].slice(0, 3)
 }
 

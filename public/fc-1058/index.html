@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <base href="/fc-player/" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#d6d6d8" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>FC游戏机｜绿色兵团：美国队长版</title>
+    <link rel="stylesheet" href="./assets/style.css" />
+    <link rel="stylesheet" href="./assets/cartridges.css?v=20261013-5" />
+  </head>
+  <body>
+    <div id="toast" class="toast"></div>
+    <div id="portrait-lock" role="status">
+      <strong>请竖屏游玩</strong>
+      <span>旋转手机回到竖屏后即可继续操作</span>
+    </div>
+    <div id="toolbar">
+      <button id="btn-save">存档</button>
+      <button id="btn-load" hidden>读档</button>
+      <button id="btn-shot">换卡带</button>
+      <button id="btn-share">菜单</button>
+    </div>
+    <section id="cartridge-screen" class="cartridge-screen" aria-hidden="true" aria-label="FC卡带选择">
+      <div class="cartridge-panel" role="dialog" aria-modal="true" aria-labelledby="cartridge-title">
+        <header>
+          <div>
+            <small>FC COLLECTION</small>
+            <div class="cartridge-title-row">
+              <h1 id="cartridge-title">选择卡带 <span id="cartridge-count">（已收集0款）</span></h1>
+              <button id="btn-search-cartridges" class="cartridge-search-toggle" type="button" aria-label="搜索已收藏卡带" aria-expanded="false" title="搜索已收藏卡带">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+              </button>
+              <input id="cartridge-search" type="search" inputmode="search" autocomplete="off" placeholder="搜索编号或名称" aria-label="搜索已收藏卡带" />
+            </div>
+          </div>
+          <button id="btn-close-cartridges" type="button" aria-label="关闭卡带界面">×</button>
+        </header>
+        <div class="cartridge-carousel">
+          <button id="cartridge-prev" class="cartridge-arrow" type="button" aria-label="上一张卡带">‹</button>
+          <div class="cartridge-viewport">
+            <div id="cartridge-list" class="cartridge-list">
+              <figure class="cartridge-slide" data-cartridge-id="donkey-kong"><button class="cartridge-card" type="button" data-game-id="donkey-kong" data-game-name="森喜刚" data-rom="./assets/donkey-kong.nes"><span class="cartridge-number">001号</span><img src="./assets/cartridges/donkey-kong.min.webp" alt="森喜刚 FC卡带" decoding="async" /></button><figcaption>森喜刚</figcaption></figure>
+              <figure class="cartridge-slide" data-cartridge-id="donkey-kong-jr"><button class="cartridge-card" type="button" data-game-id="donkey-kong-jr" data-game-name="森喜刚JR." data-rom="./assets/donkey-kong-jr.nes"><span class="cartridge-number">002号</span><img src="./assets/cartridges/donkey-kong-jr.min.webp" alt="森喜刚JR. FC卡带" decoding="async" /></button><figcaption>森喜刚JR.</figcaption></figure>
+              <figure class="cartridge-slide" data-cartridge-id="popeye"><button class="cartridge-card" type="button" data-game-id="popeye" data-game-name="大力水手" data-rom="./assets/popeye.nes"><span class="cartridge-number">003号</span><img src="./assets/cartridges/popeye.min.webp" alt="大力水手 FC卡带" decoding="async" /></button><figcaption>大力水手</figcaption></figure>
+              <figure class="cartridge-slide" data-cartridge-id="gomoku-narabe"><button class="cartridge-card" type="button" data-game-id="gomoku-narabe" data-game-name="五子棋" data-rom="./assets/gomoku-narabe.nes"><span class="cartridge-number">004号</span><img src="./assets/cartridges/gomoku-narabe.min.webp" alt="五子棋 FC卡带" decoding="async" /></button><figcaption>五子棋</figcaption></figure>
+              <figure class="cartridge-slide" data-cartridge-id="mahjong"><button class="cartridge-card" type="button" data-game-id="mahjong" data-game-name="麻将" data-rom="./assets/mahjong.nes"><span class="cartridge-number">005号</span><img src="./assets/cartridges/mahjong.min.webp" alt="麻将 FC卡带" decoding="async" /></button><figcaption>麻将</figcaption></figure>
+              <figure class="cartridge-slide" data-cartridge-id="mario-bros"><button class="cartridge-card" type="button" data-game-id="mario-bros" data-game-name="水管玛丽" data-rom="./assets/mario-bros.nes"><span class="cartridge-number">006号</span><img src="./assets/cartridges/mario-bros.min.webp" alt="水管玛丽 FC卡带" decoding="async" /></button><figcaption>水管玛丽</figcaption></figure>
+              <figure class="cartridge-slide" data-cartridge-id="popeye-english"><button class="cartridge-card" type="button" data-game-id="popeye-english" data-game-name="大力水手学英语" data-rom="./assets/popeye-english.nes"><span class="cartridge-number">007号</span><img src="./assets/cartridges/popeye-english.min.webp" alt="大力水手学英语 FC卡带" decoding="async" /></button><figcaption>大力水手学英语</figcaption></figure>
+              <figure class="cartridge-slide" data-cartridge-id="baseball"><button class="cartridge-card" type="button" data-game-id="baseball" data-game-name="棒球" data-rom="./assets/baseball.nes"><span class="cartridge-number">008号</span><img src="./assets/cartridges/baseball.min.webp" alt="棒球 FC卡带" decoding="async" /></button><figcaption>棒球</figcaption></figure>
+              <figure class="cartridge-slide" data-cartridge-id="donkey-kong-jr-math"><button class="cartridge-card" type="button" data-game-id="donkey-kong-jr-math" data-game-name="森喜刚学算数" data-rom="./assets/donkey-kong-jr-math.nes"><span class="cartridge-number">009号</span><img src="./assets/cartridges/donkey-kong-jr-math.min.webp" alt="森喜刚学算数 FC卡带" decoding="async" /></button><figcaption>森喜刚学算数</figcaption></figure>
+              <figure class="cartridge-slide" data-cartridge-id="urban-champion">
+                <button class="cartridge-card" type="button" data-game-id="urban-champion" data-game-name="街头格斗" data-rom="./assets/urban-champion.nes">
+                  <span class="cartridge-number">026号</span>
+                  <img src="./assets/cartridges/urban-champion.min.webp" alt="街头格斗 FC卡带" decoding="async" />
+                </button>
+                <figcaption>街头格斗</figcaption>
+              </figure>
+              <figure class="cartridge-slide" data-cartridge-id="happy-cat">
+                <button class="cartridge-card" type="button" data-game-id="happy-cat" data-game-name="快乐猫" data-rom="./assets/happy-cat.nes">
+                  <span class="cartridge-number">027号</span>
+                  <img src="./assets/cartridges/happy-cat.min.webp" alt="快乐猫 FC卡带" decoding="async" />
+                </button>
+                <figcaption>快乐猫</figcaption>
+              </figure>
+              <figure class="cartridge-slide" data-cartridge-id="karateka-street-fighter">
+                <button class="cartridge-card" type="button" data-game-id="karateka-street-fighter" data-game-name="空手道 街霸版" data-rom="./assets/karateka-street-fighter.nes">
+                  <span class="cartridge-number">1054号</span>
+                  <img src="./assets/cartridges/karateka-street-fighter.min.webp" alt="空手道 街霸版 FC卡带" decoding="async" />
+                </button>
+                <figcaption>空手道 街霸版</figcaption>
+              </figure>
+              <figure class="cartridge-slide" data-cartridge-id="baoxiao-sanguo">
+                <button class="cartridge-card" type="button" data-game-id="baoxiao-sanguo" data-game-name="爆笑三国" data-rom="./assets/baoxiao-sanguo.nes">
+                  <span class="cartridge-number">1055号</span>
+                  <img src="./assets/cartridges/baoxiao-sanguo.min.webp" alt="爆笑三国 FC卡带" decoding="async" />
+                </button>
+                <figcaption>爆笑三国</figcaption>
+              </figure>
+              <figure class="cartridge-slide" data-cartridge-id="prison-break-nine-characters">
+                <button class="cartridge-card" type="button" data-game-id="prison-break-nine-characters" data-game-name="脱狱 9人版" data-rom="./assets/prison-break-nine-characters.nes">
+                  <span class="cartridge-number">1056号</span>
+                  <img src="./assets/cartridges/prison-break-nine-characters.min.webp" alt="脱狱 9人版 FC卡带" decoding="async" />
+                </button>
+                <figcaption>脱狱 9人版</figcaption>
+              </figure>
+              <figure class="cartridge-slide" data-cartridge-id="contra-underwater-eight-levels">
+                <button class="cartridge-card" type="button" data-game-id="contra-underwater-eight-levels" data-game-name="魂斗罗：水下八关" data-rom="./assets/contra-underwater-eight-levels.nes">
+                  <span class="cartridge-number">1057号</span>
+                  <img src="./assets/cartridges/contra-underwater-eight-levels.min.webp" alt="魂斗罗：水下八关 FC卡带" decoding="async" />
+                </button>
+                <figcaption>魂斗罗：水下八关</figcaption>
+              </figure>
+              <figure class="cartridge-slide" data-cartridge-id="green-beret-captain-america">
+                <button class="cartridge-card" type="button" data-game-id="green-beret-captain-america" data-game-name="绿色兵团：美国队长版" data-rom="./assets/green-beret-captain-america.nes">
+                  <span class="cartridge-number">1058号</span>
+                  <img src="./assets/cartridges/green-beret-captain-america.min.webp" alt="绿色兵团：美国队长版 FC卡带" decoding="async" />
+                </button>
+                <figcaption>绿色兵团：美国队长版</figcaption>
+              </figure>
+            </div>
+            <p id="cartridge-empty" hidden>还没有收藏卡带<br /><small>请到FC卡带收藏使用金币购买</small></p>
+          </div>
+          <button id="cartridge-next" class="cartridge-arrow" type="button" aria-label="下一张卡带">›</button>
+        </div>
+        <div id="cartridge-dots" class="cartridge-dots" aria-label="卡带位置"></div>
+      </div>
+    </section>
+    <canvas id="main-canvas"></canvas>
+    <script src="./assets/config.js"></script>
+    <script src="/fc-1058/wasm/mesen_libretro.js?v=20261016-2"></script>
+    <script type="module" src="/fc-1058/adapter.js?v=20261016-2"></script>
+  </body>
+</html>
