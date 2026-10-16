@@ -106,7 +106,7 @@ function getSearchTemplate(search: unknown) {
 }
 
 export const Route = createFileRoute('/$locale/')({
-  staleTime: 0,
+  staleTime: 5 * 60 * 1000,
   // Reuse the index-route cache immediately while refreshing in the background.
   validateSearch: validateHomeSearch,
   loaderDeps: ({ search }): HomeSearch => ({

@@ -136,6 +136,10 @@ export const Route = createRootRoute({
         },
       ],
       links: [
+        { rel: 'preconnect', href: 'https://ggemu.com', crossOrigin: 'anonymous' },
+        { rel: 'preconnect', href: 'https://storage.ggemu.com', crossOrigin: 'anonymous' },
+        { rel: 'dns-prefetch', href: 'https://ggemu.com' },
+        { rel: 'dns-prefetch', href: 'https://storage.ggemu.com' },
         {
           rel: 'stylesheet',
           href: appCss,

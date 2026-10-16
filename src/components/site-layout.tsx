@@ -88,7 +88,7 @@ export function SiteLayout({
   }
 
   async function claimShareReward() {
-    if (isShareRewardLoading || !shareReadyToConfirm) return
+    if (isShareRewardLoading) return
     setIsShareRewardLoading(true)
     setShareRewardMessage('')
     try {
@@ -96,9 +96,14 @@ export function SiteLayout({
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'claim' }),
       })
       const result = await response.json() as { awarded?: number; error?: string; target?: 'browser' | 'member' }
       if (!response.ok) throw new Error(result.error || '领取失败')
+      if (!result.target) {
+        await getMemberSession().catch(() => null)
+        return
+      }
       const awarded = Math.max(0, Math.floor(result.awarded || 0))
       if (result.target === 'browser' && awarded > 0) addCoinBalance(awarded)
       if (result.target === 'member') await getMemberSession().catch(() => null)
@@ -116,21 +121,36 @@ export function SiteLayout({
     setShareRewardMessage('')
     setShareReadyToConfirm(false)
     setShareTarget(target)
+    let shareUrl = ''
+    try {
+      const linkResponse = await fetch('/api/home-share-reward', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create', target }),
+      })
+      const linkResult = await linkResponse.json() as { url?: string; error?: string }
+      if (!linkResponse.ok || !linkResult.url) throw new Error(linkResult.error || '分享链接生成失败')
+      shareUrl = linkResult.url
+    } catch (error) {
+      setShareTarget('')
+      setShareRewardMessage(error instanceof Error ? error.message : '分享链接生成失败，请稍后重试。')
+      return
+    }
     const shareData = {
       title: locale === 'en' ? 'UCG999 Retro Game Hall' : 'UCG999 怀旧游戏厅',
       text: locale === 'en' ? 'Play classic games online with me.' : '和我一起在线玩经典怀旧游戏。',
-      url: 'https://ucg999.com',
+      url: shareUrl,
     }
     try {
       if (navigator.share) {
         await navigator.share(shareData)
         setShareReadyToConfirm(true)
-        setShareRewardMessage(locale === 'en' ? `Shared to ${target}. Please confirm below.` : `已完成“${target}”分享，请在下方确认发送。`)
+        setShareRewardMessage(locale === 'en' ? 'Share link sent. The reward arrives after a friend opens it.' : '分享链接已调起发送，好友通过链接访问后才会发放100币。')
         return
       }
       await navigator.clipboard.writeText(shareData.url)
-      setShareReadyToConfirm(true)
-      setShareRewardMessage(locale === 'en' ? 'Link copied. Send it, then confirm below.' : '链接已复制，请发送给好友后在下方确认。')
+      setShareRewardMessage(locale === 'en' ? 'Share link copied. The reward arrives only after a friend opens it.' : '分享链接已复制，好友通过链接访问后才会发放100币。')
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         setShareTarget('')
@@ -147,14 +167,30 @@ export function SiteLayout({
     setShareTarget('复制网址')
     setShareReadyToConfirm(false)
     try {
-      await navigator.clipboard.writeText('https://ucg999.com')
-      setShareReadyToConfirm(true)
-      setShareRewardMessage(locale === 'en' ? 'Link copied. Send it, then confirm below.' : '网址已复制，请发送后在下方确认。')
+      const response = await fetch('/api/home-share-reward', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', target: '好友' }) })
+      const result = await response.json() as { url?: string; error?: string }
+      if (!response.ok || !result.url) throw new Error(result.error || '分享链接生成失败')
+      await navigator.clipboard.writeText(result.url)
+      setShareRewardMessage(locale === 'en' ? 'Share link copied. The reward arrives after a friend opens it.' : '分享链接已复制，好友通过链接访问后才会发放100币。')
     } catch {
       setShareTarget('')
       setShareRewardMessage(locale === 'en' ? 'Could not copy the link.' : '网址复制失败，请长按网址手动复制。')
     }
   }
+
+  useEffect(() => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search)
+      const token = params.get('share')
+      if (token) {
+        await fetch('/api/home-share-reward', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'visit', token }) }).catch(() => null)
+        params.delete('share')
+        const query = params.toString()
+        window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`)
+      }
+      await claimShareReward()
+    })()
+  }, [])
 
   useEffect(() => {
     const current = readDailyCheckIn()
@@ -663,18 +699,11 @@ export function SiteLayout({
                 </button>
               </div>
             </div>
-            <button
-              className="btn mt-4 min-h-10 rounded-full border-0 bg-yellow-400 px-7 text-black hover:bg-yellow-300 disabled:opacity-60"
-              disabled={isShareRewardLoading || !shareReadyToConfirm}
-              onClick={() => void claimShareReward()}
-              type="button"
-            >
+            <p className="mt-4 text-xs text-gray-500">
               {isShareRewardLoading
-                ? (locale === 'en' ? 'Claiming…' : '领取中…')
-                : shareReadyToConfirm
-                  ? (locale === 'en' ? 'Confirm sent · Claim 100 coins' : '确认已发送，领取100游戏币')
-                  : (locale === 'en' ? 'Share first to unlock reward' : '请先选择平台完成分享')}
-            </button>
+                ? (locale === 'en' ? 'Verifying the completed share…' : '正在核验已完成的分享…')
+                : (locale === 'en' ? '100 coins are issued only after another device opens your share link.' : '只有好友从另一台设备打开分享链接后，才会发放100币；自己打开、只点按钮或取消分享都不计奖励。')}
+            </p>
             {shareRewardMessage ? <p className="mt-2 text-sm font-medium text-amber-700" role="status">{shareRewardMessage}</p> : null}
           </div>
         </div>

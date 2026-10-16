@@ -5,6 +5,7 @@ import type { Locale, PublicGame } from '#/lib/ggemu'
 import { GAME_COLLECTIONS } from '#/lib/game-collections'
 import { getI18n } from '#/lib/i18n'
 import { markGamePlayStarted } from '#/lib/coin-wallet'
+import { getCachedImageUrl } from '#/lib/image-url'
 import { CardScrollRow } from './card-scroll-row'
 import { GameCardPreviewVideo, gameCardPreviewHandlers } from '#/components/game-card-preview'
 
@@ -204,7 +205,7 @@ export function RecentPlayedGameCard({
             alt={game.name}
             className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
             loading="lazy"
-            src={game.cover}
+            src={getCachedImageUrl(game.cover, 480)}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-neutral via-black to-primary/30 text-sm font-bold uppercase tracking-[0.25em] text-white/45">

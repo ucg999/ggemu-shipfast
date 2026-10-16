@@ -829,7 +829,16 @@ return btoa(binary);
 
 async function loadCartridgeRom(cartridge) {
 if (!cartridge.rom) return window.ROM_DATA;
-const response = await fetch(cartridge.rom, { cache: 'force-cache' });
+const assetBase = String((window.GGEMU_CONFIG && window.GGEMU_CONFIG.assetBase) || '').replace(/\/$/, '');
+const remoteUrl = assetBase ? assetBase + '/gb/roms/' + cartridge.rom.split('/').pop() : cartridge.rom;
+let response;
+try { response = await fetch(remoteUrl, { cache: 'force-cache' }); }
+catch (error) {
+if (remoteUrl === cartridge.rom) throw error;
+console.warn('R2 ROM unavailable, using bundled fallback', error);
+response = await fetch(cartridge.rom, { cache: 'force-cache' });
+}
+if (!response.ok && remoteUrl !== cartridge.rom) response = await fetch(cartridge.rom, { cache: 'force-cache' });
 if (!response.ok) throw new Error('ROM ' + response.status);
 return bytesToBase64(new Uint8Array(await response.arrayBuffer()));
 }
@@ -848,7 +857,9 @@ bootLayer.style.height = Math.round(hitboxes.game.h * scaleY) + 'px';
 function playBootVideo(system) {
 return new Promise(function (resolve) {
 let finished = false;
-const source = system === 'gb' ? './assets/gb-boot.mp4' : './assets/gbc-boot.mp4';
+const localSource = system === 'gb' ? './assets/gb-boot.mp4' : './assets/gbc-boot.mp4';
+const assetBase = String((window.GGEMU_CONFIG && window.GGEMU_CONFIG.assetBase) || '').replace(/\/$/, '');
+const source = assetBase ? assetBase + '/gb/video/' + localSource.split('/').pop() : localSource;
 const finish = function () { if (finished) return; finished = true; clearTimeout(fallback); bootVideo.onended = null; bootVideo.onerror = null; bootLayer.classList.remove('is-playing'); resolve(); };
 const start = function () {
 if (finished) return;
@@ -857,7 +868,14 @@ syncBootVideoBounds();
 bootVideo.currentTime = 0;
 bootLayer.classList.add('is-playing');
 bootVideo.onended = finish;
-bootVideo.onerror = finish;
+bootVideo.onerror = function () {
+if (source !== localSource && bootVideo.getAttribute('src') !== localSource) {
+bootVideo.setAttribute('src', localSource);
+bootVideo.load();
+return;
+}
+finish();
+};
 bootVideo.play().catch(finish);
 };
 const fallback = setTimeout(finish, 7000);

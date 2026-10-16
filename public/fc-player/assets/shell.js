@@ -1024,7 +1024,13 @@ resize();
 bindControls();
 async function loadRom(url, gameId, gameName) {
 runtimeErrorCount = 0;
-return fetchRomWithRetry(url)
+const assetBase = String((window.GGEMU_CONFIG && window.GGEMU_CONFIG.assetBase) || '').replace(/\/$/, '');
+const remoteUrl = assetBase ? assetBase + '/fc/roms/' + url.split('/').pop() : url;
+return fetchRomWithRetry(remoteUrl).catch(function (error) {
+if (remoteUrl === url) throw error;
+console.warn('R2 ROM unavailable, using bundled fallback', error);
+return fetchRomWithRetry(url);
+})
 .then(function (response) {
 return response.arrayBuffer();
 })

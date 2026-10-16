@@ -17,6 +17,7 @@ import { CoinFruitCard } from '#/components/coin-fruit-card'
 import { RedBlueArenaCard } from '#/components/red-blue-arena-card'
 import { useMemberSession } from '#/lib/member-client'
 import { markWantedFeaturedGame } from '#/components/wanted-playtime-tracker'
+import { getCachedImageUrl } from '#/lib/image-url'
 
 export const HOME_BLOG_POST_LIMIT = 4
 
@@ -154,7 +155,7 @@ export function HomeMostPlayedGamesSection({
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     loop={!mobile}
                     onEnded={mobile ? () => setActiveMobileVideo(current => (current + 1) % Math.max(items.length, 1)) : undefined}
-                    poster={game.game_cover}
+                    poster={getCachedImageUrl(game.game_cover, 640)}
                     src={game.game_video}
                   />
                   <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded bg-black/75 px-1.5 py-1 text-[11px] font-black text-yellow-300 backdrop-blur-sm">
@@ -705,7 +706,7 @@ function HomeBlogPostCard({
             alt={title}
             className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
             loading="lazy"
-            src={blogPost.cover_image_url}
+            src={getCachedImageUrl(blogPost.cover_image_url, 640)}
           />
         ) : (
           <div className="grid h-full place-items-center text-sm font-semibold text-base-content/40">
@@ -764,7 +765,7 @@ function GameCard({
             alt={game.name ?? 'Game cover'}
             className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
             loading="lazy"
-            src={game.game_cover}
+            src={getCachedImageUrl(game.game_cover, 480)}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-neutral via-black to-primary/30 text-sm font-bold uppercase tracking-[0.25em] text-white/45">

@@ -25,6 +25,7 @@ import { useMemberSession } from '#/lib/member-client'
 import { markWantedFeaturedGame } from '#/components/wanted-playtime-tracker'
 import { getHomeHeroGameName } from '#/lib/game-display-name'
 import { isArcadeMahjongGame } from '#/lib/arcade-mahjong-games'
+import { getCachedImageUrl } from '#/lib/image-url'
 
 export function DefaultHomeTemplate(
   props: HomeTemplateProps & { onCoinsEarned?: (amount: number) => void },
@@ -356,7 +357,7 @@ export function DefaultHomeTemplate(
                       to="/$locale/games/$gameId"
                     >
                       {index === 1 && game.game_video?.trim() ? (
-                        <DeferredHeroVideo cover={game.game_cover} src={game.game_video} />
+                        <DeferredHeroVideo cover={getCachedImageUrl(game.game_cover, 720)} src={game.game_video} />
                       ) : (
                         <>
                           <img
@@ -364,7 +365,7 @@ export function DefaultHomeTemplate(
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                             decoding="async"
                             fetchPriority="high"
-                            src={game.game_cover}
+                            src={getCachedImageUrl(game.game_cover, 720)}
                           />
                           <GameCardPreviewVideo src={game.game_video} />
                         </>
@@ -407,7 +408,7 @@ export function DefaultHomeTemplate(
                   return (
                     <div className="min-w-0" key={`popular-${gameId}`}>
                       <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
-                        <img alt={displayName} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} />
+                        <img alt={displayName} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" decoding="async" loading="lazy" src={getCachedImageUrl(game.game_cover, 720)} />
                         <GameCardPreviewVideo src={game.game_video} />
                       </Link>
                       <strong className="block w-full truncate px-1 pt-3 text-center text-sm font-semibold text-black" title={displayName}>{displayName}</strong>
@@ -428,7 +429,7 @@ export function DefaultHomeTemplate(
                   const gameId = game.url_slug || game._id || ''
                   return (
                     <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} key={`best-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
-                      <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} />
+                      <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" decoding="async" loading="lazy" src={getCachedImageUrl(game.game_cover, 480)} />
                       <GameCardPreviewVideo src={game.game_video} />
                     </Link>
                   )
@@ -445,7 +446,7 @@ export function DefaultHomeTemplate(
                     const gameId = getGameId(game)
                     return (
                       <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} key={`latest-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
-                        <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} />
+                        <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" decoding="async" loading="lazy" src={getCachedImageUrl(game.game_cover, 480)} />
                         <GameCardPreviewVideo src={game.game_video} />
                       </Link>
                     )
@@ -465,7 +466,7 @@ export function DefaultHomeTemplate(
                     const gameId = getGameId(game)
                     return (
                       <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} key={`mahjong-${gameId}`} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
-                        <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} />
+                        <img alt={game.name || ''} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" decoding="async" loading="lazy" src={getCachedImageUrl(game.game_cover, 480)} />
                         <GameCardPreviewVideo src={game.game_video} />
                       </Link>
                     )
@@ -725,7 +726,7 @@ function RandomGameModal({
       >
         <figure className="relative aspect-[4/3] bg-base-200">
           {game.game_cover ? (
-            <img alt={game.name ?? t.randomGame} className="h-full w-full object-cover" src={game.game_cover} />
+            <img alt={game.name ?? t.randomGame} className="h-full w-full object-cover" src={getCachedImageUrl(game.game_cover, 720)} />
           ) : null}
           {game.platform ? (
             <span className="absolute bottom-3 right-3 rounded bg-black/70 px-2 py-1 text-xs text-white">

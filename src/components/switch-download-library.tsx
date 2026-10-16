@@ -220,7 +220,7 @@ export function DownloadLibrary({ lang, platform }: { lang: Locale; platform: 's
                   className={`${platform === 'psp' ? 'psp-library-cover aspect-[353/600] [&_img]:object-contain' : 'aspect-[616/353] transition group-hover:scale-[1.02]'} w-full`}
                   src={pspCover ?? game.cover}
                   alt={`${game.title}${platform === 'psp' ? ' 封面' : ''}`}
-                  eager={index < (platform === 'psp' ? 7 : 5)}
+                  eager={index < 3}
                   transparent={platform === 'psp'}
                 />
               </Link>

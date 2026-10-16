@@ -10,6 +10,11 @@ import { collectionApiUrl, getGuestCollectorId } from '#/lib/library-collection-
 const OWNED_CARTRIDGES_KEY = 'ucg999-fc-owned-cartridges'
 const OWNED_CARTRIDGES_MIGRATION_KEY = 'ucg999-fc-owned-cartridges-migrated'
 const CARTRIDGE_PRICE = 10
+const MAIN_SITE_TRIAL_SLUGS: Readonly<Record<string, string>> = {
+  'balloon-fight': 'balloon-fight-nes-1986',
+  'ice-climber': 'ice-climber-nes-1985',
+  'kung-fu': 'yie-ar-kung-fu-nes-1985',
+}
 
 function isLocalDevelopment() {
   return typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname)
@@ -626,7 +631,7 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
                       className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.025]"
                       decoding="async"
                       fetchPriority={index < 3 ? 'high' : 'auto'}
-                      loading={index < 7 ? 'eager' : 'lazy'}
+                      loading={index < 3 ? 'eager' : 'lazy'}
                       src={cartridge.cover}
                     />
                   </div>
@@ -676,7 +681,11 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
               }
               if (window.matchMedia('(min-width: 1024px) and (pointer: fine)').matches) setPlaying(cartridge.id)
               else window.location.assign(`/fc?cartridge=${encodeURIComponent(cartridge.id)}`)
-            }} onClose={() => setPreviewing(null)} onTrial={cartridge.id === 'mahjong' ? () => { window.location.assign(`/${lang}/games/mahjong-nes-1983/play?autoplay=%221%22&inline=%221%22`) } : undefined} title={cartridge.title} trialHint={cartridge.id === 'mahjong' ? (lang === 'en' ? 'Loading required' : lang === 'zh-TW' ? '需要載入' : '需要加载') : undefined} trialLabel={lang === 'en' ? 'Try now' : lang === 'zh-TW' ? '立即試玩' : '立即试玩'} />
+            }} onClose={() => setPreviewing(null)} onTrial={cartridge.id === 'mahjong'
+              ? () => { window.location.assign(`/${lang}/games/mahjong-nes-1983/play?autoplay=%221%22&inline=%221%22`) }
+              : MAIN_SITE_TRIAL_SLUGS[cartridge.id]
+                ? () => { window.location.assign(`/${lang}/games/${MAIN_SITE_TRIAL_SLUGS[cartridge.id]}/play?autoplay=%221%22&inline=%221%22`) }
+                : undefined} title={cartridge.title} trialHint={cartridge.id === 'mahjong' || MAIN_SITE_TRIAL_SLUGS[cartridge.id] ? (lang === 'en' ? 'Loading required' : lang === 'zh-TW' ? '需要載入' : '需要加载') : undefined} trialLabel={lang === 'en' ? 'Try now' : lang === 'zh-TW' ? '立即試玩' : '立即试玩'} />
           })() : null}
           {playing ? <CartridgePlayerDialog
             onClose={() => setPlaying(null)}

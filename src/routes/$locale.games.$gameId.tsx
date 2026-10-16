@@ -137,6 +137,8 @@ export const Route = createFileRoute('/$locale/games/$gameId')({
       links: [
         { rel: 'preconnect', href: 'https://ggemu.com' },
         { rel: 'dns-prefetch', href: 'https://ggemu.com' },
+        { rel: 'preconnect', href: 'https://storage.ggemu.com' },
+        { rel: 'dns-prefetch', href: 'https://storage.ggemu.com' },
         { rel: 'canonical', href: canonicalUrl },
         {
           rel: 'manifest',

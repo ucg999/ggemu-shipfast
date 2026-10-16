@@ -50,6 +50,7 @@ import { Route as ApiFcCartridgesRouteImport } from './routes/api.fc-cartridges'
 import { Route as ApiFcSaveRouteImport } from './routes/api.fc-save'
 import { Route as ApiGbCartridgesRouteImport } from './routes/api.gb-cartridges'
 import { Route as ApiHomeShareRewardRouteImport } from './routes/api.home-share-reward'
+import { Route as ApiImageRouteImport } from './routes/api.image'
 import { Route as ApiLibraryCollectionsRouteImport } from './routes/api.library-collections'
 import { Route as ApiLocaleSuggestionRouteImport } from './routes/api/locale-suggestion'
 import { Route as ApiMemberRouteImport } from './routes/api.member'
@@ -277,6 +278,11 @@ const ApiHomeShareRewardRoute = ApiHomeShareRewardRouteImport.update({
   path: '/api/home-share-reward',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiImageRoute = ApiImageRouteImport.update({
+  id: '/api/image',
+  path: '/api/image',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiLibraryCollectionsRoute = ApiLibraryCollectionsRouteImport.update({
   id: '/api/library-collections',
   path: '/api/library-collections',
@@ -423,6 +429,7 @@ export interface FileRoutesByFullPath {
   '/api/fc-save': typeof ApiFcSaveRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/home-share-reward': typeof ApiHomeShareRewardRoute
+  '/api/image': typeof ApiImageRoute
   '/api/library-collections': typeof ApiLibraryCollectionsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
@@ -485,6 +492,7 @@ export interface FileRoutesByTo {
   '/api/fc-save': typeof ApiFcSaveRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/home-share-reward': typeof ApiHomeShareRewardRoute
+  '/api/image': typeof ApiImageRoute
   '/api/library-collections': typeof ApiLibraryCollectionsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
@@ -549,6 +557,7 @@ export interface FileRoutesById {
   '/api/fc-save': typeof ApiFcSaveRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/home-share-reward': typeof ApiHomeShareRewardRoute
+  '/api/image': typeof ApiImageRoute
   '/api/library-collections': typeof ApiLibraryCollectionsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
@@ -614,6 +623,7 @@ export interface FileRouteTypes {
     | '/api/fc-save'
     | '/api/gb-cartridges'
     | '/api/home-share-reward'
+    | '/api/image'
     | '/api/library-collections'
     | '/api/locale-suggestion'
     | '/api/member'
@@ -676,6 +686,7 @@ export interface FileRouteTypes {
     | '/api/fc-save'
     | '/api/gb-cartridges'
     | '/api/home-share-reward'
+    | '/api/image'
     | '/api/library-collections'
     | '/api/locale-suggestion'
     | '/api/member'
@@ -739,6 +750,7 @@ export interface FileRouteTypes {
     | '/api/fc-save'
     | '/api/gb-cartridges'
     | '/api/home-share-reward'
+    | '/api/image'
     | '/api/library-collections'
     | '/api/locale-suggestion'
     | '/api/member'
@@ -783,6 +795,7 @@ export interface RootRouteChildren {
   ApiFcSaveRoute: typeof ApiFcSaveRoute
   ApiGbCartridgesRoute: typeof ApiGbCartridgesRoute
   ApiHomeShareRewardRoute: typeof ApiHomeShareRewardRoute
+  ApiImageRoute: typeof ApiImageRoute
   ApiLibraryCollectionsRoute: typeof ApiLibraryCollectionsRoute
   ApiLocaleSuggestionRoute: typeof ApiLocaleSuggestionRoute
   ApiMemberRoute: typeof ApiMemberRoute
@@ -1083,6 +1096,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHomeShareRewardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/image': {
+      id: '/api/image'
+      path: '/api/image'
+      fullPath: '/api/image'
+      preLoaderRoute: typeof ApiImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/library-collections': {
       id: '/api/library-collections'
       path: '/api/library-collections'
@@ -1349,6 +1369,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiFcSaveRoute: ApiFcSaveRoute,
   ApiGbCartridgesRoute: ApiGbCartridgesRoute,
   ApiHomeShareRewardRoute: ApiHomeShareRewardRoute,
+  ApiImageRoute: ApiImageRoute,
   ApiLibraryCollectionsRoute: ApiLibraryCollectionsRoute,
   ApiLocaleSuggestionRoute: ApiLocaleSuggestionRoute,
   ApiMemberRoute: ApiMemberRoute,

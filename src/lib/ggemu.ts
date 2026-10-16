@@ -7,6 +7,9 @@ const API_BASE_URL = 'https://ggemu.com'
 const PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
 const NON_GCOIN_GAME = '0'
+const PUBLIC_API_CACHE_TTL_MS = 5 * 60 * 1000
+const PUBLIC_API_CACHE_LIMIT = 120
+const publicApiCache = new Map<string, { expiresAt: number; value: Promise<unknown> }>()
 export type CoinModeRequiredRank = 'bronze' | 'silver' | 'gold' | 'platinum'
 const COIN_MODE_GAME_RANKS: Readonly<Record<string, CoinModeRequiredRank>> = {
   'wiggie waggie': 'platinum',
@@ -275,13 +278,25 @@ function addOptionalParam(
 
 async function fetchJson<T>(path: string, params: URLSearchParams) {
   const query = params.toString()
-  const response = await fetchWithTimeoutRetry(`${API_BASE_URL}${path}${query ? `?${query}` : ''}`)
+  const url = `${API_BASE_URL}${path}${query ? `?${query}` : ''}`
+  const now = Date.now()
+  const cached = publicApiCache.get(url)
+  if (cached && cached.expiresAt > now) return cached.value as Promise<T>
+  if (cached) publicApiCache.delete(url)
 
-  if (!response.ok) {
-    throw new Error(`GGEMU API request failed with ${response.status}`)
+  const value = fetchWithTimeoutRetry(url).then(async (response) => {
+    if (!response.ok) throw new Error(`GGEMU API request failed with ${response.status}`)
+    return response.json() as Promise<T>
+  })
+  publicApiCache.set(url, { expiresAt: now + PUBLIC_API_CACHE_TTL_MS, value })
+  if (publicApiCache.size > PUBLIC_API_CACHE_LIMIT) {
+    const oldestKey = publicApiCache.keys().next().value
+    if (oldestKey) publicApiCache.delete(oldestKey)
   }
-
-  return response.json() as Promise<T>
+  value.catch(() => {
+    if (publicApiCache.get(url)?.value === value) publicApiCache.delete(url)
+  })
+  return value
 }
 
 async function fetchGames(params: URLSearchParams, includeCoinMode = true) {

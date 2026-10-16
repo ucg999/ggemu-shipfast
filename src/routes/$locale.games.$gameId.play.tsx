@@ -40,6 +40,14 @@ type PlayGameSearch = {
 }
 
 export const Route = createFileRoute('/$locale/games/$gameId/play')({
+  head: () => ({
+    links: [
+      { rel: 'preconnect', href: 'https://ggemu.com', crossOrigin: 'anonymous' },
+      { rel: 'preconnect', href: 'https://storage.ggemu.com', crossOrigin: 'anonymous' },
+      { rel: 'dns-prefetch', href: 'https://ggemu.com' },
+      { rel: 'dns-prefetch', href: 'https://storage.ggemu.com' },
+    ],
+  }),
   validateSearch: (search: Record<string, unknown>): PlayGameSearch => ({
     autoplay: search.autoplay === '1' ? ('1' as const) : undefined,
     inline: search.inline === '1' ? ('1' as const) : undefined,
@@ -81,6 +89,12 @@ function LocalizedPlayGamePage() {
   const embedId = encodeURIComponent(game._id || game.url_slug || gameId)
   const forceAutoplay = gameId === 'mahjong-nes-1983'
     || game.url_slug === 'mahjong-nes-1983'
+    || gameId === 'balloon-fight-nes-1986'
+    || game.url_slug === 'balloon-fight-nes-1986'
+    || gameId === 'ice-climber-nes-1985'
+    || game.url_slug === 'ice-climber-nes-1985'
+    || gameId === 'yie-ar-kung-fu-nes-1985'
+    || game.url_slug === 'yie-ar-kung-fu-nes-1985'
     || (game.name ?? '').trim().toLocaleLowerCase() === 'mahjong'
   const refcode = encodeURIComponent(siteConfig.GGEMU_REFCODE)
   const isPsp = isPspGame(game)
@@ -473,6 +487,7 @@ function LocalizedPlayGamePage() {
         }
         allowFullScreen
         className="game-play-frame border-0 bg-black"
+        loading="eager"
         src={embedSrc}
         title={game.name ?? 'Retro game'}
       />
