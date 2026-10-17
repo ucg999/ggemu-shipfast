@@ -60,13 +60,13 @@ export function CoinChallengeCommunity({
   const uploadedWinsRef = useRef<Set<string>>(new Set())
   const uploadedGameScoresRef = useRef<Set<string>>(new Set())
 
-  async function refresh() {
+  async function refresh(weeklyOnly = false) {
     if (demo) return
     const modeQuery = leaderboardMode ? `&mode=${encodeURIComponent(leaderboardMode)}` : ''
     const response = await fetch(`/api/coin-challenge-community?channel=${encodeURIComponent(channel)}${modeQuery}`, { credentials: 'same-origin', cache: 'no-store' })
     if (!response.ok) return
     const next = await response.json() as { singleCashoutLeaderboard?: WeeklyCoinEntry[]; bonusChampions?: BonusChampion[]; leaderboard?: Array<LeaderboardEntry>; weeklyLeaderboard?: Array<WeeklyCoinEntry>; bombWeeklyLeaderboard?: Array<WeeklyCoinEntry>; bountyLeaderboard?: Array<WeeklyCoinEntry>; arrestLeaderboard?: Array<WeeklyCoinEntry>; lastWeekChampion?: string | null; pendingRewards?: Array<PendingReward>; expiredRewards?: Array<PendingReward> }
-    setLeaderboard((next.leaderboard ?? []).slice(0, channel === 'coin-challenge' ? 3 : 10))
+    if (!weeklyOnly) setLeaderboard((next.leaderboard ?? []).slice(0, channel === 'coin-challenge' ? 3 : 10))
     setSingleCashouts(next.singleCashoutLeaderboard ?? [])
     setBonusChampions(next.bonusChampions ?? [])
     setWeeklyLeaderboard(next.weeklyLeaderboard ?? [])
@@ -90,6 +90,10 @@ export function CoinChallengeCommunity({
   useEffect(() => {
     if (!isOpen) return
     void refresh()
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void refresh(true)
+    }, 20_000)
+    return () => window.clearInterval(timer)
   }, [isOpen, channel, leaderboardMode])
   useEffect(() => {
     if (demo || !member) return
@@ -105,6 +109,7 @@ export function CoinChallengeCommunity({
     if (demo || !member || !scoreSubmission || uploadedGameScoresRef.current.has(scoreSubmission.id)) return
     uploadedGameScoresRef.current.add(scoreSubmission.id)
     void post({ action: 'game-score', mode: leaderboardMode, outcome: scoreSubmission.outcome, score: scoreSubmission.score, wonCoins: scoreSubmission.wonCoins, lostCoins: scoreSubmission.lostCoins, submissionKey: `${member.id}:${channel}:${scoreSubmission.id}` })
+      .then(() => { if (isOpen) void refresh(true) })
       .catch(() => uploadedGameScoresRef.current.delete(scoreSubmission.id))
   }, [scoreSubmission?.id, member?.id, channel, leaderboardMode])
 
@@ -114,6 +119,7 @@ export function CoinChallengeCommunity({
     pending.forEach(event => {
       uploadedBonuses.current.add(event.id)
       void post({ action: 'bonus-hit', kind: event.kind, submissionKey: event.id })
+        .then(() => { if (isOpen) void refresh(true) })
         .catch(() => uploadedBonuses.current.delete(event.id))
     })
   }, [bonusEvents, member?.id, demo, isOpen])
