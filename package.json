@@ -12,6 +12,8 @@
     "generate-routes": "tsr generate",
     "build": "vite build",
     "preview": "vite preview",
+    "seo:indexnow": "node scripts/submit-indexnow.mjs",
+    "seo:indexnow:all": "node scripts/submit-indexnow.mjs --all",
     "test": "node --test src/lib/*.test.ts",
     "test:audio": "node --test src/lib/spin-audio-clock.test.ts"
   },
