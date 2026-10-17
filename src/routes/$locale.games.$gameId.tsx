@@ -49,7 +49,8 @@ import {
 } from '#/lib/i18n'
 import { getAlternateLinksFromCanonical } from '#/lib/seo'
 import { getPlatformLabel } from '#/lib/platform-label'
-import { consumeRandomGameCoinMultiplier, hasCoinRank, markGamePlayStarted, readCoinBalance } from '#/lib/coin-wallet'
+import { consumeRandomGameCoinMultiplier, hasCoinRank, markGamePlayStarted } from '#/lib/coin-wallet'
+import { requestMemberLogin, useMemberSession } from '#/lib/member-client'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -324,6 +325,7 @@ function LocalizedGameDetailPage() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const locationHash = useRouterState({ select: (state) => state.location.hash })
   const isProStandalone = locationHash === 'PRO' || locationHash === '#PRO'
+  const member = useMemberSession()
   const isInlinePlaying = pathname.endsWith('/play')
   const lang = normalizeLocale(locale)
   const t = getI18n(lang).detail
@@ -368,7 +370,12 @@ function LocalizedGameDetailPage() {
   }, [gameId])
 
   const startGame = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (requiredCoinRank && (!hasCoinRank(requiredCoinRank) || readCoinBalance() < minimumCoinBalance)) {
+    if (requiredCoinRank && !member) {
+      event.preventDefault()
+      requestMemberLogin()
+      return
+    }
+    if (requiredCoinRank && member && (!hasCoinRank(requiredCoinRank, member.coinBalance) || member.coinBalance < minimumCoinBalance)) {
       event.preventDefault()
       window.alert(minimumCoinBalance > 0 ? `需要达到青铜段位并拥有至少 ${minimumCoinBalance} 个金币才可以开始游戏，金币不会扣除。` : getRankGameCopy(lang, requiredCoinRank).insufficient)
       return

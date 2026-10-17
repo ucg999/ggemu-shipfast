@@ -201,13 +201,33 @@ function LocalizedPlayGamePage() {
   }, [gameId, guestMahjongTrial, isProGame, lang, memberAccessGranted, navigate])
 
   useEffect(() => {
-    if (!requiredCoinRank || (hasCoinRank(requiredCoinRank) && readCoinBalance() >= minimumCoinBalance)) {
+    if (!requiredCoinRank) {
       setRankAccessGranted(true)
       return
     }
-    const rankName = requiredCoinRank === 'platinum' ? '铂金' : requiredCoinRank === 'gold' ? '黄金' : requiredCoinRank === 'silver' ? '白银' : '青铜'
-    window.alert(minimumCoinBalance > 0 ? `需要达到青铜段位并拥有至少 ${minimumCoinBalance} 个金币才可以开始游戏，金币不会扣除。` : `需要达到${rankName}段位才可以开始游戏。`)
-    void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
+    let cancelled = false
+    void getMemberSession().then(({ member }) => {
+      if (cancelled) return
+      if (!member) {
+        setRankAccessGranted(false)
+        requestMemberLogin()
+        void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
+        return
+      }
+      if (hasCoinRank(requiredCoinRank, member.coinBalance) && member.coinBalance >= minimumCoinBalance) {
+        setRankAccessGranted(true)
+        return
+      }
+      const rankName = requiredCoinRank === 'platinum' ? '铂金' : requiredCoinRank === 'gold' ? '黄金' : requiredCoinRank === 'silver' ? '白银' : '青铜'
+      window.alert(minimumCoinBalance > 0 ? `需要达到青铜段位并拥有至少 ${minimumCoinBalance} 个玩家金币才可以开始游戏，金币不会扣除。` : `需要达到${rankName}段位才可以开始游戏。`)
+      void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
+    }).catch(() => {
+      if (cancelled) return
+      setRankAccessGranted(false)
+      requestMemberLogin()
+      void navigate({ hash: isProGame ? 'PRO' : undefined, params: { gameId, locale: lang }, to: '/$locale/games/$gameId' })
+    })
+    return () => { cancelled = true }
   }, [gameId, isProGame, lang, minimumCoinBalance, navigate, requiredCoinRank])
 
   useEffect(() => {
