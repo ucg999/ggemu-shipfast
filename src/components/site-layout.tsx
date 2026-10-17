@@ -13,6 +13,7 @@ import { addCoinBalance, prepareRandomGameCoinMultiplier } from '#/lib/coin-wall
 import { confirmResourceDownload, unlockPaidResource } from '#/lib/paid-resource'
 import { MemberAccountButton } from '#/components/member-account'
 import { getMemberSession, useMemberSession } from '#/lib/member-client'
+import { isCartridgeLibraryNew } from '#/lib/cartridge-library-update'
 
 const SITE_VISIT_COIN_SESSION_KEY = 'game-adventure-site-visit-coin-awarded'
 const DESKTOP_SIDEBAR_STATE_KEY = 'retro-games-desktop-sidebar-state'
@@ -1160,8 +1161,10 @@ function DesktopUnifiedHeaderNavigation({
               <li><Link params={{ locale, rankingId: 'weekly' }} to="/$locale/rankings/$rankingId">{layout.weeklyPopularGames}</Link></li>
               <li><Link params={{ locale, rankingId: 'rising' }} to="/$locale/rankings/$rankingId">{layout.fastestGrowingGames}</Link></li>
           </ul> : <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
-            <li><Link params={{ locale, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">{locale === 'en' ? 'FC Cartridge Collection' : locale === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</Link></li>
-            <li><Link params={{ locale, platformId: 'gb-cartridges' }} to="/$locale/platform/$platformId">{locale === 'en' ? 'GB Cartridge Collection' : locale === 'zh-TW' ? 'GB卡帶收藏' : 'GB卡带收藏'}</Link></li>
+            <li><Link params={{ locale, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId"><span className={isCartridgeLibraryNew('fc-cartridges') ? 'font-semibold text-yellow-500' : undefined}>{locale === 'en' ? 'FC Cartridge Collection' : locale === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</span></Link></li>
+            <li><Link params={{ locale, platformId: 'gb-cartridges' }} to="/$locale/platform/$platformId"><span className={isCartridgeLibraryNew('gb-cartridges') ? 'font-semibold text-yellow-500' : undefined}>{locale === 'en' ? 'GB Cartridge Collection' : locale === 'zh-TW' ? 'GB卡帶收藏' : 'GB卡带收藏'}</span></Link></li>
+            <li><Link params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId"><span className={isCartridgeLibraryNew('psp') ? 'font-semibold text-yellow-500' : undefined}>{locale === 'en' ? 'PSP Game Library' : locale === 'zh-TW' ? 'PSP遊戲庫' : locale === 'ja' ? 'PSPゲームライブラリ' : 'PSP游戏库'}</span></Link></li>
+            <li><Link params={{ locale, platformId: 'switch' }} to="/$locale/platform/$platformId"><span className={isCartridgeLibraryNew('switch') ? 'font-semibold text-yellow-500' : undefined}>{locale === 'en' ? 'Switch Game Library' : locale === 'zh-TW' ? 'Switch遊戲庫' : locale === 'ja' ? 'Switchゲームライブラリ' : 'Switch游戏库'}</span></Link></li>
           </ul>}
         </div>
       </details>
@@ -1173,9 +1176,9 @@ function DesktopUnifiedHeaderNavigation({
       ) : null}
       <Link className={linkClass} params={{ locale, platformId: 'coin' }} to="/$locale/platform/$platformId">{getGameModeLabels(locale).coin}</Link>
       <Link className={linkClass} params={{ locale, platformId: 'mahjong' }} title={getMahjongChargeTip(locale)} to="/$locale/platform/$platformId">{getGameModeLabels(locale).mahjong}</Link>
-      <Link className={linkClass} params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
-      <Link className={linkClass} params={{ locale, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
-      <Link className={linkClass} params={{ locale, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">{locale === 'en' ? 'FC Cartridges' : locale === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</Link>
+      <Link className={`${linkClass} ${isCartridgeLibraryNew('psp') ? 'library-update-highlight font-semibold' : ''}`} params={{ locale, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
+      <Link className={`${linkClass} ${isCartridgeLibraryNew('switch') ? 'library-update-highlight font-semibold' : ''}`} params={{ locale, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
+      <Link className={`${linkClass} ${isCartridgeLibraryNew('fc-cartridges') ? 'library-update-highlight font-semibold' : ''}`} params={{ locale, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">{locale === 'en' ? 'FC Cartridges' : locale === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</Link>
       <Link className={`${linkClass} text-amber-700`} params={{ locale }} to="/$locale/rankings/coins"><i className="ri-trophy-line mr-1" />{locale === 'en' ? 'Rankings' : '排行榜'}</Link>
       <Link className={`${linkClass} text-[#7a2f23]`} params={{ locale }} to="/$locale/wanted"><i className="ri-file-warning-line mr-1" />{locale === 'en' ? 'Wanted' : '悬赏令'}</Link>
       </div>

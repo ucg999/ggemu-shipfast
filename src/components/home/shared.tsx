@@ -18,6 +18,7 @@ import { RedBlueArenaCard } from '#/components/red-blue-arena-card'
 import { useMemberSession } from '#/lib/member-client'
 import { markWantedFeaturedGame } from '#/components/wanted-playtime-tracker'
 import { getCachedImageUrl } from '#/lib/image-url'
+import { isCartridgeLibraryNew } from '#/lib/cartridge-library-update'
 
 export const HOME_BLOG_POST_LIMIT = 4
 
@@ -418,8 +419,10 @@ export function SearchForm({
               <li><Link params={{ locale: lang, rankingId: 'weekly' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.weeklyPopularGames}</Link></li>
               <li><Link params={{ locale: lang, rankingId: 'rising' }} to="/$locale/rankings/$rankingId">{getI18n(lang).layout.fastestGrowingGames}</Link></li>
             </ul> : <ul className="menu w-52 shrink-0 border-l border-black/10 p-2">
-              <li><Link params={{ locale: lang, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">{lang === 'en' ? 'FC Cartridge Collection' : lang === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</Link></li>
-              <li><Link params={{ locale: lang, platformId: 'gb-cartridges' }} to="/$locale/platform/$platformId">{lang === 'en' ? 'GB Cartridge Collection' : lang === 'zh-TW' ? 'GB卡帶收藏' : 'GB卡带收藏'}</Link></li>
+              <li><Link params={{ locale: lang, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId"><span className={isCartridgeLibraryNew('fc-cartridges') ? 'font-semibold text-yellow-500' : undefined}>{lang === 'en' ? 'FC Cartridge Collection' : lang === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</span></Link></li>
+              <li><Link params={{ locale: lang, platformId: 'gb-cartridges' }} to="/$locale/platform/$platformId"><span className={isCartridgeLibraryNew('gb-cartridges') ? 'font-semibold text-yellow-500' : undefined}>{lang === 'en' ? 'GB Cartridge Collection' : lang === 'zh-TW' ? 'GB卡帶收藏' : 'GB卡带收藏'}</span></Link></li>
+              <li><Link params={{ locale: lang, platformId: 'psp' }} to="/$locale/platform/$platformId"><span className={isCartridgeLibraryNew('psp') ? 'font-semibold text-yellow-500' : undefined}>{lang === 'en' ? 'PSP Game Library' : lang === 'zh-TW' ? 'PSP遊戲庫' : lang === 'ja' ? 'PSPゲームライブラリ' : 'PSP游戏库'}</span></Link></li>
+              <li><Link params={{ locale: lang, platformId: 'switch' }} to="/$locale/platform/$platformId"><span className={isCartridgeLibraryNew('switch') ? 'font-semibold text-yellow-500' : undefined}>{lang === 'en' ? 'Switch Game Library' : lang === 'zh-TW' ? 'Switch遊戲庫' : lang === 'ja' ? 'Switchゲームライブラリ' : 'Switch游戏库'}</span></Link></li>
             </ul>}
           </div>
         </details>
@@ -438,9 +441,9 @@ export function SearchForm({
         <div className="tooltip tooltip-bottom" data-tip={lang === 'zh-TW' ? '經典的麻將遊戲' : lang === 'en' ? 'Classic mahjong games' : lang === 'ja' ? 'クラシック麻雀ゲーム' : '经典的麻将游戏'}>
           <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'mahjong' }} to="/$locale/platform/$platformId">{lang === 'zh-TW' ? '街機麻將' : lang === 'en' ? 'Arcade Mahjong' : lang === 'ja' ? 'アーケード麻雀' : '街机麻将'}</Link>
         </div>
-        <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
-        <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
-        <Link className="flex h-9 items-center whitespace-nowrap px-2 text-sm font-normal text-white/95 transition hover:text-white" params={{ locale: lang, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">{lang === 'en' ? 'FC Cartridges' : lang === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</Link>
+        <Link className={`flex h-9 items-center whitespace-nowrap px-2 text-sm transition hover:text-white ${isCartridgeLibraryNew('psp') ? 'library-update-highlight font-semibold' : 'font-normal text-white/95'}`} params={{ locale: lang, platformId: 'psp' }} to="/$locale/platform/$platformId">PSP</Link>
+        <Link className={`flex h-9 items-center whitespace-nowrap px-2 text-sm transition hover:text-white ${isCartridgeLibraryNew('switch') ? 'library-update-highlight font-semibold' : 'font-normal text-white/95'}`} params={{ locale: lang, platformId: 'switch' }} to="/$locale/platform/$platformId">Switch</Link>
+        <Link className={`flex h-9 items-center whitespace-nowrap px-2 text-sm transition hover:text-white ${isCartridgeLibraryNew('fc-cartridges') ? 'library-update-highlight font-semibold' : 'font-normal text-white/95'}`} params={{ locale: lang, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">{lang === 'en' ? 'FC Cartridges' : lang === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</Link>
         <div className="flex h-9 w-[172px] shrink-0 items-center rounded-full border border-rose-200 bg-rose-50 shadow-sm transition focus-within:border-rose-300 focus-within:bg-white">
           <label className="flex h-full min-w-0 flex-1 items-center gap-1.5 pl-2.5">
             <i className="ri-search-line shrink-0 text-base text-gray-500" />

@@ -29,6 +29,16 @@ export async function syncLibraryUpdates() {
       }
     }
   }
+  for (const library of ['fc-cartridges', 'gb-cartridges']) {
+    const sourcePath = new URL(`src/components/${library === 'fc-cartridges' ? 'fc' : 'gb'}-cartridge-library.tsx`, root)
+    const fingerprint = createHash('sha256').update(readFileSync(sourcePath)).digest('hex')
+    const key = `${library}/__library__`
+    const old = previous[key]
+    next[key] = {
+      fingerprint,
+      updatedAt: old?.fingerprint === fingerprint ? old.updatedAt : old ? new Date().toISOString() : null,
+    }
+  }
   const json = JSON.stringify(next, null, 2) + '\n'
   if (!existsSync(manifestPath) || readFileSync(manifestPath, 'utf8') !== json) writeFileSync(manifestPath, json)
 }
@@ -41,7 +51,7 @@ export function libraryUpdatesPlugin() {
       await syncLibraryUpdates()
     },
     async handleHotUpdate({ file }) {
-      if (/(?:psp|switch)-library\.ts$/.test(file) || /public[\\/](?:psp|switch)-library[\\/]/.test(file)) {
+      if (/(?:psp|switch)-library\.ts$/.test(file) || /(?:fc|gb)-cartridge-library\.tsx$/.test(file) || /public[\\/](?:psp|switch)-library[\\/]/.test(file)) {
         await optimizeLibraryImages()
         await syncLibraryUpdates()
       }

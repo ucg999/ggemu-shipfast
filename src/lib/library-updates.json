@@ -12,8 +12,8 @@
     "updatedAt": "2026-10-11T03:09:01.903Z"
   },
   "switch/tmnt-splintered-fate": {
-    "fingerprint": "dd0770e2c8543a9c9eacd3bd18c35b3fafb6f0069935d573a4a1db90f987b061",
-    "updatedAt": "2026-09-07T16:21:47+00:00"
+    "fingerprint": "fd509a530c7cdb4f7cc9b4d1257397046a60dae127810145d55971598e22360c",
+    "updatedAt": "2026-10-17T06:33:51.035Z"
   },
   "switch/hello-kitty-island-adventure": {
     "fingerprint": "653d81f974e490d082c4b2218ad7171c9562f94ee22b65640d27b71c6da5e4d6",
@@ -24,16 +24,32 @@
     "updatedAt": "2026-09-07T16:59:38+00:00"
   },
   "switch/final-fantasy-resonance-demo": {
-    "fingerprint": "f5eb781ab977fdf64545e1e75a18470200d5408c74ea560713f76d35f85897d1",
-    "updatedAt": "2026-09-07T16:59:38+00:00"
+    "fingerprint": "e453c255c16c519db3acf941fba3700032fe8c40181d3fe0adbf88463012dc8c",
+    "updatedAt": "2026-10-17T06:33:51.065Z"
   },
   "switch/gta5-switch-port": {
-    "fingerprint": "db26aed30c11bfd0b3033912ce1548589f4d066b92c45af8afbb43598ae20f4f",
-    "updatedAt": "2026-09-07T16:59:38+00:00"
+    "fingerprint": "9c32c9891c972f6fbaae91467935c7bcf6194cf0d53868dfde30b46dac4a767e",
+    "updatedAt": "2026-10-17T06:33:51.070Z"
   },
   "switch/ace-angler": {
-    "fingerprint": "498e997fd685a631f371df7c14ba522e56dcac9c985851e93b151a016c7b1212",
-    "updatedAt": "2026-09-16T08:03:44+00:00"
+    "fingerprint": "65bac43a83894b61e01ec89ccd25cf2725a2b0160881d64ab30c2359a05de170",
+    "updatedAt": "2026-10-17T06:33:51.072Z"
+  },
+  "switch/octopath-traveler-2": {
+    "fingerprint": "6b7cd19824555e06c665d3d37673b01a93ec6b40690576728f6b1cd27fae3d54",
+    "updatedAt": "2026-10-17T06:33:51.077Z"
+  },
+  "switch/digimon-story-time-stranger": {
+    "fingerprint": "c18e7dc725d704aaa92867b2b8e6a6508a8dec5e89835edd58ab8ac310551ab1",
+    "updatedAt": "2026-10-17T06:33:51.083Z"
+  },
+  "switch/new-sword-heroes-trilogy": {
+    "fingerprint": "115ab282b761e1d108d36c334c4ab954876b571e59295db13ca856f7fcf0a8ed",
+    "updatedAt": "2026-10-17T06:33:51.083Z"
+  },
+  "switch/ace-angler-fishing-spirits": {
+    "fingerprint": "2d5fa309d355284961c3c71c60c9e38d99d758aa7624bef824c8e6862c48d1fb",
+    "updatedAt": "2026-10-17T06:33:51.085Z"
   },
   "psp/tales-of-phantasia-narikiri-dungeon-x": {
     "fingerprint": "14a38ac165461b1fa871db98a9d7b05ee6a54afb15db63386b5487dcf24afb6d",
@@ -90,5 +106,13 @@
   "psp/moto-gp": {
     "fingerprint": "6430f2efc306bdf4f3de339be34e110634705d78caaa8b8dd5ccd0ed6f596eab",
     "updatedAt": "2026-10-11T19:54:08+08:00"
+  },
+  "fc-cartridges/__library__": {
+    "fingerprint": "5a8826714fb8e37816504b357a3dfd9cfb5d7cebd04b3ea1dccd974b6fcbf45e",
+    "updatedAt": null
+  },
+  "gb-cartridges/__library__": {
+    "fingerprint": "6281b63bb3071c5637394c355bbfd4cfa26734876bced3260938399d55f6a4eb",
+    "updatedAt": null
   }
 }

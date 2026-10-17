@@ -26,6 +26,7 @@ import { markWantedFeaturedGame } from '#/components/wanted-playtime-tracker'
 import { getHomeHeroGameName } from '#/lib/game-display-name'
 import { isArcadeMahjongGame } from '#/lib/arcade-mahjong-games'
 import { getCachedImageUrl } from '#/lib/image-url'
+import { isCartridgeLibraryNew } from '#/lib/cartridge-library-update'
 
 export function DefaultHomeTemplate(
   props: HomeTemplateProps & { onCoinsEarned?: (amount: number) => void },
@@ -276,14 +277,14 @@ export function DefaultHomeTemplate(
           params={{ locale: lang, platformId: 'psp' }}
           to="/$locale/platform/$platformId"
         >
-          PSP
+          <span className={isCartridgeLibraryNew('psp') ? 'text-yellow-300' : undefined}>PSP</span>
         </Link>
         <Link
           className="flex h-9 items-center justify-center text-sm font-medium transition hover:bg-blue-700"
           params={{ locale: lang, platformId: 'switch' }}
           to="/$locale/platform/$platformId"
         >
-          Switch
+          <span className={isCartridgeLibraryNew('switch') ? 'text-yellow-300' : undefined}>Switch</span>
         </Link>
       </nav>
       <nav aria-label="FC游戏机和FC卡带收藏" className="grid w-full grid-cols-2 bg-amber-300 text-black lg:hidden">
@@ -298,7 +299,7 @@ export function DefaultHomeTemplate(
           params={{ locale: lang, platformId: 'fc-cartridges' }}
           to="/$locale/platform/$platformId"
         >
-          {lang === 'en' ? 'FC Cartridges' : lang === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}
+          <span className={isCartridgeLibraryNew('fc-cartridges') ? 'text-yellow-700' : undefined}>{lang === 'en' ? 'FC Cartridges' : lang === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</span>
         </Link>
       </nav>
       <nav aria-label="GB游戏机和GB卡带收藏" className="grid w-full grid-cols-2 bg-gray-300 text-gray-900 lg:hidden">
@@ -313,7 +314,7 @@ export function DefaultHomeTemplate(
           params={{ locale: lang, platformId: 'gb-cartridges' }}
           to="/$locale/platform/$platformId"
         >
-          {lang === 'en' ? 'GB Cartridges' : lang === 'zh-TW' ? 'GB卡帶收藏' : 'GB卡带收藏'}
+          <span className={isCartridgeLibraryNew('gb-cartridges') ? 'text-yellow-600' : undefined}>{lang === 'en' ? 'GB Cartridges' : lang === 'zh-TW' ? 'GB卡帶收藏' : 'GB卡带收藏'}</span>
         </Link>
       </nav>
       <nav
