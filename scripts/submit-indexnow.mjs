@@ -2,7 +2,7 @@ const siteOrigin = 'https://ucg999.com'
 const host = 'ucg999.com'
 const key = '4cd3d18da0a7c2e087b46d3f1c95f103'
 const keyLocation = `${siteOrigin}/${key}.txt`
-const endpoint = 'https://api.indexnow.org/IndexNow'
+const endpoint = 'https://api.indexnow.org/indexnow'
 
 function extractLocations(xml) {
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/gi)].map(match => match[1].trim())
