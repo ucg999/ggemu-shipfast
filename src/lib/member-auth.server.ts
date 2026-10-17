@@ -84,6 +84,9 @@ export function validateCredentials(username: unknown, password: unknown) {
 export function validateRegistrationCredentials(username: unknown, password: unknown) {
   const credentials = validateCredentials(username, password)
   if ('error' in credentials) return credentials
+  if (credentials.password.length > 12) {
+    return { error: '密码需为 8–12 位' }
+  }
   if (!/^[a-z0-9_]{6,20}$/i.test(credentials.normalizedUsername)) {
     return { error: '用户名只允许字母、数字和下划线，长度为 6–20 位' }
   }
@@ -92,8 +95,13 @@ export function validateRegistrationCredentials(username: unknown, password: unk
 
 export function validateNickname(value: unknown) {
   const nickname = typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : ''
-  if ([...nickname].length < 1 || [...nickname].length > 20 || /[\u0000-\u001f\u007f]/.test(nickname)) {
-    return { error: '昵称需为 1–20 个字符，可以使用中文、字母、数字和常用符号' }
+  const characters = [...nickname]
+  const chineseCount = characters.filter(character => /\p{Script=Han}/u.test(character)).length
+  if (characters.length < 1 || characters.length > 12 || !/^[\p{Script=Han}A-Za-z0-9]+$/u.test(nickname)) {
+    return { error: '昵称只能使用中文、英文字母和数字，总长度为 1–12 个字符' }
+  }
+  if (chineseCount > 6) {
+    return { error: '昵称中的中文最多为 6 个字' }
   }
   return { nickname }
 }

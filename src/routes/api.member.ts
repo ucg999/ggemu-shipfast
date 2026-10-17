@@ -54,6 +54,7 @@ export const Route = createFileRoute('/api/member')({
             ? validateRegistrationCredentials(body.username, body.password)
             : validateCredentials(body.username, body.password)
           if ('error' in credentials) return jsonError(credentials.error ?? '账号信息不符合要求')
+          if (action === 'reset-password' && credentials.password.length > 12) return jsonError('密码需为 8–12 位')
 
           if (action === 'register') {
             const normalizedInvitationCode = typeof body.invitationCode === 'string' ? body.invitationCode.trim().toUpperCase() : ''
@@ -242,7 +243,7 @@ export const Route = createFileRoute('/api/member')({
 
           if (body.action === 'change-password') {
             const nextPassword = typeof body.newPassword === 'string' ? body.newPassword : ''
-            if (nextPassword.length < 8 || nextPassword.length > 72) return jsonError('新密码需为 8–72 位')
+            if (nextPassword.length < 8 || nextPassword.length > 12) return jsonError('新密码需为 8–12 位')
             const password = await hashPassword(nextPassword)
             await memberDb().batch([
               memberDb().prepare('UPDATE members SET password_hash = ?, password_salt = ?, password_iterations = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(password.hash, password.salt, password.iterations, member.id),
