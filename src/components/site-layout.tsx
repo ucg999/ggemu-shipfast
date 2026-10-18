@@ -777,6 +777,18 @@ export function SiteLayout({
                   </Link>
                 </li>
                 <li>
+                  <Link
+                    className={`group flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition hover:bg-base-200 ${location.pathname === `/${locale}/wishlist` ? 'bg-base-200 font-semibold text-violet-700' : ''}`}
+                    params={{ locale }}
+                    to="/$locale/wishlist"
+                  >
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-violet-100 text-violet-700 group-hover:bg-violet-200">
+                      <i className="ri-magic-line text-base" />
+                    </span>
+                    <span className="sidebar-label min-w-0 flex-1">{locale === 'en' ? 'Wish List' : locale === 'zh-TW' ? '願望單' : '愿望单'}</span>
+                  </Link>
+                </li>
+                <li>
                   <details>
                     <summary className="group min-h-12 gap-3 rounded-xl px-3 py-2.5 font-medium">
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content group-hover:bg-base-300">
@@ -1181,6 +1193,7 @@ function DesktopUnifiedHeaderNavigation({
       <Link className={`${linkClass} ${isCartridgeLibraryNew('fc-cartridges') ? 'library-update-highlight font-semibold' : ''}`} params={{ locale, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">{locale === 'en' ? 'FC Cartridges' : locale === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</Link>
       <Link className={`${linkClass} text-amber-700`} params={{ locale }} to="/$locale/rankings/coins"><i className="ri-trophy-line mr-1" />{locale === 'en' ? 'Rankings' : '排行榜'}</Link>
       <Link className={`${linkClass} text-[#7a2f23]`} params={{ locale }} to="/$locale/wanted"><i className="ri-file-warning-line mr-1" />{locale === 'en' ? 'Wanted' : '悬赏令'}</Link>
+      <Link className={`${linkClass} text-violet-700`} params={{ locale }} to="/$locale/wishlist"><i className="ri-magic-line mr-1" />{locale === 'en' ? 'Wish List' : locale === 'zh-TW' ? '願望單' : '愿望单'}</Link>
       </div>
     </nav>
   )

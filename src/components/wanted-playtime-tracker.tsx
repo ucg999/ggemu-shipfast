@@ -5,6 +5,9 @@ import { useEffect, useRef } from 'react'
 const GUEST_KEY_STORAGE = 'ucg999-wanted-guest-key'
 const FEATURED_GAME_STORAGE = 'ucg999-wanted-featured-game'
 const PENDING_SUBMISSIONS_STORAGE = 'ucg999-wanted-pending-submissions'
+const ACTIVE_GAME_TAB_STORAGE = 'ucg999-wanted-active-game-tab'
+const ACTIVE_ONLINE_TAB_STORAGE = 'ucg999-wanted-active-online-tab'
+const IDLE_TIMEOUT_MS = 3 * 60_000
 let activeFeaturedGame: { path: string; multiplier: number } | null = null
 
 function readPendingSubmissions() {
@@ -48,6 +51,7 @@ async function flushPendingSubmissions() {
 
 export function WantedPlaytimeTracker() {
   useSiteVisitorPresence()
+  useWantedOnlineTime()
   const pathname = useRouterState({ select: state => state.location.pathname })
   const hash = useRouterState({ select: state => state.location.hash })
   const playing = isPlayableRoute(pathname)
@@ -55,6 +59,7 @@ export function WantedPlaytimeTracker() {
   const proMode = isProRoute(pathname, hash)
   const featuredMultiplier = getFeaturedGameMultiplier(pathname)
   const featuredGame = featuredMultiplier !== null
+  const eligibleGame = playing || handheld || proMode
   const elapsedRef = useRef(0)
   const previousTickRef = useRef(0)
   const sessionRef = useRef('')
@@ -75,13 +80,24 @@ export function WantedPlaytimeTracker() {
     finalizedRef.current = false
     pendingFinalRef.current = false
     const activity = new WantedActivityClock()
+    const tabId = crypto.randomUUID()
+    let lastInteractionAt = 0
     const guestKey = getWantedGuestKey()
     const guestName = `游客${guestKey.slice(-5).toUpperCase()}`
     void flushPendingSubmissions()
 
     const tick = () => {
       const now = Date.now()
-      if (document.visibilityState === 'visible') activity.tick(now - previousTickRef.current)
+      const activeTab = readActiveGameTab()
+      const isActiveGame = eligibleGame
+        && document.visibilityState === 'visible'
+        && now - lastInteractionAt <= IDLE_TIMEOUT_MS
+        && activeTab?.tabId === tabId
+        && now - activeTab.at <= 5_000
+      if (isActiveGame) {
+        activity.tick(now - previousTickRef.current)
+        writeActiveGameTab(tabId, now)
+      }
       elapsedRef.current = activity.elapsed
       previousTickRef.current = now
     }
@@ -95,12 +111,12 @@ export function WantedPlaytimeTracker() {
       const totalSeconds = Math.min(12 * 60 * 60, Math.floor(elapsedRef.current / 1_000))
       const previousSubmittedSeconds = submittedSecondsRef.current
       const seconds = totalSeconds - previousSubmittedSeconds
-      if (seconds < (final ? 1 : 300)) return
+      if (seconds < (final ? 1 : 60)) return
       if (final) finalizedRef.current = true
       submittingRef.current = true
       submittedSecondsRef.current = totalSeconds
       submissionIndexRef.current += 1
-      const sessionType = featuredGame ? 'featured' : proMode ? 'pro' : handheld ? 'handheld' : playing ? 'game' : 'online'
+      const sessionType = featuredGame ? 'featured' : proMode ? 'pro' : handheld ? 'handheld' : 'game'
       const payload = JSON.stringify({ action: 'session', sessionType, guestKey, guestName, seconds, submissionKey: `wanted-v2:${sessionType}:${sessionRef.current}:${submissionIndexRef.current}` })
       queuePendingSubmission(payload)
       if (final && navigator.sendBeacon('/api/wanted', new Blob([payload], { type: 'application/json' }))) {
@@ -122,13 +138,17 @@ export function WantedPlaytimeTracker() {
         })
     }
     const registerInteraction = (event: Event) => {
-      if (document.visibilityState !== 'visible') return
+      if (!eligibleGame || document.visibilityState !== 'visible' || !event.isTrusted) return
       tick()
-      activity.interact(event.isTrusted)
+      lastInteractionAt = Date.now()
+      writeActiveGameTab(tabId, lastInteractionAt)
+      activity.interact(true)
     }
     const registerFocusedGameFrame = () => {
-      if (document.visibilityState === 'visible' && document.activeElement instanceof HTMLIFrameElement) {
+      if (eligibleGame && document.visibilityState === 'visible' && document.activeElement instanceof HTMLIFrameElement) {
         tick()
+        lastInteractionAt = Date.now()
+        writeActiveGameTab(tabId, lastInteractionAt)
         activity.interact(true)
       }
     }
@@ -149,7 +169,6 @@ export function WantedPlaytimeTracker() {
     const timer = window.setInterval(() => {
       tick()
       attach(document)
-      registerFocusedGameFrame()
       submitSession(false)
       retryTicks += 1
       if (retryTicks >= 30) {
@@ -167,9 +186,73 @@ export function WantedPlaytimeTracker() {
       documents.forEach(doc => events.forEach(name => doc.removeEventListener(name, registerInteraction, true)))
       submitSession(true)
     }
-  }, [pathname, featuredGame, featuredMultiplier, handheld, playing, proMode])
+  }, [pathname, featuredGame, featuredMultiplier, handheld, playing, proMode, eligibleGame])
 
   return null
+}
+
+function useWantedOnlineTime() {
+  useEffect(() => {
+    const tabId = crypto.randomUUID()
+    const sessionId = crypto.randomUUID()
+    const guestKey = getWantedGuestKey()
+    const guestName = `游客${guestKey.slice(-5).toUpperCase()}`
+    let elapsedMs = 0
+    let submittedSeconds = 0
+    let submissionIndex = 0
+    let previousTick = Date.now()
+    let submitting = false
+    let finalized = false
+
+    const claim = () => {
+      if (document.visibilityState === 'visible') writeTabLock(ACTIVE_ONLINE_TAB_STORAGE, tabId, Date.now())
+    }
+    const tick = () => {
+      const now = Date.now()
+      const lock = readTabLock(ACTIVE_ONLINE_TAB_STORAGE)
+      if (document.visibilityState === 'visible' && (!lock || lock.tabId === tabId || now - lock.at > 5_000)) {
+        elapsedMs += Math.max(0, Math.min(5_000, now - previousTick))
+        writeTabLock(ACTIVE_ONLINE_TAB_STORAGE, tabId, now)
+      }
+      previousTick = now
+    }
+    const submit = (final = false) => {
+      if (final && finalized) return
+      if (submitting) return
+      tick()
+      const totalSeconds = Math.floor(elapsedMs / 1_000)
+      const seconds = totalSeconds - submittedSeconds
+      if (seconds < (final ? 1 : 300)) return
+      if (final) finalized = true
+      submitting = true
+      submittedSeconds = totalSeconds
+      submissionIndex += 1
+      const payload = JSON.stringify({ action: 'session', sessionType: 'online', guestKey, guestName, seconds, submissionKey: `wanted-online-v1:${sessionId}:${submissionIndex}` })
+      queuePendingSubmission(payload)
+      if (final && navigator.sendBeacon('/api/wanted', new Blob([payload], { type: 'application/json' }))) {
+        submitting = false
+        return
+      }
+      void fetch('/api/wanted', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true })
+        .then(response => { if (response.ok) removePendingSubmission(payload) })
+        .finally(() => { submitting = false })
+    }
+
+    claim()
+    const timer = window.setInterval(() => { tick(); submit(false) }, 1_000)
+    const onVisibility = () => { if (document.visibilityState === 'visible') claim() }
+    const onPageHide = () => submit(true)
+    window.addEventListener('focus', claim)
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', onPageHide)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('focus', claim)
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', onPageHide)
+      submit(true)
+    }
+  }, [])
 }
 
 function useSiteVisitorPresence() {
@@ -249,5 +332,31 @@ function getFeaturedGameMultiplier(pathname: string) {
     return multiplier
   } catch {
     return null
+  }
+}
+
+function readActiveGameTab() {
+  return readTabLock(ACTIVE_GAME_TAB_STORAGE)
+}
+
+function writeActiveGameTab(tabId: string, at: number) {
+  writeTabLock(ACTIVE_GAME_TAB_STORAGE, tabId, at)
+}
+
+function readTabLock(storageKey: string) {
+  try {
+    const value = JSON.parse(window.localStorage.getItem(storageKey) || 'null') as { tabId?: unknown; at?: unknown } | null
+    if (value && typeof value.tabId === 'string' && Number.isFinite(Number(value.at))) return { tabId: value.tabId, at: Number(value.at) }
+  } catch {
+    // Without shared storage, duplicate time across tabs cannot be safely prevented.
+  }
+  return null
+}
+
+function writeTabLock(storageKey: string, tabId: string, at: number) {
+  try {
+    window.localStorage.setItem(storageKey, JSON.stringify({ tabId, at }))
+  } catch {
+    // Storage-disabled browsers simply cannot claim a cross-tab timer lock.
   }
 }

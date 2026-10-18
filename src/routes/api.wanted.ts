@@ -10,38 +10,109 @@ type WantedRow = {
   weighted_minutes: number
 }
 
-const WEEKLY_REWARDS = [5_000, 2_000, 500] as const
+const WEEKLY_REWARDS = [5_000, 2_000, 1_000] as const
+const ONLINE_TIME_REWARD = 500
 let fairTimeTableReady: Promise<void> | null = null
+const fairMigrationReady = new Map<string, Promise<void>>()
 
 function ensureFairTimeTable() {
-  fairTimeTableReady ??= leaderboardDb().prepare(`
-    CREATE TABLE IF NOT EXISTS wanted_weekly_fair_time (
-      participant_key TEXT NOT NULL,
-      period_key TEXT NOT NULL,
-      member_id TEXT,
-      display_name TEXT NOT NULL,
-      raw_minutes INTEGER NOT NULL DEFAULT 0,
-      weighted_minutes INTEGER NOT NULL DEFAULT 0,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (participant_key, period_key)
-    )
-  `).run().then(() => undefined).catch((error: unknown) => {
+  fairTimeTableReady ??= (async () => {
+    const db = leaderboardDb()
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS wanted_weekly_fair_time (
+        participant_key TEXT NOT NULL,
+        period_key TEXT NOT NULL,
+        member_id TEXT,
+        display_name TEXT NOT NULL,
+        raw_minutes INTEGER NOT NULL DEFAULT 0,
+        weighted_minutes INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (participant_key, period_key)
+      )
+    `).run()
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS wanted_fair_time_migrations (
+        period_key TEXT NOT NULL,
+        participant_key TEXT NOT NULL,
+        migrated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (period_key, participant_key)
+      )
+    `).run()
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS wanted_weekly_online_time (
+        participant_key TEXT NOT NULL,
+        period_key TEXT NOT NULL,
+        member_id TEXT,
+        display_name TEXT NOT NULL,
+        seconds INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (participant_key, period_key)
+      )
+    `).run()
+  })().catch((error: unknown) => {
     fairTimeTableReady = null
     throw error
   })
   return fairTimeTableReady
 }
 
+function ensureCurrentWeekFairMigration(periodKey: string) {
+  let promise = fairMigrationReady.get(periodKey)
+  if (promise) return promise
+  promise = (async () => {
+    const db = leaderboardDb()
+    let formerLeaders: { results: Array<WantedRow & { updated_at: string }> }
+    try {
+      formerLeaders = await db.prepare(`
+        SELECT participant_key, member_id, display_name, raw_minutes, weighted_minutes, updated_at
+        FROM wanted_weekly_playtime
+        WHERE period_key = ? AND weighted_minutes > 0
+        ORDER BY weighted_minutes DESC, updated_at ASC
+        LIMIT 6
+      `).bind(periodKey).all<WantedRow & { updated_at: string }>()
+    } catch (error) {
+      console.warn('[wanted] No former weekly table available for fair-time migration', error)
+      return
+    }
+    for (const leader of formerLeaders.results) {
+      const marked = await db.prepare(`
+        INSERT OR IGNORE INTO wanted_fair_time_migrations (period_key, participant_key)
+        VALUES (?, ?)
+      `).bind(periodKey, leader.participant_key).run()
+      if (!marked.meta.changes) continue
+      const actualSeconds = Math.max(0, Math.floor(Number(leader.raw_minutes) || 0)) * 60
+      if (actualSeconds < 1) continue
+      await db.prepare(`
+        INSERT INTO wanted_weekly_fair_time
+          (participant_key, period_key, member_id, display_name, raw_minutes, weighted_minutes, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(participant_key, period_key) DO UPDATE SET
+          member_id = COALESCE(excluded.member_id, member_id),
+          display_name = excluded.display_name,
+          raw_minutes = raw_minutes + excluded.raw_minutes,
+          weighted_minutes = weighted_minutes + excluded.weighted_minutes,
+          updated_at = CASE WHEN updated_at > excluded.updated_at THEN updated_at ELSE excluded.updated_at END
+      `).bind(leader.participant_key, periodKey, leader.member_id, leader.display_name, actualSeconds, actualSeconds, leader.updated_at).run()
+    }
+  })().catch((error) => {
+    fairMigrationReady.delete(periodKey)
+    throw error
+  })
+  fairMigrationReady.set(periodKey, promise)
+  return promise
+}
+
 export const Route = createFileRoute('/api/wanted')({
   server: { handlers: {
     GET: async ({ request }) => {
       await ensureFairTimeTable()
+      const periodKey = getWantedWeekKey(Date.now())
+      await ensureCurrentWeekFairMigration(periodKey)
       await ensurePreviousWeekAwards()
       const member = await getMemberFromRequest(request)
       const url = new URL(request.url)
       const guestKey = normalizeGuestKey(url.searchParams.get('guest'))
       if (member && guestKey) await adoptGuestWantedIdentity(member.id, member.displayName, guestKey)
-      const periodKey = getWantedWeekKey(Date.now())
       const rows = await leaderboardDb().prepare(`
         SELECT participant_key, member_id, display_name, raw_minutes, weighted_minutes
         FROM wanted_weekly_fair_time
@@ -49,6 +120,11 @@ export const Route = createFileRoute('/api/wanted')({
         ORDER BY weighted_minutes DESC, updated_at ASC LIMIT 6
       `).bind(periodKey).all<WantedRow>()
       const posterAssignments = await ensureWantedPosterAssignments(periodKey, rows.results.slice(0, 3))
+      const onlineLeader = await leaderboardDb().prepare(`
+        SELECT display_name, seconds FROM wanted_weekly_online_time
+        WHERE period_key = ? AND seconds > 0
+        ORDER BY seconds DESC, updated_at ASC LIMIT 1
+      `).bind(periodKey).first<{ display_name: string; seconds: number }>()
       const participantKey = member ? `member:${member.id}` : guestKey
       const expiredRewards = participantKey ? await expireWantedRewards(participantKey) : []
       const pending = participantKey ? await leaderboardDb().prepare(`
@@ -65,6 +141,7 @@ export const Route = createFileRoute('/api/wanted')({
       return Response.json({
         periodKey,
         leaders: rows.results.map((row, index) => ({ rank: index + 1, displayName: row.display_name, seconds: row.weighted_minutes, posterNumber: posterAssignments.get(row.participant_key) })),
+        onlineLeader: onlineLeader ? { displayName: onlineLeader.display_name, seconds: Number(onlineLeader.seconds) || 0, coins: ONLINE_TIME_REWARD } : null,
         pendingRewards: pending.results.map(row => ({ periodKey: row.period_key, rank: row.rank, coins: row.reward_coins })),
         expiredRewards,
         lastWeekChampion: lastWeekChampion?.display_name ?? null,
@@ -72,6 +149,8 @@ export const Route = createFileRoute('/api/wanted')({
     },
     POST: async ({ request }) => {
       await ensureFairTimeTable()
+      const currentPeriodKey = getWantedWeekKey(Date.now())
+      await ensureCurrentWeekFairMigration(currentPeriodKey)
       const body = await request.json() as { action?: unknown; sessionType?: unknown; guestKey?: unknown; guestName?: unknown; seconds?: unknown; minutes?: unknown; submissionKey?: unknown }
       const member = await getMemberFromRequest(request)
       const guestKey = normalizeGuestKey(body.guestKey)
@@ -96,21 +175,39 @@ export const Route = createFileRoute('/api/wanted')({
         const requestedSeconds = body.seconds === undefined ? Number(body.minutes) * 60 : Number(body.seconds)
         const seconds = Math.min(12 * 60 * 60, Math.max(0, Math.floor(requestedSeconds || 0)))
         if (seconds < 1) return jsonError('本次没有可累计的实时时间')
-        const periodKey = getWantedWeekKey(Date.now())
+        const periodKey = currentPeriodKey
         const db = leaderboardDb()
         const accepted = await db.prepare(`INSERT OR IGNORE INTO wanted_playtime_submissions (submission_key, participant_key, period_key) VALUES (?, ?, ?)`)
           .bind(submissionKey, participantKey, periodKey).run()
-        if (accepted.meta.changes) await db.prepare(`
-          INSERT INTO wanted_weekly_fair_time (participant_key, period_key, member_id, display_name, raw_minutes, weighted_minutes)
-          VALUES (?, ?, ?, ?, ?, ?)
-          ON CONFLICT(participant_key, period_key) DO UPDATE SET
-            member_id = excluded.member_id,
-            display_name = excluded.display_name,
-            raw_minutes = raw_minutes + excluded.raw_minutes,
-            weighted_minutes = weighted_minutes + excluded.weighted_minutes,
-            updated_at = CURRENT_TIMESTAMP
-        `).bind(participantKey, periodKey, member?.id ?? null, displayName, seconds, seconds).run()
-        return Response.json({ ok: true, sessionType, seconds })
+        if (sessionType === 'online') {
+          if (accepted.meta.changes) await db.prepare(`
+            INSERT INTO wanted_weekly_online_time (participant_key, period_key, member_id, display_name, seconds)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(participant_key, period_key) DO UPDATE SET
+              member_id = excluded.member_id,
+              display_name = excluded.display_name,
+              seconds = seconds + excluded.seconds,
+              updated_at = CURRENT_TIMESTAMP
+          `).bind(participantKey, periodKey, member?.id ?? null, displayName, seconds).run()
+          return Response.json({ ok: true, sessionType, seconds })
+        }
+        let creditedSeconds = 0
+        if (accepted.meta.changes) {
+          creditedSeconds = seconds
+          if (creditedSeconds > 0) await db.batch([
+            db.prepare(`
+              INSERT INTO wanted_weekly_fair_time (participant_key, period_key, member_id, display_name, raw_minutes, weighted_minutes)
+              VALUES (?, ?, ?, ?, ?, ?)
+              ON CONFLICT(participant_key, period_key) DO UPDATE SET
+                member_id = excluded.member_id,
+                display_name = excluded.display_name,
+                raw_minutes = raw_minutes + excluded.raw_minutes,
+                weighted_minutes = weighted_minutes + excluded.weighted_minutes,
+                updated_at = CURRENT_TIMESTAMP
+            `).bind(participantKey, periodKey, member?.id ?? null, displayName, creditedSeconds, creditedSeconds),
+          ])
+        }
+        return Response.json({ ok: true, sessionType, seconds: creditedSeconds })
       }
 
       if (body.action === 'claim') {
@@ -162,9 +259,11 @@ async function adoptGuestWantedIdentity(memberId: string, displayName: string, g
   const guestRecord = await db.prepare(`
     SELECT 1 AS found FROM wanted_weekly_fair_time WHERE participant_key = ?
     UNION ALL
+    SELECT 1 AS found FROM wanted_weekly_online_time WHERE participant_key = ?
+    UNION ALL
     SELECT 1 AS found FROM wanted_weekly_awards WHERE participant_key = ?
     LIMIT 1
-  `).bind(guestKey, guestKey).first<{ found: number }>()
+  `).bind(guestKey, guestKey, guestKey).first<{ found: number }>()
   if (!guestRecord) return
 
   await db.batch([
@@ -181,6 +280,18 @@ async function adoptGuestWantedIdentity(memberId: string, displayName: string, g
         updated_at = CASE WHEN updated_at > excluded.updated_at THEN updated_at ELSE excluded.updated_at END
     `).bind(memberKey, memberId, displayName, guestKey),
     db.prepare(`DELETE FROM wanted_weekly_fair_time WHERE participant_key = ?`).bind(guestKey),
+    db.prepare(`
+      INSERT INTO wanted_weekly_online_time
+        (participant_key, period_key, member_id, display_name, seconds, updated_at)
+      SELECT ?, period_key, ?, ?, seconds, updated_at
+      FROM wanted_weekly_online_time WHERE participant_key = ?
+      ON CONFLICT(participant_key, period_key) DO UPDATE SET
+        member_id = excluded.member_id,
+        display_name = excluded.display_name,
+        seconds = seconds + excluded.seconds,
+        updated_at = CASE WHEN updated_at > excluded.updated_at THEN updated_at ELSE excluded.updated_at END
+    `).bind(memberKey, memberId, displayName, guestKey),
+    db.prepare(`DELETE FROM wanted_weekly_online_time WHERE participant_key = ?`).bind(guestKey),
     db.prepare(`
       UPDATE wanted_weekly_awards
       SET participant_key = ?, member_id = ?, display_name = ?
@@ -254,10 +365,12 @@ async function ensurePreviousWeekAwards() {
   const db = leaderboardDb()
   const currentKey = getWantedWeekKey(Date.now())
   const periods = await db.prepare(`
-    SELECT DISTINCT period_key FROM wanted_weekly_fair_time
-    WHERE period_key < ? AND period_key NOT IN (SELECT period_key FROM wanted_weekly_awards)
-    ORDER BY period_key ASC LIMIT 8
-  `).bind(currentKey).all<{ period_key: string }>()
+    SELECT period_key FROM (
+      SELECT DISTINCT period_key FROM wanted_weekly_fair_time WHERE period_key < ?
+      UNION
+      SELECT DISTINCT period_key FROM wanted_weekly_online_time WHERE period_key < ?
+    ) ORDER BY period_key ASC LIMIT 8
+  `).bind(currentKey, currentKey).all<{ period_key: string }>()
   for (const period of periods.results) {
     const leaders = await db.prepare(`
       SELECT participant_key, member_id, display_name, weighted_minutes
@@ -269,5 +382,15 @@ async function ensurePreviousWeekAwards() {
         (period_key, rank, participant_key, member_id, display_name, weighted_minutes, reward_coins)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).bind(period.period_key, index + 1, row.participant_key, row.member_id, row.display_name, row.weighted_minutes, WEEKLY_REWARDS[index] ?? 0)))
+    const onlineLeader = await db.prepare(`
+      SELECT participant_key, member_id, display_name, seconds
+      FROM wanted_weekly_online_time WHERE period_key = ? AND seconds > 0
+      ORDER BY seconds DESC, updated_at ASC LIMIT 1
+    `).bind(period.period_key).first<{ participant_key: string; member_id: string | null; display_name: string; seconds: number }>()
+    if (onlineLeader) await db.prepare(`
+      INSERT OR IGNORE INTO wanted_weekly_awards
+        (period_key, rank, participant_key, member_id, display_name, weighted_minutes, reward_coins)
+      VALUES (?, 4, ?, ?, ?, ?, ?)
+    `).bind(period.period_key, onlineLeader.participant_key, onlineLeader.member_id, onlineLeader.display_name, onlineLeader.seconds, ONLINE_TIME_REWARD).run()
   }
 }

@@ -8,7 +8,7 @@ import { getMemberSession } from '#/lib/member-client'
 import { addCoinBalance, readCoinBalance } from '#/lib/coin-wallet'
 
 type Leader = { rank: number; displayName: string; seconds: number; posterNumber?: number }
-type WantedData = { periodKey: string; leaders: Leader[]; pendingRewards: Array<{ periodKey: string; rank: number; coins: number }>; expiredRewards?: Array<{ periodKey: string; rank: number; coins: number }>; lastWeekChampion?: string | null }
+type WantedData = { periodKey: string; leaders: Leader[]; onlineLeader?: { displayName: string; seconds: number; coins: number } | null; pendingRewards: Array<{ periodKey: string; rank: number; coins: number }>; expiredRewards?: Array<{ periodKey: string; rank: number; coins: number }>; lastWeekChampion?: string | null }
 
 export const Route = createFileRoute('/$locale/wanted')({
   head: () => ({ meta: [{ title: '悬赏令｜每周游玩时长排行榜｜怀旧游戏厅' }, { name: 'description', content: '按有效游玩时间统计的每周悬赏令排行榜，前三名可获得金币奖励。' }] }),
@@ -16,7 +16,7 @@ export const Route = createFileRoute('/$locale/wanted')({
 })
 
 const displayOrder = [2, 1, 3] as const
-const rewards: Record<number, number> = { 1: 5_000, 2: 2_000, 3: 500 }
+const rewards: Record<number, number> = { 1: 5_000, 2: 2_000, 3: 1_000 }
 const wantedPosterCount = 18
 
 function getWeeklyPosterSet(data: WantedData | null) {
@@ -110,13 +110,13 @@ function WantedPage() {
             </div>
           })}
         </section>
-        <div className="wanted-chaser-ranks mx-auto mt-1 flex max-w-3xl flex-wrap items-center justify-center gap-x-5 gap-y-1 px-4 text-center text-xs font-semibold text-[#35231d]/75 sm:text-sm">
+        <div className="wanted-chaser-ranks mx-auto mt-1 grid max-w-3xl grid-cols-3 items-center gap-1 px-2 text-center text-[10px] font-semibold text-[#35231d]/75 sm:gap-4 sm:px-4 sm:text-sm">
           {[4, 5, 6].map(rank => {
             const leader = data?.leaders.find(item => item.rank === rank)
-            return <span key={rank}>第{rank}名：{leader ? `${leader.displayName} · ${leader.seconds.toLocaleString()}秒` : '等待挑战'}</span>
+            return <span key={rank}>第{rank}名：{leader ? `${leader.displayName} · ${leader.seconds.toLocaleString()}` : '等待挑战'}</span>
           })}
         </div>
-        <p className="mx-auto mt-1 px-4 text-center text-[11px] text-[#35231d]/55 sm:text-xs">账号与游客均按真实在线时间累计，不使用等级、签到或任何倍数加成。</p>
+        <p className="wanted-online-award mx-auto mt-1 px-4 text-center text-xs font-bold text-amber-700 sm:text-sm">在线时间奖：{data?.onlineLeader ? `${data.onlineLeader.displayName} · ${data.onlineLeader.seconds.toLocaleString()} · 🪙500` : '等待挑战 · 🪙500'}</p>
         <p className="wanted-last-champion mx-auto mt-1 px-4 text-center text-sm font-semibold sm:text-base">上周冠军获得者：<span className="text-[#9a281d]">{data?.lastWeekChampion || '暂无记录'}</span></p>
       </div>
     </main>
@@ -140,7 +140,7 @@ function WantedPosterText({ leader, rank, slot }: { leader?: Leader; rank: numbe
   const scale = Math.max(.55, Math.min(1.15, 7 / length))
   return <div className={`wanted-poster-copy wanted-slot-${slot + 1}`}>
     <strong style={{ transform: `scaleX(${scale})` }}>{name}</strong>
-    <span>{leader ? `${leader.seconds.toLocaleString()}秒` : '---'}</span>
+    <span>{leader ? leader.seconds.toLocaleString() : '---'}</span>
     <small>NO.{rank} · 🪙{rewards[rank].toLocaleString()}</small>
   </div>
 }

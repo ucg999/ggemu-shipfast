@@ -794,8 +794,8 @@ html:not([data-member-logged-in='true']) .coin-rank-badge {
 .wanted-poster-copy small{display:block;margin-top:2%;font-family:ui-sans-serif,system-ui,sans-serif;font-size:clamp(.42rem,.72vw,.78rem);font-weight:800;letter-spacing:.04em}
 .wanted-slot-1,.wanted-slot-2,.wanted-slot-3{left:2.5%}
 @media(min-width:641px){
-  .wanted-chaser-ranks{position:fixed;z-index:8;right:0;bottom:30px;left:0;margin:0 auto!important}
-  .wanted-last-champion{position:fixed;z-index:8;right:0;bottom:7px;left:0;margin:0 auto!important}
+  .wanted-chaser-ranks{margin-top:clamp(-58px,-4vh,-24px)!important}
+  .wanted-online-award,.wanted-last-champion{position:static;margin-top:.15rem!important}
 }
 @media(max-width:640px){
   .wanted-page-main{height:auto;min-height:calc(100dvh - 61px);overflow:visible;padding-bottom:1.5rem}
@@ -808,4 +808,6 @@ html:not([data-member-logged-in='true']) .coin-rank-badge {
   .wanted-poster-copy strong{font-size:clamp(1rem,5vw,1.35rem)}
   .wanted-poster-copy span{margin-top:5%;font-size:clamp(.9rem,4.2vw,1.15rem)}
   .wanted-poster-copy small{display:none}
+  .wanted-chaser-ranks{margin-top:-.35rem!important}
+  .wanted-online-award,.wanted-last-champion{margin-top:0!important}
 }

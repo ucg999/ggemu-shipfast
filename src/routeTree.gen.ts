@@ -44,10 +44,12 @@ import { Route as LocaleSearchRouteImport } from './routes/$locale.search'
 import { Route as LocaleTermsOfServiceRouteImport } from './routes/$locale.terms-of-service'
 import { Route as LocaleThemeModeRouteImport } from './routes/$locale.theme-mode'
 import { Route as LocaleWantedRouteImport } from './routes/$locale.wanted'
+import { Route as LocaleWishlistRouteImport } from './routes/$locale.wishlist'
 import { Route as ApiCoinChallengeCommunityRouteImport } from './routes/api.coin-challenge-community'
 import { Route as ApiCoinRankingsRouteImport } from './routes/api.coin-rankings'
 import { Route as ApiFcCartridgesRouteImport } from './routes/api.fc-cartridges'
 import { Route as ApiFcSaveRouteImport } from './routes/api.fc-save'
+import { Route as ApiGameWishesRouteImport } from './routes/api.game-wishes'
 import { Route as ApiGbCartridgesRouteImport } from './routes/api.gb-cartridges'
 import { Route as ApiHomeShareRewardRouteImport } from './routes/api.home-share-reward'
 import { Route as ApiImageRouteImport } from './routes/api.image'
@@ -248,6 +250,11 @@ const LocaleWantedRoute = LocaleWantedRouteImport.update({
   path: '/wanted',
   getParentRoute: () => LocaleRoute,
 } as any)
+const LocaleWishlistRoute = LocaleWishlistRouteImport.update({
+  id: '/wishlist',
+  path: '/wishlist',
+  getParentRoute: () => LocaleRoute,
+} as any)
 const ApiCoinChallengeCommunityRoute =
   ApiCoinChallengeCommunityRouteImport.update({
     id: '/api/coin-challenge-community',
@@ -267,6 +274,11 @@ const ApiFcCartridgesRoute = ApiFcCartridgesRouteImport.update({
 const ApiFcSaveRoute = ApiFcSaveRouteImport.update({
   id: '/api/fc-save',
   path: '/api/fc-save',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGameWishesRoute = ApiGameWishesRouteImport.update({
+  id: '/api/game-wishes',
+  path: '/api/game-wishes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiGbCartridgesRoute = ApiGbCartridgesRouteImport.update({
@@ -429,10 +441,12 @@ export interface FileRoutesByFullPath {
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/$locale/theme-mode': typeof LocaleThemeModeRoute
   '/$locale/wanted': typeof LocaleWantedRoute
+  '/$locale/wishlist': typeof LocaleWishlistRoute
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
   '/api/fc-save': typeof ApiFcSaveRoute
+  '/api/game-wishes': typeof ApiGameWishesRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/home-share-reward': typeof ApiHomeShareRewardRoute
   '/api/image': typeof ApiImageRoute
@@ -493,10 +507,12 @@ export interface FileRoutesByTo {
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/$locale/theme-mode': typeof LocaleThemeModeRoute
   '/$locale/wanted': typeof LocaleWantedRoute
+  '/$locale/wishlist': typeof LocaleWishlistRoute
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
   '/api/fc-save': typeof ApiFcSaveRoute
+  '/api/game-wishes': typeof ApiGameWishesRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/home-share-reward': typeof ApiHomeShareRewardRoute
   '/api/image': typeof ApiImageRoute
@@ -559,10 +575,12 @@ export interface FileRoutesById {
   '/$locale/terms-of-service': typeof LocaleTermsOfServiceRoute
   '/$locale/theme-mode': typeof LocaleThemeModeRoute
   '/$locale/wanted': typeof LocaleWantedRoute
+  '/$locale/wishlist': typeof LocaleWishlistRoute
   '/api/coin-challenge-community': typeof ApiCoinChallengeCommunityRoute
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
   '/api/fc-save': typeof ApiFcSaveRoute
+  '/api/game-wishes': typeof ApiGameWishesRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/home-share-reward': typeof ApiHomeShareRewardRoute
   '/api/image': typeof ApiImageRoute
@@ -626,10 +644,12 @@ export interface FileRouteTypes {
     | '/$locale/terms-of-service'
     | '/$locale/theme-mode'
     | '/$locale/wanted'
+    | '/$locale/wishlist'
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
     | '/api/fc-cartridges'
     | '/api/fc-save'
+    | '/api/game-wishes'
     | '/api/gb-cartridges'
     | '/api/home-share-reward'
     | '/api/image'
@@ -690,10 +710,12 @@ export interface FileRouteTypes {
     | '/$locale/terms-of-service'
     | '/$locale/theme-mode'
     | '/$locale/wanted'
+    | '/$locale/wishlist'
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
     | '/api/fc-cartridges'
     | '/api/fc-save'
+    | '/api/game-wishes'
     | '/api/gb-cartridges'
     | '/api/home-share-reward'
     | '/api/image'
@@ -755,10 +777,12 @@ export interface FileRouteTypes {
     | '/$locale/terms-of-service'
     | '/$locale/theme-mode'
     | '/$locale/wanted'
+    | '/$locale/wishlist'
     | '/api/coin-challenge-community'
     | '/api/coin-rankings'
     | '/api/fc-cartridges'
     | '/api/fc-save'
+    | '/api/game-wishes'
     | '/api/gb-cartridges'
     | '/api/home-share-reward'
     | '/api/image'
@@ -805,6 +829,7 @@ export interface RootRouteChildren {
   ApiCoinRankingsRoute: typeof ApiCoinRankingsRoute
   ApiFcCartridgesRoute: typeof ApiFcCartridgesRoute
   ApiFcSaveRoute: typeof ApiFcSaveRoute
+  ApiGameWishesRoute: typeof ApiGameWishesRoute
   ApiGbCartridgesRoute: typeof ApiGbCartridgesRoute
   ApiHomeShareRewardRoute: typeof ApiHomeShareRewardRoute
   ApiImageRoute: typeof ApiImageRoute
@@ -1067,6 +1092,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleWantedRouteImport
       parentRoute: typeof LocaleRoute
     }
+    '/$locale/wishlist': {
+      id: '/$locale/wishlist'
+      path: '/wishlist'
+      fullPath: '/$locale/wishlist'
+      preLoaderRoute: typeof LocaleWishlistRouteImport
+      parentRoute: typeof LocaleRoute
+    }
     '/api/coin-challenge-community': {
       id: '/api/coin-challenge-community'
       path: '/api/coin-challenge-community'
@@ -1093,6 +1125,13 @@ declare module '@tanstack/react-router' {
       path: '/api/fc-save'
       fullPath: '/api/fc-save'
       preLoaderRoute: typeof ApiFcSaveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/game-wishes': {
+      id: '/api/game-wishes'
+      path: '/api/game-wishes'
+      fullPath: '/api/game-wishes'
+      preLoaderRoute: typeof ApiGameWishesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/gb-cartridges': {
@@ -1310,6 +1349,7 @@ interface LocaleRouteChildren {
   LocaleTermsOfServiceRoute: typeof LocaleTermsOfServiceRoute
   LocaleThemeModeRoute: typeof LocaleThemeModeRoute
   LocaleWantedRoute: typeof LocaleWantedRoute
+  LocaleWishlistRoute: typeof LocaleWishlistRoute
   LocaleIndexRoute: typeof LocaleIndexRoute
   LocaleCollectionsCollectionIdRoute: typeof LocaleCollectionsCollectionIdRoute
   LocaleGamesGameIdRoute: typeof LocaleGamesGameIdRouteWithChildren
@@ -1342,6 +1382,7 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleTermsOfServiceRoute: LocaleTermsOfServiceRoute,
   LocaleThemeModeRoute: LocaleThemeModeRoute,
   LocaleWantedRoute: LocaleWantedRoute,
+  LocaleWishlistRoute: LocaleWishlistRoute,
   LocaleIndexRoute: LocaleIndexRoute,
   LocaleCollectionsCollectionIdRoute: LocaleCollectionsCollectionIdRoute,
   LocaleGamesGameIdRoute: LocaleGamesGameIdRouteWithChildren,
@@ -1387,6 +1428,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCoinRankingsRoute: ApiCoinRankingsRoute,
   ApiFcCartridgesRoute: ApiFcCartridgesRoute,
   ApiFcSaveRoute: ApiFcSaveRoute,
+  ApiGameWishesRoute: ApiGameWishesRoute,
   ApiGbCartridgesRoute: ApiGbCartridgesRoute,
   ApiHomeShareRewardRoute: ApiHomeShareRewardRoute,
   ApiImageRoute: ApiImageRoute,
