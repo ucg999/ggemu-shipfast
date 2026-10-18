@@ -82,6 +82,9 @@ const PLATFORM_MODES = {
 type PlatformModeId = keyof typeof PLATFORM_MODES
 
 export const Route = createFileRoute('/$locale/platform/$platformId')({
+  headers: () => ({
+    'Cache-Control': 'public, max-age=60, s-maxage=1800, stale-while-revalidate=86400',
+  }),
   loader: async ({ params }) => {
     const locale = normalizeLocale(params.locale)
     const mode = getPlatformMode(params.platformId)
@@ -104,6 +107,9 @@ export const Route = createFileRoute('/$locale/platform/$platformId')({
   head: ({ loaderData, params }) => {
     const locale = normalizeLocale(params.locale)
     const copy = getModeCopy(locale, loaderData?.modeId)
+    const canonicalUrl = loaderData?.seoOrigin
+      ? `${loaderData.seoOrigin.replace(/\/$/, '')}/${locale}/platform/${params.platformId}`
+      : undefined
 
     return {
       links: loaderData?.seoOrigin
@@ -116,7 +122,27 @@ export const Route = createFileRoute('/$locale/platform/$platformId')({
       meta: [
         { title: copy.seoTitle },
         { name: 'description', content: copy.description },
+        { property: 'og:title', content: copy.seoTitle },
+        { property: 'og:description', content: copy.description },
+        { property: 'og:type', content: 'website' },
+        ...(canonicalUrl ? [{ property: 'og:url', content: canonicalUrl }] : []),
+        { name: 'twitter:card', content: 'summary' },
+        { name: 'twitter:title', content: copy.seoTitle },
+        { name: 'twitter:description', content: copy.description },
       ],
+      scripts: canonicalUrl
+        ? [{
+            type: 'application/ld+json',
+            children: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'CollectionPage',
+              description: copy.description,
+              inLanguage: locale,
+              name: copy.title,
+              url: canonicalUrl,
+            }).replace(/</g, '\\u003c'),
+          }]
+        : undefined,
     }
   },
   component: PlatformModePage,
@@ -184,24 +210,24 @@ function getMahjongModeCopy(locale: Locale) {
 }
 
 function getSwitchLibraryCopy(locale: Locale) {
-  if (locale === 'zh-TW') return { description: 'Switch 遊戲庫，集中展示中文 Switch 遊戲。', seoTitle: 'Switch遊戲庫｜懷舊遊戲廳', subtitle: '瀏覽 Switch 遊戲。', title: 'Switch遊戲庫' }
-  if (locale === 'en') return { description: 'Browse available Switch games.', seoTitle: 'Switch Game Library | Retro Game Hall', subtitle: 'Browse available Switch games.', title: 'Switch Game Library' }
+  if (locale === 'zh-TW') return { description: '瀏覽中文 Switch 遊戲資料庫，查看遊戲封面、截圖、發行日期、廠商、語言與版本資訊，並依名稱、類型及更新日期尋找遊戲。', seoTitle: 'Switch遊戲庫｜中文遊戲資料、截圖與版本資訊', subtitle: '瀏覽 Switch 遊戲。', title: 'Switch遊戲庫' }
+  if (locale === 'en') return { description: 'Browse the Nintendo Switch game library with covers, screenshots, release dates, publishers, languages and version information.', seoTitle: 'Switch Game Library | Game Information and Screenshots', subtitle: 'Browse available Switch games.', title: 'Switch Game Library' }
   if (locale === 'ja') return { description: 'Switchゲームの一覧です。', seoTitle: 'Switchゲームライブラリ｜懐かしゲームセンター', subtitle: 'Switchゲームを探せます。', title: 'Switchゲームライブラリ' }
-  return { description: 'Switch 游戏库，集中展示中文 Switch 游戏。', seoTitle: 'Switch游戏库｜怀旧游戏厅', subtitle: '浏览 Switch 游戏。', title: 'Switch游戏库' }
+  return { description: '浏览中文 Switch 游戏资料库，查看游戏封面、截图、发行日期、厂商、语言与版本信息，并可按名称、类型和更新时间查找游戏。', seoTitle: 'Switch游戏库｜中文游戏资料、截图与版本信息', subtitle: '浏览 Switch 游戏。', title: 'Switch游戏库' }
 }
 
 function getFcCartridgeLibraryCopy(locale: Locale) {
-  if (locale === 'en') return { description: 'Browse collected FC cartridges and launch them in FC Collection.', seoTitle: 'FC Cartridge Collection | Retro Game Hall', subtitle: 'Browse collected FC cartridges.', title: 'FC Cartridge Collection' }
+  if (locale === 'en') return { description: 'Browse collectible FC and NES cartridges with cartridge artwork, release dates and publishers, then launch owned games in the dedicated FC player.', seoTitle: 'FC and NES Cartridge Collection | Play Classic Games', subtitle: 'Browse collected FC cartridges.', title: 'FC Cartridge Collection' }
   if (locale === 'zh-TW') return { description: '瀏覽已收藏的 FC 卡帶，並在 FC 收藏館中直接遊玩。', seoTitle: 'FC卡帶收藏｜懷舊遊戲廳', subtitle: '瀏覽已收藏的 FC 卡帶。', title: 'FC卡帶收藏' }
   if (locale === 'ja') return { description: '収集したFCカセットを閲覧してプレイできます。', seoTitle: 'FCカセットコレクション｜懐かしゲームセンター', subtitle: 'FCカセット一覧。', title: 'FCカセットコレクション' }
-  return { description: '浏览已收藏的 FC 卡带，并在 FC 收藏馆中直接游玩。', seoTitle: 'FC卡带收藏｜怀旧游戏厅', subtitle: '浏览已收藏的 FC 卡带。', title: 'FC卡带收藏' }
+  return { description: '浏览 FC 与小霸王卡带收藏，查看卡带图片、编号、发行日期和制造商；收藏后可在专用 FC 游戏机中直接换卡游玩。', seoTitle: 'FC卡带收藏｜小霸王与经典FC游戏卡带库', subtitle: '浏览已收藏的 FC 卡带。', title: 'FC卡带收藏' }
 }
 
 function getGbCartridgeLibraryCopy(locale: Locale) {
-  if (locale === 'en') return { description: 'Collect GB cartridges and play them in the GB handheld player.', seoTitle: 'GB Cartridge Collection | Retro Game Hall', subtitle: 'Browse collectible GB cartridges.', title: 'GB Cartridge Collection' }
+  if (locale === 'en') return { description: 'Browse collectible Game Boy and Game Boy Color cartridges with artwork, release information and publishers, then play owned games in the dedicated GB player.', seoTitle: 'Game Boy Cartridge Collection | GB and GBC Games', subtitle: 'Browse collectible GB cartridges.', title: 'GB Cartridge Collection' }
   if (locale === 'zh-TW') return { description: '收藏 GB 卡帶，並在手機 GB 遊戲機中換卡遊玩。', seoTitle: 'GB卡帶收藏｜懷舊遊戲廳', subtitle: '瀏覽可收藏的 GB 卡帶。', title: 'GB卡帶收藏' }
   if (locale === 'ja') return { description: 'GBカセットを収集し、GBプレイヤーで遊べます。', seoTitle: 'GBカセットコレクション｜懐かしゲームセンター', subtitle: 'GBカセット一覧。', title: 'GBカセットコレクション' }
-  return { description: '收藏 GB 卡带，并在手机 GB 游戏机中换卡游玩。', seoTitle: 'GB卡带收藏｜怀旧游戏厅', subtitle: '浏览可收藏的 GB 卡带。', title: 'GB卡带收藏' }
+  return { description: '浏览 Game Boy 与 Game Boy Color 卡带收藏，查看卡带图片、编号、发行日期和制造商；收藏后可在专用 GB 游戏机中换卡游玩。', seoTitle: 'GB卡带收藏｜Game Boy与GBC经典游戏库', subtitle: '浏览可收藏的 GB 卡带。', title: 'GB卡带收藏' }
 }
 
 async function loadModeGames(locale: Locale, platform: string) {
