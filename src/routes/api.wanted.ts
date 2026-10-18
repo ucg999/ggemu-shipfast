@@ -123,8 +123,13 @@ export const Route = createFileRoute('/api/wanted')({
       const onlineLeader = await leaderboardDb().prepare(`
         SELECT display_name, seconds FROM wanted_weekly_online_time
         WHERE period_key = ? AND seconds > 0
+          AND participant_key NOT IN (
+            SELECT participant_key FROM wanted_weekly_fair_time
+            WHERE period_key = ? AND weighted_minutes > 0
+            ORDER BY weighted_minutes DESC, updated_at ASC LIMIT 3
+          )
         ORDER BY seconds DESC, updated_at ASC LIMIT 1
-      `).bind(periodKey).first<{ display_name: string; seconds: number }>()
+      `).bind(periodKey, periodKey).first<{ display_name: string; seconds: number }>()
       const participantKey = member ? `member:${member.id}` : guestKey
       const expiredRewards = participantKey ? await expireWantedRewards(participantKey) : []
       const pending = participantKey ? await leaderboardDb().prepare(`
@@ -385,8 +390,13 @@ async function ensurePreviousWeekAwards() {
     const onlineLeader = await db.prepare(`
       SELECT participant_key, member_id, display_name, seconds
       FROM wanted_weekly_online_time WHERE period_key = ? AND seconds > 0
+        AND participant_key NOT IN (
+          SELECT participant_key FROM wanted_weekly_fair_time
+          WHERE period_key = ? AND weighted_minutes > 0
+          ORDER BY weighted_minutes DESC, updated_at ASC LIMIT 3
+        )
       ORDER BY seconds DESC, updated_at ASC LIMIT 1
-    `).bind(period.period_key).first<{ participant_key: string; member_id: string | null; display_name: string; seconds: number }>()
+    `).bind(period.period_key, period.period_key).first<{ participant_key: string; member_id: string | null; display_name: string; seconds: number }>()
     if (onlineLeader) await db.prepare(`
       INSERT OR IGNORE INTO wanted_weekly_awards
         (period_key, rank, participant_key, member_id, display_name, weighted_minutes, reward_coins)
