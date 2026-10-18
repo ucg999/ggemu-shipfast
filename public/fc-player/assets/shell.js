@@ -6,7 +6,10 @@ const mainCanvas = document.getElementById('main-canvas');
 const mainCtx = mainCanvas.getContext('2d');
 let soundEnabled = true;
 let showAbButton = false;
-let rapidFireEnabled = false;
+let rapidFireLevel = 0;
+let hapticsEnabled = true;
+let buttonSoundEnabled = true;
+const RAPID_FIRE_INTERVALS = [0, 120, 85, 55];
 let videoFilterEnabled = true;
 let memberFeatureUnlocked = false;
 function currentShareUnlockKey() { return 'ucg999-fc-feature-share:' + currentGameId; }
@@ -280,12 +283,15 @@ mainCtx.fillRect(0, mainCanvas.height * 0.5, mainCanvas.width, mainCanvas.height
 }
 const drawDRect = (hb, active) => {
 if (!hb) return;
+mainCtx.save();
+if (active) { mainCtx.shadowColor = 'rgba(255,255,255,.4)'; mainCtx.shadowBlur = 9; mainCtx.translate(0, 2); }
 mainCtx.fillStyle = active ? 'rgba(55, 55, 60, 0.98)' : 'rgba(18, 18, 21, 0.94)';
 drawRoundRect(mainCtx, hb.x, hb.y, hb.w, hb.h, 5);
 mainCtx.fill();
 mainCtx.strokeStyle = 'rgba(118, 118, 124, 0.72)';
 mainCtx.lineWidth = 1;
 mainCtx.stroke();
+mainCtx.restore();
 };
 const drawDpadArrow = (hb, direction, active) => {
 if (!hb) return;
@@ -332,6 +338,8 @@ drawDpadArrow(hitboxes.left, 'left', uiState.left);
 drawDpadArrow(hitboxes.right, 'right', uiState.right);
 const drawCircle = (hb, active, text) => {
 if (!hb) return;
+mainCtx.save();
+if (active) { mainCtx.shadowColor = 'rgba(255,75,55,.58)'; mainCtx.shadowBlur = 12; }
 if (!active) {
 mainCtx.fillStyle = 'rgba(112, 0, 0, 0.96)';
 mainCtx.beginPath(); mainCtx.arc(hb.x, hb.y + 4, hb.r, 0, Math.PI * 2); mainCtx.fill();
@@ -341,6 +349,7 @@ mainCtx.beginPath(); mainCtx.arc(hb.x, hb.y + (active ? 4 : 0), hb.r, 0, Math.PI
 mainCtx.strokeStyle = 'rgba(255, 128, 92, 0.9)';
 mainCtx.lineWidth = 2;
 mainCtx.stroke();
+mainCtx.restore();
 mainCtx.fillStyle = '#111114';
 mainCtx.font = '14px sans-serif';
 mainCtx.textAlign = 'center';
@@ -350,12 +359,15 @@ mainCtx.fillText(text, hb.x, hb.y + hb.r + 20);
 ACTIONS.forEach(btn => drawCircle(hitboxes[btn.id], uiState[btn.id], btn.label));
 const drawCapsule = (hb, active, text) => {
 if (!hb) return;
+mainCtx.save();
+if (active) { mainCtx.shadowColor = 'rgba(255,255,255,.45)'; mainCtx.shadowBlur = 8; mainCtx.translate(0, 2); }
 mainCtx.fillStyle = active ? 'rgba(96, 96, 103, 0.52)' : 'rgba(118, 118, 124, 0.28)';
 drawRoundRect(mainCtx, hb.x, hb.y, hb.w, hb.h, hb.h / 2);
 mainCtx.fill();
 mainCtx.strokeStyle = 'rgba(255, 255, 255, 0.58)';
 mainCtx.lineWidth = 1;
 mainCtx.stroke();
+mainCtx.restore();
 mainCtx.fillStyle = '#333338';
 mainCtx.font = '12px sans-serif';
 mainCtx.textAlign = 'center';
@@ -392,21 +404,30 @@ const bw = hb.hw !== undefined ? hb.hw : hb.w;
 const bh = hb.hh !== undefined ? hb.hh : hb.h;
 return x >= bx && x <= bx + bw && y >= by && y <= by + bh;
 }
+function pointInExpandedRect(x, y, hb, padding) {
+if (!hb) return false;
+const bx = hb.hx !== undefined ? hb.hx : hb.x;
+const by = hb.hy !== undefined ? hb.hy : hb.y;
+const bw = hb.hw !== undefined ? hb.hw : hb.w;
+const bh = hb.hh !== undefined ? hb.hh : hb.h;
+return x >= bx - padding && x <= bx + bw + padding && y >= by - padding && y <= by + bh + padding;
+}
 function hitTest(x, y) {
 const hits = [];
 if (hitboxes.dpadZone) {
 const z = hitboxes.dpadZone;
 const dx = x - z.x;
 const dy = y - z.y;
-if (dx * dx + dy * dy <= z.r * z.r) {
-const threshold = z.r * 0.25;
-if (dx > threshold) hits.push('right');
-if (dx < -threshold) hits.push('left');
-if (dy > threshold) hits.push('down');
-if (dy < -threshold) hits.push('up');
-if (hits.length === 0) {
-if (Math.abs(dx) > Math.abs(dy)) hits.push(dx > 0 ? 'right' : 'left');
-else hits.push(dy > 0 ? 'down' : 'up');
+const distance = Math.sqrt(dx * dx + dy * dy);
+if (distance <= z.r * 1.1 && distance >= z.r * 0.14) {
+const ax = Math.abs(dx);
+const ay = Math.abs(dy);
+const diagonalRatio = 1.38;
+if (ax > ay * diagonalRatio) hits.push(dx > 0 ? 'right' : 'left');
+else if (ay > ax * diagonalRatio) hits.push(dy > 0 ? 'down' : 'up');
+else {
+hits.push(dx > 0 ? 'right' : 'left');
+hits.push(dy > 0 ? 'down' : 'up');
 }
 }
 }
@@ -418,16 +439,17 @@ if (!hb) continue;
 const dx = x - hb.x;
 const dy = y - hb.y;
 const d = dx * dx + dy * dy;
-if (d <= hb.hr * hb.hr && d < nearestDist) {
+const expandedRadius = hb.hr * 1.16;
+if (d <= expandedRadius * expandedRadius && d < nearestDist) {
 nearestDist = d;
 nearest = ACTION_IDS[i];
 }
 }
 if (nearest) hits.push(nearest);
 CAPSULES.forEach(btn => {
-if (pointInRect(x, y, hitboxes[btn.id])) hits.push(btn.id);
+if (pointInExpandedRect(x, y, hitboxes[btn.id], 9)) hits.push(btn.id);
 });
-if (showAbButton && pointInRect(x, y, hitboxes.ab)) hits.push('ab');
+if (showAbButton && pointInExpandedRect(x, y, hitboxes.ab, 9)) hits.push('ab');
 return hits;
 }
 function activateAudio() {
@@ -436,91 +458,18 @@ try { core.activateAudio(); } catch (e) { console.error(e); }
 }
 }
 function bindControls() {
-let rapidPhase = true;
-window.setInterval(() => {
-if (!rapidFireEnabled) return;
-rapidPhase = !rapidPhase;
-['a', 'b'].forEach(button => {
-if (uiState[button]) {
-try { core.setButton(button, rapidPhase); } catch (error) { console.error(error); }
-}
-});
-}, 85);
-const updateTouches = (touches, haptic) => {
-const newActive = new Set();
-for (let i = 0; i < touches.length; i++) {
-hitTest(touches[i].clientX, touches[i].clientY).forEach(k => newActive.add(k));
-}
-if (newActive.has('ab')) {
-newActive.add('a');
-newActive.add('b');
-}
-const newlyPressed = Object.keys(uiState).filter(key => newActive.has(key) && !uiState[key]);
-if (haptic && newlyPressed.length && navigator.vibrate) {
-const strongPress = newlyPressed.some(key => key === 'a' || key === 'b' || key === 'start' || key === 'select');
-navigator.vibrate(strongPress ? 18 : 8);
-}
-let changed = false;
-Object.keys(uiState).forEach(key => {
-const isActive = newActive.has(key);
-if (uiState[key] !== isActive) {
-uiState[key] = isActive;
-changed = true;
-try { core.setButton(key, isActive); } catch (e) { console.error(e); }
-}
-});
-if (changed) renderUI();
-};
-mainCanvas.addEventListener('touchstart', (e) => {
-e.preventDefault(); activateAudio(); updateTouches(e.touches, true);
-}, { passive: false });
-mainCanvas.addEventListener('touchmove', (e) => {
-e.preventDefault(); updateTouches(e.touches, true);
-}, { passive: false });
-mainCanvas.addEventListener('touchend', (e) => {
-e.preventDefault(); updateTouches(e.touches);
-}, { passive: false });
-mainCanvas.addEventListener('touchcancel', (e) => {
-e.preventDefault(); updateTouches(e.touches);
-}, { passive: false });
-let isMouseDown = false;
-mainCanvas.addEventListener('mousedown', (e) => {
-isMouseDown = true; activateAudio();
-updateTouches([{ clientX: e.clientX, clientY: e.clientY }]);
-});
-mainCanvas.addEventListener('mousemove', (e) => {
-if (!isMouseDown) return;
-updateTouches([{ clientX: e.clientX, clientY: e.clientY }]);
-});
-window.addEventListener('mouseup', () => {
-if (!isMouseDown) return;
-isMouseDown = false;
-updateTouches([]);
-});
-const keyboardMap = {
-KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right',
-KeyK: 'a', KeyJ: 'b', ShiftLeft: 'select', ShiftRight: 'select', Enter: 'start'
-};
-const setKeyboardButton = (event, pressed) => {
-const button = keyboardMap[event.code];
-if (!button) return;
-event.preventDefault();
-if (uiState[button] === pressed) return;
-activateAudio();
-uiState[button] = pressed;
-try { core.setButton(button, pressed); } catch (error) { console.error(error); }
-renderUI();
-};
-document.addEventListener('keydown', event => setKeyboardButton(event, true));
-document.addEventListener('keyup', event => setKeyboardButton(event, false));
-window.addEventListener('blur', () => {
-Object.keys(keyboardMap).forEach(code => {
-const button = keyboardMap[code];
-if (!uiState[button]) return;
-uiState[button] = false;
-try { core.setButton(button, false); } catch (error) { console.error(error); }
-});
-renderUI();
+window.GGEMU_CONTROLLER = window.UCG_CONTROLLER_INPUT.bind({
+canvas: mainCanvas,
+hitTest: hitTest,
+uiState: uiState,
+setButton: (button, pressed) => core.setButton(button, pressed),
+render: renderUI,
+activateAudio: activateAudio,
+haptics: window.UCG_CONTROLLER_HAPTICS,
+sound: window.UCG_CONTROLLER_SOUND,
+getHapticsEnabled: () => hapticsEnabled,
+getSoundEnabled: () => buttonSoundEnabled,
+getRapidFireInterval: () => RAPID_FIRE_INTERVALS[rapidFireLevel]
 });
 document.addEventListener('touchstart', activateAudio, { passive: true, capture: true });
 document.addEventListener('click', activateAudio);
@@ -635,8 +584,9 @@ const utilityMenu = document.createElement('section');
 utilityMenu.id = 'utility-menu';
 utilityMenu.setAttribute('aria-hidden', 'true');
 utilityMenu.style.cssText = 'position:fixed;inset:0;z-index:120;display:none;place-items:center;background:rgba(20,20,24,.48);padding:20px';
-utilityMenu.innerHTML = '<div style="width:min(82vw,280px);padding:18px;border:1px solid rgba(255,255,255,.7);border-radius:20px;background:#e8e8ea;box-shadow:0 20px 60px rgba(0,0,0,.38)"><strong style="display:block;margin-bottom:14px;text-align:center;color:#35353a;font-size:18px">游戏菜单</strong><button id="menu-load" type="button" style="width:100%;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">读档</button><button id="menu-sound" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">声音（开）</button><button id="menu-ab" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">AB按键（关）</button><button id="menu-rapid" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">长按连击（关）</button><button id="menu-share" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">分享</button><button id="menu-close" type="button" style="width:100%;margin-top:12px;padding:9px;border:0;background:transparent;color:#696970;font-size:13px">关闭菜单</button></div>';
+utilityMenu.innerHTML = '<div style="width:min(82vw,280px);padding:18px;border:1px solid rgba(255,255,255,.7);border-radius:20px;background:#e8e8ea;box-shadow:0 20px 60px rgba(0,0,0,.38)"><strong style="display:block;margin-bottom:14px;text-align:center;color:#35353a;font-size:18px">游戏菜单</strong><button id="menu-load" type="button" style="width:100%;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">读档</button><button id="menu-sound" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">游戏声音（开）</button><button id="menu-click-sound" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">按键音效（关）</button><button id="menu-ab" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">AB按键（关）</button><button id="menu-rapid" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">连发强度（关）</button><button id="menu-haptic" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">触觉震动（开）</button><button id="menu-share" type="button" style="width:100%;margin-top:9px;padding:12px;border:0;border-radius:12px;background:#fff;color:#35353a;font-size:15px;font-weight:700">分享</button><button id="menu-close" type="button" style="width:100%;margin-top:12px;padding:9px;border:0;background:transparent;color:#696970;font-size:13px">关闭菜单</button></div>';
 document.body.appendChild(utilityMenu);
+utilityMenu.querySelector('#menu-click-sound').textContent = '按键音效（开）';
 const filterMenuButton = document.createElement('button');
 filterMenuButton.id = 'menu-filter';
 filterMenuButton.type = 'button';
@@ -648,8 +598,10 @@ document.getElementById('btn-share').addEventListener('click', () => setUtilityM
 utilityMenu.querySelector('#menu-close').addEventListener('click', () => setUtilityMenu(false));
 utilityMenu.querySelector('#menu-load').addEventListener('click', async () => { if (!requireSaveFeatureAccess()) return; try { await core.loadState({ userInitiated: true }); setUtilityMenu(false); } catch (e) { showToast('读档失败'); console.error(e); } });
 utilityMenu.querySelector('#menu-sound').addEventListener('click', event => { if (!requireMemberFeatureAccess()) return; soundEnabled = !soundEnabled; if (core.setMuted) core.setMuted(!soundEnabled); event.currentTarget.textContent = `声音（${soundEnabled ? '开' : '关'}）`; });
+utilityMenu.querySelector('#menu-click-sound').addEventListener('click', event => { buttonSoundEnabled = !buttonSoundEnabled; if (buttonSoundEnabled && window.UCG_CONTROLLER_SOUND) { window.UCG_CONTROLLER_SOUND.unlock(); window.UCG_CONTROLLER_SOUND.click(); } event.currentTarget.textContent = `按键音效（${buttonSoundEnabled ? '开' : '关'}）`; });
 utilityMenu.querySelector('#menu-ab').addEventListener('click', event => { if (!requireMemberFeatureAccess()) return; showAbButton = !showAbButton; event.currentTarget.textContent = `AB按键（${showAbButton ? '开' : '关'}）`; renderUI(); });
-utilityMenu.querySelector('#menu-rapid').addEventListener('click', event => { if (!requireMemberFeatureAccess()) return; rapidFireEnabled = !rapidFireEnabled; if (!rapidFireEnabled) ['a', 'b'].forEach(button => { try { core.setButton(button, uiState[button]); } catch (error) {} }); event.currentTarget.textContent = `长按连击（${rapidFireEnabled ? '开' : '关'}）`; });
+utilityMenu.querySelector('#menu-rapid').addEventListener('click', event => { if (!requireMemberFeatureAccess()) return; rapidFireLevel = (rapidFireLevel + 1) % 4; if (window.GGEMU_CONTROLLER) window.GGEMU_CONTROLLER.refreshRapidFire(); event.currentTarget.textContent = `连发强度（${['关', '低', '中', '高'][rapidFireLevel]}）`; });
+utilityMenu.querySelector('#menu-haptic').addEventListener('click', event => { hapticsEnabled = !hapticsEnabled; if (!hapticsEnabled && window.UCG_CONTROLLER_HAPTICS) window.UCG_CONTROLLER_HAPTICS.cancel(); event.currentTarget.textContent = `触觉震动（${hapticsEnabled ? '开' : '关'}）`; });
 filterMenuButton.addEventListener('click', () => { if (!requireMemberFeatureAccess()) return; videoFilterEnabled = !videoFilterEnabled; filterMenuButton.textContent = `滤镜（${videoFilterEnabled ? '开' : '关'}）`; renderUI(); });
 utilityMenu.querySelector('#menu-share').addEventListener('click', async () => { await sharePage(); setUtilityMenu(false); });
 let currentGameId = 'super-mario-bros-world';
