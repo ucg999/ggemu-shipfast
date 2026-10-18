@@ -794,8 +794,9 @@ html:not([data-member-logged-in='true']) .coin-rank-badge {
 .wanted-poster-copy small{display:block;margin-top:2%;font-family:ui-sans-serif,system-ui,sans-serif;font-size:clamp(.42rem,.72vw,.78rem);font-weight:800;letter-spacing:.04em}
 .wanted-slot-1,.wanted-slot-2,.wanted-slot-3{left:2.5%}
 @media(min-width:641px){
-  .wanted-chaser-ranks{margin-top:clamp(-58px,-4vh,-24px)!important}
-  .wanted-online-award,.wanted-last-champion{position:static;margin-top:.15rem!important}
+  .wanted-chaser-ranks{position:absolute;z-index:8;right:0;bottom:52px;left:0;margin:0 auto!important}
+  .wanted-online-award{position:absolute;z-index:8;right:0;bottom:28px;left:0;margin:0 auto!important}
+  .wanted-last-champion{position:absolute;z-index:8;right:0;bottom:4px;left:0;margin:0 auto!important}
 }
 @media(max-width:640px){
   .wanted-page-main{height:auto;min-height:calc(100dvh - 61px);overflow:visible;padding-bottom:1.5rem}

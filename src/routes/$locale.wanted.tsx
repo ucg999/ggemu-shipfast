@@ -97,7 +97,7 @@ function WantedPage() {
 
   return <SiteLayout hideFooter locale={lang}>
     <main className="wanted-page-main flex h-[calc(100dvh-61px)] min-h-0 flex-col items-center justify-start overflow-hidden bg-[#f0f0ed] text-[#35231d]">
-      <div className="min-h-0 w-full">
+      <div className="relative min-h-0 w-full flex-1">
         <button className="fixed right-3 top-[70px] z-20 rounded-full bg-white/85 px-3 py-1.5 text-xs font-semibold text-[#35231d] shadow-md disabled:opacity-50 sm:right-5" disabled={refreshing} onClick={() => void refresh()} type="button">
           {refreshing ? '刷新中…' : '刷新时间'}
         </button>
