@@ -377,9 +377,6 @@ export function DefaultHomeTemplate(
                           <GameCardPreviewVideo src={game.game_video} />
                         </>
                       )}
-                      <span className="absolute bottom-2 right-2 z-20 rounded-full border-2 border-amber-300 bg-black/90 px-3 py-1.5 text-xs font-black tracking-wide text-amber-300 shadow-[0_2px_12px_rgba(0,0,0,.7)] sm:text-sm">
-                        {lang === 'en' ? 'Real-time play tracking' : lang === 'zh-TW' ? '按實際時間累計' : '按实时时间累计'}
-                      </span>
                     </Link>
                     <div className="flex min-w-0 flex-col items-center gap-1 px-1 pt-3 text-center">
                       <strong className="w-full truncate text-sm font-semibold text-black" title={displayName}>{displayName}</strong>
