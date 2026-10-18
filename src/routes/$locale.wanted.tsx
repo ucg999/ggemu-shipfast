@@ -7,7 +7,7 @@ import { normalizeLocale } from '#/lib/i18n'
 import { getMemberSession } from '#/lib/member-client'
 import { addCoinBalance, readCoinBalance } from '#/lib/coin-wallet'
 
-type Leader = { rank: number; displayName: string; rawMinutes: number; minutes: number; posterNumber?: number }
+type Leader = { rank: number; displayName: string; seconds: number; posterNumber?: number }
 type WantedData = { periodKey: string; leaders: Leader[]; pendingRewards: Array<{ periodKey: string; rank: number; coins: number }>; expiredRewards?: Array<{ periodKey: string; rank: number; coins: number }>; lastWeekChampion?: string | null }
 
 export const Route = createFileRoute('/$locale/wanted')({
@@ -113,9 +113,10 @@ function WantedPage() {
         <div className="wanted-chaser-ranks mx-auto mt-1 flex max-w-3xl flex-wrap items-center justify-center gap-x-5 gap-y-1 px-4 text-center text-xs font-semibold text-[#35231d]/75 sm:text-sm">
           {[4, 5, 6].map(rank => {
             const leader = data?.leaders.find(item => item.rank === rank)
-            return <span key={rank}>第{rank}名：{leader ? `${leader.displayName} · ${leader.minutes.toLocaleString()}分钟` : '等待挑战'}</span>
+            return <span key={rank}>第{rank}名：{leader ? `${leader.displayName} · ${leader.seconds.toLocaleString()}秒` : '等待挑战'}</span>
           })}
         </div>
+        <p className="mx-auto mt-1 px-4 text-center text-[11px] text-[#35231d]/55 sm:text-xs">账号与游客均按真实在线时间累计，不使用等级、签到或任何倍数加成。</p>
         <p className="wanted-last-champion mx-auto mt-1 px-4 text-center text-sm font-semibold sm:text-base">上周冠军获得者：<span className="text-[#9a281d]">{data?.lastWeekChampion || '暂无记录'}</span></p>
       </div>
     </main>
@@ -139,7 +140,7 @@ function WantedPosterText({ leader, rank, slot }: { leader?: Leader; rank: numbe
   const scale = Math.max(.55, Math.min(1.15, 7 / length))
   return <div className={`wanted-poster-copy wanted-slot-${slot + 1}`}>
     <strong style={{ transform: `scaleX(${scale})` }}>{name}</strong>
-    <span>{leader ? leader.minutes.toLocaleString() : '---'}</span>
+    <span>{leader ? `${leader.seconds.toLocaleString()}秒` : '---'}</span>
     <small>NO.{rank} · 🪙{rewards[rank].toLocaleString()}</small>
   </div>
 }

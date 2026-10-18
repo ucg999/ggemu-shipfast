@@ -175,7 +175,7 @@ export function HomeMostPlayedGamesSection({
                   ) : null}
                   {wantedTimeMultiplier && !mobile ? (
                     <span className="absolute right-2 top-2 rounded-full border border-amber-300 bg-black/90 px-2 py-1 text-[10px] font-black text-amber-300 shadow-lg">
-                      {lang === 'en' ? 'Game time' : lang === 'zh-TW' ? '遊戲時間' : '游戏时间'} ×{wantedTimeMultiplier}
+                      {lang === 'en' ? 'Real-time play tracking' : lang === 'zh-TW' ? '按實際時間累計' : '按实时时间累计'}
                     </span>
                   ) : null}
                 </figure>

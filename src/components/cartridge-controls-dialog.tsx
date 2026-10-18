@@ -77,7 +77,7 @@ export function CartridgePlayerDialog({ onClose, src, title }: CartridgePlayerDi
     <section className="relative h-[min(92vh,900px)] w-[min(96vw,520px)] overflow-hidden rounded-2xl bg-[#dedede] shadow-2xl" onClick={event => event.stopPropagation()}>
       <button aria-label="关闭游戏机" className="btn btn-neutral btn-sm btn-circle absolute right-3 top-3 z-20 opacity-60 hover:opacity-100" type="button" onClick={onClose}>×</button>
       <iframe
-        allow="autoplay; fullscreen; gamepad"
+        allow="autoplay; fullscreen; gamepad; web-share"
         className="h-full w-full border-0 outline-none"
         onLoad={event => { event.currentTarget.focus(); event.currentTarget.contentWindow?.focus() }}
         src={src}

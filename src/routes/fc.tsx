@@ -71,7 +71,7 @@ function FcPlayerPage() {
     <>
       <iframe
         ref={iframeRef}
-        allow="autoplay"
+        allow="autoplay; web-share"
         onLoad={() => iframeRef.current?.contentWindow?.postMessage({ type: 'fc-member-status', loggedIn: Boolean(member) }, window.location.origin)}
         src={cartridge === 'green-beret-captain-america'
           ? '/fc-1058/index.html?v=20261016-2&cartridge=green-beret-captain-america'

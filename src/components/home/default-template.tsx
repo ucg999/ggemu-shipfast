@@ -339,8 +339,14 @@ export function DefaultHomeTemplate(
           <div className="desktop-home-title w-fit">
             <p className="desktop-home-tagline">{getI18n(lang).layout.siteSlogan}</p>
             <DesktopGameWordmark lang={lang} platforms={orderedPlatforms.map((platform) => platform.name)} />
-            <p className="desktop-home-game-caption">
-              {lang === 'zh-TW' ? '回到童年的快樂，想玩的都會有' : lang === 'en' ? 'Rediscover childhood joy — everything you want to play is here.' : lang === 'ja' ? '子どもの頃の楽しさへ。遊びたいゲームがここにある。' : '回到童年的快乐，想玩的都会有'}
+            <p className="mt-3 text-base font-normal text-black/60">
+              {lang === 'zh-TW'
+                ? `本站現在擁有 ${props.pagination.total.toLocaleString()} 款遊戲可在線遊玩`
+                : lang === 'en'
+                  ? `${props.pagination.total.toLocaleString()} games are currently available to play online.`
+                  : lang === 'ja'
+                    ? `現在、${props.pagination.total.toLocaleString()}本のゲームをオンラインで遊べます。`
+                    : `本站现在拥有 ${props.pagination.total.toLocaleString()} 款游戏可在线游玩`}
             </p>
             <div className="desktop-daily-video-grid">
               {desktopHeroGames.slice(0, 3).map((game, index) => {
@@ -372,7 +378,7 @@ export function DefaultHomeTemplate(
                         </>
                       )}
                       <span className="absolute bottom-2 right-2 z-20 rounded-full border-2 border-amber-300 bg-black/90 px-3 py-1.5 text-xs font-black tracking-wide text-amber-300 shadow-[0_2px_12px_rgba(0,0,0,.7)] sm:text-sm">
-                        {lang === 'en' ? `Game time ×${wantedTimeMultiplier}` : lang === 'zh-TW' ? `遊戲時間 ×${wantedTimeMultiplier}` : `游戏时间 ×${wantedTimeMultiplier}`}
+                        {lang === 'en' ? 'Real-time play tracking' : lang === 'zh-TW' ? '按實際時間累計' : '按实时时间累计'}
                       </span>
                     </Link>
                     <div className="flex min-w-0 flex-col items-center gap-1 px-1 pt-3 text-center">

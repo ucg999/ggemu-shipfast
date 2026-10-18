@@ -239,6 +239,7 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
                     </div>
                   ) : null}
                 </div> : null}
+                {member.playerNumber === 1 ? <OwnerSiteStatsPanel /> : null}
                 {issuedRecoveryCode ? <RecoveryCodeNotice code={issuedRecoveryCode} copy={copy} onDone={() => setIssuedRecoveryCode('')} /> : null}
                 <button className="mt-4 h-11 w-full rounded-full border border-black/25 font-medium hover:bg-black/5" disabled={busy} onClick={handleLogout} type="button">{copy.logout}</button>
               </div>
@@ -270,6 +271,46 @@ export function MemberAccountButton({ locale }: { locale: Locale }) {
   )
 }
 
+function OwnerSiteStatsPanel() {
+  const [stats, setStats] = useState<{ online: number; today: number; month: number } | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    const refresh = () => void fetch('/api/owner-site-stats', { credentials: 'same-origin' })
+      .then(response => response.ok ? response.json() : Promise.reject(new Error('owner_stats_failed')))
+      .then((next: { online: number; today: number; month: number }) => {
+        if (!active) return
+        setStats(next)
+        setFailed(false)
+      })
+      .catch(() => { if (active) setFailed(true) })
+    refresh()
+    const timer = window.setInterval(refresh, 60_000)
+    return () => { active = false; window.clearInterval(timer) }
+  }, [])
+
+  return <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+    <div className="mb-3 flex items-center justify-between gap-2">
+      <strong className="text-sm text-blue-950">网站访问统计</strong>
+      <span className="text-[11px] text-blue-900/50">仅00001可见 · 每分钟刷新</span>
+    </div>
+    <div className="grid grid-cols-3 gap-2 text-center">
+      <OwnerSiteStat label="当前在线" value={stats?.online} />
+      <OwnerSiteStat label="本日进站" value={stats?.today} />
+      <OwnerSiteStat label="本月进站" value={stats?.month} />
+    </div>
+    {failed ? <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-center text-xs text-red-700">统计暂时加载失败，请稍后再试</p> : null}
+  </div>
+}
+
+function OwnerSiteStat({ label, value }: { label: string; value?: number }) {
+  return <div className="rounded-xl bg-white px-2 py-3 shadow-sm">
+    <b className="block text-xl tabular-nums text-blue-950">{value === undefined ? '—' : value.toLocaleString()}</b>
+    <span className="mt-1 block text-[11px] text-black/50">{label}</span>
+  </div>
+}
+
 function CoinEarningGuide({ locale }: { locale: Locale }) {
   const isEnglish = locale === 'en'
   return (
@@ -292,7 +333,7 @@ function CoinEarningGuide({ locale }: { locale: Locale }) {
           <div className="mt-3 rounded-xl border border-amber-300 bg-white/80 p-3">
             <strong className="flex items-center gap-1.5 text-sm text-amber-800"><i className="ri-trophy-line" />Weekly grand prizes</strong>
             <ul className="mt-2 list-disc space-y-1.5 pl-4">
-              <li><b>Weekly Wanted:</b> ranked by valid time. First place receives 5,000 coins, second 2,000, and third 500. Guests may participate and claim rewards into the current browser.</li>
+              <li><b>Weekly Wanted:</b> ranked by real elapsed seconds with no member, rank, or check-in multiplier. First place receives 5,000 coins, second 2,000, and third 500. Guests may participate and claim rewards into the current browser.</li>
               <li><b>Coin Entertainment weekly:</b> the highest single bonus-pool cash-out of the week wins 2,000 coins. It is not based on accumulated cash-outs.</li>
               <li><b>Red–Blue Arena weekly:</b> if the total Arrest value exceeds the total Bounty value, the top Arrest player receives the difference between the two totals.</li>
               <li><b>Settlement and claim:</b> weekly boards settle every Monday at 03:00 China time. Winners must open the corresponding page and claim within 24 hours; expired rewards cannot be recovered.</li>
@@ -311,7 +352,7 @@ function CoinEarningGuide({ locale }: { locale: Locale }) {
           <div className="mt-3 rounded-xl border border-amber-300 bg-white/80 p-3">
             <strong className="flex items-center gap-1.5 text-sm text-amber-800"><i className="ri-trophy-line" />各种周榜大奖</strong>
             <ul className="mt-2 list-disc space-y-1.5 pl-4">
-              <li><b>悬赏令周榜：</b>按有效时间排名；第一名奖5000币、第二名奖2000币、第三名奖500币。游客也可参赛，获奖后领到当前浏览器。</li>
+              <li><b>悬赏令周榜：</b>按真实在线秒数排名，账号和游客都不使用等级、签到或其他倍数；第一名奖5000币、第二名奖2000币、第三名奖500币。游客也可参赛，获奖后领到当前浏览器。</li>
               <li><b>金币娱乐周榜：</b>按本周“单次奖池退币”的最高纪录排名，不累计；冠军奖2000币。</li>
               <li><b>幽灵捕手周榜：</b>按本周最高连续过关数排名；冠军奖1000币，游客可玩但不参与排名。</li>
               <li><b>红蓝竞技周榜：</b>逮捕令全榜总和高于悬赏令全榜总和时，逮捕令第一名获得“两榜总和的差额”金币。</li>

@@ -1,5 +1,4 @@
 import { WantedActivityClock } from '#/lib/wanted-activity'
-import { getDailyCheckInMultiplier } from '#/lib/coin-wallet'
 import { useRouterState } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 
@@ -48,6 +47,7 @@ async function flushPendingSubmissions() {
 }
 
 export function WantedPlaytimeTracker() {
+  useSiteVisitorPresence()
   const pathname = useRouterState({ select: state => state.location.pathname })
   const hash = useRouterState({ select: state => state.location.hash })
   const playing = isPlayableRoute(pathname)
@@ -58,7 +58,7 @@ export function WantedPlaytimeTracker() {
   const elapsedRef = useRef(0)
   const previousTickRef = useRef(0)
   const sessionRef = useRef('')
-  const submittedMinutesRef = useRef(0)
+  const submittedSecondsRef = useRef(0)
   const submissionIndexRef = useRef(0)
   const submittingRef = useRef(false)
   const finalizedRef = useRef(false)
@@ -69,7 +69,7 @@ export function WantedPlaytimeTracker() {
     elapsedRef.current = 0
     previousTickRef.current = Date.now()
     sessionRef.current = crypto.randomUUID()
-    submittedMinutesRef.current = 0
+    submittedSecondsRef.current = 0
     submissionIndexRef.current = 0
     submittingRef.current = false
     finalizedRef.current = false
@@ -92,17 +92,16 @@ export function WantedPlaytimeTracker() {
         return
       }
       tick()
-      const totalMinutes = Math.min(featuredGame ? 30 : 720, Math.floor(elapsedRef.current / 60_000))
-      const previousSubmittedMinutes = submittedMinutesRef.current
-      const minutes = totalMinutes - previousSubmittedMinutes
-      if (minutes < (final ? 1 : 5)) return
+      const totalSeconds = Math.min(12 * 60 * 60, Math.floor(elapsedRef.current / 1_000))
+      const previousSubmittedSeconds = submittedSecondsRef.current
+      const seconds = totalSeconds - previousSubmittedSeconds
+      if (seconds < (final ? 1 : 300)) return
       if (final) finalizedRef.current = true
       submittingRef.current = true
-      submittedMinutesRef.current = totalMinutes
+      submittedSecondsRef.current = totalSeconds
       submissionIndexRef.current += 1
       const sessionType = featuredGame ? 'featured' : proMode ? 'pro' : handheld ? 'handheld' : playing ? 'game' : 'online'
-      const activeMinutes = Math.max(0, activity.activeMinutes(totalMinutes) - activity.activeMinutes(previousSubmittedMinutes))
-      const payload = JSON.stringify({ action: 'session', sessionType, featuredMultiplier, checkInMultiplier: getDailyCheckInMultiplier(), guestKey, guestName, minutes, activeMinutes, submissionKey: `wanted:${sessionType}:${sessionRef.current}:${submissionIndexRef.current}` })
+      const payload = JSON.stringify({ action: 'session', sessionType, guestKey, guestName, seconds, submissionKey: `wanted-v2:${sessionType}:${sessionRef.current}:${submissionIndexRef.current}` })
       queuePendingSubmission(payload)
       if (final && navigator.sendBeacon('/api/wanted', new Blob([payload], { type: 'application/json' }))) {
         submittingRef.current = false
@@ -171,6 +170,32 @@ export function WantedPlaytimeTracker() {
   }, [pathname, featuredGame, featuredMultiplier, handheld, playing, proMode])
 
   return null
+}
+
+function useSiteVisitorPresence() {
+  useEffect(() => {
+    let lastSentAt = 0
+    const sendPresence = () => {
+      if (document.visibilityState !== 'visible' || Date.now() - lastSentAt < 240_000) return
+      lastSentAt = Date.now()
+      void fetch('/api/owner-site-stats', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guestKey: getWantedGuestKey() }),
+        keepalive: true,
+      }).catch(() => { lastSentAt = 0 })
+    }
+    sendPresence()
+    const timer = window.setInterval(sendPresence, 240_000)
+    document.addEventListener('visibilitychange', sendPresence)
+    window.addEventListener('focus', sendPresence)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', sendPresence)
+      window.removeEventListener('focus', sendPresence)
+    }
+  }, [])
 }
 
 export function getWantedGuestKey() {

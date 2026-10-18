@@ -54,6 +54,7 @@ import { Route as ApiImageRouteImport } from './routes/api.image'
 import { Route as ApiLibraryCollectionsRouteImport } from './routes/api.library-collections'
 import { Route as ApiLocaleSuggestionRouteImport } from './routes/api/locale-suggestion'
 import { Route as ApiMemberRouteImport } from './routes/api.member'
+import { Route as ApiOwnerSiteStatsRouteImport } from './routes/api.owner-site-stats'
 import { Route as ApiPspLikesRouteImport } from './routes/api.psp-likes'
 import { Route as ApiShareImageRouteImport } from './routes/api/share-image'
 import { Route as ApiWantedRouteImport } from './routes/api.wanted'
@@ -298,6 +299,11 @@ const ApiMemberRoute = ApiMemberRouteImport.update({
   path: '/api/member',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOwnerSiteStatsRoute = ApiOwnerSiteStatsRouteImport.update({
+  id: '/api/owner-site-stats',
+  path: '/api/owner-site-stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPspLikesRoute = ApiPspLikesRouteImport.update({
   id: '/api/psp-likes',
   path: '/api/psp-likes',
@@ -433,6 +439,7 @@ export interface FileRoutesByFullPath {
   '/api/library-collections': typeof ApiLibraryCollectionsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
+  '/api/owner-site-stats': typeof ApiOwnerSiteStatsRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/api/wanted': typeof ApiWantedRoute
@@ -496,6 +503,7 @@ export interface FileRoutesByTo {
   '/api/library-collections': typeof ApiLibraryCollectionsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
+  '/api/owner-site-stats': typeof ApiOwnerSiteStatsRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/api/wanted': typeof ApiWantedRoute
@@ -561,6 +569,7 @@ export interface FileRoutesById {
   '/api/library-collections': typeof ApiLibraryCollectionsRoute
   '/api/locale-suggestion': typeof ApiLocaleSuggestionRoute
   '/api/member': typeof ApiMemberRoute
+  '/api/owner-site-stats': typeof ApiOwnerSiteStatsRoute
   '/api/psp-likes': typeof ApiPspLikesRoute
   '/api/share-image': typeof ApiShareImageRoute
   '/api/wanted': typeof ApiWantedRoute
@@ -627,6 +636,7 @@ export interface FileRouteTypes {
     | '/api/library-collections'
     | '/api/locale-suggestion'
     | '/api/member'
+    | '/api/owner-site-stats'
     | '/api/psp-likes'
     | '/api/share-image'
     | '/api/wanted'
@@ -690,6 +700,7 @@ export interface FileRouteTypes {
     | '/api/library-collections'
     | '/api/locale-suggestion'
     | '/api/member'
+    | '/api/owner-site-stats'
     | '/api/psp-likes'
     | '/api/share-image'
     | '/api/wanted'
@@ -754,6 +765,7 @@ export interface FileRouteTypes {
     | '/api/library-collections'
     | '/api/locale-suggestion'
     | '/api/member'
+    | '/api/owner-site-stats'
     | '/api/psp-likes'
     | '/api/share-image'
     | '/api/wanted'
@@ -799,6 +811,7 @@ export interface RootRouteChildren {
   ApiLibraryCollectionsRoute: typeof ApiLibraryCollectionsRoute
   ApiLocaleSuggestionRoute: typeof ApiLocaleSuggestionRoute
   ApiMemberRoute: typeof ApiMemberRoute
+  ApiOwnerSiteStatsRoute: typeof ApiOwnerSiteStatsRoute
   ApiPspLikesRoute: typeof ApiPspLikesRoute
   ApiShareImageRoute: typeof ApiShareImageRoute
   ApiWantedRoute: typeof ApiWantedRoute
@@ -1124,6 +1137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMemberRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/owner-site-stats': {
+      id: '/api/owner-site-stats'
+      path: '/api/owner-site-stats'
+      fullPath: '/api/owner-site-stats'
+      preLoaderRoute: typeof ApiOwnerSiteStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/psp-likes': {
       id: '/api/psp-likes'
       path: '/api/psp-likes'
@@ -1373,6 +1393,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiLibraryCollectionsRoute: ApiLibraryCollectionsRoute,
   ApiLocaleSuggestionRoute: ApiLocaleSuggestionRoute,
   ApiMemberRoute: ApiMemberRoute,
+  ApiOwnerSiteStatsRoute: ApiOwnerSiteStatsRoute,
   ApiPspLikesRoute: ApiPspLikesRoute,
   ApiShareImageRoute: ApiShareImageRoute,
   ApiWantedRoute: ApiWantedRoute,

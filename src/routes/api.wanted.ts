@@ -1,8 +1,6 @@
-import { weightedPlayMinutes } from '#/lib/wanted-activity'
 import { createFileRoute } from '@tanstack/react-router'
 
 import { getMemberFromRequest, jsonError, leaderboardDb, memberDb } from '#/lib/member-auth.server'
-import { combineCoinMultipliers, getCoinRank } from '#/lib/coin-wallet'
 
 type WantedRow = {
   participant_key: string
@@ -13,10 +11,31 @@ type WantedRow = {
 }
 
 const WEEKLY_REWARDS = [5_000, 2_000, 500] as const
+let fairTimeTableReady: Promise<void> | null = null
+
+function ensureFairTimeTable() {
+  fairTimeTableReady ??= leaderboardDb().prepare(`
+    CREATE TABLE IF NOT EXISTS wanted_weekly_fair_time (
+      participant_key TEXT NOT NULL,
+      period_key TEXT NOT NULL,
+      member_id TEXT,
+      display_name TEXT NOT NULL,
+      raw_minutes INTEGER NOT NULL DEFAULT 0,
+      weighted_minutes INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (participant_key, period_key)
+    )
+  `).run().then(() => undefined).catch((error: unknown) => {
+    fairTimeTableReady = null
+    throw error
+  })
+  return fairTimeTableReady
+}
 
 export const Route = createFileRoute('/api/wanted')({
   server: { handlers: {
     GET: async ({ request }) => {
+      await ensureFairTimeTable()
       await ensurePreviousWeekAwards()
       const member = await getMemberFromRequest(request)
       const url = new URL(request.url)
@@ -25,7 +44,7 @@ export const Route = createFileRoute('/api/wanted')({
       const periodKey = getWantedWeekKey(Date.now())
       const rows = await leaderboardDb().prepare(`
         SELECT participant_key, member_id, display_name, raw_minutes, weighted_minutes
-        FROM wanted_weekly_playtime
+        FROM wanted_weekly_fair_time
         WHERE period_key = ? AND weighted_minutes > 0
         ORDER BY weighted_minutes DESC, updated_at ASC LIMIT 6
       `).bind(periodKey).all<WantedRow>()
@@ -45,14 +64,15 @@ export const Route = createFileRoute('/api/wanted')({
       `).bind(periodKey).first<{ display_name: string }>()
       return Response.json({
         periodKey,
-        leaders: rows.results.map((row, index) => ({ rank: index + 1, displayName: row.display_name, rawMinutes: row.raw_minutes, minutes: row.weighted_minutes, posterNumber: posterAssignments.get(row.participant_key) })),
+        leaders: rows.results.map((row, index) => ({ rank: index + 1, displayName: row.display_name, seconds: row.weighted_minutes, posterNumber: posterAssignments.get(row.participant_key) })),
         pendingRewards: pending.results.map(row => ({ periodKey: row.period_key, rank: row.rank, coins: row.reward_coins })),
         expiredRewards,
         lastWeekChampion: lastWeekChampion?.display_name ?? null,
       }, { headers: { 'Cache-Control': 'private, no-store' } })
     },
     POST: async ({ request }) => {
-      const body = await request.json() as { action?: unknown; sessionType?: unknown; featuredMultiplier?: unknown; checkInMultiplier?: unknown; guestKey?: unknown; guestName?: unknown; minutes?: unknown; activeMinutes?: unknown; submissionKey?: unknown }
+      await ensureFairTimeTable()
+      const body = await request.json() as { action?: unknown; sessionType?: unknown; guestKey?: unknown; guestName?: unknown; seconds?: unknown; minutes?: unknown; submissionKey?: unknown }
       const member = await getMemberFromRequest(request)
       const guestKey = normalizeGuestKey(body.guestKey)
       const participantKey = member ? `member:${member.id}` : guestKey
@@ -73,22 +93,15 @@ export const Route = createFileRoute('/api/wanted')({
             : body.sessionType === 'featured'
               ? 'featured'
               : 'game'
-        const minutes = Math.min(sessionType === 'featured' ? 30 : 720, Math.max(0, Math.floor(Number(body.minutes) || 0)))
-        if (minutes < 1) return jsonError('本局未完成有效计时')
-        const eligibleForMemberMultiplier = sessionType !== 'online' && sessionType !== 'featured'
-        const rankMultiplier = eligibleForMemberMultiplier && member ? getCoinRank(member.coinBalance).multiplier : 1
-        const requestedCheckInMultiplier = Math.floor(Number(body.checkInMultiplier) || 1)
-        const checkInMultiplier = eligibleForMemberMultiplier && member ? Math.max(1, Math.min(365, requestedCheckInMultiplier)) : 1
-        const requestedFeaturedMultiplier = Number(body.featuredMultiplier)
-        const featuredMultiplier = [10, 20, 50, 100, 150, 200].includes(requestedFeaturedMultiplier) ? requestedFeaturedMultiplier : 10
-        const memberMultiplier = eligibleForMemberMultiplier && member ? combineCoinMultipliers(rankMultiplier, checkInMultiplier) : 1
-        const multiplier = sessionType === 'featured' ? featuredMultiplier : memberMultiplier * (sessionType === 'pro' ? 2 : 1)
+        const requestedSeconds = body.seconds === undefined ? Number(body.minutes) * 60 : Number(body.seconds)
+        const seconds = Math.min(12 * 60 * 60, Math.max(0, Math.floor(requestedSeconds || 0)))
+        if (seconds < 1) return jsonError('本次没有可累计的实时时间')
         const periodKey = getWantedWeekKey(Date.now())
         const db = leaderboardDb()
         const accepted = await db.prepare(`INSERT OR IGNORE INTO wanted_playtime_submissions (submission_key, participant_key, period_key) VALUES (?, ?, ?)`)
           .bind(submissionKey, participantKey, periodKey).run()
         if (accepted.meta.changes) await db.prepare(`
-          INSERT INTO wanted_weekly_playtime (participant_key, period_key, member_id, display_name, raw_minutes, weighted_minutes)
+          INSERT INTO wanted_weekly_fair_time (participant_key, period_key, member_id, display_name, raw_minutes, weighted_minutes)
           VALUES (?, ?, ?, ?, ?, ?)
           ON CONFLICT(participant_key, period_key) DO UPDATE SET
             member_id = excluded.member_id,
@@ -96,8 +109,8 @@ export const Route = createFileRoute('/api/wanted')({
             raw_minutes = raw_minutes + excluded.raw_minutes,
             weighted_minutes = weighted_minutes + excluded.weighted_minutes,
             updated_at = CURRENT_TIMESTAMP
-        `).bind(participantKey, periodKey, member?.id ?? null, displayName, minutes, weightedPlayMinutes(minutes, body.activeMinutes, multiplier)).run()
-        return Response.json({ ok: true, sessionType, multiplier })
+        `).bind(participantKey, periodKey, member?.id ?? null, displayName, seconds, seconds).run()
+        return Response.json({ ok: true, sessionType, seconds })
       }
 
       if (body.action === 'claim') {
@@ -147,7 +160,7 @@ async function adoptGuestWantedIdentity(memberId: string, displayName: string, g
   const memberKey = `member:${memberId}`
   const db = leaderboardDb()
   const guestRecord = await db.prepare(`
-    SELECT 1 AS found FROM wanted_weekly_playtime WHERE participant_key = ?
+    SELECT 1 AS found FROM wanted_weekly_fair_time WHERE participant_key = ?
     UNION ALL
     SELECT 1 AS found FROM wanted_weekly_awards WHERE participant_key = ?
     LIMIT 1
@@ -156,10 +169,10 @@ async function adoptGuestWantedIdentity(memberId: string, displayName: string, g
 
   await db.batch([
     db.prepare(`
-      INSERT INTO wanted_weekly_playtime
+      INSERT INTO wanted_weekly_fair_time
         (participant_key, period_key, member_id, display_name, raw_minutes, weighted_minutes, updated_at)
       SELECT ?, period_key, ?, ?, raw_minutes, weighted_minutes, updated_at
-      FROM wanted_weekly_playtime WHERE participant_key = ?
+      FROM wanted_weekly_fair_time WHERE participant_key = ?
       ON CONFLICT(participant_key, period_key) DO UPDATE SET
         member_id = excluded.member_id,
         display_name = excluded.display_name,
@@ -167,7 +180,7 @@ async function adoptGuestWantedIdentity(memberId: string, displayName: string, g
         weighted_minutes = weighted_minutes + excluded.weighted_minutes,
         updated_at = CASE WHEN updated_at > excluded.updated_at THEN updated_at ELSE excluded.updated_at END
     `).bind(memberKey, memberId, displayName, guestKey),
-    db.prepare(`DELETE FROM wanted_weekly_playtime WHERE participant_key = ?`).bind(guestKey),
+    db.prepare(`DELETE FROM wanted_weekly_fair_time WHERE participant_key = ?`).bind(guestKey),
     db.prepare(`
       UPDATE wanted_weekly_awards
       SET participant_key = ?, member_id = ?, display_name = ?
@@ -241,14 +254,14 @@ async function ensurePreviousWeekAwards() {
   const db = leaderboardDb()
   const currentKey = getWantedWeekKey(Date.now())
   const periods = await db.prepare(`
-    SELECT DISTINCT period_key FROM wanted_weekly_playtime
+    SELECT DISTINCT period_key FROM wanted_weekly_fair_time
     WHERE period_key < ? AND period_key NOT IN (SELECT period_key FROM wanted_weekly_awards)
     ORDER BY period_key ASC LIMIT 8
   `).bind(currentKey).all<{ period_key: string }>()
   for (const period of periods.results) {
     const leaders = await db.prepare(`
       SELECT participant_key, member_id, display_name, weighted_minutes
-      FROM wanted_weekly_playtime WHERE period_key = ? AND weighted_minutes > 0
+      FROM wanted_weekly_fair_time WHERE period_key = ? AND weighted_minutes > 0
       ORDER BY weighted_minutes DESC, updated_at ASC LIMIT 3
     `).bind(period.period_key).all<WantedRow>()
     if (leaders.results.length) await db.batch(leaders.results.map((row, index) => db.prepare(`
