@@ -100,8 +100,11 @@ function LocalizedPlayGamePage() {
   const isPsp = isPspGame(game)
   const isKof97 = gameId === 'the-king-of-fighters-97-arcade-1997'
     || game.url_slug === 'the-king-of-fighters-97-arcade-1997'
+  const isKof97Plus = gameId === 'the-king-of-fighters-97-plus-arcade-1997'
+    || game.url_slug === 'the-king-of-fighters-97-plus-arcade-1997'
+  const hasKof97Backdrop = isKof97 || isKof97Plus
   const isLocalKof97Preview = typeof window !== 'undefined'
-    && isKof97
+    && hasKof97Backdrop
     && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   const theme = useCurrentSiteTheme()
   const embedSrc = rankAccessGranted && memberAccessGranted ? `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp, theme, autoplay === '1' || forceAutoplay)}` : 'about:blank'
@@ -482,13 +485,13 @@ function LocalizedPlayGamePage() {
   }, [embedSrc, exitGame, isPsp])
 
   return (
-    <main ref={playerRef} className={`game-play-screen bg-black ${isKof97 ? 'game-play-screen-kof97' : ''} ${isLocalKof97Preview ? 'kof97-local-preview' : ''} ${inline === '1' ? 'game-play-screen-inline' : ''}`}>
-      {isKof97 ? (
+    <main ref={playerRef} className={`game-play-screen bg-black ${hasKof97Backdrop ? 'game-play-screen-kof97' : ''} ${isLocalKof97Preview ? 'kof97-local-preview' : ''} ${inline === '1' ? 'game-play-screen-inline' : ''}`}>
+      {hasKof97Backdrop ? (
         <img
           alt=""
           aria-hidden="true"
           className="kof97-page-backdrop"
-          src="/images/game-masks/kof97.webp?v=20261019-6"
+          src={isKof97Plus ? '/images/game-masks/kof97-plus.webp?v=20261019-1' : '/images/game-masks/kof97.webp?v=20261019-6'}
         />
       ) : null}
       <div className="absolute left-2 top-2 z-30 flex items-center gap-2 sm:left-3 sm:top-3">
@@ -519,7 +522,7 @@ function LocalizedPlayGamePage() {
               : 'autoplay; gamepad'
           }
           allowFullScreen
-          className={`game-play-frame border-0 bg-black ${isKof97 ? 'kof97-game-frame' : ''}`}
+          className={`game-play-frame border-0 bg-black ${hasKof97Backdrop ? 'kof97-game-frame' : ''}`}
           loading="eager"
           src={embedSrc}
           title={game.name ?? 'Retro game'}
