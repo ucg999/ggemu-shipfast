@@ -87,7 +87,7 @@ function PspGameDetailPage() {
                 <p>解压密码：进群可见</p>
                 <p>游戏交流Q群：62119057</p>
               </div>
-              <PspDiscCollectionButton downloadUrl={game.downloadUrl} gameId={game.id} locale={lang} platform="psp" />
+              <PspDiscCollectionButton gameId={game.id} locale={lang} platform="psp" />
               {game.shareVersion ? <span className="text-sm text-base-content/60">{game.shareVersion}</span> : null}
             </div>
           </section>

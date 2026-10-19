@@ -9,7 +9,6 @@ export type SwitchLibraryGame = {
   requiredSystem: string
   language: string
   cardLanguage?: string
-  downloadUrl?: string
   extractionCode?: string
   videoUrl?: string
   popularity?: number
@@ -24,6 +23,42 @@ export type SwitchLibraryGame = {
 // Add future Switch downloads here to keep every card consistent.
 export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
   {
+    id: 'river-city-saga-journey-to-the-west',
+    title: '热血西游记 天竺奇谭',
+    foreignTitle: 'River City Saga: Journey to the West',
+    popularity: 90,
+    cover: '/switch-library/river-city-saga-journey-to-the-west/cover.webp',
+    genre: '动作、Roguelite',
+    publisher: 'ARC SYSTEM WORKS',
+    releaseDate: '2026-06-04',
+    requiredSystem: '待确认',
+    language: '中、日、英、韩',
+    cardLanguage: '中文',
+    updatedAt: '2026-10-19T13:00:00+08:00',
+    extractionCode: 'rnj5',
+    shareVersion: '本体+1.0.3升补|NSP|',
+    description: '孙悟空、猪八戒、沙悟净和唐三藏居然全都是国夫！众人齐聚前往天竺，一场热闹畅快的喜剧动作冒险就此展开。\n\n游戏采用 Roguelite 推进方式，可从多达 80 种“妙法”中强化技能与能力，并在速度型孙悟空、力量型猪八戒和远程型沙悟净三种战斗风格之间自由切换。熟悉的热血系列角色也会化身西游人物登场。',
+    screenshots: Array.from({ length: 4 }, (_, index) => `/switch-library/river-city-saga-journey-to-the-west/screenshot-${String(index + 1).padStart(2, '0')}.webp`),
+  },
+  {
+    id: 'dragon-quest-vii-reimagined',
+    title: '勇者斗恶龙VII 伊甸的战士们',
+    foreignTitle: 'DRAGON QUEST VII Reimagined',
+    popularity: 96,
+    cover: '/switch-library/dragon-quest-vii-reimagined/cover.webp',
+    genre: '角色扮演',
+    publisher: 'SQUARE ENIX',
+    releaseDate: '2026-02-05',
+    requiredSystem: '20.5.0',
+    language: '中文',
+    cardLanguage: '中文',
+    updatedAt: '2026-10-19T13:00:00+08:00',
+    extractionCode: 'ggeb',
+    shareVersion: '本体+1.2.0升补+6DLC|NSZ|',
+    description: '故事从住在孤岛上的少年少女怀抱一缕好奇心开始。一场横越大海、跨越时空的壮阔冒险，就此揭开帷幕。\n\n本作在保留原作魅力的同时重新构筑系统与剧情，以温暖的人偶风 3DCG 呈现角色、原野和迷宫。玩家需要搜集散落各地的石板碎片开拓世界，并利用可兼任两种职业的全新职业系统组建队伍。自动战斗、快捷指令和原野攻击等功能让探索节奏更加流畅。',
+    screenshots: Array.from({ length: 4 }, (_, index) => `/switch-library/dragon-quest-vii-reimagined/screenshot-${String(index + 1).padStart(2, '0')}.webp`),
+  },
+  {
     id: 'tales-of-eternia-remastered',
     title: '永恒传说 高清重制',
     foreignTitle: 'Tales of Eternia Remastered',
@@ -34,7 +69,6 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     requiredSystem: '待确认',
     language: '中文',
     updatedAt: '2026-10-16T09:00:00+08:00',
-    downloadUrl: 'https://pan.baidu.com/s/1Zzuk9rMkgghr1lnPgD-4Bg?pwd=sj9k',
     shareVersion: '本体+v2.0.0升补|NSP| · 提取码：sj9k',
     description: `永远与羁绊的 RPG，《永恒传说》以 Remastered 之姿回归！
 
@@ -59,7 +93,6 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     releaseDate: '2025-02-13',
     requiredSystem: '19.0.1',
     language: '中文',
-    downloadUrl: 'https://pan.baidu.com/s/1tLpvWSG03B2NLwvrWM1zvQ?pwd=9999',
     shareVersion: '版本号（本体+1.8.0升补+19DLC|NSZ|原版|）',
     screenshots: Array.from({ length: 6 }, (_, index) => `/switch-library/musou-abyss/Abyss0${index + 2}.webp`),
   },
@@ -75,7 +108,6 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     releaseDate: '2023-10-26',
     requiredSystem: '待确认',
     language: '中文',
-    downloadUrl: 'https://pan.baidu.com/s/1Qkx-nyzqj3nqsnnsOPm1yA?pwd=9999',
     shareVersion: '版本号：1.0.6+6DLC（XCI）',
     updatedAt: '2026-10-11T11:08:54+08:00',
     screenshots: [
@@ -99,7 +131,6 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     "language": "中文",
     "updatedAt": "2026-10-17T00:00:00+08:00",
     "cardLanguage": "中文",
-    "downloadUrl": "https://pan.baidu.com/s/1tKOOjAOzOD8cLFDq3T9wvg?pwd=i5jv",
     "extractionCode": "i5jv",
     "shareVersion": "本体+2.0.3升补+4DLC|NSZ|原版|",
     "description": "在Roguelike任务中释放乌龟之力，从大脚帮的手中救出斯普林特！掌握忍者技能，在惊心动魄的合作游戏中团结一心，征服纽约各大标志性地区。\n\n当斯普林特被施瑞德绑架后，整个纽约市同时出现了很多神秘的传送门。为了寻找线索，艾普和金属头对抢回的神器加以分析，乌龟们则展开奋战，誓要从大脚帮的魔掌中救回他们的父亲。然而，随着大伙儿距离斯普林特所处的异界位置越来越近，一个更大的威胁却从阴影之中浮现出来……\n\n玩家将投身节奏明快的Roguelike动作狂潮之中，没有两次冒险完全相同。强化物品、房间布局和头目增益特效均为随机生成。四只乌龟都可操控，每只都拥有独特力量，还可与好友组队游玩。",
@@ -117,14 +148,16 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     "title": "凯蒂猫岛屿冒险",
     "popularity": 82,
     "cover": "/switch-library/hello-kitty-island-adventure/cover.webp",
-    "genre": "待补充",
-    "publisher": "待确认",
+    "genre": "冒险、模拟、开放世界",
+    "publisher": "Sunblink",
     "releaseDate": "2025-01-30",
     "requiredSystem": "待确认",
     "language": "中文",
-    "updatedAt": "2026-09-07T16:21:48+00:00",
-    "downloadStatus": "分享资源待添加",
-    "description": "凯蒂猫岛屿冒险。\n游戏画面见下方截图，版本信息与分享资源待补充。",
+    "updatedAt": "2026-10-19T13:00:00+08:00",
+    "cardLanguage": "中文",
+    "extractionCode": "6jwh",
+    "shareVersion": "本体+3.0.0升补+3DLC|NSZ|原版|",
+    "description": "跟凯蒂猫和一众好朋友一起踏上其乐融融的开放世界冒险之旅。在探索并恢复神秘岛屿的过程中与喜爱的角色交朋友，解开古老谜题，烹饪美味佳肴，定制自己的形象和小屋，还有更多精彩内容等待发现。",
     "screenshots": [
       "/switch-library/hello-kitty-island-adventure/screenshot-01.webp",
       "/switch-library/hello-kitty-island-adventure/screenshot-02.webp",
@@ -149,9 +182,11 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     "releaseDate": "2026-09-03",
     "requiredSystem": "待确认",
     "language": "中、日、英",
-    "updatedAt": "2026-09-07T16:59:38+00:00",
-    "downloadStatus": "分享资源待添加",
-    "description": "女忍者恋爱二部曲。\n游戏画面见下方截图，版本信息与分享资源待补充。",
+    "updatedAt": "2026-10-19T13:00:00+08:00",
+    "cardLanguage": "中文",
+    "extractionCode": "yqrt",
+    "shareVersion": "官方中文|XCI|",
+    "description": "收录《NinNinDays》和《NinNinDays2》的女忍者恋爱冒险合集。玩家将在轻松幽默的日常故事中与性格各异的女忍者相遇，通过阅读剧情与作出选择推进关系，体验两段完整的恋爱故事。",
     "screenshots": [
       "/switch-library/nin-nin-days-2/screenshot-01.webp",
       "/switch-library/nin-nin-days-2/screenshot-02.webp",
@@ -177,7 +212,6 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     "language": "中、日、英、法、德、西、韩",
     "cardLanguage": "英文",
     "updatedAt": "2026-10-17T00:00:00+08:00",
-    "downloadUrl": "https://pan.baidu.com/s/1FzUvnxCe26kEdCh13oKitA?pwd=3gsa",
     "extractionCode": "3gsa",
     "shareVersion": "试玩版|官方英文|NSZ|",
     "description": "可将保存数据继承至正式版的免费体验版登场！虽然等级设有部分限制，但可在与正式版相同的第一章范围内自由冒险。",
@@ -205,7 +239,6 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     "language": "中文",
     "updatedAt": "2026-10-17T00:00:00+08:00",
     "cardLanguage": "中文",
-    "downloadUrl": "https://pan.baidu.com/s/1wBKVjA0eQuHkNjWgSoG2Mg?pwd=r8vb",
     "extractionCode": "r8vb",
     "shareVersion": "9.10优化版，游戏内增加图形设置选项",
     "description": "一个初涉江湖的街头新丁、一个洗手多年的银行劫匪和一个丧心病狂的杀人狂魔，误打误撞中深陷犯罪集团、美国政府和娱乐产业之间盘根错杂的困境。他们必须齐心协力完成一连串惊天劫案，才能在这座冷酷的城市中生存。\n\n本移植版本提供图形设置选项，玩家可在洛圣都和布莱恩郡体验故事、驾驶、枪战与开放世界探索。",
@@ -241,7 +274,6 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     "language": "中、日、英",
     "updatedAt": "2026-10-17T00:00:00+08:00",
     "cardLanguage": "中文",
-    "downloadUrl": "https://pan.baidu.com/s/1sQaQ3JBwTjfaPTh-q5W2PQ?pwd=pwqz",
     "extractionCode": "pwqz",
     "shareVersion": "本体+1.2.5整合版/[NSP-XCI][原版+魔改9.2]",
     "description": "本作是一款体感模拟钓鱼游戏，玩家可以挥动Joy-Con以投掷浮标、再转动另一支手腕模拟捲线动作，重现钓竿钓鱼的乐趣。\n除剧情模式以外，本作还为玩家带来了复古街机风格的“硬币模式”以及4人本地联机的“同乐模式”。\n在鱼类数量方面，本作拥有250余种鱼类供玩家垂钓，喜爱钓鱼活动的玩家不要错过。",
@@ -262,7 +294,6 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     requiredSystem: '待确认',
     language: '中文',
     updatedAt: '2026-10-17T00:00:00+08:00',
-    downloadUrl: 'https://pan.baidu.com/s/19XCSl8HDjQzXsV9hdySsTQ?pwd=ajym',
     extractionCode: 'ajym',
     shareVersion: '中文国语配音版',
     description: `启程吧，展开专属于你的故事——
@@ -283,7 +314,6 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     requiredSystem: '待确认',
     language: '中文',
     updatedAt: '2026-10-17T00:00:00+08:00',
-    downloadUrl: 'https://pan.baidu.com/s/1k2wQ7hnXMJm3796iGte7-g?pwd=4fib',
     extractionCode: '4fib',
     shareVersion: '本体+1.2.2升补+14DLC|NSZ|',
     description: `《数码宝贝物语》系列最新作品。本作是一款角色扮演游戏，玩家将在追查世界毁灭谜团的过程中，体验横跨人类世界与异世界的冒险，并搜集、培育种类丰富的数码宝贝。
@@ -303,7 +333,6 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     requiredSystem: '待确认',
     language: '中文',
     updatedAt: '2026-10-17T00:00:00+08:00',
-    downloadUrl: 'https://pan.baidu.com/s/1jLbH6ByHPQqJkSszJXN1Hw?pwd=dy1s',
     extractionCode: 'dy1s',
     shareVersion: '移植版V1.0',
     description: `《新剑侠情缘》是1997年发行的DOS版《剑侠情缘》的重新制作版本，主要剧情相同，结局有所扩充。
@@ -322,7 +351,6 @@ export const SWITCH_LIBRARY_GAMES: SwitchLibraryGame[] = [
     requiredSystem: '19.0.0',
     language: '中文',
     updatedAt: '2026-10-17T00:00:00+08:00',
-    downloadUrl: 'https://pan.baidu.com/s/1DlQ_AMSRYJ2b0GJhQxuX0w?pwd=87d3',
     extractionCode: '87d3',
     shareVersion: '本体+1.2.2升补+2DLC|NSZ|原版|',
     description: `欢迎来到梦想中的水族馆主题游乐园。摇动并旋转Joy-Con，体验仿佛置身海浪之中的体感钓鱼乐趣。玩家可以独自或与朋友游玩园区景点、收集奖牌，并用奖牌升级自己的水族馆。

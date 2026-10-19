@@ -89,7 +89,7 @@ function SwitchGameDetailPage() {
                 <p>解压密码：进群可见</p>
                 <p>游戏交流Q群：62119057</p>
               </div>
-              <PspDiscCollectionButton downloadUrl={game.downloadUrl} gameId={game.id} locale={lang} platform="switch" />
+              <PspDiscCollectionButton gameId={game.id} locale={lang} platform="switch" />
               {game.extractionCode || game.shareVersion ? <div className="flex flex-col gap-1 text-sm text-base-content/60">
                 {game.extractionCode ? <span>{copy.extractionCode}：{game.extractionCode}</span> : null}
                 {game.shareVersion ? <span>{copy.version}：{game.shareVersion}</span> : null}

@@ -1,111 +1,119 @@
 {
+  "switch/river-city-saga-journey-to-the-west": {
+    "fingerprint": "9a0bbadb72792bd522245b9461ed25d4a0920201c84175a77f4cfb63dc8db9f2",
+    "updatedAt": "2026-10-19T13:00:00+08:00"
+  },
+  "switch/dragon-quest-vii-reimagined": {
+    "fingerprint": "96a3d90c1350aed795365ea4e1214c5802fc5ffad3a550d484e9fe819501a4f9",
+    "updatedAt": "2026-10-19T13:00:00+08:00"
+  },
   "switch/tales-of-eternia-remastered": {
-    "fingerprint": "4d03a6e0458b592916343049be6e6cf19d682e92ee12d3ebe6b9e66cf8c9011e",
-    "updatedAt": "2026-10-16T00:43:49.891Z"
+    "fingerprint": "7f88ab84894ba61db7b7ec3c185b887b68087b4e04a0ff604216a72c51aaf206",
+    "updatedAt": "2026-10-19T05:01:48.769Z"
   },
   "switch/warriors-abyss": {
-    "fingerprint": "7522baf64661651f4802893be06db00812af76b81b92f955a70f310f13c2774d",
-    "updatedAt": null
+    "fingerprint": "492db68a0cbe9265b5c442b9c407af345516432ac461dfbdf500c16672b41080",
+    "updatedAt": "2026-10-19T05:01:48.770Z"
   },
   "switch/dave-the-diver": {
-    "fingerprint": "dfc527bc4bd7e4a49f66ea22bb1217a6467da7923dabd609de8d8884266d47ab",
-    "updatedAt": "2026-10-11T03:09:01.903Z"
+    "fingerprint": "6c1ea35742121e8238db9d040e9f3df82eaa8acef00cd2248dee37df1cc4beb9",
+    "updatedAt": "2026-10-19T05:01:48.782Z"
   },
   "switch/tmnt-splintered-fate": {
-    "fingerprint": "fd509a530c7cdb4f7cc9b4d1257397046a60dae127810145d55971598e22360c",
-    "updatedAt": "2026-10-17T06:33:51.035Z"
+    "fingerprint": "a9f07cd5369b86ea011058ff2c2cf41f7e8ef8189a5cd0e2ecc8d0687b61720f",
+    "updatedAt": "2026-10-19T05:01:48.783Z"
   },
   "switch/hello-kitty-island-adventure": {
-    "fingerprint": "653d81f974e490d082c4b2218ad7171c9562f94ee22b65640d27b71c6da5e4d6",
-    "updatedAt": "2026-09-07T16:21:48+00:00"
+    "fingerprint": "de2907dd85a46835205127c5023d894eb00f546c68aee77200c4001cd3b8ccee",
+    "updatedAt": "2026-10-19T05:09:59.276Z"
   },
   "switch/nin-nin-days-2": {
-    "fingerprint": "395346dd02728dfaa2f06b26fd6f8a4b0cec38ed1fe9c6e54d2116d2b734c6d8",
-    "updatedAt": "2026-09-07T16:59:38+00:00"
+    "fingerprint": "740f0dc50e8df7a297aab8368e5d01f6c66fedc74c61c98d8598d79f1263ee0f",
+    "updatedAt": "2026-10-19T05:09:59.279Z"
   },
   "switch/final-fantasy-resonance-demo": {
-    "fingerprint": "e453c255c16c519db3acf941fba3700032fe8c40181d3fe0adbf88463012dc8c",
-    "updatedAt": "2026-10-17T06:33:51.065Z"
+    "fingerprint": "f417d517a137b6e10c335f97460d3e824ea815cabf0a678583f292a3b57a1114",
+    "updatedAt": "2026-10-19T05:01:48.812Z"
   },
   "switch/gta5-switch-port": {
-    "fingerprint": "9c32c9891c972f6fbaae91467935c7bcf6194cf0d53868dfde30b46dac4a767e",
-    "updatedAt": "2026-10-17T06:33:51.070Z"
+    "fingerprint": "8c4ae29fb89ef9e3f735928ec64bf5ad8b1f22ffc74f4aa0423d3f1509df0564",
+    "updatedAt": "2026-10-19T05:01:48.816Z"
   },
   "switch/ace-angler": {
-    "fingerprint": "65bac43a83894b61e01ec89ccd25cf2725a2b0160881d64ab30c2359a05de170",
-    "updatedAt": "2026-10-17T06:33:51.072Z"
+    "fingerprint": "9aefff7b8d80d6335a094b7416e87f47b2b367accf40d9656b738106b366b990",
+    "updatedAt": "2026-10-19T05:01:48.818Z"
   },
   "switch/octopath-traveler-2": {
-    "fingerprint": "6b7cd19824555e06c665d3d37673b01a93ec6b40690576728f6b1cd27fae3d54",
-    "updatedAt": "2026-10-17T06:33:51.077Z"
+    "fingerprint": "a567ad649e074bb97a76790591b9678f7f48c5670ec79e50d59b22d72d02f93a",
+    "updatedAt": "2026-10-19T05:01:48.822Z"
   },
   "switch/digimon-story-time-stranger": {
-    "fingerprint": "c18e7dc725d704aaa92867b2b8e6a6508a8dec5e89835edd58ab8ac310551ab1",
-    "updatedAt": "2026-10-17T06:33:51.083Z"
+    "fingerprint": "9fa65b9f050413c29fd77c2725a57deef0debf1fa41a2b19acc30ccc58265044",
+    "updatedAt": "2026-10-19T05:01:48.828Z"
   },
   "switch/new-sword-heroes-trilogy": {
-    "fingerprint": "115ab282b761e1d108d36c334c4ab954876b571e59295db13ca856f7fcf0a8ed",
-    "updatedAt": "2026-10-17T06:33:51.083Z"
+    "fingerprint": "9356b3e19977482c6c0c086b84a1c338e64b2f80341a00eb4d6e61a8d48309ec",
+    "updatedAt": "2026-10-19T05:01:48.828Z"
   },
   "switch/ace-angler-fishing-spirits": {
-    "fingerprint": "2d5fa309d355284961c3c71c60c9e38d99d758aa7624bef824c8e6862c48d1fb",
-    "updatedAt": "2026-10-17T06:33:51.085Z"
+    "fingerprint": "ea6d70996b7938ca5479cc20650089ecd7bb1623b0d918ff4d37685d303b55e4",
+    "updatedAt": "2026-10-19T05:01:48.830Z"
   },
   "psp/tales-of-phantasia-narikiri-dungeon-x": {
-    "fingerprint": "14a38ac165461b1fa871db98a9d7b05ee6a54afb15db63386b5487dcf24afb6d",
-    "updatedAt": "2026-09-24T16:14:19.992Z"
+    "fingerprint": "23775489ac27243c6b4e09c1f0f7f2c3f73b76bfae95e58126db115c783518ae",
+    "updatedAt": "2026-10-19T05:01:48.889Z"
   },
   "psp/ridge-racer": {
-    "fingerprint": "81dbb4cb905f55e98b9607b2f73f35e8ef69cf2ef30faf1795628975284396ff",
-    "updatedAt": "2026-09-08T14:29:05.778Z"
+    "fingerprint": "84f760352c160f143576c0a7989582e1acc78a52a69d00acafe2d2fe947d82c2",
+    "updatedAt": "2026-10-19T05:01:48.895Z"
   },
   "psp/monster-hunter-portable": {
-    "fingerprint": "a078f20c81614569aff972de0f82bdeefb6531c9c357d9732d12cb1d56f2c881",
-    "updatedAt": "2026-09-24T16:14:20.003Z"
+    "fingerprint": "8c063518e96d6f97fbc925595aeaf162d8975741a28214fdc5e1f77168046280",
+    "updatedAt": "2026-10-19T05:01:48.899Z"
   },
   "psp/monster-hunter-portable-2nd": {
-    "fingerprint": "5ace88ac6b9f403700996d52f3802ad4345e1e277e7b338ee2240a966ffa4667",
-    "updatedAt": "2026-09-24T16:14:20.012Z"
+    "fingerprint": "63dcc8268d4b9fe1ba750cde709b2cb1594edc6ed80373ad1a84e3402a21d003",
+    "updatedAt": "2026-10-19T05:01:48.908Z"
   },
   "psp/monster-hunter-portable-2nd-g": {
-    "fingerprint": "e769427a174089756d4dbfaf206e2b593b352204c66aacec02346332e8d4a3d3",
-    "updatedAt": "2026-09-24T16:14:20.017Z"
+    "fingerprint": "9208f55b8eb7dce60a8a370a16c468ab1d83737b8a3cb1b98a41cb0ced1c76d9",
+    "updatedAt": "2026-10-19T05:01:48.913Z"
   },
   "psp/djmax-portable-2": {
-    "fingerprint": "6a3a528b10d35777802f68268a515c23f97ba218be978c7548a9ad92d7fa943f",
-    "updatedAt": "2026-09-24T15:58:00.768Z"
+    "fingerprint": "174b91f4ccc4c23ca7120762bd43d4cddf49fb47436b0c00971feb2011a678e9",
+    "updatedAt": "2026-10-19T05:01:48.917Z"
   },
   "psp/djmax-clazziquai-edition": {
-    "fingerprint": "f6aa1b0af0f5683069cee50672835f466fe0e5de621f1be2804efe1aa24eabf4",
-    "updatedAt": "2026-09-24T15:58:00.776Z"
+    "fingerprint": "c4b3a63122477e842749f23c18d7366951bcbfdae21447d30703a6686382a493",
+    "updatedAt": "2026-10-19T05:01:48.919Z"
   },
   "psp/nba-ballers-rebound": {
-    "fingerprint": "01113445ff8e81d3f5920becc3a383187e5d561e0bbebf9bef64ae60505d07ee",
-    "updatedAt": "2026-09-24T16:21:16.738Z"
+    "fingerprint": "d10d90e6b65f254a0ef64e8e08eeaf1be37b632e367bb7ca5a3721568cf7d455",
+    "updatedAt": "2026-10-19T05:01:48.923Z"
   },
   "psp/valkyrie-profile-lenneth": {
-    "fingerprint": "ca3b58094237eb5b081e225feb3d6594684d16052b25dcf7198547effce97f6d",
-    "updatedAt": "2026-09-24T15:58:00.788Z"
+    "fingerprint": "9d427ae75bba7da64ce56f3f247cd7d57fe52ef9f53b4bf6f86537615c7b8ed0",
+    "updatedAt": "2026-10-19T05:01:48.925Z"
   },
   "psp/motorstorm-arctic-edge": {
-    "fingerprint": "6f463ebbac6df3aa2dcf7758ce740ee0270c7499cf6d1bc6f78a305f377f717d",
-    "updatedAt": "2026-10-11T00:00:00.000+08:00"
+    "fingerprint": "021e38922c5ebd00752ba33cdc350eb101a62ff10692194ac40165dc39b7b64c",
+    "updatedAt": "2026-10-19T05:01:48.928Z"
   },
   "psp/flatout-head-on": {
-    "fingerprint": "14fe6926bdc05ecc4cdf36e01e901df5d46cec9712d180ad6930c6e6033f0649",
-    "updatedAt": "2026-10-11T00:30:00.000+08:00"
+    "fingerprint": "8d41313b369775a16d3cd57ad6e3e0a57616ec8a220ca7cae6a181ed622ad4ef",
+    "updatedAt": "2026-10-19T05:01:48.931Z"
   },
   "psp/split-second-velocity": {
-    "fingerprint": "1ec29f04b796569aa0e75b723fd4a57412b54f7c8eb356866da4c03c42df7196",
-    "updatedAt": "2026-10-11T07:26:32.355Z"
+    "fingerprint": "c7a8e5c063ea566f8d9382fe0cceaf4f21013bffa0320ca86f5084d1ddb79127",
+    "updatedAt": "2026-10-19T05:01:48.934Z"
   },
   "psp/ridge-racers-2": {
-    "fingerprint": "a5891eb466fcc1bf86805e1f10a792c75580d02eb424a0fe69d3cb4b12d840c6",
-    "updatedAt": "2026-10-11T20:00:08+08:00"
+    "fingerprint": "7d1d26d519b1b2446348d8ed39bff56717224804fbf293a104b544b665ce1735",
+    "updatedAt": "2026-10-19T05:01:48.935Z"
   },
   "psp/moto-gp": {
-    "fingerprint": "6430f2efc306bdf4f3de339be34e110634705d78caaa8b8dd5ccd0ed6f596eab",
-    "updatedAt": "2026-10-11T19:54:08+08:00"
+    "fingerprint": "d82be49a69b54ca61e8e9feaac7565b096ec71dc809d626c22c22a06cd37d289",
+    "updatedAt": "2026-10-19T05:01:48.936Z"
   },
   "fc-cartridges/__library__": {
     "fingerprint": "5a8826714fb8e37816504b357a3dfd9cfb5d7cebd04b3ea1dccd974b6fcbf45e",
