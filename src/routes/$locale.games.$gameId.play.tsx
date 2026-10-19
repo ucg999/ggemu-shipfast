@@ -98,6 +98,11 @@ function LocalizedPlayGamePage() {
     || (game.name ?? '').trim().toLocaleLowerCase() === 'mahjong'
   const refcode = encodeURIComponent(siteConfig.GGEMU_REFCODE)
   const isPsp = isPspGame(game)
+  const isKof97 = gameId === 'the-king-of-fighters-97-arcade-1997'
+    || game.url_slug === 'the-king-of-fighters-97-arcade-1997'
+  const isLocalKof97Preview = typeof window !== 'undefined'
+    && isKof97
+    && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   const theme = useCurrentSiteTheme()
   const embedSrc = rankAccessGranted && memberAccessGranted ? `https://ggemu.com/${lang}/game/${embedId}?${buildEmbedSearch(refcode, isPsp, theme, autoplay === '1' || forceAutoplay)}` : 'about:blank'
   const [showRecommendations, setShowRecommendations] = useState(false)
@@ -477,7 +482,15 @@ function LocalizedPlayGamePage() {
   }, [embedSrc, exitGame, isPsp])
 
   return (
-    <main ref={playerRef} className={`game-play-screen bg-black ${inline === '1' ? 'game-play-screen-inline' : ''}`}>
+    <main ref={playerRef} className={`game-play-screen bg-black ${isKof97 ? 'game-play-screen-kof97' : ''} ${isLocalKof97Preview ? 'kof97-local-preview' : ''} ${inline === '1' ? 'game-play-screen-inline' : ''}`}>
+      {isKof97 ? (
+        <img
+          alt=""
+          aria-hidden="true"
+          className="kof97-page-backdrop"
+          src="/images/game-masks/kof97.webp?v=20261019-6"
+        />
+      ) : null}
       <div className="absolute left-2 top-2 z-30 flex items-center gap-2 sm:left-3 sm:top-3">
       <button
         aria-label={labels.exitGame}
@@ -500,17 +513,17 @@ function LocalizedPlayGamePage() {
         {labels.loadingNotice}
       </p>
       <iframe
-        allow={
-          isPsp
-            ? 'autoplay; gamepad; fullscreen; cross-origin-isolated'
-            : 'autoplay; gamepad'
-        }
-        allowFullScreen
-        className="game-play-frame border-0 bg-black"
-        loading="eager"
-        src={embedSrc}
-        title={game.name ?? 'Retro game'}
-      />
+          allow={
+            isPsp
+              ? 'autoplay; gamepad; fullscreen; cross-origin-isolated'
+              : 'autoplay; gamepad'
+          }
+          allowFullScreen
+          className={`game-play-frame border-0 bg-black ${isKof97 ? 'kof97-game-frame' : ''}`}
+          loading="eager"
+          src={embedSrc}
+          title={game.name ?? 'Retro game'}
+        />
       <span
         aria-hidden="true"
         className="pointer-events-none absolute right-2 top-2 z-20 grid h-8 min-w-10 place-items-center rounded bg-zinc-900/45 px-1 text-xs font-medium text-white/65 shadow-sm"

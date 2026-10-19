@@ -415,7 +415,7 @@ function LocalizedGameDetailPage() {
             </div>
           </section>
 
-          <section className={`relative grid overflow-hidden rounded-box bg-base-200 ${isInlinePlaying ? 'p-0' : 'gap-4 p-4 lg:grid-cols-[minmax(320px,440px)_1fr] lg:gap-8 lg:p-6'}`}>
+          <section className={`relative grid rounded-box bg-base-200 ${isInlinePlaying && isKof97 ? 'overflow-visible' : 'overflow-hidden'} ${isInlinePlaying ? 'p-0' : 'gap-4 p-4 lg:grid-cols-[minmax(320px,440px)_1fr] lg:gap-8 lg:p-6'}`}>
             {!isInlinePlaying ? <>
             <div className="relative aspect-[4/3] w-full self-start overflow-hidden rounded-box border border-base-300 bg-base-200 shadow-sm">
               {game.game_video?.trim() ? (

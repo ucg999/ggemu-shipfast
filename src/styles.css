@@ -26,6 +26,81 @@ body {
   height: 100dvh;
 }
 
+.kof97-page-backdrop {
+  display: none;
+}
+
+.kof97-game-frame {
+  border-radius: 0.75rem;
+  clip-path: inset(0 round 0.75rem);
+}
+
+html:has(.game-play-screen-kof97),
+body:has(.game-play-screen-kof97) {
+  overflow-x: clip;
+}
+
+.game-player-reveal:has(.kof97-local-preview) {
+  position: relative;
+  overflow: visible;
+  margin-top: -92px;
+  padding-top: 92px;
+  padding-bottom: 38px;
+  animation: none;
+}
+
+.kof97-local-preview .kof97-page-backdrop {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 0;
+  display: block;
+  width: 1920px !important;
+  max-width: none !important;
+  height: 1042px !important;
+  object-fit: none;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.game-play-screen-kof97.kof97-local-preview {
+  overflow: visible;
+}
+
+.kof97-local-preview .kof97-page-backdrop {
+  top: -92px;
+}
+
+@media (min-width: 1200px) {
+  .game-player-reveal:has(.game-play-screen-kof97) {
+    position: relative;
+    overflow: visible;
+    margin-top: -92px;
+    padding-top: 92px;
+    padding-bottom: 38px;
+    animation: none;
+  }
+
+  .game-play-screen-kof97 {
+    background: #000 !important;
+    overflow: visible;
+  }
+
+  .game-play-screen-kof97 .kof97-page-backdrop {
+    position: absolute;
+    top: -92px;
+    left: 50%;
+    z-index: 0;
+    display: block;
+    width: 1920px !important;
+    max-width: none !important;
+    height: 1042px !important;
+    object-fit: none;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+}
+
 .game-play-screen-inline {
   position: relative;
   inset: auto;
