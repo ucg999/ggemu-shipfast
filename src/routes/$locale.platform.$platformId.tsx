@@ -11,6 +11,8 @@ import { PspDownloadLibrary } from '#/components/psp-download-library'
 import { FcCartridgeLibrary } from '#/components/fc-cartridge-library'
 import { GbCartridgeLibrary } from '#/components/gb-cartridge-library'
 import { ARCADE_MAHJONG_GAME_QUERIES, normalizeArcadeMahjongGameName } from '#/lib/arcade-mahjong-games'
+import { PSP_LIBRARY_GAMES } from '#/lib/psp-library'
+import { SWITCH_LIBRARY_GAMES } from '#/lib/switch-library'
 
 const PAGE_SIZE = 100
 const PLATFORM_MODES = {
@@ -110,6 +112,7 @@ export const Route = createFileRoute('/$locale/platform/$platformId')({
     const canonicalUrl = loaderData?.seoOrigin
       ? `${loaderData.seoOrigin.replace(/\/$/, '')}/${locale}/platform/${params.platformId}`
       : undefined
+    const seoItems = getStaticLibrarySeoItems(loaderData?.modeId)
 
     return {
       links: loaderData?.seoOrigin
@@ -140,6 +143,18 @@ export const Route = createFileRoute('/$locale/platform/$platformId')({
               inLanguage: locale,
               name: copy.title,
               url: canonicalUrl,
+              ...(seoItems.length ? {
+                mainEntity: {
+                  '@type': 'ItemList',
+                  numberOfItems: seoItems.length,
+                  itemListElement: seoItems.map((item, index) => ({
+                    '@type': 'ListItem',
+                    position: index + 1,
+                    name: item.title,
+                    url: `${canonicalUrl}/${encodeURIComponent(item.id)}`,
+                  })),
+                },
+              } : {}),
             }).replace(/</g, '\\u003c'),
           }]
         : undefined,
@@ -147,6 +162,12 @@ export const Route = createFileRoute('/$locale/platform/$platformId')({
   },
   component: PlatformModePage,
 })
+
+function getStaticLibrarySeoItems(modeId: PlatformModeId | undefined) {
+  if (modeId === 'switch') return SWITCH_LIBRARY_GAMES
+  if (modeId === 'psp') return PSP_LIBRARY_GAMES
+  return []
+}
 
 function PlatformModePage() {
   const { games, modeId } = Route.useLoaderData()

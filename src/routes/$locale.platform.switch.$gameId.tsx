@@ -22,9 +22,41 @@ export const Route = createFileRoute('/$locale/platform/switch/$gameId')({
     const description = english
       ? `View ${loaderData.title} for Nintendo Switch, including screenshots, publisher, release date, language and version information.`
       : `查看《${loaderData.title}》Switch游戏资料，包括游戏截图、厂商、发行日期、语言、系统要求与版本信息。`
+    const canonicalUrl = `${SITE_ORIGIN}/${locale}/platform/switch/${encodeURIComponent(params.gameId)}`
+    const coverUrl = new URL(loaderData.cover, SITE_ORIGIN).toString()
     return {
       links: getLocalizedSeoLinks({ locale, origin: SITE_ORIGIN, path: `/platform/switch/${params.gameId}` }),
-      meta: [{ title }, { name: 'description', content: description }, { property: 'og:title', content: title }, { property: 'og:description', content: description }, { property: 'og:type', content: 'article' }, { property: 'og:image', content: loaderData.cover }],
+      meta: [{ title }, { name: 'description', content: description }, { name: 'robots', content: 'index,follow,max-image-preview:large' }, { property: 'og:title', content: title }, { property: 'og:description', content: description }, { property: 'og:type', content: 'website' }, { property: 'og:url', content: canonicalUrl }, { property: 'og:image', content: coverUrl }, { name: 'twitter:card', content: 'summary_large_image' }],
+      scripts: [{
+        type: 'application/ld+json',
+        children: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'VideoGame',
+              '@id': `${canonicalUrl}#game`,
+              name: loaderData.title,
+              alternateName: loaderData.foreignTitle || undefined,
+              description,
+              url: canonicalUrl,
+              image: [coverUrl, ...loaderData.screenshots.map(src => new URL(src, SITE_ORIGIN).toString())],
+              gamePlatform: 'Nintendo Switch',
+              genre: loaderData.genre,
+              publisher: { '@type': 'Organization', name: loaderData.publisher },
+              datePublished: loaderData.releaseDate,
+              inLanguage: locale,
+            },
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: '首页', item: `${SITE_ORIGIN}/${locale}` },
+                { '@type': 'ListItem', position: 2, name: 'Switch游戏库', item: `${SITE_ORIGIN}/${locale}/platform/switch` },
+                { '@type': 'ListItem', position: 3, name: loaderData.title, item: canonicalUrl },
+              ],
+            },
+          ],
+        }).replace(/</g, '\\u003c'),
+      }],
     }
   },
   component: SwitchGameDetailPage,
