@@ -120,7 +120,7 @@ export type GameDetailPageData = {
 
 export type RelatedGamesData = {
   relatedByCategory: Array<PublicGame>
-  relatedByDeveloper: Array<PublicGame>
+  relatedByPlatform: Array<PublicGame>
 }
 
 export type BlogPost = {
@@ -173,7 +173,7 @@ type RandomGamePayload = {
 type RelatedGamesPayload = {
   category?: string
   currentId: string
-  developer?: string
+  platform?: string
 }
 
 type BlogPostSearchPayload = {
@@ -475,44 +475,43 @@ async function fetchRandomPlayableGame(platform: string | undefined) {
 async function fetchRelatedGames({
   category,
   currentId,
-  developer,
+  platform,
 }: {
   category?: string
   currentId: string
-  developer?: string
+  platform?: string
 }) {
   const categoryParams = new URLSearchParams({
     is_gcoin_game: NON_GCOIN_GAME,
-    limit: '8',
+    limit: '12',
     page: '1',
     play_online: '1',
     sort: 'popular',
   })
-  const developerParams = new URLSearchParams({
+  const platformParams = new URLSearchParams({
     is_gcoin_game: NON_GCOIN_GAME,
-    limit: '8',
+    limit: '12',
     page: '1',
     play_online: '1',
     sort: 'popular',
   })
 
   addOptionalParam(categoryParams, 'category', category)
-  addOptionalParam(developerParams, 'query', developer)
+  addOptionalParam(platformParams, 'platform', platform)
 
-  const [categoryResult, developerResult] = await Promise.all([
+  const [categoryResult, platformResult] = await Promise.all([
     category ? fetchGames(categoryParams).catch(() => null) : null,
-    developer ? fetchGames(developerParams).catch(() => null) : null,
+    platform ? fetchGames(platformParams).catch(() => null) : null,
   ])
 
   const relatedByCategory = dedupeGames(categoryResult?.games ?? [])
     .filter((game) => !isSameGame(game, currentId))
-    .slice(0, 6)
-  const relatedByDeveloper = dedupeGames(developerResult?.games ?? [])
+    .slice(0, 10)
+  const relatedByPlatform = dedupeGames(platformResult?.games ?? [])
     .filter((game) => !isSameGame(game, currentId))
-    .filter((game) => game.developer?.trim() === developer?.trim())
-    .slice(0, 6)
+    .slice(0, 10)
 
-  return { relatedByCategory, relatedByDeveloper }
+  return { relatedByCategory, relatedByPlatform }
 }
 
 async function fetchBlogPosts(params: URLSearchParams) {
@@ -741,7 +740,7 @@ export const getRelatedGamePageData = createServerFn({ method: 'GET' })
   .validator((payload: RelatedGamesPayload) => ({
     category: payload.category,
     currentId: payload.currentId,
-    developer: payload.developer,
+    platform: payload.platform,
   }))
   .handler(async ({ data }) => {
     return fetchRelatedGames(data) satisfies Promise<RelatedGamesData>

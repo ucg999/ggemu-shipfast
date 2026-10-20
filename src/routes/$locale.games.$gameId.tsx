@@ -105,15 +105,13 @@ export const Route = createFileRoute('/$locale/games/$gameId')({
         ...localizedGame,
         name: getHomeHeroGameName(localizedGame, locale),
       },
-      relatedGamesPromise: SHOW_EXTENDED_GAME_DETAILS
-        ? getRelatedGamePageData({
-            data: {
-              category: detail.game.categories?.[0],
-              currentId,
-              developer: detail.game.developer,
-            },
-          })
-        : Promise.resolve({ relatedByCategory: [], relatedByDeveloper: [] }),
+      relatedGamesPromise: getRelatedGamePageData({
+        data: {
+          category: detail.game.categories?.[0],
+          currentId,
+          platform: detail.game.platform,
+        },
+      }),
     }
   },
   head: ({ loaderData, params }) => {
@@ -177,26 +175,6 @@ export const Route = createFileRoute('/$locale/games/$gameId')({
   },
   component: LocalizedGameDetailPage,
 })
-
-function getRelatedGames(
-  relatedByCategory: Array<PublicGame>,
-  relatedByDeveloper: Array<PublicGame>,
-) {
-  const seen = new Set<string>()
-
-  return [...relatedByCategory, ...relatedByDeveloper]
-    .filter((game) => {
-      const id = getGameRouteId(game)
-
-      if (!id || seen.has(id)) {
-        return false
-      }
-
-      seen.add(id)
-      return true
-    })
-    .slice(0, 6)
-}
 
 function getGameRouteId(game: PublicGame) {
   return game.url_slug?.trim() || game._id?.trim() || ''
@@ -539,7 +517,6 @@ function LocalizedGameDetailPage() {
           />
           {isKof97Plus ? <Kof97PlusIntroduction /> : null}
           {isKof97 ? <Kof97Introduction /> : null}
-          {isKof97 ? <GameComments gameId={gameId} /> : null}
           {isViceCity ? <ViceCityIntroduction /> : null}
           {isContraNes ? <ContraNesIntroduction /> : null}
           {isSuperGrandSlam2 ? <SuperGrandSlam2Introduction /> : null}
@@ -552,17 +529,17 @@ function LocalizedGameDetailPage() {
               {chineseGuide ? <ChineseGameGuideSection guide={chineseGuide} /> : null}
               <ContentPanel title={t.howToPlay} value={game.how_to_play} />
               <FaqSection items={faqItems} title={t.faq} />
-              <Await promise={relatedGamesPromise} fallback={<RelatedGamesFallback title={t.relatedGames} />}>
-                {(related) => (
-                  <RelatedGameSection
-                    games={getRelatedGames(related.relatedByCategory, related.relatedByDeveloper)}
-                    lang={lang}
-                    title={t.relatedGames}
-                  />
-                )}
-              </Await>
             </section>
           ) : null}
+          <GameComments gameId={gameId} />
+          <Await promise={relatedGamesPromise} fallback={<RelatedGamesFallback title="相关游戏" />}>
+            {(related) => (
+              <div className="grid gap-8">
+                <RelatedGameSection games={related.relatedByPlatform} lang={lang} moreHref={`/${lang}/platform/${encodeURIComponent(game.platform || '')}`} title={`${getPlatformLabel(game.platform || '同平台', lang)}相关游戏`} />
+                <RelatedGameSection games={related.relatedByCategory} lang={lang} moreHref={`/${lang}/search?q=${encodeURIComponent(categories[0] || '')}`} title={`${categories[0] || '同类型'}相关游戏`} />
+              </div>
+            )}
+          </Await>
         </div>
       </div>
     </SiteLayout>
@@ -1422,10 +1399,12 @@ function FaqSection({
 function RelatedGameSection({
   games,
   lang,
+  moreHref,
   title,
 }: {
   games: Array<PublicGame>
   lang: Locale
+  moreHref: string
   title: string
 }) {
   if (games.length === 0) {
@@ -1434,8 +1413,11 @@ function RelatedGameSection({
 
   return (
     <section>
-      <h2 className="text-xl font-semibold">{title}</h2>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-xl font-semibold">{title}</h2>
+        <a className="btn btn-ghost btn-sm" href={moreHref}>查看更多 <i className="ri-arrow-right-line" /></a>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {games.map((game) => (
           <RelatedGameCard game={game} key={game.url_slug ?? game._id} lang={lang} />
         ))}
