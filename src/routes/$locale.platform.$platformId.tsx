@@ -125,6 +125,7 @@ export const Route = createFileRoute('/$locale/platform/$platformId')({
       meta: [
         { title: copy.seoTitle },
         { name: 'description', content: copy.description },
+        ...(loaderData?.modeId === 'mahjong' ? [{ name: 'keywords', content: getMahjongKeywords(locale) }] : []),
         { property: 'og:title', content: copy.seoTitle },
         { property: 'og:description', content: copy.description },
         { property: 'og:type', content: 'website' },
@@ -227,7 +228,12 @@ function getMahjongModeCopy(locale: Locale) {
   if (locale === 'zh-TW') return { description: '匯集明星三缺一、全民鬥地主、幸運滿貫、電子基盤等經典街機麻將與休閒棋牌作品。遊客每天累計可試玩30分鐘，登入玩家帳號後不限時間。', seoTitle: '街機麻將遊戲｜懷舊遊戲廳', subtitle: '遊客每天累計可試玩30分鐘；登入後不限時間免費遊玩。', title: '街機麻將' }
   if (locale === 'en') return { description: 'A hand-picked collection of classic arcade mahjong and casual tabletop games. Guests can play for 30 cumulative minutes per day; signed-in players have unlimited access.', seoTitle: 'Arcade Mahjong | Retro Game Hall', subtitle: 'Guests receive 30 cumulative minutes per day. Sign in for unlimited play.', title: 'Arcade Mahjong' }
   if (locale === 'ja') return { description: '定番のアーケード麻雀やテーブルゲームを集めました。ゲストは1日累計30分試遊でき、ログイン後は時間制限なく遊べます。', seoTitle: 'アーケード麻雀｜懐かしゲームセンター', subtitle: 'ゲストは1日累計30分試遊可能。ログイン後は時間制限なし。', title: 'アーケード麻雀' }
-  return { description: '汇集明星三缺一、全民斗地主、幸运满贯、电子基盘等经典街机麻将与休闲棋牌作品。游客每天累计可试玩30分钟，登录玩家账号后不限时间。', seoTitle: '街机麻将游戏｜怀旧游戏厅', subtitle: '游客每天累计可试玩30分钟；登录后不限时间免费游玩。', title: '街机麻将' }
+  return { description: `街机麻将在线玩，免下载重温经典麻将馆与棋牌室的热闹手感！精选${ARCADE_MAHJONG_GAME_QUERIES.join('、')}等热门作品，涵盖台湾16张麻将、日式立直麻将、斗地主、扑克与经典街机棋牌。游客每天累计可试玩30分钟，登录玩家账号后不限时间，随时开局挑战胡牌、连庄与高分纪录。`, seoTitle: '街机麻将在线玩｜经典麻将、斗地主与棋牌游戏大全｜怀旧游戏厅', subtitle: '经典街机麻将、斗地主与棋牌游戏即点即玩；游客每天累计可试玩30分钟，登录后不限时间。', title: '街机麻将' }
+}
+
+function getMahjongKeywords(locale: Locale) {
+  if (locale !== 'zh-CN') return 'arcade mahjong, online mahjong, classic mahjong games'
+  return ['街机麻将', '麻将在线玩', '免费麻将游戏', '经典麻将游戏', '台湾麻将', '日式麻将', '立直麻将', '斗地主在线玩', '棋牌游戏', '怀旧街机', ...ARCADE_MAHJONG_GAME_QUERIES].join(', ')
 }
 
 function getSwitchLibraryCopy(locale: Locale) {
