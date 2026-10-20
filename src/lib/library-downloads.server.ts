@@ -32,6 +32,11 @@ const DOWNLOAD_URLS: Record<DownloadPlatform, Record<string, string>> = {
     'digimon-story-time-stranger': 'https://pan.baidu.com/s/1k2wQ7hnXMJm3796iGte7-g?pwd=4fib',
     'new-sword-heroes-trilogy': 'https://pan.baidu.com/s/1jLbH6ByHPQqJkSszJXN1Hw?pwd=dy1s',
     'ace-angler-fishing-spirits': 'https://pan.baidu.com/s/1DlQ_AMSRYJ2b0GJhQxuX0w?pwd=87d3',
+    'gta-chinatown-wars': 'https://pan.baidu.com/s/1tdQlPYbPxDL3BSPbQrh_1g?pwd=6i94',
+    'diablo-2-resurrected': 'https://pan.baidu.com/s/10z5mMQhg6XTSHa91L_L3yA?pwd=1f5p',
+    'monster-hunter-rise-sunbreak': 'https://pan.baidu.com/s/1ArKB_8jj7lFVf3KiSFC-kA?pwd=x5di',
+    'mario-kart-8-deluxe': 'https://pan.baidu.com/s/1wjlh7-7GzmU48xjy32OrOA?pwd=25jy',
+    'zelda-breath-of-the-wild': 'https://pan.baidu.com/s/1LWzuPms9Dy_t3ImvQaYzBw?pwd=z33i',
   },
 }
 
