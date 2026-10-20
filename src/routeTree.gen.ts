@@ -49,6 +49,7 @@ import { Route as ApiCoinChallengeCommunityRouteImport } from './routes/api.coin
 import { Route as ApiCoinRankingsRouteImport } from './routes/api.coin-rankings'
 import { Route as ApiFcCartridgesRouteImport } from './routes/api.fc-cartridges'
 import { Route as ApiFcSaveRouteImport } from './routes/api.fc-save'
+import { Route as ApiGameCommentsRouteImport } from './routes/api.game-comments'
 import { Route as ApiGameWishesRouteImport } from './routes/api.game-wishes'
 import { Route as ApiGbCartridgesRouteImport } from './routes/api.gb-cartridges'
 import { Route as ApiHomeShareRewardRouteImport } from './routes/api.home-share-reward'
@@ -276,6 +277,11 @@ const ApiFcSaveRoute = ApiFcSaveRouteImport.update({
   path: '/api/fc-save',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGameCommentsRoute = ApiGameCommentsRouteImport.update({
+  id: '/api/game-comments',
+  path: '/api/game-comments',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiGameWishesRoute = ApiGameWishesRouteImport.update({
   id: '/api/game-wishes',
   path: '/api/game-wishes',
@@ -446,6 +452,7 @@ export interface FileRoutesByFullPath {
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
   '/api/fc-save': typeof ApiFcSaveRoute
+  '/api/game-comments': typeof ApiGameCommentsRoute
   '/api/game-wishes': typeof ApiGameWishesRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/home-share-reward': typeof ApiHomeShareRewardRoute
@@ -512,6 +519,7 @@ export interface FileRoutesByTo {
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
   '/api/fc-save': typeof ApiFcSaveRoute
+  '/api/game-comments': typeof ApiGameCommentsRoute
   '/api/game-wishes': typeof ApiGameWishesRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/home-share-reward': typeof ApiHomeShareRewardRoute
@@ -580,6 +588,7 @@ export interface FileRoutesById {
   '/api/coin-rankings': typeof ApiCoinRankingsRoute
   '/api/fc-cartridges': typeof ApiFcCartridgesRoute
   '/api/fc-save': typeof ApiFcSaveRoute
+  '/api/game-comments': typeof ApiGameCommentsRoute
   '/api/game-wishes': typeof ApiGameWishesRoute
   '/api/gb-cartridges': typeof ApiGbCartridgesRoute
   '/api/home-share-reward': typeof ApiHomeShareRewardRoute
@@ -649,6 +658,7 @@ export interface FileRouteTypes {
     | '/api/coin-rankings'
     | '/api/fc-cartridges'
     | '/api/fc-save'
+    | '/api/game-comments'
     | '/api/game-wishes'
     | '/api/gb-cartridges'
     | '/api/home-share-reward'
@@ -715,6 +725,7 @@ export interface FileRouteTypes {
     | '/api/coin-rankings'
     | '/api/fc-cartridges'
     | '/api/fc-save'
+    | '/api/game-comments'
     | '/api/game-wishes'
     | '/api/gb-cartridges'
     | '/api/home-share-reward'
@@ -782,6 +793,7 @@ export interface FileRouteTypes {
     | '/api/coin-rankings'
     | '/api/fc-cartridges'
     | '/api/fc-save'
+    | '/api/game-comments'
     | '/api/game-wishes'
     | '/api/gb-cartridges'
     | '/api/home-share-reward'
@@ -829,6 +841,7 @@ export interface RootRouteChildren {
   ApiCoinRankingsRoute: typeof ApiCoinRankingsRoute
   ApiFcCartridgesRoute: typeof ApiFcCartridgesRoute
   ApiFcSaveRoute: typeof ApiFcSaveRoute
+  ApiGameCommentsRoute: typeof ApiGameCommentsRoute
   ApiGameWishesRoute: typeof ApiGameWishesRoute
   ApiGbCartridgesRoute: typeof ApiGbCartridgesRoute
   ApiHomeShareRewardRoute: typeof ApiHomeShareRewardRoute
@@ -1125,6 +1138,13 @@ declare module '@tanstack/react-router' {
       path: '/api/fc-save'
       fullPath: '/api/fc-save'
       preLoaderRoute: typeof ApiFcSaveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/game-comments': {
+      id: '/api/game-comments'
+      path: '/api/game-comments'
+      fullPath: '/api/game-comments'
+      preLoaderRoute: typeof ApiGameCommentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/game-wishes': {
@@ -1428,6 +1448,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCoinRankingsRoute: ApiCoinRankingsRoute,
   ApiFcCartridgesRoute: ApiFcCartridgesRoute,
   ApiFcSaveRoute: ApiFcSaveRoute,
+  ApiGameCommentsRoute: ApiGameCommentsRoute,
   ApiGameWishesRoute: ApiGameWishesRoute,
   ApiGbCartridgesRoute: ApiGbCartridgesRoute,
   ApiHomeShareRewardRoute: ApiHomeShareRewardRoute,

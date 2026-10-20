@@ -50,7 +50,6 @@ export function DefaultHomeTemplate(
     [visibleHomeGames, visibleLatestGames, visibleMostPlayedGames],
   )
   const [showMobileRecent, setShowMobileRecent] = useState(false)
-  const [mobileFriendsOpen, setMobileFriendsOpen] = useState(false)
   const [rankingRows, setRankingRows] = useState<{ weekly: PublicGame[]; rising: PublicGame[] }>({ weekly: [], rising: [] })
   const loadRanking = useServerFn(searchGames)
   const [rankingRetry, setRankingRetry] = useState(0)
@@ -372,7 +371,7 @@ export function DefaultHomeTemplate(
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                             decoding="async"
                             fetchPriority="high"
-                            src={getCachedImageUrl(game.game_cover, 720)}
+                            src={getCachedImageUrl(game.game_cover || '', 720)}
                           />
                           <GameCardPreviewVideo src={game.game_video} />
                         </>
@@ -380,7 +379,7 @@ export function DefaultHomeTemplate(
                     </Link>
                     <div className="flex min-w-0 flex-col items-center gap-1 px-1 pt-3 text-center">
                       <strong className="w-full truncate text-sm font-semibold text-black" title={displayName}>{displayName}</strong>
-                      <span className="text-xs text-black/55">{getPlatformLabel(game.platform, lang)}</span>
+                      <span className="text-xs text-black/55">{getPlatformLabel(game.platform || '', lang)}</span>
                       {index === 1 ? (
                         <Link
                           className="mt-5 inline-flex items-center gap-3 rounded-full bg-black px-6 py-3 text-base font-normal text-white transition hover:bg-black/80 [&_.live-watch-eye]:h-[23px] [&_.live-watch-eye]:w-[34px] [&_.live-watch-pupil]:!bg-black"
@@ -1072,6 +1071,7 @@ function orderHomePlatforms<T extends { name: string }>(platforms: Array<T>) {
 
 export function MobileQuickLinks({ lang }: { lang: HomeTemplateProps['lang'] }) {
   const t = getI18n(lang).home
+  const [mobileFriendsOpen, setMobileFriendsOpen] = useState(false)
   const paidLink = (resourceId: string, cost = 10) => (event: MouseEvent<HTMLAnchorElement>) => {
     if (!confirmResourceDownload(lang, cost)) {
       event.preventDefault()

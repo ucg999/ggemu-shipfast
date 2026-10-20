@@ -8,7 +8,7 @@ import type { CSSProperties } from 'react'
 
 import { HomeCoinBag, useGlobalCoinBalance } from '#/components/home/coin-rewards'
 import { CoinMachineWelcome } from '#/components/coin-machine-welcome'
-import { CoinChallengeCommunity, type CoinChallengeRoomPlayer, type RankableCoinWin } from '#/components/coin-challenge-community'
+import { CoinChallengeCommunity, type RankableCoinWin } from '#/components/coin-challenge-community'
 import { SiteLayout } from '#/components/site-layout'
 import type { Locale } from '#/lib/ggemu'
 import { addCoinBalance as persistedAddCoinBalance, getCoinRank, readCoinBalance as persistedReadCoinBalance, spendCoinBalance as persistedSpendCoinBalance } from '#/lib/coin-wallet'
@@ -209,8 +209,8 @@ function CoinChallengePage() {
   const [activeLight, setActiveLight] = useState(0)
   const [gameMode, setGameMode] = useState<'normal' | 'gold' | 'ghost'>('normal')
   const { member } = useRequiredMemberAccess(false)
-  const [joinedRoom, setJoinedRoom] = useState(false)
-  const [roomPlayers, setRoomPlayers] = useState<Array<CoinChallengeRoomPlayer>>([])
+  const [joinedRoom] = useState(false)
+  const [roomPlayers] = useState<Array<{ memberId: string; seat?: number | null; bets: number[] }>>([])
   const [sharedJackpot, setSharedJackpot] = useState(0)
   const [sharedCompetitionRound, setSharedCompetitionRound] = useState(0)
   const [sharedWinnerSeat, setSharedWinnerSeat] = useState<number | null>(null)
@@ -1079,24 +1079,6 @@ function CoinChallengePage() {
       ensuringSharedRoundRef.current = false
     }
     if (!joinedRoomRef.current) handleStart(true)
-  }
-
-  function handleRoomChange(joined: boolean) {
-    if (joined === joinedRoomRef.current) return
-    if (joined) {
-      updateMachine((current) => ({
-        ...current,
-        bets: Array.from({ length: CHALLENGE_OPTION_COUNT }, () => 0),
-        credits: Math.min(MAX_MACHINE_CREDITS, current.credits + current.bets.reduce((sum, value) => sum + value, 0)),
-      }))
-      setShouldResetAllBets(false)
-    } else {
-      if (sharedStartTimerRef.current !== null) window.clearTimeout(sharedStartTimerRef.current)
-      sharedStartTimerRef.current = null
-      pendingSharedLaunchRef.current = false
-    }
-    joinedRoomRef.current = joined
-    setJoinedRoom(joined)
   }
 
   function scheduleSharedRound(round: SharedCoinRound) {

@@ -13,3 +13,6 @@ __unconfig*
 todos.json
 dev-server.*.log
 .dev-server.*.log
+build-*.log
+*-typecheck.log
+preview.*.log
