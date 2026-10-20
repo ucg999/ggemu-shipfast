@@ -21,8 +21,14 @@ export const Route = createFileRoute('/api/game-wishes')({
     handlers: {
       GET: async ({ request }) => {
         try {
+          const requestUrl = new URL(request.url)
+          if (requestUrl.searchParams.get('view') === 'count') {
+            await ensureWishTables()
+            const result = await memberDb().prepare('SELECT COUNT(*) AS count FROM game_wishes').first<{ count: number | string }>()
+            return Response.json({ count: Number(result?.count) || 0 }, { headers: { 'Cache-Control': 'public, max-age=60, s-maxage=60' } })
+          }
           const member = await getMemberFromRequest(request)
-          const guestKey = normalizeGuestKey(new URL(request.url).searchParams.get('guestKey'))
+          const guestKey = normalizeGuestKey(requestUrl.searchParams.get('guestKey'))
           const actorKey = member ? `member:${member.id}` : guestKey || 'anonymous'
           if (member?.id === 'local-owner-00001') {
             return Response.json({ wishes: getLocalWishStore().map(wish => ({ ...wish, supported: wish.voters.includes(actorKey), supportCount: wish.voters.length })), isOwner: true }, { headers: { 'Cache-Control': 'private, no-store' } })

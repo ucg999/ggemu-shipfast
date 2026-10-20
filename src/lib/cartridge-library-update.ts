@@ -5,20 +5,12 @@ export type CartridgeLibraryId = 'fc-cartridges' | 'gb-cartridges' | 'psp' | 'sw
 const NEW_DURATION_MS = 24 * 60 * 60 * 1000
 
 export function isCartridgeLibraryNew(libraryId: CartridgeLibraryId, now = Date.now()) {
-  const updateTime = getLatestUpdateTime(libraryId)
-  return updateTime > 0 && now >= updateTime && now - updateTime < NEW_DURATION_MS
-}
-
-function getLatestUpdateTime(libraryId: CartridgeLibraryId) {
-  const updates = libraryUpdates as Record<string, { updatedAt?: string | null }>
-  const exactKey = libraryId === 'fc-cartridges' || libraryId === 'gb-cartridges'
-    ? `${libraryId}/__library__`
-    : null
-
-  if (exactKey) return Date.parse(updates[exactKey]?.updatedAt ?? '') || 0
-
-  const prefix = `${libraryId}/`
-  return Math.max(0, ...Object.entries(updates)
-    .filter(([key]) => key.startsWith(prefix))
-    .map(([, value]) => Date.parse(value.updatedAt ?? '') || 0))
+  const updates = libraryUpdates as Record<string, {
+    changedAt?: string | null
+    addedAt?: string | null
+    updatedAt?: string | null
+  }>
+  const marker = updates[`${libraryId}/__library__`]
+  const changedTime = Date.parse(marker?.changedAt ?? marker?.addedAt ?? marker?.updatedAt ?? '') || 0
+  return changedTime > 0 && now >= changedTime && now - changedTime < NEW_DURATION_MS
 }

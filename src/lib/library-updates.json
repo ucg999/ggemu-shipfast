@@ -59,6 +59,31 @@
     "fingerprint": "ea6d70996b7938ca5479cc20650089ecd7bb1623b0d918ff4d37685d303b55e4",
     "updatedAt": "2026-10-19T05:01:48.830Z"
   },
+  "switch/gta-chinatown-wars": {
+    "fingerprint": "a9ac77cbf8411493fd120e75330c91377e89753f8b75bd2c271a8468b016cf45",
+    "updatedAt": "2026-10-20T00:00:00+08:00"
+  },
+  "switch/diablo-2-resurrected": {
+    "fingerprint": "6f0a2227cb6fdb12f6abe3db5e3b0fdbc67b4c384ff76fb4e5a98ddfd2d583dc",
+    "updatedAt": "2026-10-20T00:00:00+08:00"
+  },
+  "switch/monster-hunter-rise-sunbreak": {
+    "fingerprint": "bc520ccfaa74ad13197ba52a117f804da7f687ffcd241321a3e62ce0efe4a1bf",
+    "updatedAt": "2026-10-20T00:00:00+08:00"
+  },
+  "switch/mario-kart-8-deluxe": {
+    "fingerprint": "a1d3dd35c6b2d10affd594efcb57904783fbac06473927273a9b4afd413dbe4a",
+    "updatedAt": "2026-10-20T00:00:00+08:00"
+  },
+  "switch/zelda-breath-of-the-wild": {
+    "fingerprint": "cee6722f04c6c565f364fce8639a04531a2233a9df161aeb53c17228196b3ecf",
+    "updatedAt": "2026-10-20T00:00:00+08:00"
+  },
+  "switch/__library__": {
+    "count": 20,
+    "fingerprint": "b1cf31e9cc089920a73da9df0dc56444a0075493262d3813a9ab0f3c211a55de",
+    "changedAt": "2026-10-19T16:00:00.000Z"
+  },
   "psp/tales-of-phantasia-narikiri-dungeon-x": {
     "fingerprint": "23775489ac27243c6b4e09c1f0f7f2c3f73b76bfae95e58126db115c783518ae",
     "updatedAt": "2026-10-19T05:01:48.889Z"
@@ -115,12 +140,19 @@
     "fingerprint": "d82be49a69b54ca61e8e9feaac7565b096ec71dc809d626c22c22a06cd37d289",
     "updatedAt": "2026-10-19T05:01:48.936Z"
   },
+  "psp/__library__": {
+    "count": 14,
+    "fingerprint": "b4b1e3c468bbb1a30d93c5fc8b5d5d1d53150e7eead94b816447fddf66efb144",
+    "changedAt": "2026-10-11T12:00:08.000Z"
+  },
   "fc-cartridges/__library__": {
+    "count": 23,
     "fingerprint": "5a8826714fb8e37816504b357a3dfd9cfb5d7cebd04b3ea1dccd974b6fcbf45e",
-    "updatedAt": null
+    "changedAt": null
   },
   "gb-cartridges/__library__": {
+    "count": 5,
     "fingerprint": "6281b63bb3071c5637394c355bbfd4cfa26734876bced3260938399d55f6a4eb",
-    "updatedAt": null
+    "changedAt": null
   }
 }

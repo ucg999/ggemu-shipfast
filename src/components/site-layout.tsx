@@ -14,6 +14,7 @@ import { confirmResourceDownload, unlockPaidResource } from '#/lib/paid-resource
 import { MemberAccountButton } from '#/components/member-account'
 import { getMemberSession, useMemberSession } from '#/lib/member-client'
 import { isCartridgeLibraryNew } from '#/lib/cartridge-library-update'
+import { WishlistCountBadge } from '#/components/wishlist-count-badge'
 
 const SITE_VISIT_COIN_SESSION_KEY = 'game-adventure-site-visit-coin-awarded'
 const DESKTOP_SIDEBAR_STATE_KEY = 'retro-games-desktop-sidebar-state'
@@ -790,7 +791,7 @@ export function SiteLayout({
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-violet-100 text-violet-700 group-hover:bg-violet-200">
                       <i className="ri-magic-line text-base" />
                     </span>
-                    <span className="sidebar-label min-w-0 flex-1">{locale === 'en' ? 'Wish List' : locale === 'zh-TW' ? '願望單' : '愿望单'}</span>
+                    <span className="sidebar-label min-w-0 flex-1">{locale === 'en' ? 'Wish List' : locale === 'zh-TW' ? '願望單' : '愿望单'}<WishlistCountBadge /></span>
                   </Link>
                 </li>
                 <li>
@@ -1198,7 +1199,7 @@ function DesktopUnifiedHeaderNavigation({
       <Link className={`${linkClass} ${isCartridgeLibraryNew('fc-cartridges') ? 'library-update-highlight font-semibold' : ''}`} params={{ locale, platformId: 'fc-cartridges' }} to="/$locale/platform/$platformId">{locale === 'en' ? 'FC Cartridges' : locale === 'zh-TW' ? 'FC卡帶收藏' : 'FC卡带收藏'}</Link>
       <Link className={`${linkClass} text-amber-700`} params={{ locale }} to="/$locale/rankings/coins"><i className="ri-trophy-line mr-1" />{locale === 'en' ? 'Rankings' : '排行榜'}</Link>
       <Link className={`${linkClass} text-[#7a2f23]`} params={{ locale }} to="/$locale/wanted"><i className="ri-file-warning-line mr-1" />{locale === 'en' ? 'Wanted' : '悬赏令'}</Link>
-      <Link className={`${linkClass} text-violet-700`} params={{ locale }} to="/$locale/wishlist"><i className="ri-magic-line mr-1" />{locale === 'en' ? 'Wish List' : locale === 'zh-TW' ? '願望單' : '愿望单'}</Link>
+      <Link className={`${linkClass} text-violet-700`} params={{ locale }} to="/$locale/wishlist"><i className="ri-magic-line mr-1" />{locale === 'en' ? 'Wish List' : locale === 'zh-TW' ? '願望單' : '愿望单'}<WishlistCountBadge /></Link>
       </div>
     </nav>
   )
