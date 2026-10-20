@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useMemberSession } from '#/lib/member-client'
 
-type GameComment = { id: string; author: string; content: string; createdAt: string }
+type GameComment = { id: string; author: string; content: string; createdAt: string; canDelete?: boolean }
 
 export function GameComments({ gameId }: { gameId: string }) {
   const member = useMemberSession()
@@ -14,8 +14,9 @@ export function GameComments({ gameId }: { gameId: string }) {
 
   useEffect(() => {
     let cancelled = false
+    const guestKey = getGuestCommentKey()
     setLoading(true)
-    fetch(`/api/game-comments?gameId=${encodeURIComponent(gameId)}`)
+    fetch(`/api/game-comments?gameId=${encodeURIComponent(gameId)}&guestKey=${encodeURIComponent(guestKey)}`, { credentials: 'same-origin' })
       .then(async response => {
         if (!response.ok) throw new Error('load_failed')
         return response.json() as Promise<{ comments: Array<GameComment> }>
@@ -38,14 +39,14 @@ export function GameComments({ gameId }: { gameId: string }) {
     try {
       const response = await fetch('/api/game-comments', {
         method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameId, content: normalized, guestName: '游客' }),
+        body: JSON.stringify({ gameId, content: normalized, guestName: '游客', guestKey: getGuestCommentKey() }),
       })
       const data = await response.json() as { comment?: GameComment; error?: string }
       if (!response.ok || !data.comment) throw new Error(data.error || 'submit_failed')
       setComments(previous => [data.comment!, ...previous].slice(0, 50))
       setContent('')
     } catch {
-      const localComment = { id: `${Date.now()}`, author: member?.displayName || '游客', content: normalized, createdAt: new Date().toISOString() }
+      const localComment = { id: `${Date.now()}-local-preview`, author: member?.displayName || '游客', content: normalized, createdAt: new Date().toISOString(), canDelete: true }
       setComments(previous => {
         const next = [localComment, ...previous].slice(0, 50)
         window.localStorage.setItem(localKey, JSON.stringify(next))
@@ -55,6 +56,30 @@ export function GameComments({ gameId }: { gameId: string }) {
       setMessage('本地预览评论已保存；部署后评论将写入 Supabase。')
     } finally {
       setSending(false)
+    }
+  }
+
+  async function deleteComment(comment: GameComment) {
+    if (!comment.canDelete || !window.confirm('确定删除这条评论吗？')) return
+    setMessage('')
+    if (comment.id.endsWith('-local-preview')) {
+      setComments(previous => {
+        const next = previous.filter(item => item.id !== comment.id)
+        window.localStorage.setItem(localKey, JSON.stringify(next))
+        return next
+      })
+      return
+    }
+    try {
+      const response = await fetch('/api/game-comments', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', gameId, commentId: comment.id, guestKey: getGuestCommentKey() }),
+      })
+      const data = await response.json() as { error?: string }
+      if (!response.ok) throw new Error(data.error || '删除失败')
+      setComments(previous => previous.filter(item => item.id !== comment.id))
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '删除失败，请稍后重试。')
     }
   }
 
@@ -71,11 +96,26 @@ export function GameComments({ gameId }: { gameId: string }) {
       <div className="mt-5 space-y-3">
         {loading ? <p className="py-5 text-center text-sm text-base-content/50">正在加载评论…</p> : comments.length ? comments.map(comment => (
           <article className="rounded-xl bg-base-200 px-4 py-3" key={comment.id}>
-            <div className="flex items-center justify-between gap-3 text-sm"><strong>{comment.author}</strong><time className="text-xs text-base-content/50">{new Date(comment.createdAt).toLocaleString('zh-CN')}</time></div>
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <strong>{comment.author}</strong>
+              <div className="flex items-center gap-3">
+                <time className="text-xs text-base-content/50">{new Date(comment.createdAt).toLocaleString('zh-CN')}</time>
+                {comment.canDelete ? <button className="btn btn-ghost btn-xs text-error" onClick={() => void deleteComment(comment)} type="button">删除</button> : null}
+              </div>
+            </div>
             <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-base-content/80">{comment.content}</p>
           </article>
         )) : <p className="py-5 text-center text-sm text-base-content/50">还没有评论，来说第一句吧。</p>}
       </div>
     </section>
   )
+}
+
+function getGuestCommentKey() {
+  const storageKey = 'ucg999-game-comment-guest-key'
+  const existing = window.localStorage.getItem(storageKey)
+  if (existing && /^guest:[a-zA-Z0-9_-]{12,80}$/.test(existing)) return existing
+  const created = `guest:${crypto.randomUUID().replaceAll('-', '')}`
+  window.localStorage.setItem(storageKey, created)
+  return created
 }
