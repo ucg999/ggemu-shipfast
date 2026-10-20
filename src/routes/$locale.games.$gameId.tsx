@@ -18,6 +18,7 @@ import { SiteLayout } from '#/components/site-layout'
 import { GameFavoriteButton } from '#/components/game-favorite-button'
 import { Kof97PlusIntroduction } from '#/components/kof97-plus-introduction'
 import { Kof97Introduction } from '#/components/kof97-introduction'
+import { GameComments } from '#/components/game-comments'
 import { ViceCityIntroduction } from '#/components/vice-city-introduction'
 import { ContraNesIntroduction } from '#/components/contra-nes-introduction'
 import { SuperGrandSlam2Introduction } from '#/components/super-grand-slam-2-introduction'
@@ -358,7 +359,7 @@ function LocalizedGameDetailPage() {
       : isContraNes
         ? '在线玩 1988 年北美 NES 版《魂斗罗》。它的英文标题画面带有 Nintendo of America 授权字样，可与日版 Famicom 区分。本页整理原版 NES 操作、30 条命输入、双人选择方式和实用关卡攻略。'
       : isKof97
-        ? '《拳皇97》是 SNK 于 1997 年推出的三人组队街机格斗游戏，也是大蛇篇的最终章。本页运行街机版，并保留 ADVANCED 与 EXTRA 两套模式；Game Rerun 已确认桌面浏览器能进入游戏演示画面并显示完整的玩家 1 键位。'
+        ? '《拳皇97》在线玩-经典的街机格斗游戏。是 SNK 于 1997 年发布的经典格斗游戏，《拳皇》系列的巅峰之作。本作引入了 Advance 和 Extra 两种操作模式，剧情围绕“大蛇篇”的终极对决展开，是全球街机厅普及率最高、影响力最深的格斗游戏之一。'
       : isViceCity
         ? '本页提供 2002 年《Grand Theft Auto: Vice City》的罪恶都市网页版入口。桌面端实测已完成首次资源下载，并从浏览器启动器进入英文主菜单；启动器中可见 Play Game、Save Manager、Mod Manager 和 FPS 限制设置。'
       : isKof97Plus
@@ -538,6 +539,7 @@ function LocalizedGameDetailPage() {
           />
           {isKof97Plus ? <Kof97PlusIntroduction /> : null}
           {isKof97 ? <Kof97Introduction /> : null}
+          {isKof97 ? <GameComments gameId={gameId} /> : null}
           {isViceCity ? <ViceCityIntroduction /> : null}
           {isContraNes ? <ContraNesIntroduction /> : null}
           {isSuperGrandSlam2 ? <SuperGrandSlam2Introduction /> : null}
