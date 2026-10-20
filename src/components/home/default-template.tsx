@@ -348,11 +348,6 @@ export function DefaultHomeTemplate(
                     ? `現在、${props.pagination.total.toLocaleString()}本のゲームをオンラインで遊べます。`
                     : `本站现在拥有 ${props.pagination.total.toLocaleString()} 款游戏可在线游玩`}
             </p>
-            {lang === 'zh-CN' ? (
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-black/55">
-                无需登录，在你的浏览器中免费在线畅玩海量经典街机游戏、红白机、超任、GBA、PSP、N64——从《拳皇》《恐龙快打》到《合金弹头》《街头霸王》，上千款街机神作一网打尽。超多玩家陪你随时玩，带你一秒重温街机厅的黄金时代！
-              </p>
-            ) : null}
             <div className="desktop-daily-video-grid">
               {desktopHeroGames.slice(0, 3).map((game, index) => {
                 const gameId = game.url_slug || game._id || ''

@@ -448,7 +448,12 @@ export function SiteLayout({
                   >
                     {t.siteName}
                   </span>
-                  <i aria-hidden="true" className="mb-0.5 ml-1 hidden h-1.5 w-1.5 shrink-0 self-end rounded-full bg-current lg:block" />
+                  <i
+                    aria-label={locale === 'zh-CN' ? '网站介绍' : undefined}
+                    className="mb-0.5 ml-1 hidden h-1.5 w-1.5 shrink-0 self-end rounded-full bg-current lg:block"
+                    role={locale === 'zh-CN' ? 'img' : undefined}
+                    title={locale === 'zh-CN' ? '无需登录，在你的浏览器中免费在线畅玩海量经典街机游戏、红白机、超任、GBA、PSP、N64——从《拳皇》《恐龙快打》到《合金弹头》《街头霸王》，上千款街机神作一网打尽。超多玩家陪你随时玩，带你一秒重温街机厅的黄金时代！' : undefined}
+                  />
                 </span>
                 <span className="block w-full truncate text-xs text-white/75 lg:hidden">
                   {t.siteSlogan}
