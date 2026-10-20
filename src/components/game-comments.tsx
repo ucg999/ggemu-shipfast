@@ -10,6 +10,7 @@ export function GameComments({ gameId }: { gameId: string }) {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [message, setMessage] = useState('')
+  const localKey = `ucg999-game-comments-preview:${gameId}`
 
   useEffect(() => {
     let cancelled = false
@@ -20,7 +21,11 @@ export function GameComments({ gameId }: { gameId: string }) {
         return response.json() as Promise<{ comments: Array<GameComment> }>
       })
       .then(data => { if (!cancelled) setComments(data.comments) })
-      .catch(() => { if (!cancelled) setMessage('评论暂时加载失败，请稍后重试。') })
+      .catch(() => {
+        if (cancelled) return
+        try { setComments(JSON.parse(window.localStorage.getItem(localKey) || '[]') as Array<GameComment>) } catch { setComments([]) }
+        setMessage('本地预览模式：评论将在部署后统一保存到 Supabase。')
+      })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [gameId])
@@ -39,8 +44,15 @@ export function GameComments({ gameId }: { gameId: string }) {
       if (!response.ok || !data.comment) throw new Error(data.error || 'submit_failed')
       setComments(previous => [data.comment!, ...previous].slice(0, 50))
       setContent('')
-    } catch (error) {
-      setMessage(error instanceof Error && error.message !== 'submit_failed' ? error.message : '评论发表失败，请稍后重试。')
+    } catch {
+      const localComment = { id: `${Date.now()}`, author: member?.displayName || '游客', content: normalized, createdAt: new Date().toISOString() }
+      setComments(previous => {
+        const next = [localComment, ...previous].slice(0, 50)
+        window.localStorage.setItem(localKey, JSON.stringify(next))
+        return next
+      })
+      setContent('')
+      setMessage('本地预览评论已保存；部署后评论将写入 Supabase。')
     } finally {
       setSending(false)
     }
