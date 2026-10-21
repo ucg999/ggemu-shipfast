@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { SiteLayout } from '#/components/site-layout'
 import { CartridgeControlsDialog, CartridgePlayerDialog } from '#/components/cartridge-controls-dialog'
-import { readSpendableCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
+import { addCoinBalance, readCoinBalance, spendBrowserCoinBalance } from '#/lib/coin-wallet'
 import type { Locale } from '#/lib/ggemu'
-import { useMemberSession } from '#/lib/member-client'
+import { getMemberSession, useMemberSession } from '#/lib/member-client'
 import { collectionApiUrl, getGuestCollectorId } from '#/lib/library-collection-client'
 
 const PRICE = 10
@@ -130,19 +130,22 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
     const cartridgeId = confirming
     if (!cartridgeId) return
     setConfirming(null)
-    if (readSpendableCoinBalance() < PRICE || !spendCoinBalance(PRICE)) { setNotice(copy.insufficient); return }
+    const paidFromBrowser = !member
+    if (paidFromBrowser && (readCoinBalance() < PRICE || !spendBrowserCoinBalance(PRICE))) { setNotice(copy.insufficient); return }
     try {
       const next = [...new Set([...owned, cartridgeId])]
-      const response = await fetch('/api/gb-cartridges', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cartridgeId, guestId: getGuestCollectorId() }) })
-      if (!response.ok) throw new Error('save_failed')
-      const result = await response.json() as { owned?: string[] }
+      const response = await fetch('/api/gb-cartridges', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cartridgeId, guestId: getGuestCollectorId(), guestPaid: paidFromBrowser, paymentId: paidFromBrowser ? crypto.randomUUID() : undefined }) })
+      const result = await response.json() as { owned?: string[]; error?: string }
+      if (!response.ok) throw new Error(result.error || 'save_failed')
       const saved = visibleOwned(Array.isArray(result.owned) ? result.owned : next)
       localStorage.setItem(member ? `${LOCAL_KEY}:${member.id}` : LOCAL_KEY, JSON.stringify(saved))
       setOwned(saved)
       setNotice(copy.success)
+      if (member) await getMemberSession().catch(() => null)
       void fetch('/api/gb-cartridges', { credentials: 'same-origin', cache: 'no-store' }).then(value => value.ok ? value.json() : Promise.reject()).then(applyRankings).catch(() => {})
-    } catch {
-      setNotice(copy.failed)
+    } catch (error) {
+      if (paidFromBrowser) addCoinBalance(PRICE)
+      setNotice(error instanceof Error && error.message.includes('金币不足') ? copy.insufficient : copy.failed)
     }
   }
 

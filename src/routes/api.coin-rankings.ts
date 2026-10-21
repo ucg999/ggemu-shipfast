@@ -4,11 +4,22 @@ import { memberDb } from '#/lib/member-auth.server'
 
 type TotalRow = { member_id: string; display_name: string; player_number: number; coin_balance: number }
 type DailyRow = { member_id: string; display_name: string; player_number: number; coins_gained: number }
+type RankingPayload = {
+  date: string
+  total: Array<{ rank: number; displayName: string; playerNumber: number; coins: number }>
+  daily: Array<{ rank: number; displayName: string; playerNumber: number; coins: number }>
+}
+
+const CACHE_MS = 60_000
+let rankingCache: { expiresAt: number; payload: RankingPayload } | null = null
 
 export const Route = createFileRoute('/api/coin-rankings')({
   server: {
     handlers: {
       GET: async () => {
+        if (rankingCache && rankingCache.expiresAt > Date.now()) {
+          return Response.json(rankingCache.payload, { headers: { 'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' } })
+        }
         // The total leaderboard is a once-per-Beijing-day snapshot of each
         // account's real current balance. It must never sum transaction rows.
         const dateRow = await memberDb().prepare(`SELECT CAST(CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai' AS date) AS today`).first<{ today: string }>()
@@ -40,22 +51,25 @@ export const Route = createFileRoute('/api/coin-rankings')({
           total = current.results.map((row, index) => ({ rank: index + 1, display_name: row.display_name, player_number: row.player_number, coin_balance: row.coin_balance }))
         }
 
+        const dayStart = new Date(`${today}T00:00:00+08:00`)
+        const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
         const daily = await memberDb().prepare(`
           SELECT m.id AS member_id, m.display_name, m.player_number,
             SUM(t.amount) AS coins_gained
           FROM member_coin_transactions t
           JOIN members m ON m.id = t.member_id
-          WHERE t.amount > 0
-            AND CAST(t.created_at AT TIME ZONE 'Asia/Shanghai' AS date) = CAST(CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai' AS date)
+          WHERE t.amount > 0 AND t.created_at >= ? AND t.created_at < ?
           GROUP BY m.id, m.display_name, m.player_number
           ORDER BY coins_gained DESC, m.player_number ASC LIMIT 10
-        `).all<DailyRow>()
+        `).bind(dayStart.toISOString(), dayEnd.toISOString()).all<DailyRow>()
 
-        return Response.json({
+        const payload: RankingPayload = {
           date: today,
           total: total.map(row => ({ rank: row.rank, displayName: row.display_name, playerNumber: row.player_number, coins: row.coin_balance })),
           daily: daily.results.map((row, index) => ({ rank: index + 1, displayName: row.display_name, playerNumber: row.player_number, coins: row.coins_gained })),
-        }, { headers: { 'Cache-Control': 'private, no-store' } })
+        }
+        rankingCache = { expiresAt: Date.now() + CACHE_MS, payload }
+        return Response.json(payload, { headers: { 'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' } })
       },
     },
   },

@@ -83,11 +83,19 @@ export function WantedPlaytimeTracker() {
     let lastInteractionAt = 0
     const guestKey = getWantedGuestKey()
     const guestName = `游客${guestKey.slice(-5).toUpperCase()}`
+    const sessionType = featuredGame ? 'featured' : proMode ? 'pro' : 'game'
+    void startVerifiedTimer(sessionType, guestKey, guestName)
     void flushPendingSubmissions()
 
     const tick = () => {
       const now = Date.now()
       const activeTab = readActiveGameTab()
+      const focusedGameFrame = document.activeElement instanceof HTMLIFrameElement
+      if (eligibleGame && document.visibilityState === 'visible' && focusedGameFrame) {
+        lastInteractionAt = now
+        writeActiveGameTab(tabId, now)
+        activity.interact(true)
+      }
       const isActiveGame = eligibleGame
         && document.visibilityState === 'visible'
         && now - lastInteractionAt <= IDLE_TIMEOUT_MS
@@ -115,7 +123,6 @@ export function WantedPlaytimeTracker() {
       submittingRef.current = true
       submittedSecondsRef.current = totalSeconds
       submissionIndexRef.current += 1
-      const sessionType = featuredGame ? 'featured' : proMode ? 'pro' : 'game'
       const payload = JSON.stringify({ action: 'session', sessionType, guestKey, guestName, seconds, submissionKey: `wanted-v2:${sessionType}:${sessionRef.current}:${submissionIndexRef.current}` })
       queuePendingSubmission(payload)
       if (final && navigator.sendBeacon('/api/wanted', new Blob([payload], { type: 'application/json' }))) {
@@ -203,6 +210,8 @@ function useWantedOnlineTime() {
     let submitting = false
     let finalized = false
 
+    void startVerifiedTimer('online', guestKey, guestName)
+
     const claim = () => {
       if (document.visibilityState === 'visible') writeTabLock(ACTIVE_ONLINE_TAB_STORAGE, tabId, Date.now())
     }
@@ -252,6 +261,20 @@ function useWantedOnlineTime() {
       submit(true)
     }
   }, [])
+}
+
+async function startVerifiedTimer(sessionType: 'online' | 'featured' | 'pro' | 'game', guestKey: string, guestName: string) {
+  try {
+    await fetch('/api/wanted', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'session-start', sessionType, guestKey, guestName }),
+      keepalive: true,
+    })
+  } catch {
+    // The next regular submission will initialize the server-side timer.
+  }
 }
 
 function useSiteVisitorPresence() {

@@ -141,8 +141,15 @@ export const Route = createFileRoute('/api/member')({
           const isSpend = body.action === 'spend'
           const maximumAmount = isSpend ? 99_999 : 999
           if (amount < 1 || amount > maximumAmount) return jsonError(isSpend ? '金币扣除数量不正确' : '单次转入数量需为 1–999 个')
-          const idempotencyKey = typeof body.idempotencyKey === 'string' ? body.idempotencyKey.slice(0, 96) : crypto.randomUUID()
+          const requestedIdempotencyKey = typeof body.idempotencyKey === 'string' ? body.idempotencyKey.trim().slice(0, 96) : ''
+          const idempotencyKey = /^[a-zA-Z0-9:_-]{8,96}$/.test(requestedIdempotencyKey) ? requestedIdempotencyKey : crypto.randomUUID()
           if (isSpend) {
+            const previousSpend = await memberDb().prepare('SELECT 1 AS found FROM member_coin_transactions WHERE member_id = ? AND idempotency_key = ?').bind(member.id, idempotencyKey).first<{ found: number }>()
+            if (previousSpend) {
+              const current = await memberDb().prepare('SELECT id, username, display_name, coin_balance, player_number FROM members WHERE id = ?').bind(member.id).first<{ id: string; username: string; display_name: string; coin_balance: number; player_number: number }>()
+              if (!current) return jsonError('玩家账号不存在', 404)
+              return Response.json({ member: toMemberView(current), spent: 0, duplicate: true }, { headers: { 'Cache-Control': 'private, no-store' } })
+            }
             const result = await memberDb().prepare(`
               UPDATE members SET coin_balance = coin_balance - ?, updated_at = CURRENT_TIMESTAMP
               WHERE id = ? AND coin_balance >= ?
@@ -154,7 +161,7 @@ export const Route = createFileRoute('/api/member')({
               INSERT OR IGNORE INTO member_coin_transactions (member_id, amount, balance_after, reason, idempotency_key)
               VALUES (?, ?, ?, 'member_coin_spend', ?)
             `).bind(member.id, -amount, updated.coin_balance, idempotencyKey).run()
-            return Response.json({ member: toMemberView(updated), spent: amount })
+            return Response.json({ member: toMemberView(updated), spent: amount }, { headers: { 'Cache-Control': 'private, no-store' } })
           }
           const usedToday = await getTodayTransferred(member.id)
           if (usedToday + amount > 999) return jsonError(`今天最多还能转入 ${Math.max(0, 999 - usedToday)} 个金币`)

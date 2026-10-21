@@ -333,7 +333,7 @@ function CoinEarningGuide({ locale }: { locale: Locale }) {
           <div className="mt-3 rounded-xl border border-amber-300 bg-white/80 p-3">
             <strong className="flex items-center gap-1.5 text-sm text-amber-800"><i className="ri-trophy-line" />Weekly grand prizes</strong>
             <ul className="mt-2 list-disc space-y-1.5 pl-4">
-              <li><b>Weekly Wanted:</b> ranked by real elapsed seconds with no member, rank, or check-in multiplier. First place receives 5,000 coins, second 2,000, and third 500. Guests may participate and claim rewards into the current browser.</li>
+              <li><b>Weekly Wanted:</b> ranked by real elapsed seconds with no member, rank, or check-in multiplier. First place receives 5,000 coins, second 2,000, and third 1,000. Guests may participate and claim rewards into the current browser.</li>
               <li><b>Coin Entertainment weekly:</b> the highest single bonus-pool cash-out of the week wins 2,000 coins. It is not based on accumulated cash-outs.</li>
               <li><b>Red–Blue Arena weekly:</b> if the total Arrest value exceeds the total Bounty value, the top Arrest player receives the difference between the two totals.</li>
               <li><b>Settlement and claim:</b> weekly boards settle every Monday at 03:00 China time. Winners must open the corresponding page and claim within 24 hours; expired rewards cannot be recovered.</li>
@@ -352,7 +352,7 @@ function CoinEarningGuide({ locale }: { locale: Locale }) {
           <div className="mt-3 rounded-xl border border-amber-300 bg-white/80 p-3">
             <strong className="flex items-center gap-1.5 text-sm text-amber-800"><i className="ri-trophy-line" />各种周榜大奖</strong>
             <ul className="mt-2 list-disc space-y-1.5 pl-4">
-              <li><b>悬赏令周榜：</b>按真实在线秒数排名，账号和游客都不使用等级、签到或其他倍数；第一名奖5000币、第二名奖2000币、第三名奖500币。游客也可参赛，获奖后领到当前浏览器。</li>
+              <li><b>悬赏令周榜：</b>按真实在线秒数排名，账号和游客都不使用等级、签到或其他倍数；第一名奖5000币、第二名奖2000币、第三名奖1000币。游客也可参赛，获奖后领到当前浏览器。</li>
               <li><b>金币娱乐周榜：</b>按本周“单次奖池退币”的最高纪录排名，不累计；冠军奖2000币。</li>
               <li><b>幽灵捕手周榜：</b>按本周最高连续过关数排名；冠军奖1000币，游客可玩但不参与排名。</li>
               <li><b>红蓝竞技周榜：</b>逮捕令全榜总和高于悬赏令全榜总和时，逮捕令第一名获得“两榜总和的差额”金币。</li>

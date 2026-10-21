@@ -12,6 +12,8 @@ type WantedRow = {
 
 const WEEKLY_REWARDS = [5_000, 2_000, 1_000] as const
 const ONLINE_TIME_REWARD = 500
+const GAME_TIME_BUCKET_SECONDS = 75
+const ONLINE_TIME_BUCKET_SECONDS = 330
 let fairTimeTableReady: Promise<void> | null = null
 const fairMigrationReady = new Map<string, Promise<void>>()
 
@@ -47,6 +49,15 @@ function ensureFairTimeTable() {
         seconds INTEGER NOT NULL DEFAULT 0,
         updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (participant_key, period_key)
+      )
+    `).run()
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS wanted_time_guards (
+        participant_key TEXT NOT NULL,
+        timer_kind TEXT NOT NULL,
+        available_seconds REAL NOT NULL DEFAULT 0,
+        updated_at_ms INTEGER NOT NULL,
+        PRIMARY KEY (participant_key, timer_kind)
       )
     `).run()
   })().catch((error: unknown) => {
@@ -163,29 +174,30 @@ export const Route = createFileRoute('/api/wanted')({
       if (!participantKey) return jsonError('参与者信息无效')
       if (member && guestKey) await adoptGuestWantedIdentity(member.id, member.displayName, guestKey)
 
+      if (body.action === 'session-start') {
+        const sessionType = normalizeSessionType(body.sessionType)
+        await initializeTimeGuard(participantKey, sessionType === 'online' ? 'online' : 'game')
+        return Response.json({ ok: true })
+      }
+
       if (body.action === 'session') {
         const submissionKey = typeof body.submissionKey === 'string' ? body.submissionKey.trim().slice(0, 160) : ''
         if (!/^[a-zA-Z0-9:_-]{8,160}$/.test(submissionKey)) return jsonError('计时记录无效')
         const displayName = member?.displayName || normalizeGuestName(body.guestName, participantKey)
         // Older cached clients did not send a type and only recorded game sessions.
-        const sessionType = body.sessionType === 'online'
-          ? 'online'
-          : body.sessionType === 'pro'
-            ? 'pro'
-            : body.sessionType === 'handheld'
-              ? 'handheld'
-            : body.sessionType === 'featured'
-              ? 'featured'
-              : 'game'
+        const sessionType = normalizeSessionType(body.sessionType)
         const requestedSeconds = body.seconds === undefined ? Number(body.minutes) * 60 : Number(body.seconds)
-        const seconds = Math.min(12 * 60 * 60, Math.max(0, Math.floor(requestedSeconds || 0)))
-        if (seconds < 1) return jsonError('本次没有可累计的实时时间')
+        const claimedSeconds = Math.min(12 * 60 * 60, Math.max(0, Math.floor(requestedSeconds || 0)))
+        if (claimedSeconds < 1) return jsonError('本次没有可累计的实时时间')
         const periodKey = currentPeriodKey
         const db = leaderboardDb()
         const accepted = await db.prepare(`INSERT OR IGNORE INTO wanted_playtime_submissions (submission_key, participant_key, period_key) VALUES (?, ?, ?)`)
           .bind(submissionKey, participantKey, periodKey).run()
+        const seconds = accepted.meta.changes
+          ? await claimVerifiedSeconds(participantKey, sessionType === 'online' ? 'online' : 'game', claimedSeconds)
+          : 0
         if (sessionType === 'online') {
-          if (accepted.meta.changes) await db.prepare(`
+          if (seconds > 0) await db.prepare(`
             INSERT INTO wanted_weekly_online_time (participant_key, period_key, member_id, display_name, seconds)
             VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(participant_key, period_key) DO UPDATE SET
@@ -197,7 +209,7 @@ export const Route = createFileRoute('/api/wanted')({
           return Response.json({ ok: true, sessionType, seconds })
         }
         let creditedSeconds = 0
-        if (accepted.meta.changes) {
+        if (seconds > 0) {
           creditedSeconds = seconds
           if (creditedSeconds > 0) await db.batch([
             db.prepare(`
@@ -245,6 +257,54 @@ export const Route = createFileRoute('/api/wanted')({
 function normalizeGuestKey(value: unknown) {
   const key = typeof value === 'string' ? value.trim().slice(0, 80) : ''
   return /^guest:[a-zA-Z0-9_-]{12,72}$/.test(key) ? key : null
+}
+
+function normalizeSessionType(value: unknown): 'online' | 'pro' | 'handheld' | 'featured' | 'game' {
+  return value === 'online'
+    ? 'online'
+    : value === 'pro'
+      ? 'pro'
+      : value === 'handheld'
+        ? 'handheld'
+        : value === 'featured'
+          ? 'featured'
+          : 'game'
+}
+
+async function initializeTimeGuard(participantKey: string, timerKind: 'online' | 'game') {
+  const now = Date.now()
+  await leaderboardDb().prepare(`
+    INSERT OR IGNORE INTO wanted_time_guards (participant_key, timer_kind, available_seconds, updated_at_ms)
+    VALUES (?, ?, 0, ?)
+  `).bind(participantKey, timerKind, now).run()
+}
+
+async function claimVerifiedSeconds(participantKey: string, timerKind: 'online' | 'game', requestedSeconds: number) {
+  const db = leaderboardDb()
+  const capacity = timerKind === 'online' ? ONLINE_TIME_BUCKET_SECONDS : GAME_TIME_BUCKET_SECONDS
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const now = Date.now()
+    await db.prepare(`
+      INSERT OR IGNORE INTO wanted_time_guards (participant_key, timer_kind, available_seconds, updated_at_ms)
+      VALUES (?, ?, 0, ?)
+    `).bind(participantKey, timerKind, now).run()
+    const guard = await db.prepare(`
+      SELECT available_seconds, updated_at_ms FROM wanted_time_guards
+      WHERE participant_key = ? AND timer_kind = ?
+    `).bind(participantKey, timerKind).first<{ available_seconds: number; updated_at_ms: number }>()
+    if (!guard) return 0
+    const previousUpdatedAt = Math.max(0, Number(guard.updated_at_ms) || now)
+    const elapsed = Math.max(0, Math.min(capacity, (now - previousUpdatedAt) / 1000))
+    const available = Math.min(capacity, Math.max(0, Number(guard.available_seconds) || 0) + elapsed)
+    const credited = Math.min(Math.max(0, Math.floor(requestedSeconds)), Math.floor(available))
+    const remaining = Math.max(0, available - credited)
+    const result = await db.prepare(`
+      UPDATE wanted_time_guards SET available_seconds = ?, updated_at_ms = ?
+      WHERE participant_key = ? AND timer_kind = ? AND updated_at_ms = ?
+    `).bind(remaining, now, participantKey, timerKind, previousUpdatedAt).run()
+    if (result.meta.changes) return credited
+  }
+  return 0
 }
 
 function normalizeGuestName(value: unknown, participantKey: string) {

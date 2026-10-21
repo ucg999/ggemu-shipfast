@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { assertSameOrigin, getMemberFromRequest, jsonError, leaderboardDb, memberDb } from '#/lib/member-auth.server'
+import { assertSameOrigin, getMemberFromRequest, jsonError, leaderboardDb, memberDb, toMemberView } from '#/lib/member-auth.server'
+
+const PRICE = 10
 
 const CARTRIDGE_IDS = new Set([
   'donkey-kong', 'donkey-kong-jr', 'popeye', 'gomoku-narabe', 'mahjong', 'mario-bros',
@@ -63,22 +65,40 @@ export const Route = createFileRoute('/api/fc-cartridges')({
       POST: async ({ request }) => {
         assertSameOrigin(request)
         const member = await getMemberFromRequest(request)
-        const body = await request.json() as { cartridgeId?: unknown; cartridgeIds?: unknown; guestId?: unknown }
+        const body = await request.json() as { cartridgeId?: unknown; guestId?: unknown; guestPaid?: unknown; paymentId?: unknown }
         const ownerId = member?.id ?? guestOwnerId(body.guestId)
         if (!ownerId) return jsonError('收藏信息无效', 400)
-        const requested = Array.isArray(body.cartridgeIds) ? body.cartridgeIds : [body.cartridgeId]
-        const cartridgeIds = [...new Set(requested.filter((value): value is string => typeof value === 'string' && CARTRIDGE_IDS.has(value)))]
-        if (!cartridgeIds.length) return jsonError('卡带信息无效')
+        const cartridgeId = typeof body.cartridgeId === 'string' && CARTRIDGE_IDS.has(body.cartridgeId) ? body.cartridgeId : ''
+        if (!cartridgeId) return jsonError('卡带信息无效')
         const db = leaderboardDb()
-        await db.batch(cartridgeIds.map(cartridgeId => db.prepare(`
-          INSERT OR IGNORE INTO member_fc_cartridges (member_id, cartridge_id)
-          VALUES (?, ?)
-        `).bind(ownerId, cartridgeId)))
+        const owned = await db.prepare('SELECT 1 AS found FROM member_fc_cartridges WHERE member_id = ? AND cartridge_id = ?').bind(ownerId, cartridgeId).first<{ found: number }>()
+        if (!owned) {
+          if (member) {
+            const deduction = await memberDb().prepare('UPDATE members SET coin_balance = coin_balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND coin_balance >= ?').bind(PRICE, member.id, PRICE).run()
+            if (!deduction.meta.changes) return jsonError('玩家金币不足', 402)
+            try {
+              await db.prepare('INSERT INTO member_fc_cartridges (member_id, cartridge_id) VALUES (?, ?)').bind(ownerId, cartridgeId).run()
+            } catch (error) {
+              await memberDb().prepare('UPDATE members SET coin_balance = coin_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(PRICE, member.id).run()
+              throw error
+            }
+            const updated = await memberDb().prepare('SELECT id, username, display_name, coin_balance, player_number FROM members WHERE id = ?').bind(member.id).first<{ id: string; username: string; display_name: string; coin_balance: number; player_number: number }>()
+            if (updated) await memberDb().prepare(`INSERT OR IGNORE INTO member_coin_transactions (member_id, amount, balance_after, reason, idempotency_key) VALUES (?, ?, ?, 'fc_cartridge_collection', ?)`).bind(member.id, -PRICE, updated.coin_balance, `fc_cartridge:${cartridgeId}`).run()
+          } else {
+            const paymentId = normalizePaymentId(body.paymentId)
+            if (body.guestPaid !== true || !paymentId) return jsonError('请使用当前浏览器金币收藏', 402)
+            await ensureGuestPaymentTable(db)
+            const payment = await db.prepare(`INSERT OR IGNORE INTO cartridge_payment_events (event_key, owner_key, platform, cartridge_id) VALUES (?, ?, 'fc', ?)`).bind(`guest-fc:${paymentId}`, ownerId, cartridgeId).run()
+            if (!payment.meta.changes) return jsonError('本次收藏已处理', 409)
+            await db.prepare('INSERT INTO member_fc_cartridges (member_id, cartridge_id) VALUES (?, ?)').bind(ownerId, cartridgeId).run()
+          }
+        }
         const rows = await db.prepare(`
           SELECT cartridge_id FROM member_fc_cartridges
           WHERE member_id = ? ORDER BY cartridge_id ASC
         `).bind(ownerId).all<{ cartridge_id: string }>()
-        return Response.json({ authenticated: Boolean(member), memberId: member?.id ?? null, owned: rows.results.map(row => row.cartridge_id).filter(id => CARTRIDGE_IDS.has(id)) }, { headers: { 'Cache-Control': 'private, no-store' } })
+        const updatedMember = member ? await memberDb().prepare('SELECT id, username, display_name, coin_balance, player_number FROM members WHERE id = ?').bind(member.id).first<{ id: string; username: string; display_name: string; coin_balance: number; player_number: number }>() : null
+        return Response.json({ authenticated: Boolean(member), memberId: member?.id ?? null, owned: rows.results.map(row => row.cartridge_id).filter(id => CARTRIDGE_IDS.has(id)), member: updatedMember ? toMemberView(updatedMember) : undefined }, { headers: { 'Cache-Control': 'private, no-store' } })
       },
     },
   },
@@ -87,4 +107,16 @@ export const Route = createFileRoute('/api/fc-cartridges')({
 function guestOwnerId(value: unknown) {
   const id = typeof value === 'string' ? value.trim() : ''
   return /^[a-z0-9-]{16,80}$/i.test(id) ? `guest:${id}` : ''
+}
+
+function normalizePaymentId(value: unknown) {
+  const id = typeof value === 'string' ? value.trim() : ''
+  return /^[a-z0-9-]{16,80}$/i.test(id) ? id : ''
+}
+
+async function ensureGuestPaymentTable(db: ReturnType<typeof leaderboardDb>) {
+  await db.prepare(`CREATE TABLE IF NOT EXISTS cartridge_payment_events (
+    event_key TEXT PRIMARY KEY, owner_key TEXT NOT NULL, platform TEXT NOT NULL,
+    cartridge_id TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`).run()
 }

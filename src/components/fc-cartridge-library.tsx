@@ -3,8 +3,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Locale } from '#/lib/ggemu'
 import { SiteLayout } from '#/components/site-layout'
 import { CartridgeControlsDialog, CartridgePlayerDialog } from '#/components/cartridge-controls-dialog'
-import { readSpendableCoinBalance, spendCoinBalance } from '#/lib/coin-wallet'
-import { useMemberSession } from '#/lib/member-client'
+import { addCoinBalance, readCoinBalance, spendBrowserCoinBalance } from '#/lib/coin-wallet'
+import { getMemberSession, useMemberSession } from '#/lib/member-client'
 import { collectionApiUrl, getGuestCollectorId } from '#/lib/library-collection-client'
 
 const OWNED_CARTRIDGES_KEY = 'ucg999-fc-owned-cartridges'
@@ -465,13 +465,6 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
         }
       } catch {}
       try {
-        if (legacyOwned.length) {
-          const migrationResponse = await fetch('/api/fc-cartridges', {
-            method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cartridgeIds: legacyOwned }),
-          })
-          if (migrationResponse.ok) window.localStorage.setItem(`${OWNED_CARTRIDGES_MIGRATION_KEY}:${member.id}`, 'yes')
-        }
         const response = await fetch('/api/fc-cartridges', { credentials: 'same-origin', cache: 'no-store' })
         if (!response.ok) throw new Error('collection_load_failed')
         const result = await response.json() as { owned?: string[]; rankings?: Partial<FcRankings>; collectionCounts?: Record<string, number> }
@@ -542,27 +535,27 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
     const cartridgeId = pendingPurchase
     if (!cartridgeId) return
     setPendingPurchase(null)
-    if (readSpendableCoinBalance() < CARTRIDGE_PRICE || !spendCoinBalance(CARTRIDGE_PRICE)) {
-      setNotice(copy.insufficient)
-      return
-    }
+    const paidFromBrowser = !member
+    if (paidFromBrowser && (readCoinBalance() < CARTRIDGE_PRICE || !spendBrowserCoinBalance(CARTRIDGE_PRICE))) { setNotice(copy.insufficient); return }
     const previous = owned
     try {
       let next = [...new Set([...owned, cartridgeId])]
       const response = await fetch('/api/fc-cartridges', {
         method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cartridgeId, guestId: getGuestCollectorId() }),
+        body: JSON.stringify({ cartridgeId, guestId: getGuestCollectorId(), guestPaid: paidFromBrowser, paymentId: paidFromBrowser ? crypto.randomUUID() : undefined }),
       })
-      if (!response.ok) throw new Error('collection_save_failed')
-      const result = await response.json() as { owned?: string[] }
+      const result = await response.json() as { owned?: string[]; error?: string }
+      if (!response.ok) throw new Error(result.error || 'collection_save_failed')
       next = Array.isArray(result.owned) ? result.owned : next
       window.localStorage.setItem(member ? `${OWNED_CARTRIDGES_KEY}:${member.id}` : OWNED_CARTRIDGES_KEY, JSON.stringify(next))
       setOwned(next)
       setNotice(copy.purchased)
+      if (member) await getMemberSession().catch(() => null)
       void refreshRankings()
-    } catch {
+    } catch (error) {
+      if (paidFromBrowser) addCoinBalance(CARTRIDGE_PRICE)
       setOwned(previous)
-      setNotice(copy.failed)
+      setNotice(error instanceof Error && error.message.includes('金币不足') ? copy.insufficient : copy.failed)
     }
   }
   return (
