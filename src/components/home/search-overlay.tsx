@@ -12,6 +12,7 @@ import { searchGames } from '#/lib/ggemu'
 
 import { getSearchPlaceholder } from './shared'
 import { getPlatformLabel } from '#/lib/platform-label'
+import { getGameCardDisplayName } from '#/lib/game-display-name'
 import type { Filters, HomeCopy } from './types'
 
 export function HomeSearchOverlay({
@@ -193,6 +194,7 @@ function SearchResultCard({
   lang: Locale
 }) {
   const gameId = game.url_slug || game._id || ''
+  const displayName = getGameCardDisplayName(game, lang)
 
   return (
     <Link
@@ -205,7 +207,7 @@ function SearchResultCard({
       <div className="relative aspect-square overflow-hidden bg-base-200">
         {game.game_cover ? (
           <img
-            alt={game.name ?? 'Game cover'}
+            alt={displayName}
             className="h-full w-full object-cover"
             loading="lazy"
             src={game.game_cover}
@@ -218,7 +220,7 @@ function SearchResultCard({
         <GameCardPreviewVideo src={game.game_video} />
       </div>
       <div className="p-2 text-[12px] font-medium leading-tight">
-        <span className="line-clamp-2">{game.name}</span>
+        <span className="line-clamp-2">{displayName}</span>
       </div>
     </Link>
   )

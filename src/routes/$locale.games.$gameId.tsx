@@ -26,8 +26,9 @@ import { ElectronicBoardIntroduction } from '#/components/electronic-board-intro
 import { TianKaiYanIntroduction } from '#/components/tian-kai-yan-introduction'
 import { CelebrityMahjongIntroduction } from '#/components/celebrity-mahjong-introduction'
 import { LuckyFullHouseIntroduction } from '#/components/lucky-full-house-introduction'
+import { ArcadeGameIntroduction } from '#/components/arcade-game-introduction'
 import { saveRecentPlayedGame } from '#/components/home/recent-played-games'
-import { getHomeHeroGameName } from '#/lib/game-display-name'
+import { getGameCardDisplayName, getHomeHeroGameName } from '#/lib/game-display-name'
 import { getGameDetailReturnUrl } from '#/lib/game-detail-return'
 import {
   applyChineseGameGuide,
@@ -330,6 +331,9 @@ function LocalizedGameDetailPage() {
   const isKof97 = gameId === 'the-king-of-fighters-97-arcade-1997'
   const isViceCity = gameId === 'vice-city-html5-2002' || normalizedGameName.toLowerCase().includes('vicecity')
   const isContraNes = gameId === 'contra-nes-1988'
+  const isArcadeGame = game.platform?.trim().toLowerCase() === 'arcade'
+  const isChineseArcadePage = isArcadeGame && (lang === 'zh-CN' || lang === 'zh-TW')
+  const hasDedicatedIntroduction = isKof97Plus || isKof97 || isSuperGrandSlam2 || isElectronicBoard || isTianKaiYan || isCelebrityMahjong || isLuckyFullHouse
   const gameDetailTip = isLuckyFullHouse
     ? '提升胡牌率：进入游戏，按键盘 0 进入系统，按 D，再按 1 连输密码，再按 D，然后按 N 把机率调到最高，按 1 保存再退出就可以了。'
     : isSuperGrandSlam2
@@ -342,7 +346,9 @@ function LocalizedGameDetailPage() {
         ? '本页提供 2002 年《Grand Theft Auto: Vice City》的罪恶都市网页版入口。桌面端实测已完成首次资源下载，并从浏览器启动器进入英文主菜单；启动器中可见 Play Game、Save Manager、Mod Manager 和 FPS 限制设置。'
       : isKof97Plus
         ? '《拳皇97风云再起》对应 kof97pls，是未知作者基于 SNK 1997 年原作制作的非官方 Neo Geo MVS 改版。它保留三人组队和 ADVANCED／EXTRA，同时把暴走八神、暴走莉安娜与觉醒新面孔队三人直接放进选人表，ADVANCED 每场以 3 格 POW 开局。本页说明它与原版、重出江湖 Plus 2003 的边界，并整理网页键位与实用打法。'
-        : ''
+        : isChineseArcadePage
+          ? `《${game.name}》在线玩——经典街机游戏。无需下载或安装模拟器，打开页面即可在浏览器中开始游玩；本页同时整理中文简介、操作方式、实用攻略和开始前须知。`
+          : ''
 
   useEffect(() => {
     consumeRandomGameCoinMultiplier(gameId)
@@ -524,6 +530,7 @@ function LocalizedGameDetailPage() {
           {isTianKaiYan ? <TianKaiYanIntroduction /> : null}
           {isCelebrityMahjong ? <CelebrityMahjongIntroduction /> : null}
           {isLuckyFullHouse ? <LuckyFullHouseIntroduction /> : null}
+          {isChineseArcadePage && !hasDedicatedIntroduction ? <ArcadeGameIntroduction game={game} /> : null}
           {SHOW_EXTENDED_GAME_DETAILS ? (
             <section className="grid gap-6">
               {chineseGuide ? <ChineseGameGuideSection guide={chineseGuide} /> : null}
@@ -1450,6 +1457,7 @@ function RelatedGamesFallback({ title }: { title: string }) {
 
 function RelatedGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
   const gameId = game.url_slug || game._id || ''
+  const displayName = getGameCardDisplayName(game, lang)
 
   if (!gameId) {
     return null
@@ -1466,7 +1474,7 @@ function RelatedGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
       <div className="relative aspect-[4/3] overflow-hidden bg-base-300">
         {game.game_cover ? (
           <img
-            alt={game.name ?? 'Game cover'}
+            alt={displayName}
             className="h-full w-full object-cover"
             loading="lazy"
             src={game.game_cover}
@@ -1480,7 +1488,7 @@ function RelatedGameCard({ game, lang }: { game: PublicGame; lang: Locale }) {
       </div>
       <div className="p-3">
         <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-snug">
-          {game.name}
+          {displayName}
         </h3>
         {game.platform ? (
           <p className="mt-2 truncate text-xs text-base-content/60">

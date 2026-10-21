@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { MouseEvent } from 'react'
 
 import { SiteLayout } from '#/components/site-layout'
@@ -9,10 +9,12 @@ import type { Locale, PublicGame } from '#/lib/ggemu'
 import { getCoinModeGameMinimumBalance, getCoinModeGameRequiredRank, searchGames } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
+import { getGameCardDisplayName } from '#/lib/game-display-name'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 import { requestMemberLogin, useMemberSession } from '#/lib/member-client'
 
 const ARCADE_PAGE_SIZE = 100
+const ARCADE_VISIBLE_PAGE_SIZE = 48
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
 export const Route = createFileRoute('/$locale/arcade')({
@@ -60,7 +62,143 @@ function ArcadeModePage() {
   const lang = normalizeLocale(locale)
   const t = getI18n(lang).arcade
 
-  return <PlatformModeContent body={t.subtitle} description={t.description} games={games} lang={lang} title={t.title} />
+  return <ArcadeLibraryContent description={t.description} games={games} lang={lang} />
+}
+
+type ArcadeLibraryFilter = 'all' | 'classic' | 'fighting' | 'action' | 'shooting' | 'sports' | 'puzzle' | 'street-fighter' | 'king-of-fighters'
+
+function ArcadeLibraryContent({ description, games, lang }: { description: string; games: Array<PublicGame>; lang: Locale }) {
+  const t = getI18n(lang).arcade
+  const [filter, setFilter] = useState<ArcadeLibraryFilter>('all')
+  const [query, setQuery] = useState('')
+  const [letter, setLetter] = useState('ALL')
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [page, setPage] = useState(1)
+  const filters: Array<{ id: ArcadeLibraryFilter; label: string }> = [
+    { id: 'all', label: lang === 'en' ? 'All Games' : '所有游戏' },
+    { id: 'classic', label: lang === 'en' ? 'Classic Arcade' : '经典街机' },
+    { id: 'fighting', label: lang === 'en' ? 'Fighting' : '格斗游戏' },
+    { id: 'action', label: lang === 'en' ? 'Action & Beat ’em Up' : '闯关动作' },
+    { id: 'shooting', label: lang === 'en' ? 'Shooters' : '射击游戏' },
+    { id: 'sports', label: lang === 'en' ? 'Sports' : '体育游戏' },
+    { id: 'puzzle', label: lang === 'en' ? 'Puzzle' : '益智游戏' },
+  ]
+  const collections: Array<{ id: ArcadeLibraryFilter; label: string }> = [
+    { id: 'street-fighter', label: lang === 'en' ? 'Street Fighter' : '街霸' },
+    { id: 'king-of-fighters', label: lang === 'en' ? 'The King of Fighters' : '拳皇' },
+  ]
+  const visibleGames = useMemo(() => games
+    .filter((game) => matchesArcadeFilter(game, filter) && matchesArcadeQuery(game, query, lang))
+    .filter((game) => letter === 'ALL' || game.name?.trim().toUpperCase().startsWith(letter))
+    .sort((left, right) => (right.plays_count ?? 0) - (left.plays_count ?? 0)), [filter, games, lang, letter, query])
+  const pageCount = Math.max(1, Math.ceil(visibleGames.length / ARCADE_VISIBLE_PAGE_SIZE))
+  const currentPage = Math.min(page, pageCount)
+  const displayedGames = visibleGames.slice((currentPage - 1) * ARCADE_VISIBLE_PAGE_SIZE, currentPage * ARCADE_VISIBLE_PAGE_SIZE)
+
+  useEffect(() => {
+    setPage(1)
+  }, [filter, letter, query])
+
+  return <SiteLayout locale={lang}>
+    <div className="flex w-full items-start">
+      <aside className="sticky top-[72px] hidden h-[calc(100dvh-72px)] w-52 shrink-0 overflow-y-auto border-r border-base-300 bg-base-100 p-3 lg:block">
+        <details open>
+          <summary className="cursor-pointer list-none rounded-lg px-3 py-2 text-sm font-black">
+            <i className="ri-gamepad-line mr-2" />{lang === 'en' ? 'Game Library (Arcade)' : '游戏库（街机游戏）'}
+          </summary>
+          <nav className="mt-1 space-y-0.5" aria-label={lang === 'en' ? 'Arcade categories' : '街机游戏分类'}>
+            {filters.map(item => <ArcadeSidebarButton active={filter === item.id} key={item.id} label={item.label} onClick={() => { setFilter(item.id); setLetter('ALL') }} />)}
+          </nav>
+        </details>
+        <div className="my-3 border-t border-base-300" />
+        <p className="px-3 py-1 text-xs font-black uppercase tracking-wider text-base-content/45">{lang === 'en' ? 'Collections' : '游戏合集'}</p>
+        <nav className="mt-1 space-y-0.5">
+          {collections.map(item => <ArcadeSidebarButton active={filter === item.id} key={item.id} label={item.label} onClick={() => { setFilter(item.id); setLetter('ALL') }} />)}
+        </nav>
+        <div className="my-3 border-t border-base-300" />
+        <Link className="flex items-center rounded-lg px-3 py-2 text-sm font-semibold transition hover:bg-base-200" params={{ locale: lang }} to="/$locale/blog"><i className="ri-article-line mr-2" />{lang === 'en' ? 'Blog' : '博客'}</Link>
+      </aside>
+
+      <main className="min-w-0 flex-1">
+        <section className="border-b border-base-300 bg-base-100 px-4 py-7 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-end gap-3">
+            <h1 className="text-3xl font-black tracking-tight sm:text-5xl">{lang === 'en' ? 'Play Arcade Games Online for Free' : '免费在线畅玩街机游戏'}</h1>
+            <span className="pb-1 text-base font-medium text-base-content/60">{formatGameTotal(visibleGames.length, lang)}</span>
+          </div>
+          <p className="mt-4 max-w-5xl text-base font-medium leading-relaxed text-base-content/70 sm:text-lg">{lang === 'en' ? description : '无需登录，在你的浏览器中免费在线畅玩海量经典街机游戏——从《拳皇》《恐龙快打》到《合金弹头》《街头霸王》，上百款街机神作一网打尽。智能AI随时带飞，带你一秒重温街机厅的黄金时代！'}</p>
+        </section>
+
+        <nav aria-label={lang === 'en' ? 'Arcade game index' : '街机游戏索引'} className="sticky top-[72px] z-30 border-b border-base-300 bg-base-100/95 px-4 backdrop-blur sm:px-6 lg:px-8">
+          <div className="flex gap-1 overflow-x-auto py-3">
+            <LetterButton active={letter === 'ALL'} label={t.allGames} onClick={() => setLetter('ALL')} />
+            {LETTERS.map(item => <LetterButton active={letter === item} key={item} label={item} onClick={() => setLetter(item)} />)}
+            <button aria-label={getI18n(lang).home.search} className={`btn btn-sm btn-square shrink-0 rounded-full border-0 ${isSearchOpen ? 'bg-base-content text-base-100' : 'btn-ghost'}`} onClick={() => setIsSearchOpen(current => !current)} title={getI18n(lang).home.search} type="button">
+              <i className="ri-search-line text-lg" />
+            </button>
+            {isSearchOpen ? <label className="flex h-8 w-56 shrink-0 items-center gap-2 rounded-full border border-base-300 bg-base-100 px-3">
+              <i className="ri-search-line text-base-content/45" />
+              <input autoFocus className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-base-content/40" onChange={event => setQuery(event.currentTarget.value)} placeholder={t.searchPlaceholder} type="search" value={query} />
+            </label> : null}
+          </div>
+        </nav>
+
+        <div className="px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-base-300 bg-base-100 p-3 sm:flex-row sm:items-center">
+          <select className="select select-sm select-bordered w-full sm:hidden" onChange={event => { setFilter(event.currentTarget.value as ArcadeLibraryFilter); setLetter('ALL') }} value={filter}>
+            <optgroup label={lang === 'en' ? 'Game Library (Arcade)' : '游戏库（街机游戏）'}>{filters.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</optgroup>
+            <optgroup label={lang === 'en' ? 'Collections' : '游戏合集'}>{collections.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</optgroup>
+          </select>
+          <span className="hidden min-w-0 flex-1 text-sm font-semibold text-base-content/55 sm:block">{filter === 'all' ? (lang === 'en' ? 'Popular arcade games' : '热门街机游戏') : [...filters, ...collections].find(item => item.id === filter)?.label}</span>
+          <span className="whitespace-nowrap text-xs font-semibold text-base-content/50">{visibleGames.length} {lang === 'en' ? 'games' : '款游戏'}</span>
+        </div>
+
+        {displayedGames.length ? <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          {displayedGames.map(game => <ArcadeLibraryGameCard game={game} key={game.url_slug || game._id} lang={lang} />)}
+        </div> : <div className="rounded-2xl border border-base-300 p-12 text-center text-base-content/55">{t.empty}</div>}
+
+        {visibleGames.length > ARCADE_VISIBLE_PAGE_SIZE ? <nav aria-label={lang === 'en' ? 'Arcade pagination' : '街机游戏翻页'} className="mt-8 flex items-center justify-center gap-3">
+          <button className="btn btn-outline btn-sm min-w-24 rounded-full" disabled={currentPage <= 1} onClick={() => setPage(value => Math.max(1, value - 1))} type="button">
+            <i className="ri-arrow-left-s-line" />{lang === 'en' ? 'Previous' : '上一页'}
+          </button>
+          <span className="min-w-20 text-center text-sm font-semibold text-base-content/65">{currentPage} / {pageCount}</span>
+          <button className="btn btn-outline btn-sm min-w-24 rounded-full" disabled={currentPage >= pageCount} onClick={() => setPage(value => Math.min(pageCount, value + 1))} type="button">
+            {lang === 'en' ? 'Next' : '下一页'}<i className="ri-arrow-right-s-line" />
+          </button>
+        </nav> : null}
+
+        </div>
+      </main>
+    </div>
+  </SiteLayout>
+}
+
+function ArcadeSidebarButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+  return <button className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition ${active ? 'bg-black font-bold text-white' : 'hover:bg-base-200'}`} onClick={onClick} type="button">{label}</button>
+}
+
+function arcadeSearchText(game: PublicGame) {
+  return [game.name, game.keywords, game.description, game.developer, ...(game.categories ?? [])].filter(Boolean).join(' ').toLocaleLowerCase()
+}
+
+function matchesArcadeQuery(game: PublicGame, query: string, lang: Locale) {
+  const terms = query.trim().toLocaleLowerCase(lang).split(/\s+/).filter(Boolean)
+  if (!terms.length) return true
+  const text = arcadeSearchText(game)
+  return terms.every(term => text.includes(term))
+}
+
+function matchesArcadeFilter(game: PublicGame, filter: ArcadeLibraryFilter) {
+  if (filter === 'all') return true
+  const text = arcadeSearchText(game)
+  const year = Number(game.released_year ?? 0)
+  if (filter === 'classic') return year > 0 && year <= 2000
+  if (filter === 'king-of-fighters') return /king of fighters|拳皇|格斗之王|\bkof\b/.test(text)
+  if (filter === 'street-fighter') return /street fighter|街头霸王|街霸/.test(text)
+  if (filter === 'fighting') return /fighting|fighter|格斗|对战/.test(text)
+  if (filter === 'action') return /action|beat.?em.?up|platform|adventure|动作|闯关|冒险/.test(text)
+  if (filter === 'shooting') return /shoot|shooter|gun|射击|飞机/.test(text)
+  if (filter === 'sports') return /sport|football|soccer|basketball|baseball|tennis|体育|足球|篮球|棒球|网球/.test(text)
+  return /puzzle|quiz|board|mahjong|益智|解谜|方块|麻将/.test(text)
 }
 
 export function PlatformModeContent({
@@ -221,17 +359,18 @@ export function PlatformModeContent({
 
 function ArcadeLibraryGameCard({ game, lang, onClickCapture }: { game: PublicGame; lang: Locale; onClickCapture?: (event: MouseEvent<HTMLAnchorElement>) => void }) {
   const gameId = game.url_slug?.trim() || game._id?.trim() || ''
+  const displayName = getGameCardDisplayName(game, lang)
   const categories = game.categories?.slice(0, 1).join('')
   const language = game.languages?.slice(0, 1).join('')
 
   return (
     <Link className="group overflow-hidden rounded-xl bg-white text-black shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" {...gameCardPreviewHandlers} onClickCapture={onClickCapture} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
       <figure className="relative aspect-[616/353] overflow-hidden bg-neutral-100">
-        {game.game_cover ? <img alt={game.name ?? ''} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} /> : null}
+        {game.game_cover ? <img alt={displayName} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" loading="lazy" src={game.game_cover} /> : null}
         <GameCardPreviewVideo src={game.game_video} />
       </figure>
       <div className="p-2.5 sm:py-4">
-        <h2 className="truncate text-sm font-semibold sm:text-lg" title={game.name}>{game.name}</h2>
+        <h2 className="truncate text-sm font-semibold sm:text-lg" title={displayName}>{displayName}</h2>
         <p className="mt-1.5 overflow-hidden text-ellipsis whitespace-nowrap text-[9px] text-black/55 sm:mt-2 sm:text-xs">
           <span>{game.platform ? getPlatformLabel(game.platform, lang) : 'Arcade'}</span>
           {language ? <> · <span>{language}</span></> : null}

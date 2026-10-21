@@ -6,6 +6,7 @@ import { RedBlueArenaCard } from '#/components/red-blue-arena-card'
 import { type GameSearchSort, type Locale, type PublicGame, searchGames } from '#/lib/ggemu'
 import { getI18n, normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
+import { getGameCardDisplayName } from '#/lib/game-display-name'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 
 const RANKINGS = {
@@ -93,12 +94,13 @@ function RankingPage() {
 
 function RankingGameCard({ game, index, lang }: { game: PublicGame; index: number; lang: Locale }) {
   const gameId = game.url_slug?.trim() || game._id?.trim() || ''
+  const displayName = getGameCardDisplayName(game, lang)
 
   return (
     <Link className="group min-w-0" {...gameCardPreviewHandlers} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
       <figure className="relative aspect-[4/3] overflow-hidden rounded-md bg-base-200">
         {game.game_cover ? (
-          <img alt={game.name ?? ''} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy" src={game.game_cover} />
+          <img alt={displayName} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy" src={game.game_cover} />
         ) : null}
         <GameCardPreviewVideo src={game.game_video} />
         <span className="absolute left-2 top-2 grid h-7 min-w-7 place-items-center rounded-full bg-black/75 px-2 text-xs font-bold text-white">
@@ -110,7 +112,7 @@ function RankingGameCard({ game, index, lang }: { game: PublicGame; index: numbe
           </span>
         ) : null}
       </figure>
-      <h2 className="mt-1.5 truncate text-sm font-medium text-base-content">{game.name}</h2>
+      <h2 className="mt-1.5 truncate text-sm font-medium text-base-content">{displayName}</h2>
     </Link>
   )
 }

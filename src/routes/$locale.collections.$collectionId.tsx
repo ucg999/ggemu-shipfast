@@ -6,6 +6,7 @@ import { searchGames, type PublicGame } from '#/lib/ggemu'
 import { getGameCollection, type GameCollection } from '#/lib/game-collections'
 import { normalizeLocale } from '#/lib/i18n'
 import { getPlatformLabel } from '#/lib/platform-label'
+import { getGameCardDisplayName } from '#/lib/game-display-name'
 import { getLocalizedSeoLinks, getSeoOrigin } from '#/lib/seo'
 
 export const Route = createFileRoute('/$locale/collections/$collectionId')({
@@ -166,6 +167,7 @@ function CollectionGameCard({
   lang: ReturnType<typeof normalizeLocale>
 }) {
   const gameId = game.url_slug || game._id || ''
+  const displayName = getGameCardDisplayName(game, lang)
 
   return (
     <Link
@@ -177,7 +179,7 @@ function CollectionGameCard({
     >
       <figure className="relative aspect-[4/3] overflow-hidden rounded-lg bg-base-200">
         <img
-          alt={game.name ?? '游戏封面'}
+          alt={displayName}
           className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
           loading="lazy"
           src={game.game_cover}

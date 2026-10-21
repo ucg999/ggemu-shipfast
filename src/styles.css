@@ -271,7 +271,7 @@ body:has(.game-play-screen-kof97) {
     color: #161616;
   }
 
-  .desktop-clean-header a.library-update-highlight {
+  .library-update-highlight {
     color: #eab308 !important;
     background-image: linear-gradient(105deg, #ca8a04 0%, #eab308 38%, #fff7ae 49%, #fff 52%, #fde047 56%, #eab308 68%, #ca8a04 100%);
     background-position: 140% 50%;
@@ -288,7 +288,7 @@ body:has(.game-play-screen-kof97) {
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .desktop-clean-header a.library-update-highlight {
+    .library-update-highlight {
       animation: none;
       background: none;
       -webkit-text-fill-color: currentColor;
@@ -372,9 +372,9 @@ body:has(.game-play-screen-kof97) {
   }
 
   .desktop-clean-header .desktop-unified-nav-links {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-rows: repeat(2, 36px);
     align-content: center;
-    row-gap: 0;
   }
 
   .desktop-clean-header .desktop-unified-nav-home {
@@ -388,12 +388,16 @@ body:has(.game-play-screen-kof97) {
   }
 
   .desktop-clean-header .desktop-unified-nav-home .desktop-unified-nav-links {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-rows: repeat(2, 36px);
     align-content: center;
     align-items: center;
-    column-gap: 4px;
     row-gap: 0;
+  }
+
+  .desktop-clean-header .desktop-unified-nav-primary,
+  .desktop-clean-header .desktop-unified-nav-secondary {
+    justify-content: flex-start;
   }
 
   @media (max-width: 1439px) {
@@ -418,11 +422,11 @@ body:has(.game-play-screen-kof97) {
 
     .desktop-clean-header .desktop-unified-nav-home,
     .desktop-clean-header .desktop-unified-nav-home > details > summary,
-    .desktop-clean-header .desktop-unified-nav-home .desktop-unified-nav-links > a {
+    .desktop-clean-header .desktop-unified-nav-home .desktop-unified-nav-links a {
       min-height: 32px;
     }
 
-    .desktop-clean-header .desktop-unified-nav-home .desktop-unified-nav-links > a,
+    .desktop-clean-header .desktop-unified-nav-home .desktop-unified-nav-links a,
     .desktop-clean-header .desktop-unified-nav-home > details > summary {
       height: 32px;
       padding-right: 5px;
@@ -432,18 +436,16 @@ body:has(.game-play-screen-kof97) {
 
     .desktop-clean-header .desktop-unified-nav-home .desktop-unified-nav-links {
       display: grid;
-      grid-template-columns: repeat(5, max-content);
-      grid-auto-rows: 32px;
+      grid-template-rows: repeat(2, 32px);
       align-items: center;
       justify-content: start;
-      column-gap: 4px;
       row-gap: 0;
     }
   }
 
   @media (min-width: 1600px) {
     .desktop-clean-header .desktop-unified-nav-home .desktop-unified-nav-links {
-      flex-wrap: nowrap;
+      grid-template-rows: repeat(2, 36px);
     }
   }
 

@@ -717,6 +717,7 @@ function RandomGameModal({
 }) {
   const gameId = getGameId(game)
   const t = getI18n(lang).home
+  const displayName = getHomeHeroGameName(game, lang)
 
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center bg-black/65 p-4" role="presentation" onClick={onClose}>
@@ -729,7 +730,7 @@ function RandomGameModal({
       >
         <figure className="relative aspect-[4/3] bg-base-200">
           {game.game_cover ? (
-            <img alt={game.name ?? t.randomGame} className="h-full w-full object-cover" src={getCachedImageUrl(game.game_cover, 720)} />
+            <img alt={displayName} className="h-full w-full object-cover" src={getCachedImageUrl(game.game_cover, 720)} />
           ) : null}
           {game.platform ? (
             <span className="absolute bottom-3 right-3 rounded bg-black/70 px-2 py-1 text-xs text-white">
@@ -740,7 +741,7 @@ function RandomGameModal({
         </figure>
         <div className="bg-white p-4 text-black">
           <div className="flex min-w-0 items-center gap-2">
-            <h3 className="min-w-0 truncate text-xl font-semibold">{game.name}</h3>
+            <h3 className="min-w-0 truncate text-xl font-semibold">{displayName}</h3>
             <span className="flex shrink-0 items-center gap-1 text-sm font-black text-amber-600">
               <img alt="" aria-hidden="true" className="h-5 w-5 [image-rendering:pixelated]" src="/images/coin-rewards/pixel-reward-coin.webp" />
               ×{multiplier}

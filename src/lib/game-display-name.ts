@@ -2,11 +2,170 @@ import type { PublicGame } from './ggemu'
 import { getChineseGameGuide } from './chinese-game-guides'
 
 export function getHomeHeroGameName(game: PublicGame, locale: string) {
+  return getGameCardDisplayName(game, locale)
+}
+
+export function getGameCardDisplayName(game: PublicGame, locale: string) {
+  const originalName = game.name?.trim() || (locale === 'en' ? 'Game' : '游戏')
   if (locale === 'zh-CN' || locale === 'zh-TW') {
     const slug = game.url_slug?.trim() || ''
-    return getChineseGameGuide(game)?.name || HOME_HERO_CHINESE_NAMES[slug] || game.name?.trim() || '游戏'
+    if (/\p{Script=Han}/u.test(originalName)) return originalName
+    return getChineseGameGuide(game)?.name
+      || HOME_HERO_CHINESE_NAMES[slug]
+      || ARCADE_CHINESE_NAME_OVERRIDES[slug]
+      || getChineseKeywordName(game.keywords)
+      || translateCommonGameTitle(originalName)
   }
-  return game.name?.trim() || 'Game'
+  return originalName
+}
+
+function getChineseKeywordName(keywords?: string) {
+  if (!keywords) return ''
+  const candidates = keywords
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => /\p{Script=Han}/u.test(item) && !/[\u3040-\u30ff]/u.test(item))
+
+  return candidates.find((item) => /[\u4e00-\u9fff]{2,}/u.test(item)) || ''
+}
+
+const ARCADE_CHINESE_NAME_OVERRIDES: Readonly<Record<string, string>> = {
+  '1945-arcade-1995': '1945',
+  '1945-ii-arcade-1997': '1945 II',
+  '1945-iii-arcade-2000': '1945 III',
+  'aquajack-arcade-1990': '水上坦克',
+  'arabian-fight-arcade-1992': '阿拉伯之战',
+  'bad-dudes-vs-gragon-ninja-arcade-1988': '坏小子大战龙忍者',
+  'boogie-wings-arcade-1992': '滑稽战机',
+  'cow-boys-of-moo-mesa-arcade-1992': '西部牛仔',
+  'excelsior-arcade-1995': '美女打砖',
+  'fata-fury-3-arcade-1995': '饿狼传说3',
+  'goal-goal-goal-arcade-1995': '进球！进球！进球！',
+  'in-the-hunt-arcade-1993': '海底大战争',
+  'knights-of-valour-2-plus-arcade-2000': '三国战纪2 Plus',
+  'knuckle-bash-2-arcade-1999': '拳击冲击2',
+  'megaman-2-the-power-fighters-arcade-1996': '洛克人2：力量对决',
+  'new-rally-x-arcade-1981': '新拉力X',
+  'super-side-kick-3-the-next-glory-arcade-1992': '得点王3：下一次荣耀',
+  'the-king-of-fighters-99-arcade-1999': '拳皇99',
+  'three-wonders-arcade-1991': '奇迹三合一',
+  'thrash-rally-arcade-1991': '疯狂拉力赛',
+  'tv-animation-slam-dunk-super-slams-arcade-1995': '灌篮高手：超级扣篮',
+  'ultraman-arcade-1991': '奥特曼',
+  'wind-jammers-arcade-1994': '飞盘对决',
+  'wow-new-fantasia-arcade-2002': '美女天蚕变',
+  'x-men-vs-street-fighter-arcade-1996': 'X战警对街头霸王',
+}
+
+function translateCommonGameTitle(name: string) {
+  const exact = COMMON_CHINESE_GAME_NAMES[name.toLocaleLowerCase()]
+  if (exact) return exact
+
+  const translated = name
+    .replace(/the king of fighters/gi, '拳皇')
+    .replace(/street fighter/gi, '街头霸王')
+    .replace(/metal slug/gi, '合金弹头')
+    .replace(/double dragon/gi, '双截龙')
+    .replace(/final fight/gi, '快打旋风')
+    .replace(/samurai shodown/gi, '侍魂')
+    .replace(/fatal fury/gi, '饿狼传说')
+    .replace(/art of fighting/gi, '龙虎之拳')
+    .replace(/world heroes/gi, '世界英雄')
+    .replace(/snow bros/gi, '雪人兄弟')
+    .replace(/golden axe/gi, '战斧')
+    .replace(/wonder boy/gi, '神奇男孩')
+    .replace(/teenage mutant ninja turtles/gi, '忍者神龟')
+    .replace(/alien vs\.? predator/gi, '异形大战铁血战士')
+    .replace(/captain commando/gi, '名将')
+    .replace(/knights of the round/gi, '圆桌骑士')
+    .replace(/three wonders/gi, '奇迹三合一')
+    .replace(/marvel super heroes/gi, '漫威超级英雄')
+    .replace(/darkstalkers/gi, '恶魔战士')
+    .replace(/dungeons?\s*&\s*dragons?/gi, '龙与地下城')
+    .replace(/sonic the hedgehog/gi, '刺猬索尼克')
+    .replace(/mortal kombat/gi, '真人快打')
+    .replace(/pac-?man/gi, '吃豆人')
+    .replace(/space invaders/gi, '太空侵略者')
+    .replace(/donkey kong/gi, '大金刚')
+    .replace(/dragon ball/gi, '龙珠')
+    .replace(/power rangers/gi, '恐龙战队')
+    .replace(/ninja baseball bat man/gi, '忍者棒球')
+    .replace(/armored warriors/gi, '装甲战士')
+    .replace(/warriors of fate/gi, '吞食天地2')
+    .replace(/knights of valour/gi, '三国战纪')
+    .replace(/oriental legend/gi, '西游释厄传')
+    .replace(/super/gi, '超级')
+    .replace(/champion(?:ship)?/gi, '冠军')
+    .replace(/revenge/gi, '复仇')
+    .replace(/warriors?/gi, '战士')
+    .replace(/fighters?/gi, '格斗家')
+    .replace(/battle/gi, '战斗')
+    .replace(/world/gi, '世界')
+    .replace(/legend/gi, '传说')
+    .replace(/adventure/gi, '冒险')
+    .replace(/attack/gi, '攻击')
+    .replace(/return/gi, '归来')
+    .replace(/final/gi, '最终')
+    .replace(/new/gi, '新')
+    .replace(/plus/gi, '加强版')
+    .replace(/\s*[-:–—]\s*/g, '：')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return translated
+}
+
+const COMMON_CHINESE_GAME_NAMES: Readonly<Record<string, string>> = {
+  '1941: counter attack': '1941：反击战',
+  '1942': '1942',
+  '1943: the battle of midway': '1943：中途岛海战',
+  'aero fighters 2': '四国战机2',
+  'alien storm': '异形风暴',
+  'altered beast': '兽王记',
+  'bad dudes vs. dragon ninja': '忍者龙剑传：恶人战士',
+  'bubble bobble': '泡泡龙',
+  'breakers': '破坏者格斗',
+  'breakers revenge': '破坏者格斗：复仇',
+  'cadillacs and dinosaurs': '恐龙快打',
+  'carrier air wing': '美国海军',
+  'caveman ninja': '战斗原始人',
+  'chiki chiki boys': '双麟儿',
+  'contra': '魂斗罗',
+  'cyberbots: fullmetal madness': '装甲战士：全金属狂潮',
+  'dyna gear': '动力装甲',
+  'eight man': '八超人',
+  'fightcade': '格斗对战平台',
+  'galaga': '小蜜蜂',
+  'ghosts n goblins': '魔界村',
+  'ghouls n ghosts': '大魔界村',
+  'giga wing': '千兆翼',
+  'gunbird': '武装飞鸟',
+  'hook': '铁钩船长',
+  'king of dragons': '龙王战士',
+  'last resort': '最后的度假村',
+  'magician lord': '魔法领主',
+  'magic sword': '魔法剑',
+  'mercs': '战场之狼2',
+  'mutation nation': '异形国度',
+  'night slashers': '黑暗封印：暗夜杀手',
+  'out zone': '异域战将',
+  'pang': '超级气球',
+  'prehistoric isle 2': '史前岛2',
+  'pulstar': '脉冲之星',
+  'punisher': '惩罚者',
+  'raiden': '雷电',
+  'rastan': '拉斯坦传奇',
+  'sengoku': '战国传承',
+  'sengoku 2': '战国传承2',
+  'sengoku 3': '战国传承3',
+  'shock troopers': '突击骑兵',
+  'spin master': '飞天神童',
+  'sunset riders': '落日骑士',
+  'the punisher': '惩罚者',
+  'top hunter: roddy & cathy': '顶级猎人：罗迪与凯茜',
+  'tumblepop': '魔法气泡',
+  'vendetta': '暴力克星',
+  'willow': '威洛之旅',
 }
 
 export const HOME_HERO_CHINESE_NAMES: Readonly<Record<string, string>> = {

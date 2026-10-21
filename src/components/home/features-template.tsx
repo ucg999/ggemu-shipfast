@@ -6,6 +6,7 @@ import {
 } from '#/components/game-card-preview'
 import { SiteLayout } from '#/components/site-layout'
 import type { Locale, PublicGame } from '#/lib/ggemu'
+import { getGameCardDisplayName } from '#/lib/game-display-name'
 
 import { HomeFaqSection, HomeLatestBlogPostsSection } from './shared'
 import { RecentPlayedGamesSection } from './recent-played-games'
@@ -239,7 +240,7 @@ function FeatureGameCard({
   lang: Locale
 }) {
   const gameId = game.url_slug || game._id || ''
-  const gameName = game.name?.trim() || 'Game'
+  const gameName = getGameCardDisplayName(game, lang)
   const keywords = game.keywords?.trim()
 
   return (

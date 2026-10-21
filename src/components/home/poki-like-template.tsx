@@ -7,6 +7,7 @@ import {
 } from '#/components/game-card-preview'
 import { SiteFooter } from '#/components/site-layout'
 import type { Locale, PublicGame } from '#/lib/ggemu'
+import { getGameCardDisplayName } from '#/lib/game-display-name'
 import { getI18n } from '#/lib/i18n'
 import { getSiteThemes, normalizeSiteTheme } from '#/lib/site-themes'
 
@@ -400,6 +401,7 @@ export function PokiSearchResultCard({
   lang: Locale
 }) {
   const gameId = game.url_slug || game._id || ''
+  const displayName = getGameCardDisplayName(game, lang)
 
   return (
     <Link
@@ -412,7 +414,7 @@ export function PokiSearchResultCard({
       <div className="relative aspect-square overflow-hidden bg-base-200">
         {game.game_cover ? (
           <img
-            alt={game.name ?? 'Game cover'}
+            alt={displayName}
             className="h-full w-full object-cover"
             loading="lazy"
             src={game.game_cover}
@@ -425,7 +427,7 @@ export function PokiSearchResultCard({
         <GameCardPreviewVideo src={game.game_video} />
       </div>
       <div className="p-2 text-[12px] font-medium leading-tight">
-        <span className="line-clamp-2">{game.name}</span>
+        <span className="line-clamp-2">{displayName}</span>
       </div>
     </Link>
   )
@@ -441,7 +443,7 @@ function PokiGameCard({
   size: PokiTileSize
 }) {
   const gameId = game.url_slug || game._id || ''
-  const gameName = game.name?.trim() || 'Game'
+  const gameName = getGameCardDisplayName(game, lang)
 
   return (
     <Link
@@ -453,7 +455,7 @@ function PokiGameCard({
     >
       {game.game_cover ? (
         <img
-          alt={game.name ?? 'Game cover'}
+          alt={gameName}
           className="h-full w-full object-cover"
           loading="lazy"
           src={game.game_cover}
