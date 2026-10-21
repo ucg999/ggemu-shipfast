@@ -147,12 +147,12 @@
   },
   "fc-cartridges/__library__": {
     "count": 23,
-    "fingerprint": "5a8826714fb8e37816504b357a3dfd9cfb5d7cebd04b3ea1dccd974b6fcbf45e",
+    "fingerprint": "fe7b705af5a5d883c51edbf66bbec6b56a43dd4de86ec007c05d630522f2386e",
     "changedAt": null
   },
   "gb-cartridges/__library__": {
     "count": 5,
-    "fingerprint": "6281b63bb3071c5637394c355bbfd4cfa26734876bced3260938399d55f6a4eb",
+    "fingerprint": "415a2f5238b9295dcd3b032f6c37ecf34d702034f7274560111e3cd4d90e98ee",
     "changedAt": null
   }
 }

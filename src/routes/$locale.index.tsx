@@ -59,6 +59,8 @@ const DEFAULT_HOME_REQUEST_SIZE = 21
 const MOBILE_API_PAGE_SIZE = 36
 const MOBILE_HOME_REQUEST_SIZE = 36
 const POPULAR_HOME_REQUEST_SIZE = 21
+const HOME_LATEST_GAME_LIMIT = 12
+const HOME_VIDEO_POOL_LIMIT = 64
 
 type HomeSearch = {
   category?: string
@@ -106,6 +108,9 @@ function getSearchTemplate(search: unknown) {
 }
 
 export const Route = createFileRoute('/$locale/')({
+  headers: () => ({
+    'Cache-Control': 'public, max-age=30, s-maxage=300, stale-while-revalidate=3600',
+  }),
   staleTime: 5 * 60 * 1000,
   // Reuse the index-route cache immediately while refreshing in the background.
   validateSearch: validateHomeSearch,
@@ -136,7 +141,7 @@ export const Route = createFileRoute('/$locale/')({
         loadFeaturePlatformGames(locale),
         loadGameFilterOptions(),
         loadLatestBlogPosts(locale),
-        safeSearchGames({ query: '', limit: 20, locale, page: 1, sort: 'newest' }),
+        safeSearchGames({ query: '', limit: HOME_LATEST_GAME_LIMIT, locale, page: 1, sort: 'newest' }),
         loadMostPlayedVideoGames(locale),
       ])
 
@@ -150,7 +155,7 @@ export const Route = createFileRoute('/$locale/')({
         filterOptions,
         layoutSeed: getPokiDailyLayoutSeed(),
         latestBlogPosts,
-        latestGames: latestGamesResult.games.slice(0, 20).map(compactGameCard),
+        latestGames: latestGamesResult.games.slice(0, HOME_LATEST_GAME_LIMIT).map(compactGameCard),
         mostPlayedGames: mostPlayedGames.games,
         videoLoadFailed: mostPlayedGames.loadFailed,
         seoOrigin,
@@ -170,7 +175,7 @@ export const Route = createFileRoute('/$locale/')({
       }),
       loadGameFilterOptions(),
       loadLatestBlogPosts(locale),
-      safeSearchGames({ query: '', limit: 20, locale, page: 1, sort: 'newest' }),
+      safeSearchGames({ query: '', limit: HOME_LATEST_GAME_LIMIT, locale, page: 1, sort: 'newest' }),
       loadMostPlayedVideoGames(locale),
     ])
 
@@ -180,7 +185,7 @@ export const Route = createFileRoute('/$locale/')({
       filterOptions,
       layoutSeed: getPokiDailyLayoutSeed(),
       latestBlogPosts,
-      latestGames: latestGamesResult.games.slice(0, 20).map(compactGameCard),
+      latestGames: latestGamesResult.games.slice(0, HOME_LATEST_GAME_LIMIT).map(compactGameCard),
       mostPlayedGames: mostPlayedGames.games,
       videoLoadFailed: mostPlayedGames.loadFailed,
       seoOrigin,
@@ -605,18 +610,17 @@ async function loadFeaturePlatformGames(locale: Locale) {
 }
 
 async function loadMostPlayedVideoGames(locale: Locale) {
-  const results = await Promise.allSettled(
-    (['plays_count', 'popular'] as const).map((sort) =>
-      searchGames({
-        data: { query: '', limit: 100, locale, page: 1, sort },
-      }),
-    ),
-  )
+  const result = await safeSearchGames({
+    query: '',
+    limit: HOME_VIDEO_POOL_LIMIT,
+    locale,
+    page: 1,
+    sort: 'popular',
+  })
 
   const uniqueGames = new Map<string, PublicGame>()
 
-  results
-    .flatMap((result) => result.status === 'fulfilled' ? result.value.games : [])
+  result.games
     .filter((game) => Boolean(game.game_video?.trim()))
     .forEach((game) => {
       const id = game.url_slug?.trim() || game._id?.trim()
@@ -628,7 +632,7 @@ async function loadMostPlayedVideoGames(locale: Locale) {
 
   return {
     games: [...uniqueGames.values()].slice(0, 32).map(compactGameCard),
-    loadFailed: results.some((result) => result.status === 'rejected'),
+    loadFailed: Boolean(result.loadFailed),
   }
 }
 

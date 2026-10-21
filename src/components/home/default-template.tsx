@@ -411,7 +411,7 @@ export function DefaultHomeTemplate(
                   return (
                     <div className="min-w-0" key={`popular-${gameId}`}>
                       <Link className="desktop-daily-video-card group relative isolate" {...gameCardPreviewHandlers} params={{ gameId, locale: lang }} search={{}} to="/$locale/games/$gameId">
-                        <img alt={displayName} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" decoding="async" loading="lazy" src={getCachedImageUrl(game.game_cover, 720)} />
+                        <img alt={displayName} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" decoding="async" loading="lazy" src={getCachedImageUrl(game.game_cover, 480)} />
                         <GameCardPreviewVideo src={game.game_video} />
                       </Link>
                       <strong className="block w-full truncate px-1 pt-3 text-center text-sm font-semibold text-black" title={displayName}>{displayName}</strong>

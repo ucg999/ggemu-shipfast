@@ -43,8 +43,12 @@ export async function syncLibraryUpdates() {
   for (const library of ['fc-cartridges', 'gb-cartridges']) {
     const sourcePath = new URL(`src/components/${library === 'fc-cartridges' ? 'fc' : 'gb'}-cartridge-library.tsx`, root)
     const source = readFileSync(sourcePath, 'utf8')
-    const count = countArrayItems(source, library === 'fc-cartridges' ? 'FC_CARTRIDGES' : 'CARTRIDGES')
-    const libraryFingerprint = createHash('sha256').update(source).digest('hex')
+    const variableName = library === 'fc-cartridges' ? 'FC_CARTRIDGES' : 'CARTRIDGES'
+    const cartridgeData = readArrayLiteral(source, variableName)
+    const count = cartridgeData.count
+    // Only the cartridge catalog is an update. Layout, wording and button changes
+    // must not make the navigation look like new games were added.
+    const libraryFingerprint = createHash('sha256').update(cartridgeData.content).digest('hex')
     const key = `${library}/__library__`
     const old = previous[key]
     next[key] = {
@@ -72,9 +76,9 @@ function latestGameDate(games) {
   return latest ? new Date(latest).toISOString() : null
 }
 
-function countArrayItems(source, variableName) {
+function readArrayLiteral(source, variableName) {
   const sourceFile = ts.createSourceFile('library.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
-  let count = 0
+  let result = { content: '[]', count: 0 }
   const visit = node => {
     if (ts.isVariableDeclaration(node)
       && ts.isIdentifier(node.name)
@@ -84,12 +88,17 @@ function countArrayItems(source, variableName) {
       while (ts.isAsExpression(initializer) || ts.isSatisfiesExpression(initializer) || ts.isParenthesizedExpression(initializer)) {
         initializer = initializer.expression
       }
-      if (ts.isArrayLiteralExpression(initializer)) count = initializer.elements.length
+      if (ts.isArrayLiteralExpression(initializer)) {
+        result = {
+          content: initializer.getText(sourceFile),
+          count: initializer.elements.length,
+        }
+      }
     }
     ts.forEachChild(node, visit)
   }
   visit(sourceFile)
-  return count
+  return result
 }
 
 export function libraryUpdatesPlugin() {
