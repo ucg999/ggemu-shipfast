@@ -55,11 +55,10 @@ export function WantedPlaytimeTracker() {
   const pathname = useRouterState({ select: state => state.location.pathname })
   const hash = useRouterState({ select: state => state.location.hash })
   const playing = isPlayableRoute(pathname)
-  const handheld = isHandheldRoute(pathname)
   const proMode = isProRoute(pathname, hash)
   const featuredMultiplier = getFeaturedGameMultiplier(pathname)
   const featuredGame = featuredMultiplier !== null
-  const eligibleGame = playing || handheld || proMode
+  const eligibleGame = playing || proMode
   const elapsedRef = useRef(0)
   const previousTickRef = useRef(0)
   const sessionRef = useRef('')
@@ -116,7 +115,7 @@ export function WantedPlaytimeTracker() {
       submittingRef.current = true
       submittedSecondsRef.current = totalSeconds
       submissionIndexRef.current += 1
-      const sessionType = featuredGame ? 'featured' : proMode ? 'pro' : handheld ? 'handheld' : 'game'
+      const sessionType = featuredGame ? 'featured' : proMode ? 'pro' : 'game'
       const payload = JSON.stringify({ action: 'session', sessionType, guestKey, guestName, seconds, submissionKey: `wanted-v2:${sessionType}:${sessionRef.current}:${submissionIndexRef.current}` })
       queuePendingSubmission(payload)
       if (final && navigator.sendBeacon('/api/wanted', new Blob([payload], { type: 'application/json' }))) {
@@ -186,7 +185,7 @@ export function WantedPlaytimeTracker() {
       documents.forEach(doc => events.forEach(name => doc.removeEventListener(name, registerInteraction, true)))
       submitSession(true)
     }
-  }, [pathname, featuredGame, featuredMultiplier, handheld, playing, proMode, eligibleGame])
+  }, [pathname, featuredGame, featuredMultiplier, playing, proMode, eligibleGame])
 
   return null
 }
@@ -303,11 +302,6 @@ export function markWantedFeaturedGame(gameId: string, multiplier: number) {
 
 function isPlayableRoute(pathname: string) {
   return /\/games\/[^/]+\/play(?:\/|$)/.test(pathname)
-    || /\/(coin-challenge|lucky-grand-slam|ghost-hunter|red-blue-arena)(?:\/|$)/.test(pathname)
-}
-
-function isHandheldRoute(pathname: string) {
-  return pathname === '/fc' || pathname === '/gb' || pathname.startsWith('/fc-player/') || pathname.startsWith('/gb-player/')
 }
 
 function isProRoute(pathname: string, hash: string) {
