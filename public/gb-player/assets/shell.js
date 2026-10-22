@@ -746,12 +746,17 @@ button.addEventListener('click', function () { cartridgeIndex = Number(button.da
 async function loadOwnedCartridges() {
 let owned = [];
 try {
-const response = await fetch('/api/gb-cartridges', { credentials: 'same-origin', cache: 'no-store' });
+let guestCollectorId = '';
+try {
+guestCollectorId = String(localStorage.getItem('ucg999-library-guest-collector') || '').trim();
+} catch (error) {}
+const collectionUrl = '/api/gb-cartridges' + (/^[a-z0-9-]{16,80}$/i.test(guestCollectorId) ? '?guestId=' + encodeURIComponent(guestCollectorId) : '');
+const response = await fetch(collectionUrl, { credentials: 'same-origin', cache: 'no-store' });
 const result = response.ok ? await response.json() : null;
-if (result && result.authenticated) {
-cartridgeMemberAuthenticated = true;
+if (result && Array.isArray(result.owned)) {
+cartridgeMemberAuthenticated = result.authenticated === true;
 cartridgeMemberId = typeof result.memberId === 'string' ? result.memberId : '';
-owned = Array.isArray(result.owned) ? result.owned : [];
+owned = result.owned;
 }
 else owned = [];
 } catch (error) {

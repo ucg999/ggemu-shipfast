@@ -437,10 +437,7 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
       return
     }
     if (!member) {
-      try {
-        const stored = JSON.parse(window.localStorage.getItem(OWNED_CARTRIDGES_KEY) || '[]')
-        setOwned(Array.isArray(stored) ? stored.filter((value): value is string => typeof value === 'string') : [])
-      } catch { setOwned([]) }
+      setOwned([])
       void fetch(collectionApiUrl('/api/fc-cartridges'), { credentials: 'same-origin', cache: 'no-store' })
         .then(response => response.ok ? response.json() : Promise.reject())
         .then((result: { owned?: string[]; rankings?: Partial<FcRankings>; collectionCounts?: Record<string, number> }) => {
@@ -448,7 +445,7 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
           setOwned(next)
           window.localStorage.setItem(OWNED_CARTRIDGES_KEY, JSON.stringify(next))
           applyRankings(result)
-        }).catch(() => { void refreshRankings() })
+        }).catch(() => { setOwned([]); void refreshRankings() })
       return
     }
     let cancelled = false
@@ -699,7 +696,7 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
           {pendingPurchase ? <div className="fixed inset-0 z-[240] flex items-center justify-center bg-black/35 px-4" role="dialog" aria-modal="true" aria-labelledby="fc-purchase-title">
             <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center text-black shadow-2xl">
               <h2 className="text-lg font-semibold" id="fc-purchase-title">{copy.confirmTitle}</h2>
-              <p className="mt-2 text-sm text-black/65">{copy.confirmMessage(FC_CARTRIDGES.find(item => item.id === pendingPurchase)?.title ?? '', CARTRIDGE_PRICE)}</p>
+              <p className="mt-2 text-sm text-black/65">{copy.confirmMessage(FC_CARTRIDGES.find(item => item.id === pendingPurchase)?.title ?? '', CARTRIDGE_PRICE)}{!member ? (lang === 'en' ? ' Guest collections last 24 hours.' : lang === 'ja' ? ' ゲストのコレクションは24時間有効です。' : lang === 'zh-TW' ? ' 遊客收藏有效24小時。' : ' 游客收藏有效24小时。') : ''}</p>
               <div className="mt-5 flex justify-center gap-3">
                 <button className="btn btn-ghost btn-sm" type="button" onClick={() => setPendingPurchase(null)}>{copy.cancel}</button>
                 <button className="btn btn-warning btn-sm" type="button" onClick={confirmPurchase}>{copy.confirmCollect}</button>

@@ -95,13 +95,13 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
       return
     }
     if (!member) {
-      try { setOwned(visibleOwned(JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'))) } catch { setOwned([]) }
+      setOwned([])
       void fetch(collectionApiUrl('/api/gb-cartridges'), { credentials: 'same-origin', cache: 'no-store' }).then(response => response.ok ? response.json() : Promise.reject()).then((data: { owned?: string[]; rankings?: Partial<GbRankings> }) => {
         const next = visibleOwned(Array.isArray(data.owned) ? data.owned : [])
         setOwned(next)
         localStorage.setItem(LOCAL_KEY, JSON.stringify(next))
         applyRankings(data)
-      }).catch(() => {})
+      }).catch(() => { setOwned([]) })
       return
     }
     let cancelled = false
@@ -207,7 +207,7 @@ export function GbCartridgeLibrary({ lang }: { lang: Locale }) {
       })() : null}
       {playing ? <CartridgePlayerDialog onClose={() => setPlaying(null)} src={`/gb-player/index.html?cartridge=${encodeURIComponent(playing)}`} title={CARTRIDGES.find(item => item.id === playing)?.title ?? 'GB游戏机'} /> : null}
       {rankingsOpen ? <div className="fixed inset-0 z-[240] flex items-center justify-center bg-black/35 px-4" role="dialog" aria-modal="true" onClick={() => setRankingsOpen(false)}><section className="w-full max-w-2xl rounded-2xl bg-[#f0f0ed] p-4 text-base-content shadow-2xl sm:p-6" onClick={event => event.stopPropagation()}><div className="mb-4 flex items-center justify-between"><h2 className="text-xl font-semibold">{copy.rankings}</h2><button className="btn btn-ghost btn-sm btn-circle text-xl" type="button" onClick={() => setRankingsOpen(false)}>×</button></div><div className="grid gap-3 sm:grid-cols-2"><div className="rounded-xl bg-white p-3 shadow-sm"><h3 className="mb-2 text-sm font-semibold">{copy.popularRanking}</h3><ol className="space-y-1.5 text-xs sm:text-sm">{rankings.cartridges.length ? rankings.cartridges.map(item => { const cartridge = CARTRIDGES.find(entry => entry.id === item.cartridgeId); return cartridge ? <li className="flex items-center gap-2" key={item.cartridgeId}><b className="w-5 text-center text-amber-600">{item.rank}</b><span className="min-w-0 flex-1 truncate">{cartridge.number} · {cartridge.title}</span><span className="shrink-0 text-base-content/55">{copy.peopleCount(item.count)}</span></li> : null }) : <li className="text-base-content/45">{copy.noRankings}</li>}</ol></div><div className="rounded-xl bg-white p-3 shadow-sm"><h3 className="mb-2 text-sm font-semibold">{copy.collectorRanking}</h3><ol className="space-y-1.5 text-xs sm:text-sm">{rankings.collectors.length ? rankings.collectors.map(item => <li className="flex items-center gap-2" key={`${item.playerNumber ?? 'player'}-${item.rank}`}><b className="w-5 text-center text-amber-600">{item.rank}</b><span className="min-w-0 flex-1 truncate">{item.displayName}{item.playerNumber ? <small className="ml-1 text-base-content/40">ID:{String(item.playerNumber).padStart(5, '0')}</small> : null}</span><span className="shrink-0 text-base-content/55">{copy.cartridgeCount(item.count)}</span></li>) : <li className="text-base-content/45">{copy.noRankings}</li>}</ol></div></div></section></div> : null}
-      {confirming ? <div className="fixed inset-0 z-[240] grid place-items-center bg-black/35 px-4"><div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center text-black shadow-2xl"><h2 className="text-lg font-semibold">{copy.confirmTitle}</h2><p className="mt-2 text-sm text-black/65">{copy.confirmMessage(CARTRIDGES.find(item => item.id === confirming)?.title || '')}</p><div className="mt-5 flex justify-center gap-3"><button className="btn btn-ghost btn-sm" onClick={() => setConfirming(null)}>{copy.cancel}</button><button className="btn btn-warning btn-sm" onClick={collect}>{copy.confirm}</button></div></div></div> : null}
+      {confirming ? <div className="fixed inset-0 z-[240] grid place-items-center bg-black/35 px-4"><div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center text-black shadow-2xl"><h2 className="text-lg font-semibold">{copy.confirmTitle}</h2><p className="mt-2 text-sm text-black/65">{copy.confirmMessage(CARTRIDGES.find(item => item.id === confirming)?.title || '')}{!member ? (lang === 'en' ? ' Guest collections last 24 hours.' : lang === 'zh-TW' ? ' 遊客收藏有效24小時。' : ' 游客收藏有效24小时。') : ''}</p><div className="mt-5 flex justify-center gap-3"><button className="btn btn-ghost btn-sm" onClick={() => setConfirming(null)}>{copy.cancel}</button><button className="btn btn-warning btn-sm" onClick={collect}>{copy.confirm}</button></div></div></div> : null}
       {notice ? <div className="fixed bottom-8 left-1/2 z-[180] -translate-x-1/2 rounded-full bg-black px-5 py-2 text-sm text-white">{notice}</div> : null}
     </main>
   </SiteLayout>

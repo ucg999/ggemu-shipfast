@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { assertSameOrigin, getMemberFromRequest, jsonError, leaderboardDb, memberDb, toMemberView } from '#/lib/member-auth.server'
 
 const PRICE = 10
+const GUEST_COLLECTION_LIFETIME_SQL = "datetime('now', '-1 day')"
 
 const CARTRIDGE_IDS = new Set(['castlevania-2', 'pokemon-gold', 'pokemon-silver', 'cyborg-kuro-chan-2', 'pokemon-crystal'])
 
@@ -13,7 +14,7 @@ export const Route = createFileRoute('/api/gb-cartridges')({
       const ownerId = member?.id ?? guestOwnerId(new URL(request.url).searchParams.get('guestId'))
       const db = leaderboardDb()
       const [rows, popularRows, collectorRows] = await Promise.all([
-        ownerId ? db.prepare('SELECT cartridge_id FROM member_gb_cartridges WHERE member_id = ? ORDER BY cartridge_id').bind(ownerId).all<{ cartridge_id: string }>() : Promise.resolve({ results: [] as { cartridge_id: string }[] }),
+        ownerId ? db.prepare(`SELECT cartridge_id FROM member_gb_cartridges WHERE member_id = ?${member ? '' : ` AND collected_at >= ${GUEST_COLLECTION_LIFETIME_SQL}`} ORDER BY cartridge_id`).bind(ownerId).all<{ cartridge_id: string }>() : Promise.resolve({ results: [] as { cartridge_id: string }[] }),
         db.prepare('SELECT cartridge_id, COUNT(DISTINCT member_id) AS collection_count FROM member_gb_cartridges GROUP BY cartridge_id ORDER BY collection_count DESC, cartridge_id ASC').all<{ cartridge_id: string; collection_count: number }>(),
         db.prepare("SELECT member_id, COUNT(DISTINCT cartridge_id) AS collection_count FROM member_gb_cartridges WHERE member_id NOT LIKE 'guest:%' GROUP BY member_id ORDER BY collection_count DESC, member_id ASC LIMIT 5").all<{ member_id: string; collection_count: number }>(),
       ])
@@ -48,7 +49,7 @@ export const Route = createFileRoute('/api/gb-cartridges')({
       const cartridgeId = typeof body.cartridgeId === 'string' && CARTRIDGE_IDS.has(body.cartridgeId) ? body.cartridgeId : ''
       if (!cartridgeId) return jsonError('卡带信息无效')
       const db = leaderboardDb()
-      const owned = await db.prepare('SELECT 1 AS found FROM member_gb_cartridges WHERE member_id = ? AND cartridge_id = ?').bind(ownerId, cartridgeId).first<{ found: number }>()
+      const owned = await db.prepare(`SELECT 1 AS found FROM member_gb_cartridges WHERE member_id = ? AND cartridge_id = ?${member ? '' : ` AND collected_at >= ${GUEST_COLLECTION_LIFETIME_SQL}`}`).bind(ownerId, cartridgeId).first<{ found: number }>()
       if (!owned) {
         if (member) {
           const deduction = await memberDb().prepare('UPDATE members SET coin_balance = coin_balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND coin_balance >= ?').bind(PRICE, member.id, PRICE).run()
@@ -67,10 +68,11 @@ export const Route = createFileRoute('/api/gb-cartridges')({
           await ensureGuestPaymentTable(db)
           const payment = await db.prepare(`INSERT OR IGNORE INTO cartridge_payment_events (event_key, owner_key, platform, cartridge_id) VALUES (?, ?, 'gb', ?)`).bind(`guest-gb:${paymentId}`, ownerId, cartridgeId).run()
           if (!payment.meta.changes) return jsonError('本次收藏已处理', 409)
-          await db.prepare('INSERT INTO member_gb_cartridges (member_id, cartridge_id) VALUES (?, ?)').bind(ownerId, cartridgeId).run()
+          await db.prepare(`INSERT INTO member_gb_cartridges (member_id, cartridge_id) VALUES (?, ?)
+            ON CONFLICT(member_id, cartridge_id) DO UPDATE SET collected_at = CURRENT_TIMESTAMP`).bind(ownerId, cartridgeId).run()
         }
       }
-      const rows = await db.prepare('SELECT cartridge_id FROM member_gb_cartridges WHERE member_id = ? ORDER BY cartridge_id').bind(ownerId).all<{ cartridge_id: string }>()
+      const rows = await db.prepare(`SELECT cartridge_id FROM member_gb_cartridges WHERE member_id = ?${member ? '' : ` AND collected_at >= ${GUEST_COLLECTION_LIFETIME_SQL}`} ORDER BY cartridge_id`).bind(ownerId).all<{ cartridge_id: string }>()
       const updatedMember = member ? await memberDb().prepare('SELECT id, username, display_name, coin_balance, player_number FROM members WHERE id = ?').bind(member.id).first<{ id: string; username: string; display_name: string; coin_balance: number; player_number: number }>() : null
       return Response.json({ authenticated: Boolean(member), owned: rows.results.map(row => row.cartridge_id).filter(id => CARTRIDGE_IDS.has(id)), member: updatedMember ? toMemberView(updatedMember) : undefined }, { headers: { 'Cache-Control': 'private, no-store' } })
     },

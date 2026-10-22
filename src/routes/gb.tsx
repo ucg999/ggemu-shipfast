@@ -64,7 +64,7 @@ function GbPlayerPage() {
       ref={iframeRef}
       allow="autoplay; web-share"
       onLoad={() => iframeRef.current?.contentWindow?.postMessage({ type: 'gb-member-status', loggedIn: Boolean(member) }, window.location.origin)}
-      src={`/gb-player/index.html?v=20261016-1${cartridge ? `&cartridge=${encodeURIComponent(cartridge)}` : ''}`}
+      src={`/gb-player/index.html?v=20261022-1${cartridge ? `&cartridge=${encodeURIComponent(cartridge)}` : ''}`}
       title="GB游戏机 热斗 格斗之王96"
       style={{
         position: 'fixed',
