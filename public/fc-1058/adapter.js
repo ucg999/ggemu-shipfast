@@ -203,4 +203,4 @@ window.GGEMU_CORE = {
   },
 }
 
-await import('/fc-player/assets/shell.js?v=20261016-2')
+await import('/fc-player/assets/shell.js?v=20261022-2')

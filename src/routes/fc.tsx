@@ -74,7 +74,7 @@ function FcPlayerPage() {
         allow="autoplay; web-share"
         onLoad={() => iframeRef.current?.contentWindow?.postMessage({ type: 'fc-member-status', loggedIn: Boolean(member) }, window.location.origin)}
         src={cartridge === 'green-beret-captain-america'
-          ? '/fc-1058/index.html?v=20261016-2&cartridge=green-beret-captain-america'
+          ? '/fc-1058/index.html?v=20261022-3&cartridge=green-beret-captain-america'
           : `/fc-player/index.html?v=20261016-5${cartridge ? `&cartridge=${encodeURIComponent(cartridge)}` : ''}`}
         title="超级马里奥兄弟 FC游戏机"
         style={{

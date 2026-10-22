@@ -783,6 +783,22 @@ const allCartridgeCards = Array.from(document.querySelectorAll('.cartridge-card'
 const ownedCartridgesKey = 'ucg999-fc-owned-cartridges';
 const ownedCartridgesMigrationKey = 'ucg999-fc-owned-cartridges-migrated';
 const lastCartridgeKey = 'ucg999-fc-last-cartridge';
+const guestCollectorKey = 'ucg999-library-guest-collector';
+function getGuestCollectorId() {
+try {
+const current = String(localStorage.getItem(guestCollectorKey) || '').trim();
+if (/^[a-z0-9-]{16,80}$/i.test(current)) return current;
+const created = typeof crypto.randomUUID === 'function'
+? crypto.randomUUID()
+: Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + '-' + Math.random().toString(36).slice(2);
+localStorage.setItem(guestCollectorKey, created);
+return created;
+} catch (error) {
+return '';
+}
+}
+const guestCollectorId = getGuestCollectorId();
+const cartridgeCollectionUrl = '/api/fc-cartridges' + (guestCollectorId ? '?guestId=' + encodeURIComponent(guestCollectorId) : '');
 let ownedCartridgeIds = [];
 let cartridgeMemberAuthenticated = false;
 let cartridgeMemberId = '';
@@ -792,15 +808,15 @@ const parsedOwnedCartridges = JSON.parse(localStorage.getItem(ownedCartridgesKey
 legacyOwnedCartridgeIds = Array.isArray(parsedOwnedCartridges) ? parsedOwnedCartridges.filter(value => typeof value === 'string') : [];
 } catch (error) {}
 try {
-const collectionResponse = await fetch('/api/fc-cartridges', { credentials: 'same-origin', cache: 'no-store' });
+const collectionResponse = await fetch(cartridgeCollectionUrl, { credentials: 'same-origin', cache: 'no-store' });
 if (collectionResponse.ok) {
 let collection = await collectionResponse.json();
-if (collection.authenticated === true && Array.isArray(collection.owned)) {
-cartridgeMemberAuthenticated = true;
+if (Array.isArray(collection.owned)) {
+cartridgeMemberAuthenticated = collection.authenticated === true;
 cartridgeMemberId = typeof collection.memberId === 'string' ? collection.memberId : '';
-const accountKey = ownedCartridgesKey + ':' + collection.memberId;
+const accountKey = ownedCartridgesKey + ':' + (collection.memberId || ('guest:' + guestCollectorId));
 const migrationKey = ownedCartridgesMigrationKey + ':' + collection.memberId;
-if (legacyOwnedCartridgeIds.length && localStorage.getItem(migrationKey) !== 'yes') {
+if (collection.authenticated === true && legacyOwnedCartridgeIds.length && localStorage.getItem(migrationKey) !== 'yes') {
 const migrationResponse = await fetch('/api/fc-cartridges', {
 method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
 body: JSON.stringify({ cartridgeIds: legacyOwnedCartridgeIds })
@@ -839,6 +855,17 @@ const cartridgeEmpty = document.getElementById('cartridge-empty');
 let cartridgeIndex = 0;
 let cartridgeTouchStartX = 0;
 let cartridgeLoading = false;
+const dedicatedMapper85CartridgeId = 'green-beret-captain-america';
+const usingDedicatedMapper85Core = window.location.pathname.startsWith('/fc-1058/');
+function switchCartridgeCoreIfNeeded(gameId) {
+const needsDedicatedCore = gameId === dedicatedMapper85CartridgeId;
+if (needsDedicatedCore === usingDedicatedMapper85Core) return false;
+const target = needsDedicatedCore
+? '/fc-1058/index.html?v=20261022-3&cartridge=' + encodeURIComponent(gameId)
+: '/fc-player/index.html?v=20261022-2&cartridge=' + encodeURIComponent(gameId);
+window.location.replace(target);
+return true;
+}
 let visibleCartridgeCards = cartridgeCards.slice();
 cartridgeCount.textContent = '（已收集' + cartridgeCards.length + '款）';
 cartridgeEmpty.hidden = cartridgeCards.length > 0;
@@ -893,6 +920,11 @@ card.classList.add('is-inserting');
 showToast('正在插入《' + card.dataset.gameName + '》');
 await new Promise(resolve => setTimeout(resolve, 620));
 setCartridgeScreen(false);
+if (switchCartridgeCoreIfNeeded(card.dataset.gameId)) {
+card.classList.remove('is-inserting');
+cartridgeLoading = false;
+return;
+}
 try {
 await loadRom(card.dataset.rom, card.dataset.gameId, card.dataset.gameName);
 showToast('《' + card.dataset.gameName + '》已启动');
@@ -1029,10 +1061,7 @@ const requestedCartridge = new URLSearchParams(window.location.search).get('cart
 const requestedCard = cartridgeCards.find(card => card.dataset.gameId === requestedCartridge && card.dataset.rom);
 const defaultOwnedCard = requestedCard || null;
 if (defaultOwnedCard) {
-canOpenCartridgeScreen().then(allowed => {
-if (allowed) loadRom(defaultOwnedCard.dataset.rom, defaultOwnedCard.dataset.gameId, defaultOwnedCard.dataset.gameName).catch(() => {});
-else loadRom('./assets/super-mario-bros-world.nes', 'super-mario-bros-world', '超级马里奥兄弟').catch(() => {});
-});
+loadRom(defaultOwnedCard.dataset.rom, defaultOwnedCard.dataset.gameId, defaultOwnedCard.dataset.gameName).catch(() => {});
 } else {
 loadRom('./assets/super-mario-bros-world.nes', 'super-mario-bros-world', '超级马里奥兄弟').catch(() => {});
 }

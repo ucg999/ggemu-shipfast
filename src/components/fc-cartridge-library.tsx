@@ -683,7 +683,7 @@ export function FcCartridgeLibrary({ lang }: { lang: Locale }) {
           {playing ? <CartridgePlayerDialog
             onClose={() => setPlaying(null)}
             src={playing === 'green-beret-captain-america'
-              ? '/fc-1058/index.html?v=20261016-2&cartridge=green-beret-captain-america'
+              ? '/fc-1058/index.html?v=20261022-3&cartridge=green-beret-captain-america'
               : `/fc-player/index.html?v=20261016-5&cartridge=${encodeURIComponent(playing)}`}
             title={FC_CARTRIDGES.find(item => item.id === playing)?.title ?? 'FC游戏机'}
           /> : null}
