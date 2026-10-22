@@ -491,7 +491,7 @@ function LocalizedPlayGamePage() {
           alt=""
           aria-hidden="true"
           className="kof97-page-backdrop"
-          src={isKof97Plus ? '/images/game-masks/kof97-plus.webp?v=20261019-1' : '/images/game-masks/kof97.webp?v=20261019-6'}
+          src={isKof97Plus ? '/images/game-masks/kof97-plus.webp?v=20261022-1' : '/images/game-masks/kof97.webp?v=20261022-1'}
         />
       ) : null}
       <div className="absolute left-2 top-2 z-30 flex items-center gap-2 sm:left-3 sm:top-3">
